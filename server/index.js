@@ -36,8 +36,26 @@ app.use('/api/progress', require('./routes/progress'));
 app.use('/api/logs', require('./routes/logs'));
 
 // Health check endpoint
-app.get('/api/health', (req, res) => {
-    res.json({ status: 'ok', timestamp: new Date().toISOString() });
+const db = require('./config/db');
+
+// Health check endpoint
+app.get('/api/health', async (req, res) => {
+    try {
+        const [tables] = await db.query('SHOW TABLES');
+        res.json({
+            status: 'ok',
+            timestamp: new Date().toISOString(),
+            database: 'connected',
+            tables: tables.map(t => Object.values(t)[0])
+        });
+    } catch (err) {
+        res.status(500).json({
+            status: 'error',
+            timestamp: new Date().toISOString(),
+            database: 'disconnected',
+            error: err.message
+        });
+    }
 });
 
 // Serve static files from React build in production
