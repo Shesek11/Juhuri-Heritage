@@ -62,9 +62,13 @@ app.use((err, req, res, next) => {
 });
 
 // Start server
-app.listen(PORT, () => {
-    console.log(`🚀 Server running on port ${PORT}`);
-    console.log(`📚 Environment: ${process.env.NODE_ENV || 'development'}`);
+// Initialize Database
+const initializeDatabase = require('./utils/dbInit');
+initializeDatabase().then(() => {
+    app.listen(PORT, () => {
+        console.log(`🚀 Server running on port ${PORT}`);
+        console.log(`📚 Environment: ${process.env.NODE_ENV || 'development'}`);
+    });
 });
 
 module.exports = app;
