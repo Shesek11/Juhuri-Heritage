@@ -1,0 +1,7 @@
+{
+  "name": "Juhuri Heritage",
+  "description": "מילון לשימור השפה הג'והורית ומסורת יהדות קווקז. הכלי שיעזור לך לדבר עם סבתא בשפה שלה.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}

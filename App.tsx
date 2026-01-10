@@ -1,0 +1,495 @@
+
+import React, { useState, useEffect, useRef } from 'react';
+import { DictionaryEntry, HistoryItem, DialectItem, User } from './types';
+import { searchDictionary, searchByAudio } from './services/geminiService';
+import { getDialects } from './services/storageService';
+import { initAuth, getCurrentUser, logout } from './services/authService';
+import { blobToBase64 } from './utils/audioUtils';
+import ResultCard from './components/ResultCard';
+import HistoryPanel from './components/HistoryPanel';
+import ContributeModal from './components/ContributeModal';
+import AboutModal from './components/AboutModal';
+import TutorMode from './components/TutorMode';
+import AdminDashboard from './components/AdminDashboard';
+import AuthModal from './components/AuthModal';
+import ProfileModal from './components/ProfileModal';
+import { Mic, Search, Scroll, Sun, Moon, Plus, Loader2, HeartHandshake, BookOpen, GraduationCap, Info, User as UserIcon, LogOut, Settings, LayoutDashboard, Menu, LogIn, ChevronDown } from 'lucide-react';
+
+const STORAGE_KEY = 'juhuri_history';
+
+function App() {
+  const [activeTab, setActiveTab] = useState<'dictionary' | 'tutor'>('dictionary');
+
+  // Auth State
+  const [user, setUser] = useState<User | null>(null);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
+
+  // Dictionary State
+  const [query, setQuery] = useState('');
+  const [result, setResult] = useState<DictionaryEntry | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [loadingMessage, setLoadingMessage] = useState('');
+  const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [isRecording, setIsRecording] = useState(false);
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  const [isContributeOpen, setIsContributeOpen] = useState(false);
+  const [isAboutOpen, setIsAboutOpen] = useState(false);
+  const [isAdminOpen, setIsAdminOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  // Dynamic Dialects
+  const [dialects, setDialects] = useState<DialectItem[]>([]);
+
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+
+  // Initialization
+  useEffect(() => {
+    const init = async () => {
+      // 1. History (still localStorage - local cache only)
+      const savedHistory = localStorage.getItem(STORAGE_KEY);
+      if (savedHistory) setHistory(JSON.parse(savedHistory));
+
+      // 2. Theme
+      if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        setTheme('dark');
+      }
+
+      // 3. Dialects (now async API)
+      try {
+        const dialectsList = await getDialects();
+        setDialects(dialectsList);
+      } catch (err) {
+        console.error('Failed to load dialects:', err);
+      }
+
+      // 4. Auth (now async API)
+      try {
+        await initAuth();
+        const currentUser = getCurrentUser();
+        if (currentUser) setUser(currentUser);
+      } catch (err) {
+        console.error('Auth init failed:', err);
+      }
+    };
+
+    init();
+  }, []);
+
+  // Reload dialects when admin closes
+  useEffect(() => {
+    if (!isAdminOpen) {
+      getDialects().then(setDialects).catch(console.error);
+    }
+  }, [isAdminOpen]);
+
+  // Update theme class
+  useEffect(() => {
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [theme]);
+
+  // Loading Messages
+  useEffect(() => {
+    let timers: ReturnType<typeof setTimeout>[] = [];
+    if (loading) {
+      setLoadingMessage('מחפש במילון...');
+      timers.push(setTimeout(() => setLoadingMessage('בודק במקורות ההיסטוריים...'), 2000));
+      timers.push(setTimeout(() => setLoadingMessage('מנתח ניבים והקשרים תרבותיים...'), 4500));
+      timers.push(setTimeout(() => setLoadingMessage('כבר מסיימים, תודה על הסבלנות...'), 8000));
+    } else {
+      setLoadingMessage('');
+    }
+    return () => timers.forEach(clearTimeout);
+  }, [loading]);
+
+  const addToHistory = (entry: DictionaryEntry) => {
+    const newItem: HistoryItem = { ...entry, timestamp: Date.now(), id: Date.now().toString() };
+    const updated = [newItem, ...history.filter(h => h.term !== entry.term)].slice(0, 10);
+    setHistory(updated);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+  };
+
+  const clearHistory = () => {
+    setHistory([]);
+    localStorage.removeItem(STORAGE_KEY);
+  };
+
+  const handleSearch = async (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
+    if (!query.trim()) return;
+
+    setLoading(true);
+    setError(null);
+    try {
+      const data = await searchDictionary(query);
+      setResult(data);
+      addToHistory(data);
+    } catch (err) {
+      setError('לא הצלחנו למצוא תרגום במאגר המסורתי. נסה שוב או נסח אחרת.');
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          audioChunksRef.current.push(event.data);
+        }
+      };
+
+      mediaRecorder.onstop = async () => {
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const base64Audio = await blobToBase64(audioBlob);
+
+        setLoading(true);
+        setError(null);
+        try {
+          const data = await searchByAudio(base64Audio, 'audio/webm');
+          setResult(data);
+          addToHistory(data);
+          setQuery(data.term);
+        } catch (err) {
+          setError('לא הצלחנו לזהות את הדיבור. נסה שוב, בקול ברור.');
+          console.error(err);
+        } finally {
+          setLoading(false);
+          stream.getTracks().forEach(track => track.stop());
+        }
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+    } catch (err) {
+      console.error('Error accessing microphone:', err);
+      setError('נדרשת גישה למיקרופון כדי להקליט.');
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    }
+  };
+
+  const toggleTheme = () => {
+    setTheme(prev => prev === 'light' ? 'dark' : 'light');
+    setIsMenuOpen(false); // Optional: close menu after toggle
+  };
+
+  const handleLogout = () => {
+    logout();
+    setUser(null);
+    setIsMenuOpen(false);
+  };
+
+  return (
+    <div className="min-h-screen flex flex-col items-center p-4 sm:p-6 transition-colors duration-300 font-rubik relative" onClick={() => setIsMenuOpen(false)}>
+
+      {/* Navbar / Header */}
+      <header className="w-full max-w-5xl flex flex-col sm:flex-row justify-between items-center mb-8 sm:mb-10 gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
+
+        {/* Left Side: Logo */}
+        <div className="flex items-center gap-3 self-start sm:self-auto min-w-[200px]">
+          <div className="bg-gradient-to-br from-amber-600 to-orange-700 dark:from-amber-700 dark:to-orange-800 p-2.5 rounded-xl shadow-lg shadow-amber-500/10">
+            <Scroll className="text-white" size={24} />
+          </div>
+          <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100 tracking-tight">
+            מורשת ג'והורי
+          </h1>
+        </div>
+
+        {/* Center: Tabs */}
+        <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+          <button
+            onClick={() => setActiveTab('dictionary')}
+            className={`flex items-center gap-2 px-6 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'dictionary' ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'}`}
+          >
+            <BookOpen size={16} />
+            מילון
+          </button>
+          <button
+            onClick={() => setActiveTab('tutor')}
+            className={`flex items-center gap-2 px-6 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'tutor' ? 'bg-white dark:bg-slate-700 shadow-sm text-indigo-600 dark:text-indigo-300' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'}`}
+          >
+            <GraduationCap size={16} />
+            מורה פרטי
+          </button>
+        </div>
+
+        {/* Right Side: Actions */}
+        <div className="flex items-center gap-3 min-w-[200px] justify-end relative">
+
+          {/* Admin Button (Visible only to authorized users) */}
+          {user && (user.role === 'admin' || user.role === 'approver') && (
+            <button
+              onClick={() => setIsAdminOpen(true)}
+              className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-lg hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors text-sm font-bold"
+            >
+              <LayoutDashboard size={16} />
+              <span>ניהול</span>
+            </button>
+          )}
+
+          {/* Contribute Button (Contextual) */}
+          {activeTab === 'dictionary' && (
+            <button
+              onClick={() => setIsContributeOpen(true)}
+              className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-500 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors text-sm font-bold"
+            >
+              <Plus size={16} />
+              <span>הוסף מילה</span>
+            </button>
+          )}
+
+          {/* Unified Menu Dropdown */}
+          <div className="relative" onClick={e => e.stopPropagation()}>
+            <button
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              className="flex items-center gap-2 p-1 pl-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full hover:shadow-md transition-all"
+            >
+              <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-500 dark:text-slate-300 overflow-hidden">
+                {user ? <UserIcon size={18} /> : <Menu size={18} />}
+              </div>
+              <ChevronDown size={14} className="text-slate-400" />
+            </button>
+
+            {isMenuOpen && (
+              <div className="absolute top-full left-0 mt-2 w-60 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 py-1 z-50 text-right animate-in fade-in slide-in-from-top-2 overflow-hidden">
+                {/* User Header */}
+                {user ? (
+                  <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
+                    <p className="font-bold text-slate-800 dark:text-white truncate">{user.name}</p>
+                    <p className="text-xs text-slate-500 truncate">{user.email}</p>
+                    <div className="mt-2 flex gap-2">
+                      <span className="text-[10px] bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 px-2 py-0.5 rounded">
+                        {user.role === 'admin' ? 'מנהל' : user.role === 'approver' ? 'מאשר' : 'משתמש'}
+                      </span>
+                      {user.contributionsCount > 0 && (
+                        <span className="text-[10px] bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-2 py-0.5 rounded">
+                          {user.contributionsCount} תרומות
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="p-2">
+                    <button
+                      onClick={() => { setIsAuthModalOpen(true); setIsMenuOpen(false); }}
+                      className="w-full bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg py-2 text-sm font-bold flex items-center justify-center gap-2"
+                    >
+                      <LogIn size={16} /> התחברות / הרשמה
+                    </button>
+                  </div>
+                )}
+
+                <div className="py-1">
+                  {user && (
+                    <button
+                      onClick={() => { setIsMenuOpen(false); setIsProfileModalOpen(true); }}
+                      className="w-full text-right px-4 py-2.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2"
+                    >
+                      <Settings size={16} className="text-slate-400" /> הגדרות פרופיל
+                    </button>
+                  )}
+
+                  {/* Mobile: Admin Button in Menu */}
+                  {user && (user.role === 'admin' || user.role === 'approver') && (
+                    <button
+                      onClick={() => { setIsAdminOpen(true); setIsMenuOpen(false); }}
+                      className="w-full sm:hidden text-right px-4 py-2.5 text-sm text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 flex items-center gap-2"
+                    >
+                      <LayoutDashboard size={16} /> ממשק ניהול
+                    </button>
+                  )}
+
+                  {/* Mobile: Contribute Button in Menu */}
+                  <button
+                    onClick={() => { setIsContributeOpen(true); setIsMenuOpen(false); }}
+                    className="w-full sm:hidden text-right px-4 py-2.5 text-sm text-amber-600 dark:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20 flex items-center gap-2"
+                  >
+                    <Plus size={16} /> הוסף מילה
+                  </button>
+
+                  <div className="h-px bg-slate-100 dark:bg-slate-700 my-1"></div>
+
+                  <button
+                    onClick={toggleTheme}
+                    className="w-full text-right px-4 py-2.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2"
+                  >
+                    {theme === 'light' ? <Moon size={16} className="text-slate-400" /> : <Sun size={16} className="text-amber-400" />}
+                    {theme === 'light' ? 'מצב כהה' : 'מצב בהיר'}
+                  </button>
+
+                  <button
+                    onClick={() => { setIsAboutOpen(true); setIsMenuOpen(false); }}
+                    className="w-full text-right px-4 py-2.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2"
+                  >
+                    <Info size={16} className="text-slate-400" /> אודות ומקורות
+                  </button>
+
+                  {user && (
+                    <>
+                      <div className="h-px bg-slate-100 dark:bg-slate-700 my-1"></div>
+                      <button onClick={handleLogout} className="w-full text-right px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2">
+                        <LogOut size={16} /> יציאה מהמערכת
+                      </button>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
+        </div>
+      </header>
+
+      {/* Main Content Area */}
+      <main className="w-full max-w-2xl flex flex-col items-center gap-8 z-10">
+
+        {activeTab === 'dictionary' ? (
+          /* --- DICTIONARY MODE --- */
+          <>
+            <div className="w-full relative group">
+              <div className="absolute -inset-1 bg-gradient-to-r from-amber-500 to-orange-600 rounded-2xl blur opacity-20 group-hover:opacity-30 transition duration-1000 group-hover:duration-200"></div>
+              <form onSubmit={handleSearch} className="relative flex bg-white dark:bg-slate-800 rounded-xl shadow-xl overflow-hidden p-2 ring-1 ring-slate-900/5 dark:ring-white/10">
+                <input
+                  type="text"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="חפש מילה, פתגם או ברכה..."
+                  className="flex-1 bg-transparent px-4 py-3 text-lg outline-none text-slate-800 dark:text-slate-100 placeholder:text-slate-400"
+                  disabled={loading}
+                />
+
+                <div className="flex items-center border-r border-slate-100 dark:border-slate-700 pr-2 gap-1">
+                  <button
+                    type="button"
+                    onMouseDown={startRecording}
+                    onMouseUp={stopRecording}
+                    onTouchStart={startRecording}
+                    onTouchEnd={stopRecording}
+                    onMouseLeave={stopRecording}
+                    className={`p-3 rounded-lg transition-all duration-200 ${isRecording
+                        ? 'bg-red-500 text-white scale-110 shadow-lg shadow-red-500/30'
+                        : 'text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-amber-600'
+                      }`}
+                    title="לחיצה ארוכה להקלטה"
+                  >
+                    <Mic size={24} className={isRecording ? 'animate-pulse' : ''} />
+                  </button>
+
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="bg-amber-600 hover:bg-amber-700 text-white p-3 rounded-lg transition-colors shadow-md shadow-amber-500/20 disabled:opacity-50"
+                  >
+                    {loading ? <Loader2 className="animate-spin" size={24} /> : <Search size={24} />}
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            {isRecording && (
+              <div className="text-red-500 font-medium animate-pulse text-sm">
+                מקליט... דברו בקול ברור
+              </div>
+            )}
+
+            {/* Progressive Loading Feedback */}
+            {loading && (
+              <div className="text-indigo-600 dark:text-indigo-400 font-medium animate-pulse text-sm mt-0 text-center flex items-center justify-center gap-2">
+                <span>{loadingMessage}</span>
+              </div>
+            )}
+
+            {error && (
+              <div className="w-full p-4 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 rounded-xl text-red-600 dark:text-red-300 text-center animate-in fade-in slide-in-from-top-4">
+                {error}
+              </div>
+            )}
+
+            {/* Results */}
+            {result && !loading && (
+              <div className="w-full animate-in slide-in-from-bottom-8 duration-500">
+                <ResultCard entry={result} />
+              </div>
+            )}
+
+            {/* History */}
+            <HistoryPanel
+              history={history}
+              onClear={clearHistory}
+              onSelect={(item) => {
+                setQuery(item.term);
+                setResult(item);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+            />
+
+            {/* Dictionary Hero */}
+            {!result && history.length === 0 && !loading && (
+              <div className="mt-8 text-center max-w-lg mx-auto">
+                <div className="inline-flex justify-center items-center p-4 bg-amber-50 dark:bg-amber-900/20 rounded-full mb-6 text-amber-600 dark:text-amber-500">
+                  <HeartHandshake size={32} />
+                </div>
+                <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-3">
+                  המילון שיאפשר לך לדבר עם סבתא
+                </h2>
+                <p className="text-slate-500 dark:text-slate-400 leading-relaxed">
+                  השפה שלנו היא הזיכרון שלנו. הקלידו מילה או השתמשו בהקלטה כדי לגלות את העושר של השפה הג'והורית, לשמר את הניבים השונים ולהתחבר מחדש למסורת.
+                </p>
+                <div className="mt-6 flex flex-wrap gap-3 justify-center text-sm text-slate-400">
+                  {dialects.map(d => (
+                    <span key={d.id}>• {d.description.split(' ')[0]}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          /* --- TUTOR MODE --- */
+          <div className="w-full animate-in slide-in-from-right duration-300">
+            <TutorMode />
+          </div>
+        )}
+
+      </main>
+
+      {/* Modals */}
+      <ContributeModal isOpen={isContributeOpen} onClose={() => setIsContributeOpen(false)} user={user} />
+      <AboutModal isOpen={isAboutOpen} onClose={() => setIsAboutOpen(false)} />
+      {isAdminOpen && user && <AdminDashboard user={user} onClose={() => setIsAdminOpen(false)} />}
+      <AuthModal
+        isOpen={isAuthModalOpen}
+        onClose={() => setIsAuthModalOpen(false)}
+        onSuccess={(u) => { setUser(u); setIsAuthModalOpen(false); }}
+      />
+      {user && (
+        <ProfileModal
+          isOpen={isProfileModalOpen}
+          onClose={() => setIsProfileModalOpen(false)}
+          user={user}
+          onUpdate={(updated) => setUser(updated)}
+        />
+      )}
+
+    </div>
+  );
+}
+
+export default App;
