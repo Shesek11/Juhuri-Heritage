@@ -10,7 +10,10 @@ router.get('/', async (req, res) => {
         res.json({ dialects });
     } catch (err) {
         console.error('Get dialects error:', err);
-        res.status(500).json({ error: 'שגיאה בטעינת ניבים' });
+        res.status(500).json({
+            error: 'שגיאה בטעינת ניבים',
+            details: err.message
+        });
     }
 });
 
