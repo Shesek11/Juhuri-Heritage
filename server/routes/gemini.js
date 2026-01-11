@@ -135,15 +135,19 @@ router.post('/search', async (req, res) => {
             return res.json({ entry: cached, cached: true });
         }
 
+        if (!process.env.GEMINI_API_KEY) {
+            throw new Error("GEMINI_API_KEY is missing in server environment");
+        }
+
         // Call Gemini
         const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash-preview-05-20",
+            model: "gemini-2.0-flash-exp", // Fallback to a stable model if preview fails
             contents: query,
             config: {
                 systemInstruction: DICTIONARY_SYSTEM_INSTRUCTION,
                 responseMimeType: "application/json",
                 responseSchema: dictionarySchema,
-                thinkingConfig: { thinkingBudget: 0 },
+                // thinkingConfig: { thinkingBudget: 0 }, // Removed thinking config for stability testing
             },
         });
 
@@ -160,7 +164,10 @@ router.post('/search', async (req, res) => {
         res.json({ entry: result, cached: false });
     } catch (err) {
         console.error('Gemini search error:', err);
-        res.status(500).json({ error: 'שגיאה בחיפוש AI' });
+        res.status(500).json({
+            error: 'שגיאה בחיפוש AI',
+            details: err.message
+        });
     }
 });
 
