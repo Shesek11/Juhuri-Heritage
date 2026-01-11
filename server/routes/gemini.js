@@ -115,22 +115,25 @@ const saveToCache = async (queryHash, queryText, response) => {
 
 /**
  * Executes a Gemini API call using native fetch with automatic model fallback.
+ * Optimized with timeout, temperature, and token limits.
  */
 async function callGemini(contentsParts, systemInstruction, responseSchema) {
     if (!API_KEY) throw new Error("GEMINI_API_KEY is missing");
 
     let lastError = null;
+    const TIMEOUT_MS = 10000; // 10 second timeout per model
 
     for (const model of MODELS) {
         try {
-            // console.log(`Attempting Gemini model: ${model}`); // Debug logging if needed
             const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${API_KEY}`;
 
             const body = {
                 contents: Array.isArray(contentsParts) ? contentsParts : [{ parts: [{ text: contentsParts }] }],
                 generationConfig: {
                     responseMimeType: "application/json",
-                    responseSchema: responseSchema
+                    responseSchema: responseSchema,
+                    temperature: 0,        // Faster, more consistent responses
+                    maxOutputTokens: 2048  // Limit output size for speed
                 }
             };
 
@@ -138,25 +141,39 @@ async function callGemini(contentsParts, systemInstruction, responseSchema) {
                 body.systemInstruction = { parts: [{ text: systemInstruction }] };
             }
 
-            const response = await fetch(url, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(body)
-            });
+            // Create AbortController for timeout
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                // If it's a 404 (Model not found), try next model.
-                // If it's 429 (Quota), might also want to try next model or fail.
-                throw new Error(errorData?.error?.message || `HTTP ${response.status}`);
+            try {
+                const response = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body),
+                    signal: controller.signal
+                });
+
+                clearTimeout(timeoutId);
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData?.error?.message || `HTTP ${response.status}`);
+                }
+
+                const data = await response.json();
+                const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+                if (!text) throw new Error("Empty response from Gemini");
+
+                return JSON.parse(text); // Success!
+
+            } catch (fetchErr) {
+                clearTimeout(timeoutId);
+                if (fetchErr.name === 'AbortError') {
+                    throw new Error(`Timeout after ${TIMEOUT_MS}ms`);
+                }
+                throw fetchErr;
             }
-
-            const data = await response.json();
-            const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
-
-            if (!text) throw new Error("Empty response from Gemini");
-
-            return JSON.parse(text); // Success!
 
         } catch (err) {
             // console.warn(`Model ${model} failed: ${err.message}`);
