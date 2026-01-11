@@ -141,7 +141,7 @@ router.post('/search', async (req, res) => {
 
         // Call Gemini
         const response = await ai.models.generateContent({
-            model: "gemini-3.0-flash", // Fallback to a stable model if preview fails
+            model: "gemini-1.5-flash", // Fallback to a stable model if preview fails
             contents: query,
             config: {
                 systemInstruction: DICTIONARY_SYSTEM_INSTRUCTION,
@@ -181,7 +181,7 @@ router.post('/search-audio', async (req, res) => {
         }
 
         const response = await ai.models.generateContent({
-            model: "gemini-3.0-flash",
+            model: "gemini-1.5-flash",
             contents: {
                 parts: [
                     {
@@ -288,7 +288,7 @@ Current Config: Dialect=${config?.dialect || 'Quba'}, Level=${config?.level || '
         }));
 
         const chat = ai.chats.create({
-            model: "gemini-3.0-flash",
+            model: "gemini-1.5-flash",
             history: historyParts,
             config: {
                 systemInstruction: TUTOR_INSTRUCTION,
@@ -339,7 +339,7 @@ Include a mix of multiple_choice, flashcards, and translations.
 Ensure audioText contains ONLY the Juhuri word/sentence.`;
 
         const response = await ai.models.generateContent({
-            model: "gemini-3.0-flash",
+            model: "gemini-1.5-flash",
             contents: prompt,
             config: {
                 responseMimeType: "application/json",
@@ -370,7 +370,7 @@ Ensure strictly accurate Juhuri translations (Quba dialect preferred unless spec
 Format as a JSON array of DictionaryEntry objects.`;
 
         const response = await ai.models.generateContent({
-            model: "gemini-3.0-flash",
+            model: "gemini-1.5-flash",
             contents: prompt,
             config: {
                 systemInstruction: DICTIONARY_SYSTEM_INSTRUCTION,

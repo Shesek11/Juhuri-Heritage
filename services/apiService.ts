@@ -21,7 +21,9 @@ const request = async (endpoint: string, options: RequestInit = {}) => {
     if (!response.ok) {
         const error = await response.json().catch(() => ({ error: 'שגיאת שרת' }));
         const errorMessage = error.details ? `${error.error}: ${error.details}` : (error.error || `HTTP ${response.status}`);
-        console.error('API Error Details:', error);
+        if (response.status !== 401) {
+            console.error('API Error Details:', error);
+        }
         throw new Error(errorMessage);
     }
 
