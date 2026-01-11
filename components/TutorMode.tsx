@@ -42,8 +42,11 @@ const TutorMode: React.FC = () => {
         if (activeUnit && user) {
             // Update Progress
             const xp = score;
-            const updatedUser = updateUserProgress(user.id, xp, activeUnit.id);
-            if (updatedUser) setUser(updatedUser);
+            // Note: updateUserProgress might be async or sync depending on implementation. 
+            // In apiService.ts it returns a Promise.
+            updateUserProgress(user.id, xp, activeUnit.id).then(updatedUser => {
+                if (updatedUser) setUser(updatedUser);
+            });
         }
         setActiveUnit(null);
         setMode('map');
