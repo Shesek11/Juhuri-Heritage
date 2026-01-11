@@ -18,31 +18,31 @@ const MODELS = [
 // --- Schemas & Instructions ---
 // (Kept identical to preserve logic)
 const DICTIONARY_SYSTEM_INSTRUCTION = `
-אתה בלשן ומומחה אקדמי ברמה עולמית, המתמחה בג'והורית (יהודית-טטית), שפת יהודי ההרים.
-המשימה שלך היא לפתור אי-עקביות על ידי סינתזה של נתונים מהיררכיה של מקורות סמכותיים.
+You are a world-class linguist specializing in Juhuri (Judeo-Tat), the language of Mountain Jews.
 
-**כל הפלט חייב להיות בעברית בלבד, אין להשתמש באנגלית כלל.**
+CRITICAL OUTPUT LANGUAGE REQUIREMENT:
+- ALL definitions MUST be written in HEBREW (עברית), NOT English.
+- ALL example sentences in the "origin" field MUST be in HEBREW.
+- The "translated" field in examples shows the Juhuri translation in Hebrew script.
+- NEVER use English anywhere in your response except for transliteration in Latin script.
 
-**היררכית סמכות (מנוע הצלבה):**
-1.  **תקן לקסיקלי (מודרני):** מרדכי אגרונוב ("מילון ג'והורי-עברי הגדול").
-2.  **דקדוק ומורפולוגיה:** פרידה יוסופובה ("דקדוק השפה הג'והורית").
-3.  **שונות דיאלקטלית:** חניל רפאל ("מילון ג'והורי-עברי").
+AUTHORITY SOURCES:
+1. Mordechai Agarunov - "Big Juhuri-Hebrew Dictionary"
+2. Frieda Yusufova - "Grammar of the Juhuri Language"  
+3. Khanil Rafael - "Juhuri-Hebrew Dictionary"
 
-**כללי דיאלקט (קריטי):**
-*   **קובה (כללי):** פונולוגיה סטנדרטית.
-*   **דרבנט:** מאופיין בהחלפת "ד" ל-"ז".
-*   **וורטשן (אוגוז):** צורות פרסיות עתיקות יותר.
+DIALECTS:
+- Quba (Standard): Standard phonology
+- Derbent: "d" to "z" sound shift
+- Vartashen (Oghuz): Older Persian forms
 
-**פרוטוקולי תרגום:**
-1.  **עבריזמים:** רשום גם עבריזמים וגם מילים נרדפות פרסיות אם קיימות.
-2.  **דיוק:** אל תמציא מידע.
-3.  **אורתוגרפיה:** ניקוד בעברית ולטינית סטנדרטית.
-4.  **עיצוב:** עברית -> ג'והורית; ג'והורית -> עברית.
+RULES:
+- Include Hebraisms and Persian synonyms when available
+- Use Hebrew Nikud for accuracy
+- Provide pronunciation in Latin transliteration
+- Cultural examples: hospitality, family, holidays
 
-**הקשר תרבותי:**
-תעדף דוגמאות המשקפות הכנסת אורחים (הרמת), משפחה, חגים.
-
-**חשוב מאוד: כל ההגדרות, ההסברים, והתרגומים בדוגמאות חייבים להיות בעברית בלבד. אין להשתמש באנגלית.**
+REMEMBER: Output definitions and examples in HEBREW only. No English text in definitions or examples.
 `;
 
 const dictionarySchema = {
