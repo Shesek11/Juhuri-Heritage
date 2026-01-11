@@ -48,34 +48,40 @@ const DICTIONARY_SYSTEM_INSTRUCTION = `
 const dictionarySchema = {
     type: "OBJECT",
     properties: {
-        term: { type: "STRING" },
-        detectedLanguage: { type: "STRING", enum: ["Hebrew", "Juhuri", "English"] },
+        term: { type: "STRING", description: "המילה או הביטוי שנחפש" },
+        detectedLanguage: { type: "STRING", enum: ["עברית", "ג'והורית", "אנגלית"], description: "השפה שזוהתה בקלט" },
         translations: {
             type: "ARRAY",
+            description: "תרגומים לפי דיאלקטים",
             items: {
                 type: "OBJECT",
                 properties: {
-                    dialect: { type: "STRING" },
-                    hebrew: { type: "STRING" },
-                    latin: { type: "STRING" },
-                    cyrillic: { type: "STRING" },
+                    dialect: { type: "STRING", description: "שם הדיאלקט בעברית" },
+                    hebrew: { type: "STRING", description: "התרגום בכתב עברי" },
+                    latin: { type: "STRING", description: "התרגום בתעתיק לטיני" },
+                    cyrillic: { type: "STRING", description: "התרגום בכתב קירילי" },
                 },
                 required: ["dialect", "hebrew", "latin", "cyrillic"],
             },
         },
-        definitions: { type: "ARRAY", items: { type: "STRING" } },
+        definitions: {
+            type: "ARRAY",
+            items: { type: "STRING" },
+            description: "הגדרות ופירושים בעברית בלבד"
+        },
         examples: {
             type: "ARRAY",
+            description: "דוגמאות שימוש - כל הטקסט בעברית",
             items: {
                 type: "OBJECT",
                 properties: {
-                    origin: { type: "STRING" },
-                    translated: { type: "STRING" },
-                    transliteration: { type: "STRING" },
+                    origin: { type: "STRING", description: "המשפט המקורי בעברית" },
+                    translated: { type: "STRING", description: "התרגום לג'והורית בעברית" },
+                    transliteration: { type: "STRING", description: "תעתיק לטיני" },
                 },
             },
         },
-        pronunciationGuide: { type: "STRING" }
+        pronunciationGuide: { type: "STRING", description: "מדריך הגייה בעברית" }
     },
     required: ["term", "detectedLanguage", "translations", "definitions", "examples"],
 };
