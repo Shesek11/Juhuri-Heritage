@@ -9,10 +9,9 @@ const CACHE_DURATION = 7 * 24 * 60 * 60; // 7 days
 
 // Models to try in order of preference
 const MODELS = [
-    "gemini-3.0-flash",           // Primary
-    "gemini-2.5-flash",           // First fallback
-    "gemini-2.0-flash-exp",       // Experimental fallback
-    "gemini-1.5-flash"            // Stable fallback
+    "gemini-2.5-flash-preview-05-20",  // Latest 2.5 Flash
+    "gemini-2.0-flash",                // Stable 2.0
+    "gemini-1.5-flash-latest"          // Stable fallback
 ];
 
 // --- Schemas & Instructions ---
@@ -127,7 +126,7 @@ async function callGemini(contentsParts, systemInstruction, responseSchema) {
     if (!API_KEY) throw new Error("GEMINI_API_KEY is missing");
 
     let lastError = null;
-    const TIMEOUT_MS = 10000; // 10 second timeout per model
+    const TIMEOUT_MS = 30000; // 30 second timeout per model
 
     for (const model of MODELS) {
         try {
