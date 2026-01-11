@@ -495,12 +495,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                                 {new Date(log.timestamp).toLocaleString('he-IL')}
                                             </td>
                                             <td className="p-4">
-                                                <span className={`text-[10px] px-2 py-0.5 rounded-full border font-bold ${log.type.includes('DELETED') || log.type.includes('REJECTED') ? 'bg-red-50 text-red-600 border-red-200' :
-                                                    log.type.includes('APPROVED') ? 'bg-green-50 text-green-600 border-green-200' :
-                                                        log.type.includes('LOGIN') ? 'bg-blue-50 text-blue-600 border-blue-200' :
+                                                <span className={`text-[10px] px-2 py-0.5 rounded-full border font-bold ${log.type?.includes('DELETED') || log.type?.includes('REJECTED') ? 'bg-red-50 text-red-600 border-red-200' :
+                                                    log.type?.includes('APPROVED') ? 'bg-green-50 text-green-600 border-green-200' :
+                                                        log.type?.includes('LOGIN') ? 'bg-blue-50 text-blue-600 border-blue-200' :
                                                             'bg-slate-100 text-slate-600 border-slate-200'
                                                     }`}>
-                                                    {log.type}
+                                                    {log.type || 'UNKNOWN'}
                                                 </span>
                                             </td>
                                             <td className="p-4 font-bold flex items-center gap-2">
