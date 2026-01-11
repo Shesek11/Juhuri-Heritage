@@ -9,9 +9,9 @@ const CACHE_DURATION = 7 * 24 * 60 * 60; // 7 days
 
 // Models to try in order of preference
 const MODELS = [
-    "gemini-2.5-flash-preview-05-20",  // Latest 2.5 Flash
-    "gemini-2.0-flash",                // Stable 2.0
-    "gemini-1.5-flash-latest"          // Stable fallback
+    "gemini-3-flash-preview",          // Gemini 3 Flash (latest)
+    "gemini-2.5-flash-preview-05-20",  // Fallback 2.5
+    "gemini-2.0-flash"                 // Stable fallback
 ];
 
 // --- Schemas & Instructions ---
