@@ -3,10 +3,8 @@ const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const path = require('path');
 
-// Load environment variables (in development)
-if (process.env.NODE_ENV !== 'production') {
-    require('dotenv').config();
-}
+// Load environment variables
+require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
