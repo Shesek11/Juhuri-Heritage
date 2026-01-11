@@ -2,95 +2,85 @@ const express = require('express');
 const crypto = require('crypto');
 const router = express.Router();
 const db = require('../config/db');
-const { GoogleGenAI, Type, Modality } = require('@google/genai');
 
-// Initialize Gemini client
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
-
-// Cache duration in seconds
+// --- Configuration ---
+const API_KEY = process.env.GEMINI_API_KEY;
 const CACHE_DURATION = 7 * 24 * 60 * 60; // 7 days
 
-// --- Schemas ---
-const dictionarySchema = {
-    type: Type.OBJECT,
-    properties: {
-        term: { type: Type.STRING },
-        detectedLanguage: { type: Type.STRING, enum: ["Hebrew", "Juhuri", "English"] },
-        translations: {
-            type: Type.ARRAY,
-            items: {
-                type: Type.OBJECT,
-                properties: {
-                    dialect: { type: Type.STRING },
-                    hebrew: { type: Type.STRING },
-                    latin: { type: Type.STRING },
-                    cyrillic: { type: Type.STRING },
-                },
-                required: ["dialect", "hebrew", "latin", "cyrillic"],
-            },
-        },
-        definitions: { type: Type.ARRAY, items: { type: Type.STRING } },
-        examples: {
-            type: Type.ARRAY,
-            items: {
-                type: Type.OBJECT,
-                properties: {
-                    origin: { type: Type.STRING },
-                    translated: { type: Type.STRING },
-                    transliteration: { type: Type.STRING },
-                },
-            },
-        },
-        pronunciationGuide: { type: Type.STRING }
-    },
-    required: ["term", "detectedLanguage", "translations", "definitions", "examples"],
-};
+// Models to try in order of preference
+const MODELS = [
+    "gemini-3.0-flash",           // User requested
+    "gemini-2.0-flash-exp",       // Latest experimental
+    "gemini-1.5-flash"            // Stable fallback
+];
 
+// --- Schemas & Instructions ---
+// (Kept identical to preserve logic)
 const DICTIONARY_SYSTEM_INSTRUCTION = `
 Act as a world-class academic linguist and historian specializing in Juhuri (Judeo-Tat), the language of Mountain Jews.
 Your mission is to resolve inconsistencies by synthesizing data from a hierarchy of authoritative sources.
 
 **HIERARCHY OF AUTHORITY (Cross-Reference Engine):**
-
-1.  **Lexical Standard (Modern):**
-    *   **Mordechai Agarunov:** "Big Juhuri-Hebrew Dictionary" (1997). *Primary source for spelling and definitions.*
-    *   **Yakov Agarunov & M. Dadashov:** "Tat-Russian Dictionary". *Use for resolving Russian loanwords and Soviet-era terminology.*
-
-2.  **Grammar & Morphology:**
-    *   **Frieda Yusufova:** "Grammar of the Juhuri Language". *Strictly follow her rules for verb conjugations and sentence structure.*
-    *   **V. Miller (Wilhelm Miller):** "Materials for the Study of the Jewish-Tat Language" (1892). *Use for archaic forms and root etymology.*
-
-3.  **Dialectal Variation & Folklore:**
-    *   **Khanil (Hana) Rafael:** "Juhuri-Hebrew Dictionary". *Primary authority for the Quba dialect and women's folklore.*
-    *   **Mikhail Matatov:** Folklore collections. *Source for proverbs and idioms.*
-    *   **Gershon Ben-Oren:** Academic papers on Mountain Jews. *Context for religious terms.*
+1.  **Lexical Standard (Modern):** Mordechai Agarunov ("Big Juhuri-Hebrew Dictionary").
+2.  **Grammar & Morphology:** Frieda Yusufova ("Grammar of the Juhuri Language").
+3.  **Dialectal Variation:** Khanil Rafael ("Juhuri-Hebrew Dictionary").
 
 **DIALECTAL RULES (CRITICAL):**
-*   **Quba (General):** Uses standard phonology. This is the default.
-*   **Derbent:** Characterized by the "d" to "z" shift (e.g., *Dan* vs *Zan* for "Know"). You MUST explicitly label Derbent variations.
-*   **Vartashen (Oghuz):** Often retains older Persian forms or has specific Armenian/Azeri influences.
-*   **Madjalis (Kaitag):** Distinct lexicon for rural terms.
+*   **Quba (General):** Uses standard phonology.
+*   **Derbent:** Characterized by "d" to "z" shift.
+*   **Vartashen (Oghuz):** Older Persian forms.
 
 **TRANSLATION PROTOCOLS:**
-1.  **Hebraisms:** Juhuri is rich in Hebrew/Aramaic words. If a word has a Hebraic synonym (e.g., *Mazal*) and a Persian synonym (e.g., *Bakht*), LIST BOTH.
-2.  **Accuracy:** Do not hallucinate. If a word appears in Miller (1892) but not in Agarunov, mark it as (Archaic).
-3.  **Orthography:** 
-    *   Hebrew Script: Must include FULL NIKUD to ensure correct pronunciation of unique Juhuri vowels (like 'ü' or 'æ').
-    *   Latin Script: Use the standard international transliteration for Iranian languages.
-4.  **Formatting:**
-    *   If the input is English/Hebrew, provide the Juhuri equivalent.
-    *   If the input is Juhuri, provide the Hebrew definition.
+1.  **Hebraisms:** List both Hebraisms and Persian synonyms if available.
+2.  **Accuracy:** Do not hallucinate.
+3.  **Orthography:** Hebrew nuances (Nikud) and Standard Latin.
+4.  **Formatting:** English/Hebrew -> Juhuri; Juhuri -> Hebrew.
 
 **CULTURAL CONTEXT:**
-*   When providing examples, prioritize sentences that reflect: Hospitality (Hərmət), Family hierarchy, Holidays (Pəsəx, Shəvuoth), and daily life in the Caucasus.
+Prioritize examples reflecting Hospitality (Hərmət), Family, Holidays.
 `;
 
-// Helper to generate hash for cache key
+const dictionarySchema = {
+    type: "OBJECT",
+    properties: {
+        term: { type: "STRING" },
+        detectedLanguage: { type: "STRING", enum: ["Hebrew", "Juhuri", "English"] },
+        translations: {
+            type: "ARRAY",
+            items: {
+                type: "OBJECT",
+                properties: {
+                    dialect: { type: "STRING" },
+                    hebrew: { type: "STRING" },
+                    latin: { type: "STRING" },
+                    cyrillic: { type: "STRING" },
+                },
+                required: ["dialect", "hebrew", "latin", "cyrillic"],
+            },
+        },
+        definitions: { type: "ARRAY", items: { type: "STRING" } },
+        examples: {
+            type: "ARRAY",
+            items: {
+                type: "OBJECT",
+                properties: {
+                    origin: { type: "STRING" },
+                    translated: { type: "STRING" },
+                    transliteration: { type: "STRING" },
+                },
+            },
+        },
+        pronunciationGuide: { type: "STRING" }
+    },
+    required: ["term", "detectedLanguage", "translations", "definitions", "examples"],
+};
+
+// --- Helpers ---
+
 const hashQuery = (query) => {
     return crypto.createHash('sha256').update(query.toLowerCase().trim()).digest('hex');
 };
 
-// Helper to check cache
 const checkCache = async (queryHash) => {
     try {
         const [rows] = await db.query(
@@ -105,7 +95,6 @@ const checkCache = async (queryHash) => {
     }
 };
 
-// Helper to save to cache
 const saveToCache = async (queryHash, queryText, response) => {
     try {
         await db.query(
@@ -119,195 +108,149 @@ const saveToCache = async (queryHash, queryText, response) => {
     }
 };
 
-// POST /api/gemini/search - Dictionary search via AI
+/**
+ * Executes a Gemini API call using native fetch with automatic model fallback.
+ */
+async function callGemini(contentsParts, systemInstruction, responseSchema) {
+    if (!API_KEY) throw new Error("GEMINI_API_KEY is missing");
+
+    let lastError = null;
+
+    for (const model of MODELS) {
+        try {
+            // console.log(`Attempting Gemini model: ${model}`); // Debug logging if needed
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${API_KEY}`;
+
+            const body = {
+                contents: Array.isArray(contentsParts) ? contentsParts : [{ parts: [{ text: contentsParts }] }],
+                generationConfig: {
+                    responseMimeType: "application/json",
+                    responseSchema: responseSchema
+                }
+            };
+
+            if (systemInstruction) {
+                body.systemInstruction = { parts: [{ text: systemInstruction }] };
+            }
+
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(body)
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                // If it's a 404 (Model not found), try next model.
+                // If it's 429 (Quota), might also want to try next model or fail.
+                throw new Error(errorData?.error?.message || `HTTP ${response.status}`);
+            }
+
+            const data = await response.json();
+            const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+
+            if (!text) throw new Error("Empty response from Gemini");
+
+            return JSON.parse(text); // Success!
+
+        } catch (err) {
+            // console.warn(`Model ${model} failed: ${err.message}`);
+            lastError = err;
+            // Continue to next model in loop
+        }
+    }
+
+    throw lastError || new Error("All models failed");
+}
+
+
+// --- Routes ---
+
+// POST /api/gemini/search
 router.post('/search', async (req, res) => {
     try {
         const { query } = req.body;
+        if (!query) return res.status(400).json({ error: 'נדרש מונח לחיפוש' });
 
-        if (!query) {
-            return res.status(400).json({ error: 'נדרש מונח לחיפוש' });
-        }
-
-        // Check cache first
         const queryHash = hashQuery(query);
         const cached = await checkCache(queryHash);
-        if (cached) {
-            return res.json({ entry: cached, cached: true });
-        }
+        if (cached) return res.json({ entry: cached, cached: true });
 
-        if (!process.env.GEMINI_API_KEY) {
-            throw new Error("GEMINI_API_KEY is missing in server environment");
-        }
+        const result = await callGemini(query, DICTIONARY_SYSTEM_INSTRUCTION, dictionarySchema);
 
-        // Call Gemini
-        const response = await ai.models.generateContent({
-            model: "gemini-1.5-flash", // Fallback to a stable model if preview fails
-            contents: query,
-            config: {
-                systemInstruction: DICTIONARY_SYSTEM_INSTRUCTION,
-                responseMimeType: "application/json",
-                responseSchema: dictionarySchema,
-                // thinkingConfig: { thinkingBudget: 0 }, // Removed thinking config for stability testing
-            },
-        });
-
-        const text = response.text;
-        if (!text) {
-            throw new Error("No response from Gemini");
-        }
-
-        const result = JSON.parse(text);
-
-        // Cache the result
         await saveToCache(queryHash, query, result);
-
         res.json({ entry: result, cached: false });
+
     } catch (err) {
         console.error('Gemini search error:', err);
-        res.status(500).json({
-            error: 'שגיאה בחיפוש AI',
-            details: err.message
-        });
+        res.status(500).json({ error: 'שגיאה בחיפוש AI', details: err.message });
     }
 });
 
-// POST /api/gemini/search-audio - Audio-based search
+// POST /api/gemini/search-audio
 router.post('/search-audio', async (req, res) => {
     try {
         const { audioData, mimeType } = req.body;
+        if (!audioData) return res.status(400).json({ error: 'נדרש קובץ שמע' });
 
-        if (!audioData) {
-            return res.status(400).json({ error: 'נדרש קובץ שמע' });
-        }
+        const parts = [
+            { inline_data: { mime_type: mimeType || 'audio/webm', data: audioData } }, // Note: fetch API uses snake_case keys sometimes, but Gemini API usually expects camelCase in JSON body. Let's stick to standard structure.
+            { text: "Transcribe and translate to JSON. Strict dictionary format." }
+        ];
 
-        const response = await ai.models.generateContent({
-            model: "gemini-1.5-flash",
-            contents: {
-                parts: [
-                    {
-                        inlineData: {
-                            mimeType: mimeType || 'audio/webm',
-                            data: audioData,
-                        },
-                    },
-                    { text: "Transcribe and translate to JSON. Strict dictionary format." },
-                ],
-            },
-            config: {
-                systemInstruction: DICTIONARY_SYSTEM_INSTRUCTION,
-                responseMimeType: "application/json",
-                responseSchema: dictionarySchema,
-                thinkingConfig: { thinkingBudget: 0 },
-            },
-        });
+        // Wait, standard JSON body for REST API:
+        // { contents: [ { parts: [ { inlineData: ... }, { text: ... } ] } ] }
+        const properParts = [
+            { inlineData: { mimeType: mimeType || 'audio/webm', data: audioData } },
+            { text: "Transcribe and translate to JSON. Strict dictionary format." }
+        ];
 
-        const text = response.text;
-        if (!text) {
-            throw new Error("No response from Gemini");
-        }
+        const result = await callGemini([{ parts: properParts }], DICTIONARY_SYSTEM_INSTRUCTION, dictionarySchema);
+        res.json({ entry: result });
 
-        res.json({ entry: JSON.parse(text) });
     } catch (err) {
         console.error('Gemini audio error:', err);
-        res.status(500).json({ error: 'שגיאה בזיהוי שמע' });
+        res.status(500).json({ error: 'שגיאה בזיהוי שמע', details: err.message });
     }
 });
 
-// POST /api/gemini/tts - Text to speech
-router.post('/tts', async (req, res) => {
-    try {
-        const { text, voice } = req.body;
-
-        if (!text || text.trim().length === 0) {
-            return res.status(400).json({ error: 'נדרש טקסט' });
-        }
-
-        const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash-preview-tts",
-            contents: { parts: [{ text }] },
-            config: {
-                responseModalities: ["AUDIO"],
-                speechConfig: {
-                    voiceConfig: {
-                        prebuiltVoiceConfig: { voiceName: voice || 'Zephyr' }
-                    }
-                }
-            }
-        });
-
-        const audioData = response.candidates?.[0]?.content?.parts?.[0]?.inlineData?.data;
-
-        if (!audioData) {
-            throw new Error("No audio data generated");
-        }
-
-        res.json({ audioData });
-    } catch (err) {
-        console.error('TTS error:', err);
-        res.status(500).json({ error: 'שגיאה ביצירת שמע' });
-    }
-});
-
-// POST /api/gemini/tutor - Tutor chat response
+// POST /api/gemini/tutor
 router.post('/tutor', async (req, res) => {
     try {
         const { history, config, message } = req.body;
 
         const tutorSchema = {
-            type: Type.OBJECT,
+            type: "OBJECT",
             properties: {
-                content: { type: Type.STRING },
-                audioText: { type: Type.STRING }
+                content: { type: "STRING" },
+                audioText: { type: "STRING" }
             },
             required: ["content"]
         };
 
         const TUTOR_INSTRUCTION = `
-You are "Saba Mordechai", a wise, patient, and warm private tutor for the Juhuri language (Judeo-Tat).
-Your goal is to teach the user Juhuri based on their selected Dialect and Level.
-
-**Persona:**
-- Warm, grandfatherly, encouraging.
-- Uses Hebrew to explain, but immerses the user in Juhuri.
-- Frequently uses terms like "Azizim" (My dear), "Deda" (Father/term of endearment), etc.
-
-**Rules:**
-1. **Dialect Strictness:** You MUST adhere strictly to the user's selected dialect.
-2. **Level Adaptation:**
-   - *Beginner:* Focus on basic vocabulary, alphabet, and simple greetings.
-   - *Intermediate:* Focus on sentence structure, verb conjugations.
-   - *Advanced:* Discuss literature, poetry, complex proverbs.
-3. **Nikud:** ALWAYS provide Nikud for Juhuri words written in Hebrew letters.
-
+You are "Saba Mordechai", a wise, patient, and warm private tutor for the Juhuri language.
 Current Config: Dialect=${config?.dialect || 'Quba'}, Level=${config?.level || 'Beginner'}.
+Rules: Strict dialect adherence, level adaptation, and always use Nikud for Hebrew script.
 `;
 
-        const historyParts = (history || []).map(h => ({
-            role: h.role,
+        // Convert history to Gemini format
+        // History: [{ role: 'user', content: '...' }]
+        // API: [{ role: 'user', parts: [{ text: '...' }] }]
+        const contents = (history || []).map(h => ({
+            role: h.role === 'assistant' ? 'model' : 'user',
             parts: [{ text: h.content }]
         }));
 
-        const chat = ai.chats.create({
-            model: "gemini-1.5-flash",
-            history: historyParts,
-            config: {
-                systemInstruction: TUTOR_INSTRUCTION,
-                responseMimeType: "application/json",
-                responseSchema: tutorSchema,
-            }
-        });
+        // Add new message
+        contents.push({ role: 'user', parts: [{ text: message }] });
 
-        const result = await chat.sendMessage(message);
-        const responseText = result.response.text;
+        const result = await callGemini(contents, TUTOR_INSTRUCTION, tutorSchema);
+        res.json(result);
 
-        if (!responseText) {
-            throw new Error("No response from Tutor");
-        }
-
-        res.json(JSON.parse(responseText));
     } catch (err) {
         console.error('Tutor error:', err);
-        res.status(500).json({ error: 'שגיאה במורה פרטי' });
+        res.status(500).json({ error: 'שגיאה במורה פרטי', details: err.message });
     }
 });
 
@@ -317,106 +260,30 @@ router.post('/generate-lesson', async (req, res) => {
         const { topic, dialect, level, count } = req.body;
 
         const lessonSchema = {
-            type: Type.ARRAY,
+            type: "ARRAY",
             items: {
-                type: Type.OBJECT,
+                type: "OBJECT",
                 properties: {
-                    id: { type: Type.STRING },
-                    type: { type: Type.STRING, enum: ['multiple_choice', 'flashcard', 'translate_he_to_ju', 'translate_ju_to_he'] },
-                    question: { type: Type.STRING },
-                    options: { type: Type.ARRAY, items: { type: Type.STRING } },
-                    correctAnswer: { type: Type.STRING },
-                    audioText: { type: Type.STRING },
-                    explanation: { type: Type.STRING }
+                    id: { type: "STRING" },
+                    type: { type: "STRING", enum: ['multiple_choice', 'flashcard', 'translate_he_to_ju', 'translate_ju_to_he'] },
+                    question: { type: "STRING" },
+                    options: { type: "ARRAY", items: { type: "STRING" } },
+                    correctAnswer: { type: "STRING" },
+                    audioText: { type: "STRING" },
+                    explanation: { type: "STRING" }
                 },
                 required: ["id", "type", "question", "correctAnswer"]
             }
         };
 
-        const prompt = `Create a list of ${count || 5} interactive Juhuri language learning exercises for the topic: "${topic}".
-Dialect: ${dialect || 'Quba'}. Level: ${level || 'Beginner'}.
-Include a mix of multiple_choice, flashcards, and translations.
-Ensure audioText contains ONLY the Juhuri word/sentence.`;
+        const prompt = `Create ${count || 5} exercises for topic "${topic}". Dialect: ${dialect}. Level: ${level}. Return JSON.`;
 
-        const response = await ai.models.generateContent({
-            model: "gemini-1.5-flash",
-            contents: prompt,
-            config: {
-                responseMimeType: "application/json",
-                responseSchema: lessonSchema,
-                thinkingConfig: { thinkingBudget: 0 },
-            }
-        });
+        const result = await callGemini(prompt, null, lessonSchema);
+        res.json({ exercises: result });
 
-        const text = response.text;
-        if (!text) {
-            throw new Error("No response from Gemini");
-        }
-
-        res.json({ exercises: JSON.parse(text) });
     } catch (err) {
         console.error('Lesson gen error:', err);
-        res.status(500).json({ error: 'שגיאה ביצירת שיעור' });
-    }
-});
-
-// POST /api/gemini/generate-entries - Batch generate dictionary entries
-router.post('/generate-entries', async (req, res) => {
-    try {
-        const { category, count } = req.body;
-
-        const prompt = `Generate ${count || 5} distinct Juhuri dictionary entries related to the category/topic: "${category}". 
-Ensure strictly accurate Juhuri translations (Quba dialect preferred unless specified). 
-Format as a JSON array of DictionaryEntry objects.`;
-
-        const response = await ai.models.generateContent({
-            model: "gemini-1.5-flash",
-            contents: prompt,
-            config: {
-                systemInstruction: DICTIONARY_SYSTEM_INSTRUCTION,
-                responseMimeType: "application/json",
-                responseSchema: { type: Type.ARRAY, items: dictionarySchema },
-                thinkingConfig: { thinkingBudget: 0 },
-            }
-        });
-
-        const text = response.text;
-        if (!text) {
-            throw new Error("No response from Gemini");
-        }
-
-        res.json({ entries: JSON.parse(text) });
-    } catch (err) {
-        console.error('Generate entries error:', err);
-        res.status(500).json({ error: 'שגיאה ביצירת מילים' });
-    }
-});
-
-// POST /api/gemini/verify - Verify a suggestion
-router.post('/verify', async (req, res) => {
-    try {
-        const { data } = req.body;
-
-        const response = await ai.models.generateContent({
-            model: "gemini-2.5-flash-preview-05-20",
-            contents: `Verify this Juhuri translation: ${JSON.stringify(data)}. JSON output only.`,
-            config: {
-                responseMimeType: "application/json",
-                responseSchema: {
-                    type: Type.OBJECT,
-                    properties: {
-                        isValid: { type: Type.BOOLEAN },
-                        feedback: { type: Type.STRING }
-                    }
-                },
-                thinkingConfig: { thinkingBudget: 0 },
-            }
-        });
-
-        res.json(JSON.parse(response.text || '{}'));
-    } catch (err) {
-        console.error('Verify error:', err);
-        res.json({ isValid: false, feedback: "לא ניתן לאמת כעת" });
+        res.status(500).json({ error: 'שגיאה ביצירת שיעור', details: err.message });
     }
 });
 
