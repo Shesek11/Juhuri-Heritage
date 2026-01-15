@@ -2,7 +2,61 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const router = express.Router();
 const db = require('../config/db');
-const { authenticate, requireAdmin } = require('../middleware/auth');
+const { authenticate, requireAdmin, generateToken } = require('../middleware/auth');
+
+// POST /api/users/sync - Sync Auth0 user with local DB
+router.post('/sync', async (req, res) => {
+    try {
+        const { id, email, name, picture } = req.body;
+
+        if (!id || !email) {
+            return res.status(400).json({ error: 'Missing required user fields' });
+        }
+
+        // Upsert user: Insert if new, update name/email/last_login if exists
+        // Note: We do NOT update 'role' here to prevent resetting admins to users
+        await db.query(`
+            INSERT INTO users (id, email, name, role, joined_at, last_login, contributions_count, xp, level, current_streak)
+            VALUES (?, ?, ?, 'user', NOW(), NOW(), 0, 0, 1, 0)
+            ON DUPLICATE KEY UPDATE
+            name = VALUES(name),
+            email = VALUES(email),
+            last_login = NOW()
+        `, [id, email, name || email.split('@')[0]]);
+
+        // Fetch the full user object (including role, xp, etc.) to return to client
+        const [users] = await db.query(
+            `SELECT id, email, name, role, joined_at, contributions_count, xp, level, current_streak 
+             FROM users WHERE id = ?`,
+            [id]
+        );
+
+        if (users.length > 0) {
+            const user = users[0];
+            // Format joined_at to timestamp if needed by frontend, or keep as ISO string
+            // Frontend expects number for joinedAt? Let's check App.tsx types.
+            // App.tsx uses Date.now() which is number. DB returns Date object.
+
+            // Generate token for the user
+            const token = generateToken(user);
+
+            res.json({
+                success: true,
+                user: {
+                    ...user,
+                    joinedAt: new Date(user.joined_at).getTime(),
+                    lastLoginDate: Date.now()
+                },
+                token
+            });
+        } else {
+            res.status(500).json({ error: 'Failed to retrieve synced user' });
+        }
+    } catch (err) {
+        console.error('User sync error:', err);
+        res.status(500).json({ error: 'Sync failed' });
+    }
+});
 
 // GET /api/users - Get all users (Admin only)
 router.get('/', authenticate, requireAdmin, async (req, res) => {

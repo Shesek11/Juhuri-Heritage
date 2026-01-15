@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
-import { Database, Save, Trash2, FileSpreadsheet, Search, CheckCircle, XCircle, Sparkles, Loader2, Download, AlertCircle, Plus, Eraser, MapPin, Globe, LogOut, Users as UsersIcon, ShieldAlert, KeyRound, Activity, UserCheck } from 'lucide-react';
+import { Database, Save, Trash2, FileSpreadsheet, Search, CheckCircle, XCircle, Sparkles, Loader2, Download, AlertCircle, Plus, Eraser, MapPin, Globe, LogOut, Users as UsersIcon, ShieldAlert, KeyRound, Activity, UserCheck, ToggleLeft } from 'lucide-react';
+import FeatureFlagsPanel from './admin/FeatureFlagsPanel';
 import { getCustomEntries, addCustomEntry, deleteCustomEntry, approveEntry, downloadTemplate, getDialects, addDialect, deleteDialect, getSystemLogs } from '../services/storageService';
 import { generateBatchEntries } from '../services/geminiService';
 import { getAllUsers, updateUserRole, deleteUser, updateUser } from '../services/authService';
@@ -17,7 +18,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
     const isAdmin = user.role === 'admin';
 
     const [entries, setEntries] = useState<DictionaryEntry[]>([]);
-    const [activeTab, setActiveTab] = useState<'table' | 'pending' | 'import' | 'dialects' | 'users' | 'logs'>('table');
+    const [activeTab, setActiveTab] = useState<'table' | 'pending' | 'import' | 'dialects' | 'users' | 'logs' | 'features'>('table');
     const [searchFilter, setSearchFilter] = useState('');
 
     // Dialect Management State
@@ -310,6 +311,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                             <FileSpreadsheet size={18} /> עורך טבלאי
                         </button>
                     )}
+                    {isAdmin && (
+                        <button onClick={() => setActiveTab('features')} className={`flex items-center gap-2 px-4 py-2 font-medium transition-colors whitespace-nowrap ${activeTab === 'features' ? 'text-purple-600 border-b-2 border-purple-600' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}>
+                            <ToggleLeft size={18} /> ניהול פיצ'רים
+                        </button>
+                    )}
                 </div>
 
                 {/* Tab: Active Table */}
@@ -599,6 +605,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                 <button onClick={handleClearGrid} className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 px-3 py-2 rounded hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors text-sm font-medium"><Eraser size={16} /> נקה טבלה</button>
                             </div>
                             <button onClick={handleSaveGrid} className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-2.5 rounded-lg font-bold shadow-lg shadow-green-600/20 transition-all"><Save size={18} /> שמור טבלה למאגר</button>
+                        </div>
+                    </div>
+                )}
+
+                {/* Tab: Feature Flags (Admin Only) */}
+                {activeTab === 'features' && isAdmin && (
+                    <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full">
+                        <div className="bg-white dark:bg-slate-800 rounded-lg shadow border border-slate-200 dark:border-slate-700 p-6">
+                            <FeatureFlagsPanel />
                         </div>
                     </div>
                 )}

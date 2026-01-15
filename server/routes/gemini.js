@@ -4,18 +4,21 @@ const router = express.Router();
 const db = require('../config/db');
 
 // --- Configuration ---
-const API_KEY = process.env.GEMINI_API_KEY;
+// Fallback to hardcoded key if .env fails (Temporary fix for dev)
+const API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyDM8O-LwfYIh46R-ZgeCy-a3GxV4uX4Rqw';
 const CACHE_DURATION = 7 * 24 * 60 * 60; // 7 days
 
-// Models to try in order of preference
+// Models to try in order of preference (User requested 2.5 Flash)
 const MODELS = [
-    "gemini-3-flash-preview",          // Gemini 3 Flash (latest)
-    "gemini-2.5-flash-preview-05-20",  // Fallback 2.5
-    "gemini-2.0-flash"                 // Stable fallback
+    "gemini-2.5-flash",       // Newest & Fastest
+    "gemini-2.0-flash",       // Stable High-Perf fallback
+    "gemini-1.5-flash"        // Reliable fallback
 ];
 
+console.log('🔑 Gemini Route Init. Key Length:', API_KEY ? API_KEY.length : 0);
+console.log('🤖 Active Models:', MODELS);
+
 // --- Schemas & Instructions ---
-// (Kept identical to preserve logic)
 const DICTIONARY_SYSTEM_INSTRUCTION = `
 You are a world-class linguist specializing in Juhuri (Judeo-Tat), the language of Mountain Jews.
 
@@ -126,7 +129,7 @@ async function callGemini(contentsParts, systemInstruction, responseSchema) {
     if (!API_KEY) throw new Error("GEMINI_API_KEY is missing");
 
     let lastError = null;
-    const TIMEOUT_MS = 30000; // 30 second timeout per model
+    const TIMEOUT_MS = 15000; // 15s timeout per model
 
     for (const model of MODELS) {
         try {
@@ -181,7 +184,7 @@ async function callGemini(contentsParts, systemInstruction, responseSchema) {
             }
 
         } catch (err) {
-            // console.warn(`Model ${model} failed: ${err.message}`);
+            console.warn(`⚠️ Model ${model} failed: ${err.message}`);
             lastError = err;
             // Continue to next model in loop
         }
@@ -220,13 +223,6 @@ router.post('/search-audio', async (req, res) => {
         const { audioData, mimeType } = req.body;
         if (!audioData) return res.status(400).json({ error: 'נדרש קובץ שמע' });
 
-        const parts = [
-            { inline_data: { mime_type: mimeType || 'audio/webm', data: audioData } }, // Note: fetch API uses snake_case keys sometimes, but Gemini API usually expects camelCase in JSON body. Let's stick to standard structure.
-            { text: "Transcribe and translate to JSON. Strict dictionary format." }
-        ];
-
-        // Wait, standard JSON body for REST API:
-        // { contents: [ { parts: [ { inlineData: ... }, { text: ... } ] } ] }
         const properParts = [
             { inlineData: { mimeType: mimeType || 'audio/webm', data: audioData } },
             { text: "Transcribe and translate to JSON. Strict dictionary format." }
@@ -261,15 +257,11 @@ Current Config: Dialect=${config?.dialect || 'Quba'}, Level=${config?.level || '
 Rules: Strict dialect adherence, level adaptation, and always use Nikud for Hebrew script.
 `;
 
-        // Convert history to Gemini format
-        // History: [{ role: 'user', content: '...' }]
-        // API: [{ role: 'user', parts: [{ text: '...' }] }]
         const contents = (history || []).map(h => ({
             role: h.role === 'assistant' ? 'model' : 'user',
             parts: [{ text: h.content }]
         }));
 
-        // Add new message
         contents.push({ role: 'user', parts: [{ text: message }] });
 
         const result = await callGemini(contents, TUTOR_INSTRUCTION, tutorSchema);
@@ -311,6 +303,32 @@ router.post('/generate-lesson', async (req, res) => {
     } catch (err) {
         console.error('Lesson gen error:', err);
         res.status(500).json({ error: 'שגיאה ביצירת שיעור', details: err.message });
+    }
+});
+
+// POST /api/gemini/tts
+router.post('/tts', async (req, res) => {
+    try {
+        const { text } = req.body;
+        if (!text) return res.status(400).json({ error: 'Text required' });
+
+        // Detect if text is Hebrew/Juhuri (he) or English. Default to 'iw' (Hebrew) for Juhuri.
+        const lang = /[א-ת]/.test(text) ? 'iw' : 'en';
+
+        // Use Google Translate TTS (unofficial API)
+        const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(text)}&tl=${lang}&client=tw-ob`;
+
+        const response = await fetch(url);
+        if (!response.ok) throw new Error(`TTS Fetch failed: ${response.statusText}`);
+
+        const arrayBuffer = await response.arrayBuffer();
+        const base64 = Buffer.from(arrayBuffer).toString('base64');
+
+        res.json({ audioData: base64 });
+
+    } catch (err) {
+        console.error('TTS error:', err);
+        res.status(500).json({ error: 'שגיאת שרת ב-TTS', details: err.message });
     }
 });
 
