@@ -3,6 +3,48 @@ const bcrypt = require('bcryptjs');
 const router = express.Router();
 const db = require('../config/db');
 const { authenticate, generateToken } = require('../middleware/auth');
+const passport = require('passport');
+
+// GET /api/auth/google
+// Starts the Google Login Flow
+router.get('/google', passport.authenticate('google', { scope: ['profile', 'email'] }));
+
+// GET /api/auth/google/callback
+// Google redirects back here
+router.get('/google/callback',
+    passport.authenticate('google', { session: false, failureRedirect: '/login?error=failed' }),
+    async (req, res) => {
+        // Successful authentication
+        const user = req.user;
+
+        // Generate our own JWT
+        const safeUser = {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            role: user.role,
+            joinedAt: user.joined_at,
+            contributionsCount: user.contributions_count,
+            xp: user.xp,
+            level: user.level,
+            currentStreak: user.current_streak
+        };
+        const token = generateToken(safeUser);
+
+        // Set cookie
+        res.cookie('token', token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            maxAge: 7 * 24 * 60 * 60 * 1000
+        });
+
+        // Redirect to frontend (home page)
+        // We use window.location.origin in dev, but here we just redirect relative to root '/'
+        res.redirect('/?login=success');
+    }
+);
+
 
 // POST /api/auth/register
 router.post('/register', async (req, res) => {

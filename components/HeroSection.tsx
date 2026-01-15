@@ -4,9 +4,10 @@ import { HeartHandshake } from 'lucide-react';
 interface HeroSectionProps {
     children: React.ReactNode;
     dialects?: { id: string; description?: string }[];
+    showBottomContent?: boolean;
 }
 
-const HeroSection: React.FC<HeroSectionProps> = ({ children, dialects = [] }) => {
+const HeroSection: React.FC<HeroSectionProps> = ({ children, dialects = [], showBottomContent = true }) => {
     const [scrollY, setScrollY] = useState(0);
 
     useEffect(() => {
@@ -19,7 +20,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ children, dialects = [] }) =>
     }, []);
 
     return (
-        <div className="relative w-full min-h-[900px] flex flex-col items-center justify-start pt-24 overflow-hidden font-rubik">
+        <div className="relative w-full min-h-[40dvh] flex flex-col items-center justify-start pt-24 overflow-hidden font-rubik">
 
             {/* --- PARALLAX BACKGROUND LAYERS --- */}
 
@@ -94,79 +95,81 @@ const HeroSection: React.FC<HeroSectionProps> = ({ children, dialects = [] }) =>
             </div>
 
             {/* Bottom Section - Grandmother Tributes & Important Text */}
-            <div className="relative z-20 w-full max-w-5xl px-4 mt-16 mb-24 pb-20">
+            {showBottomContent && (
+                <div className="relative z-20 w-full max-w-5xl px-4 mt-16 mb-24 pb-20">
 
-                {/* Desktop: 3-column layout (grandma | text | grandma). Mobile: text first, then grandmas row */}
-                <div className="grid grid-cols-1 md:grid-cols-[auto_1fr_auto] items-center justify-items-center gap-6 md:gap-8">
+                    {/* Desktop: 3-column layout (grandma | text | grandma). Mobile: text first, then grandmas row */}
+                    <div className="grid grid-cols-1 md:grid-cols-[auto_1fr_auto] items-center justify-items-center gap-6 md:gap-8">
 
-                    {/* Grandma 1 - LEFT on desktop, hidden on mobile */}
-                    <div className="hidden md:block relative group w-28 h-36 md:w-32 md:h-40 transform -rotate-3 hover:rotate-0 transition-all duration-500 flex-shrink-0">
-                        {/* Placeholder Photo */}
-                        <div className="absolute inset-3 overflow-hidden rounded-[45%] z-0 bg-teal-100">
-                            <img src="/images/grandma1.jpg" alt="Mountain Jewish Grandmother" className="w-full h-full object-cover opacity-90 sepia-[.3] hover:sepia-0 transition-all duration-500" />
-                        </div>
-                        {/* Vintage Frame Border - Gold/Amber aligns with Green */}
-                        <div className="absolute inset-0 rounded-[45%] border-4 border-amber-500/60 shadow-lg z-10 pointer-events-none" style={{
-                            boxShadow: '0 0 0 3px rgba(180,130,70,0.2), 0 4px 20px rgba(0,0,0,0.3), inset 0 0 10px rgba(180,130,70,0.1)'
-                        }}></div>
-                    </div>
-
-                    {/* Important Text Block - CENTER */}
-                    <div className="text-center max-w-lg animate-in fade-in duration-1000 delay-300">
-                        <div className="inline-flex justify-center items-center p-3 bg-teal-900/30 backdrop-blur-sm rounded-full mb-4 text-amber-400 border border-teal-500/20">
-                            <HeartHandshake size={28} />
-                        </div>
-                        <h2 className="text-xl md:text-2xl font-bold text-white mb-3 drop-shadow-md">
-                            המילון שיאפשר לך לדבר עם סבתא
-                        </h2>
-                        <p className="text-sm md:text-base text-teal-50/90 leading-relaxed drop-shadow-sm font-medium">
-                            השפה שלנו היא הזיכרון שלנו. הקלידו מילה או השתמשו בהקלטה כדי לגלות את העושר של השפה הג'והורית, לשמר את הניבים השונים ולהתחבר מחדש למסורת.
-                        </p>
-                        {dialects.length > 0 && (
-                            <div className="mt-4 flex flex-wrap gap-2 justify-center text-xs text-teal-200/80">
-                                {dialects.map(d => (
-                                    <span key={d.id} className="px-2 py-1 bg-teal-950/40 rounded-full border border-teal-500/30">• {d.description?.split(' ')[0]}</span>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Grandma 2 - RIGHT on desktop, hidden on mobile */}
-                    <div className="hidden md:block relative group w-28 h-36 md:w-32 md:h-40 transform rotate-3 hover:rotate-0 transition-all duration-500 flex-shrink-0">
-                        {/* Placeholder Photo */}
-                        <div className="absolute inset-3 overflow-hidden rounded-[45%] z-0 bg-teal-100">
-                            <img src="/images/grandma2.jpg" alt="Mountain Jewish Grandmother" className="w-full h-full object-cover opacity-90 sepia-[.3] hover:sepia-0 transition-all duration-500" />
-                        </div>
-                        {/* Vintage Frame Border */}
-                        <div className="absolute inset-0 rounded-[45%] border-4 border-amber-500/60 shadow-lg z-10 pointer-events-none" style={{
-                            boxShadow: '0 0 0 3px rgba(180,130,70,0.2), 0 4px 20px rgba(0,0,0,0.3), inset 0 0 10px rgba(180,130,70,0.1)'
-                        }}></div>
-                    </div>
-
-                    {/* Mobile: Both grandmas in a row BELOW text */}
-                    <div className="md:hidden col-span-1 flex flex-row justify-center items-center gap-6">
-                        {/* Grandma 1 Mobile */}
-                        <div className="relative group w-24 h-32 transform -rotate-3 hover:rotate-0 transition-all duration-500 flex-shrink-0">
-                            <div className="absolute inset-2 overflow-hidden rounded-[45%] z-0 bg-teal-100">
+                        {/* Grandma 1 - LEFT on desktop, hidden on mobile */}
+                        <div className="hidden md:block relative group w-28 h-36 md:w-32 md:h-40 transform -rotate-3 hover:rotate-0 transition-all duration-500 flex-shrink-0">
+                            {/* Placeholder Photo */}
+                            <div className="absolute inset-3 overflow-hidden rounded-[45%] z-0 bg-teal-100">
                                 <img src="/images/grandma1.jpg" alt="Mountain Jewish Grandmother" className="w-full h-full object-cover opacity-90 sepia-[.3] hover:sepia-0 transition-all duration-500" />
                             </div>
+                            {/* Vintage Frame Border - Gold/Amber aligns with Green */}
                             <div className="absolute inset-0 rounded-[45%] border-4 border-amber-500/60 shadow-lg z-10 pointer-events-none" style={{
                                 boxShadow: '0 0 0 3px rgba(180,130,70,0.2), 0 4px 20px rgba(0,0,0,0.3), inset 0 0 10px rgba(180,130,70,0.1)'
                             }}></div>
                         </div>
-                        {/* Grandma 2 Mobile */}
-                        <div className="relative group w-24 h-32 transform rotate-3 hover:rotate-0 transition-all duration-500 flex-shrink-0">
-                            <div className="absolute inset-2 overflow-hidden rounded-[45%] z-0 bg-teal-100">
+
+                        {/* Important Text Block - CENTER */}
+                        <div className="text-center max-w-lg animate-in fade-in duration-1000 delay-300">
+                            <div className="inline-flex justify-center items-center p-3 bg-teal-900/30 backdrop-blur-sm rounded-full mb-4 text-amber-400 border border-teal-500/20">
+                                <HeartHandshake size={28} />
+                            </div>
+                            <h2 className="text-xl md:text-2xl font-bold text-white mb-3 drop-shadow-md">
+                                המילון שיאפשר לך לדבר עם סבתא
+                            </h2>
+                            <p className="text-sm md:text-base text-teal-50/90 leading-relaxed drop-shadow-sm font-medium">
+                                השפה שלנו היא הזיכרון שלנו. הקלידו מילה או השתמשו בהקלטה כדי לגלות את העושר של השפה הג'והורית, לשמר את הניבים השונים ולהתחבר מחדש למסורת.
+                            </p>
+                            {dialects.length > 0 && (
+                                <div className="mt-4 flex flex-wrap gap-2 justify-center text-xs text-teal-200/80">
+                                    {dialects.map(d => (
+                                        <span key={d.id} className="px-2 py-1 bg-teal-950/40 rounded-full border border-teal-500/30">• {d.description?.split(' ')[0]}</span>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Grandma 2 - RIGHT on desktop, hidden on mobile */}
+                        <div className="hidden md:block relative group w-28 h-36 md:w-32 md:h-40 transform rotate-3 hover:rotate-0 transition-all duration-500 flex-shrink-0">
+                            {/* Placeholder Photo */}
+                            <div className="absolute inset-3 overflow-hidden rounded-[45%] z-0 bg-teal-100">
                                 <img src="/images/grandma2.jpg" alt="Mountain Jewish Grandmother" className="w-full h-full object-cover opacity-90 sepia-[.3] hover:sepia-0 transition-all duration-500" />
                             </div>
+                            {/* Vintage Frame Border */}
                             <div className="absolute inset-0 rounded-[45%] border-4 border-amber-500/60 shadow-lg z-10 pointer-events-none" style={{
                                 boxShadow: '0 0 0 3px rgba(180,130,70,0.2), 0 4px 20px rgba(0,0,0,0.3), inset 0 0 10px rgba(180,130,70,0.1)'
                             }}></div>
                         </div>
-                    </div>
 
+                        {/* Mobile: Both grandmas in a row BELOW text */}
+                        <div className="md:hidden col-span-1 flex flex-row justify-center items-center gap-6">
+                            {/* Grandma 1 Mobile */}
+                            <div className="relative group w-24 h-32 transform -rotate-3 hover:rotate-0 transition-all duration-500 flex-shrink-0">
+                                <div className="absolute inset-2 overflow-hidden rounded-[45%] z-0 bg-teal-100">
+                                    <img src="/images/grandma1.jpg" alt="Mountain Jewish Grandmother" className="w-full h-full object-cover opacity-90 sepia-[.3] hover:sepia-0 transition-all duration-500" />
+                                </div>
+                                <div className="absolute inset-0 rounded-[45%] border-4 border-amber-500/60 shadow-lg z-10 pointer-events-none" style={{
+                                    boxShadow: '0 0 0 3px rgba(180,130,70,0.2), 0 4px 20px rgba(0,0,0,0.3), inset 0 0 10px rgba(180,130,70,0.1)'
+                                }}></div>
+                            </div>
+                            {/* Grandma 2 Mobile */}
+                            <div className="relative group w-24 h-32 transform rotate-3 hover:rotate-0 transition-all duration-500 flex-shrink-0">
+                                <div className="absolute inset-2 overflow-hidden rounded-[45%] z-0 bg-teal-100">
+                                    <img src="/images/grandma2.jpg" alt="Mountain Jewish Grandmother" className="w-full h-full object-cover opacity-90 sepia-[.3] hover:sepia-0 transition-all duration-500" />
+                                </div>
+                                <div className="absolute inset-0 rounded-[45%] border-4 border-amber-500/60 shadow-lg z-10 pointer-events-none" style={{
+                                    boxShadow: '0 0 0 3px rgba(180,130,70,0.2), 0 4px 20px rgba(0,0,0,0.3), inset 0 0 10px rgba(180,130,70,0.1)'
+                                }}></div>
+                            </div>
+                        </div>
+
+                    </div>
                 </div>
-            </div>
+            )}
         </div>
     );
 };

@@ -1,7 +1,7 @@
 {
   "name": "juhuri-heritage",
   "private": true,
-  "version": "2.0.0",
+  "version": "2.0.1",
   "scripts": {
     "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
     "dev:client": "vite",
@@ -22,11 +22,13 @@
     "lucide-react": "^0.562.0",
     "multer": "^2.0.2",
     "mysql2": "^3.11.5",
+    "passport": "^0.7.0",
+    "passport-google-oauth20": "^2.0.0",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "sharp": "^0.34.5",
     "leaflet": "^1.9.4",
-    "react-leaflet": "^4.2.1",
+    "react-leaflet": "^5.0.0",
     "reactflow": "^11.10.1",
     "dagre": "^0.8.5"
   },

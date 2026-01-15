@@ -31,18 +31,20 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess, reaso
         setLoading(true);
         setError('');
         try {
+            if (connection === 'google-oauth2') {
+                // Direct redirect to our backend
+                window.location.href = `http://localhost:3002/api/auth/google`;
+                return;
+            }
+
+            // For others, keep legacy Auth0 for now until migrated
             await loginWithPopup({
                 authorizationParams: { connection }
             });
             onClose();
-            if (onSuccess) {
-                // onSuccess will be handled by the main App's useEffect that watches isAuthenticated
-            }
         } catch (err: any) {
             console.error("Login failed", err);
             setError('ההתחברות נכשלה או בוטלה.');
-            // Fallback: If popup fails (browsers block it sometimes), suggest redirect
-            // loginWithRedirect({ authorizationParams: { connection } });
         } finally {
             setLoading(false);
         }
@@ -94,30 +96,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess, reaso
                                 המשך עם Google
                             </button>
 
-                            <button
-                                onClick={() => handleSocialLogin('facebook')}
-                                className="w-full py-2.5 px-4 bg-[#1877F2] hover:bg-[#166fe5] text-white rounded-lg flex items-center justify-center gap-3 font-medium transition-all shadow-sm"
-                            >
-                                <Facebook size={20} fill="currentColor" />
-                                המשך עם Facebook
-                            </button>
-
-                            <div className="grid grid-cols-2 gap-3">
-                                <button
-                                    onClick={() => handleSocialLogin('instagram')}
-                                    className="py-2.5 px-4 bg-gradient-to-tr from-[#FD1D1D] to-[#833AB4] hover:opacity-90 text-white rounded-lg flex items-center justify-center gap-2 font-medium transition-all shadow-sm"
-                                >
-                                    <Instagram size={20} />
-                                    Instagram
-                                </button>
-                                <button
-                                    onClick={() => handleSocialLogin('tiktok')}
-                                    className="py-2.5 px-4 bg-black hover:bg-gray-900 text-white rounded-lg flex items-center justify-center gap-2 font-medium transition-all shadow-sm"
-                                >
-                                    <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 1 0 7.75 6.16V9.67a6.62 6.62 0 0 0 2.53 1.6v-3.6a4.8 4.8 0 0 1-1.05-1.01z" /></svg>
-                                    TikTok
-                                </button>
-                            </div>
+                            {/* Social Providers Placeholder - Removed */}
                         </div>
                     </div>
 

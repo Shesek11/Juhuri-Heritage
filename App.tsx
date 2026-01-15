@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { useAuth0 } from '@auth0/auth0-react';
+import { useAuth } from './contexts/AuthContext';
 import { DictionaryEntry, HistoryItem, DialectItem, User } from './types';
 import { searchDictionary, searchByAudio } from './services/geminiService';
 import { getDialects } from './services/storageService';
@@ -29,56 +29,13 @@ import { Mic, Search, Scroll, Sun, Moon, Plus, Loader2, HeartHandshake, BookOpen
 const STORAGE_KEY = 'juhuri_history';
 
 function App() {
-  const { loginWithRedirect, logout, user: auth0User, isAuthenticated, isLoading: isAuthLoading } = useAuth0();
+  const { user, login, logout, isAuthenticated, refreshUser } = useAuth();
   const [activeTab, setActiveTab] = useState<'dictionary' | 'tutor' | 'recipes' | 'marketplace' | 'family'>('dictionary');
 
-  // Local User State (Mapped from Auth0 + DB)
-  // Initially null, will be populated once we sync Auth0 user with our DB
-  const [user, setUser] = useState<User | null>(null);
+  // Note: 'user' is now fully managed by AuthContext, no need for local state sync
 
-  // Sync Auth0 User with App User (Backend Sync)
-  useEffect(() => {
-    const syncUser = async () => {
-      if (isAuthenticated && auth0User) {
-        try {
-          // Sync with backend DB
-          const response = await apiService.post<{ user: User; token: string }>('/users/sync', {
-            id: auth0User.sub,
-            email: auth0User.email,
-            name: auth0User.name,
-            picture: auth0User.picture
-          });
 
-          if (response && response.user) {
-            setUser(response.user);
-            if (response.token) {
-              apiService.setToken(response.token);
-            }
-          }
-        } catch (err) {
-          console.error("Failed to sync user with backend:", err);
-          // Fallback to local auth0 data if backend fails (offline mode?)
-          setUser({
-            id: auth0User.sub || 'temp_id',
-            name: auth0User.name || 'User',
-            email: auth0User.email || '',
-            role: 'user',
-            contributionsCount: 0,
-            joinedAt: Date.now(),
-            xp: 0,
-            level: 1,
-            completedUnits: [],
-            currentStreak: 0,
-            lastLoginDate: Date.now()
-          });
-        }
-      } else {
-        setUser(null);
-      }
-    };
 
-    syncUser();
-  }, [isAuthenticated, auth0User]);
 
   // Auth State (UI Modals)
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -257,7 +214,6 @@ function App() {
 
   const handleLogout = () => {
     logout();
-    setUser(null);
     setIsMenuOpen(false);
   };
 
@@ -432,7 +388,7 @@ function App() {
                         <>
                           <div className="h-px bg-slate-100 dark:bg-slate-700 my-1"></div>
                           <button
-                            onClick={() => logout({ logoutParams: { returnTo: window.location.origin } })}
+                            onClick={() => logout()}
                             className="w-full text-right px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
                           >
                             <LogOut size={16} /> יציאה מהמערכת
@@ -456,7 +412,7 @@ function App() {
           /* --- DICTIONARY MODE --- */
           <>
             {/* HERO SECTION */}
-            <HeroSection dialects={dialects}>
+            <HeroSection dialects={dialects} showBottomContent={!result}>
               <div className="w-full relative group">
                 <div className="absolute -inset-1 bg-gradient-to-r from-amber-500 to-orange-600 rounded-2xl blur opacity-20 group-hover:opacity-30 transition duration-1000 group-hover:duration-200"></div>
                 <form onSubmit={handleSearch} className="relative flex bg-white dark:bg-slate-800 rounded-xl shadow-xl overflow-hidden p-2 ring-1 ring-slate-900/5 dark:ring-white/10">
@@ -494,7 +450,21 @@ function App() {
                   </div>
                 </form>
               </div>
-              {/* History Panel moved inside HeroSection for immediate visibility */}
+              {/* Progressive Loading Feedback */}
+              {loading && (
+                <div className="text-white font-medium animate-pulse text-sm mt-4 text-center flex items-center justify-center gap-2">
+                  <span>{loadingMessage}</span>
+                </div>
+              )}
+
+              {/* Error Message */}
+              {error && (
+                <div className="bg-red-500/80 backdrop-blur text-white p-3 rounded-xl text-center animate-in fade-in slide-in-from-top-2 mt-4 mx-auto max-w-lg shadow-lg">
+                  {error}
+                </div>
+              )}
+
+              {/* History Panel */}
               {!result && !loading && (
                 <div className="mt-4 w-full">
                   <HistoryPanel
@@ -511,18 +481,7 @@ function App() {
 
             <div className="w-full max-w-6xl mx-auto px-4 mt-0 relative z-20">
 
-              {isRecording && (
-                <div className="text-red-500 font-medium animate-pulse text-sm">
-                  מקליט... דברו בקול ברור
-                </div>
-              )}
 
-              {/* Progressive Loading Feedback */}
-              {loading && (
-                <div className="text-indigo-600 dark:text-indigo-400 font-medium animate-pulse text-sm mt-0 text-center flex items-center justify-center gap-2">
-                  <span>{loadingMessage}</span>
-                </div>
-              )}
 
               {/* Widgets Grid - Only show if not searching (result is null) and not loading */}
               {!result && !loading && (
@@ -533,12 +492,7 @@ function App() {
                 </div>
               )}
 
-              {/* Error Message */}
-              {error && (
-                <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-4 rounded-xl text-center animate-in fade-in slide-in-from-bottom-4 mt-8">
-                  {error}
-                </div>
-              )}
+
               {/* Results Container */}
               <div className="w-full max-w-2xl mx-auto mt-8">
                 {/* Results */}
@@ -584,7 +538,7 @@ function App() {
       <AuthModal
         isOpen={isAuthModalOpen}
         onClose={() => { setIsAuthModalOpen(false); setAuthModalReason(undefined); }}
-        onSuccess={(u) => { setUser(u); setIsAuthModalOpen(false); setAuthModalReason(undefined); }}
+        onSuccess={(u) => { refreshUser(); setIsAuthModalOpen(false); setAuthModalReason(undefined); }}
         reason={authModalReason}
       />
       {
@@ -593,7 +547,7 @@ function App() {
             isOpen={isProfileModalOpen}
             onClose={() => setIsProfileModalOpen(false)}
             user={user}
-            onUpdate={(updated) => setUser(updated)}
+            onUpdate={(updated) => refreshUser()}
           />
         )
       }
