@@ -4,10 +4,11 @@ const cookieParser = require('cookie-parser');
 const path = require('path');
 
 // Load environment variables
-require('dotenv').config();
+// Load environment variables
+require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3002;
 
 // CORS configuration
 const corsOrigins = process.env.CORS_ORIGINS
@@ -32,6 +33,13 @@ app.use('/api/users', require('./routes/users'));
 app.use('/api/gemini', require('./routes/gemini'));
 app.use('/api/progress', require('./routes/progress'));
 app.use('/api/logs', require('./routes/logs'));
+app.use('/api/comments', require('./routes/comments'));
+app.use('/api/recordings', require('./routes/recordings'));
+app.use('/api/gamification', require('./routes/gamification'));
+app.use('/api/admin/features', require('./routes/features'));
+app.use('/api/recipes', require('./routes/recipes'));
+app.use('/api/marketplace', require('./routes/marketplace'));
+app.use('/api/family', require('./routes/familyTree'));
 
 // Health check endpoint
 const db = require('./config/db');
@@ -69,8 +77,13 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 // Error handling middleware
+// Error handling middleware
 app.use((err, req, res, next) => {
     console.error('Server Error:', err);
+    // Log to file
+    const fs = require('fs');
+    fs.appendFileSync('server_error.log', `${new Date().toISOString()} - ${err.message}\n${err.stack}\n\n`);
+
     res.status(500).json({
         error: 'שגיאת שרת פנימית',
         message: process.env.NODE_ENV === 'development' ? err.message : undefined
@@ -85,6 +98,9 @@ initializeDatabase().then(() => {
         console.log(`🚀 Server running on port ${PORT}`);
         console.log(`📚 Environment: ${process.env.NODE_ENV || 'development'}`);
     });
+}).catch(err => {
+    console.error('Failed to initialize database:', err);
+    process.exit(1);
 });
 
 module.exports = app;

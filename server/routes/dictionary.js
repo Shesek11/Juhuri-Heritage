@@ -322,4 +322,76 @@ router.delete('/entries/:term', authenticate, requireApprover, async (req, res) 
     }
 });
 
+// POST /api/dictionary/entries/:id/like - Toggle like
+router.post('/entries/:id/like', authenticate, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userId = req.user.id;
+
+        // Check availability
+        const [likes] = await db.query('SELECT 1 FROM entry_likes WHERE entry_id = ? AND user_id = ?', [id, userId]);
+
+        if (likes.length > 0) {
+            // Unlike
+            await db.query('DELETE FROM entry_likes WHERE entry_id = ? AND user_id = ?', [id, userId]);
+            res.json({ success: true, liked: false });
+        } else {
+            // Like
+            await db.query('INSERT INTO entry_likes (entry_id, user_id) VALUES (?, ?)', [id, userId]);
+
+            // Optional: Reward XP to creator?
+            // await db.query('UPDATE users u JOIN dictionary_entries de ON u.id = de.contributor_id SET u.xp = u.xp + 5 WHERE de.id = ?', [id]);
+
+            res.json({ success: true, liked: true });
+        }
+    } catch (err) {
+        console.error('Like error:', err);
+        res.status(500).json({ error: 'Action failed' });
+    }
+});
+
+// GET /api/dictionary/entries/:id/comments - Get comments
+router.get('/entries/:id/comments', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const [comments] = await db.query(
+            `SELECT c.*, u.name as user_name 
+             FROM comments c 
+             JOIN users u ON c.user_id = u.id 
+             WHERE c.entry_id = ? 
+             ORDER BY c.created_at ASC`,
+            [id]
+        );
+        res.json({ comments });
+    } catch (err) {
+        console.error('Get comments error:', err);
+        res.status(500).json({ error: 'Failed to load comments' });
+    }
+});
+
+// POST /api/dictionary/entries/:id/comments - Add comment
+router.post('/entries/:id/comments', authenticate, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { content } = req.body;
+
+        if (!content || !content.trim()) {
+            return res.status(400).json({ error: 'Comment cannot be empty' });
+        }
+
+        await db.query(
+            'INSERT INTO comments (entry_id, user_id, content, created_at) VALUES (?, ?, ?, NOW())',
+            [id, req.user.id, content]
+        );
+
+        // Award XP 
+        await db.query('UPDATE users SET xp = xp + 10 WHERE id = ?', [req.user.id]);
+
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Add comment error:', err);
+        res.status(500).json({ error: 'Failed to post comment' });
+    }
+});
+
 module.exports = router;

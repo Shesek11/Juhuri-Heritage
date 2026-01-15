@@ -1,6 +1,7 @@
 // API Client for Juhuri Heritage Backend
 // All API calls go through this service
 
+let authToken: string | null = null;
 const API_BASE = '/api';
 
 // Helper for making API requests
@@ -11,6 +12,7 @@ const request = async (endpoint: string, options: RequestInit = {}) => {
         ...options,
         headers: {
             'Content-Type': 'application/json',
+            ...(authToken ? { 'Authorization': `Bearer ${authToken}` } : {}),
             ...options.headers,
         },
         credentials: 'include', // Include cookies for auth
@@ -184,8 +186,19 @@ export const progressApi = {
         }),
 };
 
+
 // --- Logs API ---
 export const logsApi = {
     get: (limit?: number, eventType?: string) =>
         request(`/logs?limit=${limit || 100}${eventType ? `&eventType=${eventType}` : ''}`),
 };
+
+const apiService = {
+    setToken: (token: string) => { authToken = token; },
+    get: <T>(endpoint: string) => request(endpoint) as Promise<T>,
+    post: <T>(endpoint: string, body?: any) => request(endpoint, { method: 'POST', body: JSON.stringify(body) }) as Promise<T>,
+    put: <T>(endpoint: string, body?: any) => request(endpoint, { method: 'PUT', body: JSON.stringify(body) }) as Promise<T>,
+    delete: <T>(endpoint: string, body?: any) => request(endpoint, { method: 'DELETE', body: body ? JSON.stringify(body) : undefined }) as Promise<T>,
+};
+
+export default apiService;

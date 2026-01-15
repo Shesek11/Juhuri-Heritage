@@ -1,0 +1,290 @@
+// RecipesPage Component
+// Main page for browsing recipes
+
+import React, { useState, useEffect } from 'react';
+import { Search, ChefHat, Plus, Filter, Grid, List, Loader2, RefreshCw } from 'lucide-react';
+import { recipesService, Recipe, RecipeTag, RecipesResponse } from '../services/recipesService';
+import { RecipeCard } from './recipes/RecipeCard';
+import { RecipeWizard } from './recipes/RecipeWizard';
+import { useFeatureFlag } from '../hooks/useFeatureFlag';
+
+type SortOption = 'newest' | 'popular' | 'likes' | 'oldest';
+type ViewMode = 'grid' | 'list';
+
+export const RecipesPage: React.FC = () => {
+    const [recipes, setRecipes] = useState<Recipe[]>([]);
+    const [tags, setTags] = useState<RecipeTag[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [search, setSearch] = useState('');
+    const [selectedTag, setSelectedTag] = useState<number | null>(null);
+    const [sort, setSort] = useState<SortOption>('newest');
+    const [viewMode, setViewMode] = useState<ViewMode>('grid');
+    const [pagination, setPagination] = useState({ page: 1, pages: 1, total: 0 });
+    const [showFilters, setShowFilters] = useState(false);
+    const [isWizardOpen, setIsWizardOpen] = useState(false);
+
+    const { isEnabled: recipesEnabled } = useFeatureFlag('recipes_module');
+
+    const loadRecipes = async (page = 1) => {
+        try {
+            setLoading(true);
+            setError(null);
+
+            const response: RecipesResponse = await recipesService.getRecipes({
+                search: search || undefined,
+                tag: selectedTag || undefined,
+                sort,
+                page,
+                limit: 12
+            });
+
+            setRecipes(response.recipes);
+            setPagination(response.pagination);
+        } catch (err) {
+            console.error('Error loading recipes:', err);
+            setError('שגיאה בטעינת המתכונים');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const loadTags = async () => {
+        try {
+            const tagsData = await recipesService.getRecipeTags();
+            setTags(tagsData);
+        } catch (err) {
+            console.error('Error loading tags:', err);
+        }
+    };
+
+    useEffect(() => {
+        loadTags();
+    }, []);
+
+    useEffect(() => {
+        loadRecipes(1);
+    }, [selectedTag, sort]);
+
+    const handleSearch = (e: React.FormEvent) => {
+        e.preventDefault();
+        loadRecipes(1);
+    };
+
+    const handleRecipeClick = (recipe: Recipe) => {
+        // TODO: Navigate to recipe detail page
+        console.log('Open recipe:', recipe.id);
+    };
+
+    if (!recipesEnabled) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-8">
+                <ChefHat className="w-16 h-16 text-amber-300 mb-4" />
+                <h2 className="text-2xl font-bold text-slate-700 dark:text-slate-300 mb-2">
+                    מודול המתכונים בפיתוח
+                </h2>
+                <p className="text-slate-500 dark:text-slate-400">
+                    המודול יהיה זמין בקרוב. הישארו מעודכנים!
+                </p>
+            </div>
+        );
+    }
+
+    return (
+        <div className="max-w-7xl mx-auto px-4 py-8">
+            {/* Header */}
+            <div className="text-center mb-8">
+                <div className="inline-flex items-center gap-2 px-4 py-2 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-full text-sm font-medium mb-4">
+                    <ChefHat className="w-4 h-4" />
+                    מטבח קווקזי יהודי
+                </div>
+                <h1 className="text-3xl md:text-4xl font-bold text-slate-800 dark:text-white mb-3">
+                    מתכונים מסורתיים
+                </h1>
+                <p className="text-slate-500 dark:text-slate-400 max-w-2xl mx-auto">
+                    אוסף מתכונים אותנטיים מהמטבח הג׳והורי והקווקזי-יהודי.
+                    שמור את המסורת הקולינרית של הקהילה.
+                </p>
+            </div>
+
+            {/* Search & Filters */}
+            <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-md border border-slate-200 dark:border-slate-700 mb-6">
+                <div className="flex flex-col md:flex-row gap-4">
+                    {/* Search */}
+                    <form onSubmit={handleSearch} className="flex-1">
+                        <div className="relative">
+                            <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                            <input
+                                type="text"
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                placeholder="חפש מתכון..."
+                                className="w-full pr-10 pl-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                            />
+                        </div>
+                    </form>
+
+                    {/* Controls */}
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => setShowFilters(!showFilters)}
+                            className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border transition-colors ${showFilters
+                                ? 'bg-amber-100 dark:bg-amber-900/30 border-amber-400 text-amber-700 dark:text-amber-300'
+                                : 'border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'
+                                }`}
+                        >
+                            <Filter className="w-4 h-4" />
+                            סינון
+                        </button>
+
+                        <select
+                            value={sort}
+                            onChange={(e) => setSort(e.target.value as SortOption)}
+                            className="px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300"
+                        >
+                            <option value="newest">חדשים</option>
+                            <option value="popular">פופולריים</option>
+                            <option value="likes">הכי אהובים</option>
+                            <option value="oldest">ישנים</option>
+                        </select>
+
+                        <div className="flex border border-slate-300 dark:border-slate-600 rounded-lg overflow-hidden">
+                            <button
+                                onClick={() => setViewMode('grid')}
+                                className={`p-2.5 ${viewMode === 'grid' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600' : 'text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
+                            >
+                                <Grid className="w-5 h-5" />
+                            </button>
+                            <button
+                                onClick={() => setViewMode('list')}
+                                className={`p-2.5 ${viewMode === 'list' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600' : 'text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
+                            >
+                                <List className="w-5 h-5" />
+                            </button>
+                        </div>
+
+                        <button
+                            onClick={() => loadRecipes(pagination.page)}
+                            className="p-2.5 rounded-lg border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700"
+                        >
+                            <RefreshCw className="w-5 h-5" />
+                        </button>
+                    </div>
+                </div>
+
+                {/* Tag Filters */}
+                {showFilters && tags.length > 0 && (
+                    <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+                        <div className="flex flex-wrap gap-2">
+                            <button
+                                onClick={() => setSelectedTag(null)}
+                                className={`px-3 py-1.5 rounded-full text-sm transition-colors ${selectedTag === null
+                                    ? 'bg-amber-500 text-white'
+                                    : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600'
+                                    }`}
+                            >
+                                הכל
+                            </button>
+                            {tags.map(tag => (
+                                <button
+                                    key={tag.id}
+                                    onClick={() => setSelectedTag(tag.id)}
+                                    className={`px-3 py-1.5 rounded-full text-sm transition-colors ${selectedTag === tag.id
+                                        ? 'bg-amber-500 text-white'
+                                        : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600'
+                                        }`}
+                                >
+                                    {tag.name_hebrew || tag.name}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                )}
+            </div>
+
+            {/* Content */}
+            {loading ? (
+                <div className="flex items-center justify-center py-16">
+                    <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
+                    <span className="mr-3 text-slate-500">טוען מתכונים...</span>
+                </div>
+            ) : error ? (
+                <div className="text-center py-16">
+                    <p className="text-red-500 mb-4">{error}</p>
+                    <button
+                        onClick={() => loadRecipes(1)}
+                        className="px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600"
+                    >
+                        נסה שוב
+                    </button>
+                </div>
+            ) : recipes.length === 0 ? (
+                <div className="text-center py-16">
+                    <ChefHat className="w-16 h-16 text-slate-300 dark:text-slate-600 mx-auto mb-4" />
+                    <h3 className="text-xl font-medium text-slate-600 dark:text-slate-400 mb-2">
+                        לא נמצאו מתכונים
+                    </h3>
+                    <p className="text-slate-500 dark:text-slate-500 mb-6">
+                        נסה לשנות את הסינון או להוסיף מתכון חדש
+                    </p>
+                    <button className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all">
+                        <Plus className="w-5 h-5" />
+                        הוסף מתכון
+                    </button>
+                </div>
+            ) : (
+                <>
+                    {/* Recipe Grid */}
+                    <div className={
+                        viewMode === 'grid'
+                            ? 'grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6'
+                            : 'flex flex-col gap-4'
+                    }>
+                        {recipes.map(recipe => (
+                            <RecipeCard
+                                key={recipe.id}
+                                recipe={recipe}
+                                onClick={() => handleRecipeClick(recipe)}
+                            />
+                        ))}
+                    </div>
+
+                    {/* Pagination */}
+                    {pagination.pages > 1 && (
+                        <div className="flex justify-center gap-2 mt-8">
+                            {Array.from({ length: pagination.pages }, (_, i) => i + 1).map(page => (
+                                <button
+                                    key={page}
+                                    onClick={() => loadRecipes(page)}
+                                    className={`w-10 h-10 rounded-lg font-medium transition-colors ${page === pagination.page
+                                        ? 'bg-amber-500 text-white'
+                                        : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600'
+                                        }`}
+                                >
+                                    {page}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </>
+            )}
+
+            {/* Floating Add Button */}
+            <button
+                onClick={() => setIsWizardOpen(true)}
+                className="fixed bottom-6 left-6 w-14 h-14 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-full shadow-lg hover:shadow-xl flex items-center justify-center transition-all hover:scale-110 z-50"
+            >
+                <Plus className="w-6 h-6" />
+            </button>
+
+            <RecipeWizard
+                isOpen={isWizardOpen}
+                onClose={() => setIsWizardOpen(false)}
+                onSuccess={() => loadRecipes(1)}
+                availableTags={tags}
+            />
+        </div>
+    );
+};
+
+export default RecipesPage;

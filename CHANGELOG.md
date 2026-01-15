@@ -2,6 +2,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.0] - 2026-01-15
+
+### 🍲 Community & Culture Expansion
+Complete transformation into a heritage platform.
+
+### ✨ New Features
+- **Recipes Module**: Community cookbook with ingredients, instructions, and social features (likes, comments).
+- **Marketplace**: "Find near me" map for Juhuri food vendors and restaurants.
+- **Family Tree**: Interactive genealogy builder to map community roots (`reactflow`).
+- **User Profiles**: Enhanced profiles with avatars and activity tracking.
+
+### 🛠️ Technical Improvements
+- **Database**: Added migrations system, user avatars, and robust seed data.
+- **Performance**: Optimized rendering for large family trees.
+- **Visuals**: Premium Dark Mode UI adjustments and improved RTL support.
+
 ## [1.0.0] - 2026-01-12
 
 ### ⭐ Stable Release

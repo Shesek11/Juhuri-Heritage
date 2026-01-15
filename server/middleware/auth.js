@@ -35,6 +35,28 @@ const requireApprover = (req, res, next) => {
     next();
 };
 
+// Flexible role-based access control middleware
+// Usage: requireRole(['admin', 'moderator'])
+const requireRole = (allowedRoles) => {
+    return (req, res, next) => {
+        if (!req.user) {
+            return res.status(401).json({ error: 'נדרשת התחברות' });
+        }
+        if (!allowedRoles.includes(req.user.role)) {
+            return res.status(403).json({ error: 'אין לך הרשאות לפעולה זו' });
+        }
+        next();
+    };
+};
+
+// Middleware to check if user is moderator or admin
+const requireModerator = (req, res, next) => {
+    if (!req.user || (req.user.role !== 'admin' && req.user.role !== 'moderator' && req.user.role !== 'approver')) {
+        return res.status(403).json({ error: 'נדרשות הרשאות מנהל תוכן' });
+    }
+    next();
+};
+
 // Optional authentication - doesn't fail if no token
 const optionalAuth = (req, res, next) => {
     const token = req.cookies?.token || req.headers.authorization?.replace('Bearer ', '');
@@ -68,6 +90,8 @@ module.exports = {
     authenticate,
     requireAdmin,
     requireApprover,
+    requireRole,
+    requireModerator,
     optionalAuth,
     generateToken
 };

@@ -112,7 +112,7 @@ const TutorMode: React.FC = () => {
 
     if (!config) {
         return (
-            <div className="w-full max-w-2xl bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8 border border-slate-200 dark:border-slate-700 font-rubik">
+            <div className="w-full max-w-2xl mx-auto mt-8 bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8 border border-slate-200 dark:border-slate-700 font-rubik">
                 <div className="text-center mb-8">
                     <div className="inline-block p-4 bg-indigo-100 dark:bg-indigo-900/30 rounded-full mb-4 text-indigo-600 dark:text-indigo-400">
                         <GraduationCap size={48} />
@@ -146,7 +146,7 @@ const TutorMode: React.FC = () => {
     // Free Chat View
     if (mode === 'chat') {
         return (
-            <div className="w-full max-w-2xl h-[600px] flex flex-col bg-white dark:bg-slate-800 rounded-2xl shadow-xl overflow-hidden border border-slate-200 dark:border-slate-700 font-rubik">
+            <div className="w-full max-w-2xl mx-auto mt-8 h-[600px] flex flex-col bg-white dark:bg-slate-800 rounded-2xl shadow-xl overflow-hidden border border-slate-200 dark:border-slate-700 font-rubik">
                 <div className="bg-indigo-600 p-4 flex justify-between items-center text-white shadow-md z-10">
                     <div className="flex items-center gap-3">
                         <MessageCircle />
@@ -179,7 +179,7 @@ const TutorMode: React.FC = () => {
 
     // Default: Map View
     return (
-        <div className="w-full max-w-2xl bg-white dark:bg-slate-800 rounded-2xl shadow-xl overflow-hidden border border-slate-200 dark:border-slate-700 font-rubik flex flex-col h-[600px]">
+        <div className="w-full max-w-2xl mx-auto mt-8 bg-white dark:bg-slate-800 rounded-2xl shadow-xl overflow-hidden border border-slate-200 dark:border-slate-700 font-rubik flex flex-col h-[600px]">
             {/* Header Stats */}
             <div className="bg-slate-900 text-white p-4 shadow-md z-10 flex justify-between items-center">
                 <div className="flex items-center gap-3">
