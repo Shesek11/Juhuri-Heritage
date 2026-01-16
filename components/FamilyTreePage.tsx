@@ -15,11 +15,12 @@ import dagre from 'dagre';
 import { familyService, FamilyMember } from '../services/familyService';
 import { useFeatureFlag } from '../hooks/useFeatureFlag';
 import { useAuth } from '../contexts/AuthContext';
-import { User, Plus, TreeDeciduous, Pencil, Heart, Link, UserPlus } from 'lucide-react';
+import { User, Plus, TreeDeciduous, Pencil, Heart, Link, UserPlus, Users } from 'lucide-react';
 import { AddMemberModal } from './family/AddMemberModal';
 import { EditMemberModal } from './family/EditMemberModal';
 import { RelationshipManager } from './family/RelationshipManager';
 import { AddRelativeModal } from './family/AddRelativeModal';
+import { CommunityRequests } from './family/CommunityRequests';
 
 // Types for tree data
 interface TreeData {
@@ -160,6 +161,7 @@ export const FamilyTreePage: React.FC = () => {
     const [addRelativeType, setAddRelativeType] = useState<'parent' | 'child' | 'spouse' | null>(null);
     const [selectedMember, setSelectedMember] = useState<FamilyMember | null>(null);
     const [allMembers, setAllMembers] = useState<FamilyMember[]>([]);
+    const [isCommunityModalOpen, setIsCommunityModalOpen] = useState(false);
 
     useEffect(() => {
         if (isEnabled) {
@@ -355,12 +357,20 @@ export const FamilyTreePage: React.FC = () => {
                         שורשים
                     </h1>
                 </div>
-                <button
-                    onClick={() => setIsAddModalOpen(true)}
-                    className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg hover:bg-emerald-700"
-                >
-                    <Plus size={16} className="inline ml-1" /> הוסף בן משפחה
-                </button>
+                <div className="flex gap-2">
+                    <button
+                        onClick={() => setIsCommunityModalOpen(true)}
+                        className="bg-purple-600 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg hover:bg-purple-700 flex items-center gap-1"
+                    >
+                        <Users size={16} /> בקשות קהילה
+                    </button>
+                    <button
+                        onClick={() => setIsAddModalOpen(true)}
+                        className="bg-emerald-600 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg hover:bg-emerald-700"
+                    >
+                        <Plus size={16} className="inline ml-1" /> הוסף בן משפחה
+                    </button>
+                </div>
             </div>
 
             {/* Legend */}
@@ -462,6 +472,12 @@ export const FamilyTreePage: React.FC = () => {
                     setAddRelativeType(null);
                     setSelectedMember(null);
                 }}
+                onSuccess={loadTree}
+            />
+
+            <CommunityRequests
+                isOpen={isCommunityModalOpen}
+                onClose={() => setIsCommunityModalOpen(false)}
                 onSuccess={loadTree}
             />
         </div>
