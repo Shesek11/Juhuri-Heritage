@@ -1,29 +1,41 @@
-import React, { useRef, useEffect, useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { FamDiagram } from 'basicprimitivesreact';
-import { FamConfig, FamItemConfig, Enabled, PageFitMode, GroupByType, ConnectorType, ElbowType, LineType, Colors, AnnotationType } from 'basicprimitives';
+import {
+    FamConfig,
+    Enabled,
+    PageFitMode,
+    GroupByType,
+    ConnectorType,
+    ElbowType,
+    LineType,
+    NavigationMode,
+    OrientationType
+} from 'basicprimitives';
 import { familyService, FamilyMember } from '../services/familyService';
 import { useAuth } from '../contexts/AuthContext';
-import { Plus, Search, Loader2 } from 'lucide-react';
+import { Plus, Search, Loader2, ZoomIn, ZoomOut, Maximize } from 'lucide-react';
 import { AddMemberModal } from './family/AddMemberModal';
 import { EditMemberModal } from './family/EditMemberModal';
 import { AddRelativeModal } from './family/AddRelativeModal';
 
-// Convert our data to BasicPrimitives format
-interface BPItem extends FamItemConfig {
+// BasicPrimitives item interface
+interface FamilyItem {
     id: number;
     parents: number[];
+    spouses: number[];
     title: string;
     description: string;
-    image: string;
+    image: string | null;
     itemTitleColor: string;
-    member?: FamilyMember;
+    groupTitle?: string;
 }
 
 export function FamilyTreePage() {
     const { user } = useAuth();
     const [loading, setLoading] = useState(true);
-    const [items, setItems] = useState<BPItem[]>([]);
+    const [items, setItems] = useState<FamilyItem[]>([]);
     const [allMembers, setAllMembers] = useState<FamilyMember[]>([]);
+    const [cursorItem, setCursorItem] = useState<number | null>(null);
 
     // Modals
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -34,7 +46,6 @@ export function FamilyTreePage() {
 
     // Search
     const [searchQuery, setSearchQuery] = useState('');
-    const [highlightedItem, setHighlightedItem] = useState<number | null>(null);
 
     const loadTree = useCallback(async () => {
         try {
@@ -42,40 +53,47 @@ export function FamilyTreePage() {
             const data = await familyService.getTreeData();
             setAllMembers(data.members || []);
 
-            // Build parent map from relationships
+            // Build parent map: child_id -> [parent_ids]
             const parentMap = new Map<number, number[]>();
-            (data.parentChild || []).forEach(pc => {
+            (data.parentChild || []).forEach((pc: { parent_id: number; child_id: number }) => {
                 const existing = parentMap.get(pc.child_id) || [];
                 existing.push(pc.parent_id);
                 parentMap.set(pc.child_id, existing);
             });
 
-            // Build partner map (for visual grouping, not hierarchy)
-            const partnerMap = new Map<number, number[]>();
-            (data.partnerships || []).forEach(p => {
-                const p1Partners = partnerMap.get(p.person1_id) || [];
-                p1Partners.push(p.person2_id);
-                partnerMap.set(p.person1_id, p1Partners);
+            // Build spouse map: person_id -> [spouse_ids]
+            const spouseMap = new Map<number, number[]>();
+            (data.partnerships || []).forEach((p: { person1_id: number; person2_id: number }) => {
+                // Add both directions
+                const s1 = spouseMap.get(p.person1_id) || [];
+                if (!s1.includes(p.person2_id)) s1.push(p.person2_id);
+                spouseMap.set(p.person1_id, s1);
 
-                const p2Partners = partnerMap.get(p.person2_id) || [];
-                p2Partners.push(p.person1_id);
-                partnerMap.set(p.person2_id, p2Partners);
+                const s2 = spouseMap.get(p.person2_id) || [];
+                if (!s2.includes(p.person1_id)) s2.push(p.person1_id);
+                spouseMap.set(p.person2_id, s2);
             });
 
             // Convert to BasicPrimitives items
-            const bpItems: BPItem[] = (data.members || []).map(member => ({
+            const familyItems: FamilyItem[] = (data.members || []).map((member: FamilyMember) => ({
                 id: member.id,
                 parents: parentMap.get(member.id) || [],
+                spouses: spouseMap.get(member.id) || [],
                 title: `${member.first_name} ${member.last_name || ''}`.trim(),
-                description: member.birth_date ? `${member.birth_date.split('-')[0]}` : '',
-                image: member.photo_url || '/api/placeholder/80/80',
-                itemTitleColor: member.gender === 'male' ? '#4A90D9' : member.gender === 'female' ? '#D94A8C' : '#888888',
-                // Store original data for click handling
-                templateName: 'defaultTemplate',
-                member: member
+                description: member.birth_date ? member.birth_date.split('-')[0] : '',
+                image: member.photo_url || null,
+                itemTitleColor: member.gender === 'male' ? '#3B82F6' :
+                    member.gender === 'female' ? '#EC4899' : '#6B7280',
+                groupTitle: member.last_name || undefined
             }));
 
-            setItems(bpItems);
+            setItems(familyItems);
+
+            // Set cursor to first root item (person without parents)
+            const rootItem = familyItems.find(item => item.parents.length === 0);
+            if (rootItem) {
+                setCursorItem(rootItem.id);
+            }
         } catch (error) {
             console.error('Failed to load tree:', error);
         } finally {
@@ -87,77 +105,94 @@ export function FamilyTreePage() {
         loadTree();
     }, [loadTree]);
 
-    const handleItemClick = useCallback((item: BPItem) => {
-        const member = allMembers.find(m => m.id === item.id);
-        if (member) {
-            setSelectedMember(member);
-            setIsEditModalOpen(true);
-        }
-    }, [allMembers]);
-
     const handleSearch = useCallback(() => {
         if (!searchQuery.trim()) {
-            setHighlightedItem(null);
             return;
         }
         const found = items.find(item =>
             item.title.toLowerCase().includes(searchQuery.toLowerCase())
         );
         if (found) {
-            setHighlightedItem(found.id);
+            setCursorItem(found.id);
         }
     }, [searchQuery, items]);
 
-    // BasicPrimitives config
+    const openMemberDetails = (memberId: number) => {
+        const member = allMembers.find(m => m.id === memberId);
+        if (member) {
+            setSelectedMember(member);
+            setIsEditModalOpen(true);
+        }
+    };
+
+    // BasicPrimitives configuration
     const config: FamConfig = {
-        items: items,
-        cursorItem: highlightedItem,
-        hasSelectorCheckbox: Enabled.False,
+        navigationMode: NavigationMode.Default,
         pageFitMode: PageFitMode.None,
-        groupByType: GroupByType.Parents,
+        orientationType: OrientationType.Top,
+        hasSelectorCheckbox: Enabled.False,
+        groupByType: GroupByType.Children,
+
+        // Items
+        items: items,
+        cursorItem: cursorItem,
+
+        // Connectors
+        arrowsDirection: GroupByType.Parents,
         connectorType: ConnectorType.Squared,
         elbowType: ElbowType.Round,
-        linesPalette: [
-            { lineColor: '#94a3b8', lineWidth: 2, lineType: LineType.Solid }
-        ],
-        normalLevelShift: 40,
-        normalItemsInterval: 20,
-        cousinsIntervalMultiplier: 1,
+        linesColor: '#64748B',
+        linesWidth: 2,
+        linesType: LineType.Solid,
+
+        // Layout
+        normalLevelShift: 60,
+        dotLevelShift: 30,
+        lineLevelShift: 20,
+        normalItemsInterval: 30,
+        dotItemsInterval: 10,
+        lineItemsInterval: 10,
+
+        // Callbacks
+        onCursorChanged: (event: any, data: any) => {
+            if (data.context) {
+                setCursorItem(data.context.id);
+            }
+        },
+        onCursorChanging: (event: any, data: any) => {
+            // Allow cursor change
+            return true;
+        },
+
+        // Templates - using default built-in template
         templates: [{
             name: 'defaultTemplate',
-            itemSize: { width: 160, height: 100 },
+            itemSize: { width: 140, height: 80 },
             minimizedItemSize: { width: 4, height: 4 },
-            highlightPadding: { left: 4, top: 4, right: 4, bottom: 4 },
-            onItemRender: ({ context: itemConfig }: { context: BPItem }) => {
-                const member = itemConfig.member;
+            onItemRender: ({ context }: { context: FamilyItem }) => {
                 return (
                     <div
-                        className="bg-white rounded-xl shadow-lg border-2 p-3 cursor-pointer hover:shadow-xl transition-all h-full flex flex-col items-center justify-center"
-                        style={{ borderColor: itemConfig.itemTitleColor }}
-                        onClick={() => handleItemClick(itemConfig)}
+                        className="w-full h-full bg-white rounded-lg shadow-md border-2 flex flex-col items-center justify-center p-2 cursor-pointer hover:shadow-lg transition-shadow"
+                        style={{ borderColor: context.itemTitleColor }}
+                        onClick={() => openMemberDetails(context.id)}
                     >
                         <div
-                            className="w-12 h-12 rounded-full flex items-center justify-center text-white text-lg font-bold mb-2"
-                            style={{ backgroundColor: itemConfig.itemTitleColor }}
+                            className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm mb-1"
+                            style={{ backgroundColor: context.itemTitleColor }}
                         >
-                            {itemConfig.title.charAt(0)}
+                            {context.title.charAt(0).toUpperCase()}
                         </div>
                         <div className="text-center">
-                            <div className="font-semibold text-gray-800 text-sm">{itemConfig.title}</div>
-                            {itemConfig.description && (
-                                <div className="text-xs text-gray-500">{itemConfig.description}</div>
+                            <div className="font-medium text-gray-800 text-xs leading-tight">{context.title}</div>
+                            {context.description && (
+                                <div className="text-gray-500 text-xs">{context.description}</div>
                             )}
                         </div>
                     </div>
                 );
             }
         }],
-        defaultTemplateName: 'defaultTemplate',
-        onCursorChanged: (event, data) => {
-            if (data.context) {
-                handleItemClick(data.context as BPItem);
-            }
-        }
+        defaultTemplateName: 'defaultTemplate'
     };
 
     if (loading) {
@@ -171,13 +206,13 @@ export function FamilyTreePage() {
     return (
         <div className="h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex flex-col" dir="rtl">
             {/* Header */}
-            <div className="bg-slate-800/50 backdrop-blur border-b border-slate-700 p-4 flex items-center justify-between">
+            <div className="bg-slate-800/80 backdrop-blur border-b border-slate-700 px-4 py-3 flex items-center justify-between">
                 <div className="flex items-center gap-4">
                     <h1 className="text-xl font-bold text-white">🌳 אילן יוחסין</h1>
                     <span className="text-slate-400 text-sm">{items.length} בני משפחה</span>
                 </div>
 
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3">
                     {/* Search */}
                     <div className="relative">
                         <input
@@ -186,7 +221,7 @@ export function FamilyTreePage() {
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                            className="bg-slate-700 text-white px-4 py-2 pl-10 rounded-lg border border-slate-600 focus:border-emerald-500 focus:outline-none w-64"
+                            className="bg-slate-700 text-white px-4 py-2 pl-10 rounded-lg border border-slate-600 focus:border-emerald-500 focus:outline-none w-56"
                         />
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                     </div>
@@ -203,7 +238,7 @@ export function FamilyTreePage() {
             </div>
 
             {/* Tree Container */}
-            <div className="flex-1 overflow-hidden">
+            <div className="flex-1 overflow-hidden relative">
                 {items.length > 0 ? (
                     <FamDiagram centerOnCursor={true} config={config} />
                 ) : (
