@@ -287,18 +287,36 @@ export const FamilyTreePage: React.FC = () => {
         const nodeWidth = 160;
         const nodeHeight = 100;
 
-        // Use TB (Top-to-Bottom) but partnership edges will be ignored for rank calculation
-        dagreGraph.setGraph({ rankdir: 'TB' });
+        dagreGraph.setGraph({ rankdir: 'TB', nodesep: 50, ranksep: 80 });
 
         nodes.forEach((node) => {
             dagreGraph.setNode(node.id, { width: nodeWidth, height: nodeHeight });
         });
 
+        // 1. Add Parent-Child edges (Hierarchical)
         edges.forEach((edge) => {
-            // EXCLUDE partnership edges from Dagre layout calculation
-            // This prevents Dagre from forcing spouses to be above/below each other
             if (!edge.id.startsWith('part-')) {
                 dagreGraph.setEdge(edge.source, edge.target);
+            }
+        });
+
+        // 2. Handle Partnerships (Force same rank via Virtual Child)
+        edges.forEach((edge) => {
+            if (edge.id.startsWith('part-')) {
+                const partnerA = edge.source;
+                const partnerB = edge.target;
+
+                // Check if they already share a child in the graph
+                // (This would be an optimization, but adding a virtual node is safer to GUARANTEE alignment)
+                const virtualNodeId = `virtual-child-${partnerA}-${partnerB}`;
+
+                // Add minimal virtual node
+                dagreGraph.setNode(virtualNodeId, { width: 1, height: 1, label: '' });
+
+                // Connect both partners to virtual node
+                // This forces them to be on the rank ABOVE the virtual node. Isolate them to same generation.
+                dagreGraph.setEdge(partnerA, virtualNodeId, { minlen: 1, weight: 1, label: '' });
+                dagreGraph.setEdge(partnerB, virtualNodeId, { minlen: 1, weight: 1, label: '' });
             }
         });
 
@@ -306,14 +324,12 @@ export const FamilyTreePage: React.FC = () => {
 
         nodes.forEach((node) => {
             const nodeWithPosition = dagreGraph.node(node.id);
-            // If node has no position (e.g. disconnected spouse), it might be at 0,0
-            // We need a strategy for disconnected nodes, but typically spouses are connected to children or parents
-            // If they are truly isolated, Dagre might not place them well.
-            // However, usually they have children. If they share children, Dagre will place them on the same rank above the child.
-            node.position = {
-                x: nodeWithPosition.x - nodeWidth / 2,
-                y: nodeWithPosition.y - nodeHeight / 2,
-            };
+            if (nodeWithPosition) {
+                node.position = {
+                    x: nodeWithPosition.x - nodeWidth / 2,
+                    y: nodeWithPosition.y - nodeHeight / 2,
+                };
+            }
         });
 
         return { nodes, edges };
