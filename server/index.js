@@ -43,6 +43,7 @@ app.use('/api/recipes', require('./routes/recipes'));
 app.use('/api/marketplace', require('./routes/marketplace'));
 app.use('/api/family', require('./routes/familyTree'));
 app.use('/api/family/community', require('./routes/merge'));
+app.use('/api/family/gedcom', require('./routes/gedcom'));
 app.use('/api/upload', require('./routes/upload'));
 
 // Serve uploaded files

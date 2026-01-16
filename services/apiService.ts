@@ -199,6 +199,7 @@ const apiService = {
     post: <T>(endpoint: string, body?: any) => request(endpoint, { method: 'POST', body: JSON.stringify(body) }) as Promise<T>,
     put: <T>(endpoint: string, body?: any) => request(endpoint, { method: 'PUT', body: JSON.stringify(body) }) as Promise<T>,
     delete: <T>(endpoint: string, body?: any) => request(endpoint, { method: 'DELETE', body: body ? JSON.stringify(body) : undefined }) as Promise<T>,
+    baseURL: API_BASE
 };
 
 export default apiService;

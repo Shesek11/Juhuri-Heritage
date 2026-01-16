@@ -274,5 +274,52 @@ export const familyService = {
 
     respondToLinkRequest: (requestId: number, status: 'approved' | 'rejected') => {
         return apiService.put(`/family/community/link-requests/${requestId}`, { status });
+    },
+
+    // =====================================================
+    // GEDCOM Tools
+    // =====================================================
+
+    importGedcom: async (file: File) => {
+        const formData = new FormData();
+        formData.append('file', file);
+
+        // Use fetch directly because apiService might set Content-Type to json
+        const response = await fetch(`${apiService.baseURL}/family/gedcom/import`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            },
+            body: formData
+        });
+
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to import GEDCOM');
+        }
+
+        return response.json();
+    },
+
+    exportGedcom: async () => {
+        const response = await fetch(`${apiService.baseURL}/family/gedcom/export`, {
+            headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to export GEDCOM');
+        }
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `family_tree_${new Date().toISOString().split('T')[0]}.ged`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
     }
 };

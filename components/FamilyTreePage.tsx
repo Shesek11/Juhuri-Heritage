@@ -21,6 +21,7 @@ import { EditMemberModal } from './family/EditMemberModal';
 import { RelationshipManager } from './family/RelationshipManager';
 import { AddRelativeModal } from './family/AddRelativeModal';
 import { CommunityRequests } from './family/CommunityRequests';
+import { GedcomTools } from './family/GedcomTools';
 
 // Types for tree data
 interface TreeData {
@@ -358,6 +359,7 @@ export const FamilyTreePage: React.FC = () => {
                     </h1>
                 </div>
                 <div className="flex gap-2">
+                    <GedcomTools onSuccess={loadTree} />
                     <button
                         onClick={() => setIsCommunityModalOpen(true)}
                         className="bg-purple-600 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg hover:bg-purple-700 flex items-center gap-1"
