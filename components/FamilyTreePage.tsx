@@ -12,7 +12,7 @@ import ReactFlow, {
     ConnectionMode
 } from 'reactflow';
 import 'reactflow/dist/style.css';
-import dagre from 'dagre';
+// import dagre from 'dagre';
 import { familyService, FamilyMember } from '../services/familyService';
 import { useFeatureFlag } from '../hooks/useFeatureFlag';
 import { useAuth } from '../contexts/AuthContext';
@@ -24,6 +24,7 @@ import { AddRelativeModal } from './family/AddRelativeModal';
 import { CommunityRequests } from './family/CommunityRequests';
 import { GedcomTools } from './family/GedcomTools';
 import { ConnectNodesModal } from './family/ConnectNodesModal';
+import { layoutElements } from '../services/layoutService';
 
 // Types for tree data
 interface TreeData {
@@ -220,51 +221,52 @@ export const FamilyTreePage: React.FC = () => {
             const data: TreeData = await familyService.getTreeData();
             setAllMembers(data.members || []);
 
-            const layoutedElements = getLayoutedElements(
-                // Convert members to nodes
-                (data.members || []).map((m) => ({
-                    id: m.id.toString(),
-                    type: 'member',
-                    data: {
-                        ...m,
-                        label: m.first_name,
-                        isOwner: user?.id === m.user_id?.toString() || (user as any)?.role === 'admin',
-                        onAddRelative: (type: any) => {
-                            setSelectedMember(m);
-                            setAddRelativeType(type);
-                            setIsAddRelativeModalOpen(true);
-                        },
-                        onDelete: handleDeleteNode
+            // Transform to React Flow structure BEFORE layout
+            const initialNodes = (data.members || []).map((m) => ({
+                id: m.id.toString(),
+                type: 'member',
+                data: {
+                    ...m,
+                    label: m.first_name,
+                    isOwner: user?.id === m.user_id?.toString() || (user as any)?.role === 'admin',
+                    onAddRelative: (type: any) => {
+                        setSelectedMember(m);
+                        setAddRelativeType(type);
+                        setIsAddRelativeModalOpen(true);
                     },
-                    position: { x: 0, y: 0 },
-                })),
-                // Create edges from all relationship types
-                [
-                    // Parent-Child edges
-                    ...(data.parentChild || []).map((pc) => ({
-                        id: `pc-${pc.parent_id}-${pc.child_id}`,
-                        source: pc.parent_id.toString(),
-                        target: pc.child_id.toString(),
-                        type: 'smoothstep',
-                        style: { stroke: pc.relationship_type === 'biological' ? '#94a3b8' : '#94a3b8', strokeWidth: 2, strokeDasharray: pc.relationship_type === 'biological' ? undefined : '5,5' },
-                    })),
-                    // Partnership edges
-                    ...(data.partnerships || []).map((p) => ({
-                        id: `part-${p.person1_id}-${p.person2_id}`,
-                        source: p.person1_id.toString(),
-                        target: p.person2_id.toString(),
-                        type: 'straight', // Partnership is usually beside
-                        style: { stroke: '#ec4899', strokeWidth: 3 },
-                        animated: false,
-                        label: p.status === 'divorced' ? '💔' : '❤️',
-                        labelStyle: { fill: '#ec4899', fontWeight: 700 },
-                        labelBgStyle: { fill: 'white', fillOpacity: 0.7 }
-                    }))
-                ]
-            );
+                    onDelete: handleDeleteNode
+                },
+                position: { x: 0, y: 0 },
+            }));
 
-            setNodes(layoutedElements.nodes);
-            setEdges(layoutedElements.edges);
+            const initialEdges = [
+                // Parent-Child edges
+                ...(data.parentChild || []).map((pc) => ({
+                    id: `pc-${pc.parent_id}-${pc.child_id}`,
+                    source: pc.parent_id.toString(),
+                    target: pc.child_id.toString(),
+                    type: 'smoothstep',
+                    style: { stroke: pc.relationship_type === 'biological' ? '#94a3b8' : '#94a3b8', strokeWidth: 2, strokeDasharray: pc.relationship_type === 'biological' ? undefined : '5,5' },
+                })),
+                // Partnership edges
+                ...(data.partnerships || []).map((p) => ({
+                    id: `part-${p.person1_id}-${p.person2_id}`,
+                    source: p.person1_id.toString(),
+                    target: p.person2_id.toString(),
+                    type: 'straight', // Partnership is usually beside
+                    style: { stroke: '#ec4899', strokeWidth: 3 },
+                    animated: false,
+                    label: p.status === 'divorced' ? '💔' : '❤️',
+                    labelStyle: { fill: '#ec4899', fontWeight: 700 },
+                    labelBgStyle: { fill: 'white', fillOpacity: 0.7 }
+                }))
+            ];
+
+            // Run ELK Layout
+            const { nodes: layoutedNodes, edges: layoutedEdges } = await layoutElements(initialNodes, initialEdges, data.members || []);
+
+            setNodes(layoutedNodes);
+            setEdges(layoutedEdges);
         } catch (error) {
             console.error('Failed to load tree:', error);
         } finally {
@@ -289,173 +291,6 @@ export const FamilyTreePage: React.FC = () => {
             alert('שגיאה במחיקת בן משפחה');
         }
     }, []);
-
-    const getLayoutedElements = (nodes: Node[], edges: Edge[]) => {
-        const dagreGraph = new dagre.graphlib.Graph();
-        dagreGraph.setDefaultEdgeLabel(() => ({}));
-
-        const nodeWidth = 160;
-        const nodeHeight = 100;
-
-        dagreGraph.setGraph({ rankdir: 'TB', nodesep: 50, ranksep: 80 });
-
-        nodes.forEach((node) => {
-            dagreGraph.setNode(node.id, { width: nodeWidth, height: nodeHeight });
-        });
-
-        // 1. Add Parent-Child edges (Hierarchical)
-        edges.forEach((edge) => {
-            if (!edge.id.startsWith('part-')) {
-                dagreGraph.setEdge(edge.source, edge.target);
-            }
-        });
-
-        // 2. Handle Partnerships (Force same rank via Virtual Child)
-        edges.forEach((edge) => {
-            if (edge.id.startsWith('part-')) {
-                const partnerA = edge.source;
-                const partnerB = edge.target;
-                const virtualNodeId = `virtual-child-${partnerA}-${partnerB}`;
-                dagreGraph.setNode(virtualNodeId, { width: 1, height: 1, label: '' });
-                dagreGraph.setEdge(partnerA, virtualNodeId, { minlen: 1, weight: 50, label: '' });
-                dagreGraph.setEdge(partnerB, virtualNodeId, { minlen: 1, weight: 50, label: '' });
-            }
-        });
-
-        dagre.layout(dagreGraph);
-
-        // --- Post-Processing: Center Pivot Nodes (Multi-Partners) ---
-        // Force nodes with multiple partners to be in the middle of their partners
-        const partnershipEdges = edges.filter(e => e.id.startsWith('part-'));
-        const partnerMap = new Map<string, string[]>();
-
-        partnershipEdges.forEach(e => {
-            if (!partnerMap.has(e.source)) partnerMap.set(e.source, []);
-            if (!partnerMap.has(e.target)) partnerMap.set(e.target, []);
-            partnerMap.get(e.source)?.push(e.target);
-            partnerMap.get(e.target)?.push(e.source);
-        });
-
-        // Helper to shift a node and its exclusive vertical line
-        const shiftVerticalSubtree = (rootId: string, dx: number, direction: 'up' | 'down', visited = new Set<string>()) => {
-            if (visited.has(rootId) || dx === 0) return;
-            visited.add(rootId);
-
-            // Move the current node in Dagre graph
-            const node = dagreGraph.node(rootId);
-            if (node) {
-                node.x += dx;
-            }
-
-            // Find neighbors in the specified direction
-            // Up = Find Parents (sources of edges where target is rootId)
-            // Down = Find Children (targets of edges where source is rootId)
-            const relevantEdges = edges.filter(e =>
-                !e.id.startsWith('part-') && // Only vertical edges
-                (direction === 'up' ? e.target === rootId : e.source === rootId)
-            );
-
-            relevantEdges.forEach(edge => {
-                const neighborId = direction === 'up' ? edge.source : edge.target;
-
-                // CHECK EXCLUSIVITY:
-                // Only move the neighbor if they don't have other "anchors" that prevent movement.
-                // For Parent (Up): Move if they have NO OTHER children (or only children in the specific moving set?).
-                // Simplest heuristic: Check if neighbor degree in opposite direction is 1 (i.e. this is their ONLY connection downwards/upwards)
-
-                const neighborConnections = edges.filter(e =>
-                    !e.id.startsWith('part-') &&
-                    (direction === 'up' ? e.source === neighborId : e.target === neighborId)
-                );
-
-                if (neighborConnections.length === 1) {
-                    // Safe to move, it's a single line
-                    shiftVerticalSubtree(neighborId, dx, direction, visited);
-                }
-            });
-        };
-
-        const processedClusters = new Set<string>();
-
-        nodes.forEach(node => {
-            const partners = partnerMap.get(node.id) || [];
-            if (partners.length > 1 && !processedClusters.has(node.id)) {
-                // This is a pivot node with multiple partners
-                const clusterIds = [node.id, ...partners];
-
-                // Mark all as processed for this pass to avoid fighting
-                clusterIds.forEach(id => processedClusters.add(id));
-
-                // Get current Dagre positions
-                const clusterNodes = clusterIds.map(id => {
-                    const dNode = dagreGraph.node(id);
-                    return { id, x: dNode.x, width: dNode.width };
-                }).sort((a, b) => a.x - b.x);
-
-                // Find where the pivot currently is
-                const currentPivotIndex = clusterNodes.findIndex(n => n.id === node.id);
-                const desiredPivotIndex = Math.floor(clusterNodes.length / 2);
-
-                if (currentPivotIndex !== -1 && currentPivotIndex !== desiredPivotIndex) {
-                    // SWAP X coordinates between Pivot and the node currently in the middle
-                    const pivotNode = clusterNodes[currentPivotIndex];
-                    const targetNode = clusterNodes[desiredPivotIndex];
-
-                    const dxPivot = targetNode.x - pivotNode.x;
-                    const dxTarget = pivotNode.x - targetNode.x;
-
-                    // Apply Shifts (Recursively move exclusive trees)
-                    shiftVerticalSubtree(pivotNode.id, dxPivot, 'up');
-                    shiftVerticalSubtree(pivotNode.id, dxPivot, 'down');
-
-                    shiftVerticalSubtree(targetNode.id, dxTarget, 'up');
-                    shiftVerticalSubtree(targetNode.id, dxTarget, 'down');
-
-                    // NOTE: The `node.x` update happens inside shiftVerticalSubtree for the root nodes too.
-                    // But we must ensure the Dagre Layout logic picks up these changes (it returns `dagreGraph.node(id)` later).
-                    // shiftVerticalSubtree modifies `dagreGraph.node(id).x` directly, which is correct.
-                }
-            }
-        });
-        // ------------------------------------------------------------
-
-        // Map definitions
-        const newNodes = nodes.map((node) => {
-            const nodeWithPosition = dagreGraph.node(node.id);
-            if (nodeWithPosition) {
-                node.position = {
-                    x: nodeWithPosition.x - nodeWidth / 2,
-                    y: nodeWithPosition.y - nodeHeight / 2,
-                };
-            }
-            return node;
-        });
-
-        // Update Edges: Assign handles for partnerships based on X position
-        const newEdges = edges.map((edge) => {
-            if (edge.id.startsWith('part-')) {
-                const sourceNode = newNodes.find(n => n.id === edge.source);
-                const targetNode = newNodes.find(n => n.id === edge.target);
-
-                if (sourceNode && targetNode) {
-                    if (sourceNode.position.x < targetNode.position.x) {
-                        // Source is Left, Target is Right
-                        // Source (Left) uses "right" handle (type source)
-                        // Target (Right) uses "left-target" handle (type target)
-                        return { ...edge, sourceHandle: 'right', targetHandle: 'left-target' };
-                    } else {
-                        // Source is Right, Target is Left
-                        // Source (Right) uses "left" handle (type source)
-                        // Target (Left) uses "right-target" handle (type target)
-                        return { ...edge, sourceHandle: 'left', targetHandle: 'right-target' };
-                    }
-                }
-            }
-            return edge;
-        });
-
-        return { nodes: newNodes, edges: newEdges };
-    };
 
     const getRelTypeLabel = (type: string) => {
         switch (type) {
