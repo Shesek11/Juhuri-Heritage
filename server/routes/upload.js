@@ -39,8 +39,13 @@ const upload = multer({
 });
 
 // Route: POST /api/upload
-router.post('/', authenticate, upload.single('file'), (req, res) => {
-    try {
+router.post('/', authenticate, (req, res) => {
+    upload.single('file')(req, res, (err) => {
+        if (err) {
+            console.error('Upload Multer Error:', err);
+            return res.status(500).json({ error: err.message || 'שגיאה בהעלאת הקובץ' });
+        }
+
         if (!req.file) {
             return res.status(400).json({ error: 'לא נבחר קובץ' });
         }
@@ -53,10 +58,7 @@ router.post('/', authenticate, upload.single('file'), (req, res) => {
             url: fileUrl,
             filename: req.file.filename
         });
-    } catch (err) {
-        console.error('Upload Error:', err);
-        res.status(500).json({ error: 'שגיאה בהעלאת הקובץ' });
-    }
+    });
 });
 
 module.exports = router;
