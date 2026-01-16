@@ -88,7 +88,9 @@ const MemberNode = ({ data }: { data: FamilyMember & { label: string; isOwner: b
                 </>
             )}
 
-            <Handle type="source" position={Position.Bottom} className="w-16 !bg-slate-300" />
+            <Handle type="source" position={Position.Bottom} id="bottom" className="w-16 !bg-slate-300" />
+            <Handle type="source" position={Position.Left} id="left" className="!bg-pink-400" />
+            <Handle type="target" position={Position.Right} id="right" className="!bg-pink-400" />
         </div>
     );
 };
@@ -248,6 +250,8 @@ export const FamilyTreePage: React.FC = () => {
                     id: `sp-${p.person1_id}-${p.person2_id}`,
                     source: p.person1_id.toString(),
                     target: p.person2_id.toString(),
+                    sourceHandle: 'left',
+                    targetHandle: 'right',
                     type: 'straight',
                     style: { stroke: '#ec4899', strokeWidth: 2 },
                     label: '💕'
