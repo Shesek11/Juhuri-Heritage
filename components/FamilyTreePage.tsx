@@ -15,13 +15,14 @@ import dagre from 'dagre';
 import { familyService, FamilyMember } from '../services/familyService';
 import { useFeatureFlag } from '../hooks/useFeatureFlag';
 import { useAuth } from '../contexts/AuthContext';
-import { User, Plus, TreeDeciduous, Pencil, Heart, Link, UserPlus, Users } from 'lucide-react';
+import { User, Plus, TreeDeciduous, Pencil, Heart, Link, UserPlus, Users, Search, X, Loader2, Network } from 'lucide-react';
 import { AddMemberModal } from './family/AddMemberModal';
 import { EditMemberModal } from './family/EditMemberModal';
 import { RelationshipManager } from './family/RelationshipManager';
 import { AddRelativeModal } from './family/AddRelativeModal';
 import { CommunityRequests } from './family/CommunityRequests';
 import { GedcomTools } from './family/GedcomTools';
+import { ConnectNodesModal } from './family/ConnectNodesModal';
 
 // Types for tree data
 interface TreeData {
@@ -60,39 +61,44 @@ const MemberNode = ({ data }: { data: FamilyMember & { label: string; isOwner: b
                 </div>
             )}
 
-            <div className="text-xs font-bold text-center text-slate-800">{displayName}</div>
-            <div className="text-[10px] text-slate-500 text-center">{displayLastName}</div>
-            {data.nickname && (
-                <div className="text-[9px] text-amber-600 mt-0.5">"{data.nickname}"</div>
-            )}
-            {data.birth_date && (
-                <div className="text-[9px] text-slate-400 mt-1">
-                    {data.birth_date.substring(0, 4)}
-                    {!data.is_alive && data.death_date && ` - ${data.death_date.substring(0, 4)}`}
+            <div className="text-center w-full">
+                <div className="font-bold text-slate-800 truncate text-sm" title={`${displayName} ${displayLastName}`}>
+                    {displayName}
+                </div>
+                <div className="text-xs text-slate-600 truncate">
+                    {displayLastName}
+                </div>
+                {data.birth_date && (
+                    <div className="text-[10px] text-slate-400 mt-1">
+                        {new Date(data.birth_date).getFullYear()}
+                    </div>
+                )}
+            </div>
+
+            {/* Quick Actions (Hover) */}
+            <div className="absolute top-0 right-0 p-1 opacity-0 hover:opacity-100 transition-opacity">
+                {data.isOwner && (
+                    <div className="bg-amber-500 text-white rounded-full p-0.5 shadow-sm" title="ניתן לעריכה">
+                        <Pencil size={8} />
+                    </div>
+                )}
+            </div>
+
+            <Handle type="source" position={Position.Bottom} className="w-16 !bg-slate-300" />
+
+            {/* Quick Add Button */}
+            {data.isOwner && (
+                <div
+                    className="absolute -top-3 -right-3 bg-emerald-500 text-white rounded-full p-1 shadow-md hover:bg-emerald-600 hover:scale-110 transition-all z-10"
+                    title="הוסף קרוב משפחה"
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        data.onAddRelative('child'); // Default to adding child
+                    }}
+                >
+                    <UserPlus size={12} />
                 </div>
             )}
-
-            {data.isOwner && (
-                <>
-                    <div className="absolute -top-2 -right-2 bg-amber-500 text-white rounded-full p-1 z-10" title="ניתן לערוך">
-                        <Pencil size={10} />
-                    </div>
-                    <button
-                        onClick={(e) => {
-                            e.stopPropagation();
-                            data.onAddRelative(null);
-                        }}
-                        className="absolute -top-2 -left-2 bg-emerald-500 text-white rounded-full p-1 hover:bg-emerald-600 transition-colors shadow-sm z-50"
-                        title="הוסף קרוב משפחה"
-                    >
-                        <UserPlus size={10} />
-                    </button>
-                </>
-            )}
-
-            <Handle type="source" position={Position.Bottom} id="bottom" className="w-16 !bg-slate-300" />
-            <Handle type="source" position={Position.Left} id="left" className="!bg-pink-400" />
-            <Handle type="target" position={Position.Right} id="right" className="!bg-pink-400" />
         </div>
     );
 };
@@ -101,60 +107,14 @@ const nodeTypes = {
     member: MemberNode,
 };
 
-const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'TB') => {
-    const dagreGraph = new dagre.graphlib.Graph();
-    dagreGraph.setDefaultEdgeLabel(() => ({}));
-
-    const isHorizontal = direction === 'LR';
-    dagreGraph.setGraph({ rankdir: direction });
-
-    nodes.forEach((node) => {
-        dagreGraph.setNode(node.id, { width: 160, height: 120 });
-    });
-
-    edges.forEach((edge) => {
-        if (edge.type === 'straight') {
-            // Partnership edge: Use dummy node trick to force same rank/horizontal alignment
-            const dummyId = `__dummy_${edge.source}_${edge.target}`;
-            dagreGraph.setNode(dummyId, { width: 1, height: 1 });
-            dagreGraph.setEdge(edge.source, dummyId, { weight: 0, minlen: 1 });
-            dagreGraph.setEdge(edge.target, dummyId, { weight: 0, minlen: 1 });
-            // Also connect dummy to parents? No, just connecting them to a shared node often aligns them.
-            // Actually, connecting them TO the dummy makes the dummy a child. 
-            // Better: Dummy is parent of both? 
-            // If dummy -> Source and dummy -> Target, they are siblings. Siblings are same rank.
-            // Let's try: Dummy -> Source, Dummy -> Target.
-            // BUT edge.source might already have parents.
-            // If we add another parent (Dummy), Dagre handles multiple parents well.
-        } else {
-            dagreGraph.setEdge(edge.source, edge.target);
-        }
-    });
-
-    dagre.layout(dagreGraph);
-
-    nodes.forEach((node) => {
-        const nodeWithPosition = dagreGraph.node(node.id);
-        node.targetPosition = isHorizontal ? Position.Left : Position.Top;
-        node.sourcePosition = isHorizontal ? Position.Right : Position.Bottom;
-
-        node.position = {
-            x: nodeWithPosition.x - 80,
-            y: nodeWithPosition.y - 60,
-        };
-
-        return node;
-    });
-
-    return { nodes, edges };
-};
-
 export const FamilyTreePage: React.FC = () => {
-    const { isEnabled } = useFeatureFlag('family_tree_module');
+    const { isEnabled } = useFeatureFlag('family_tree');
     const { user } = useAuth();
     const [nodes, setNodes, onNodesChange] = useNodesState([]);
     const [edges, setEdges, onEdgesChange] = useEdgesState([]);
     const [loading, setLoading] = useState(true);
+
+    // Modals State
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isRelationshipModalOpen, setIsRelationshipModalOpen] = useState(false);
@@ -164,147 +124,152 @@ export const FamilyTreePage: React.FC = () => {
     const [allMembers, setAllMembers] = useState<FamilyMember[]>([]);
     const [isCommunityModalOpen, setIsCommunityModalOpen] = useState(false);
 
+    // Search State
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchResults, setSearchResults] = useState<FamilyMember[]>([]);
+    const [isSearching, setIsSearching] = useState(false);
+    const [showSearchResults, setShowSearchResults] = useState(false);
+    const [reactFlowInstance, setReactFlowInstance] = useState<any>(null);
+
+    // Connection State
+    const [isConnectModalOpen, setIsConnectModalOpen] = useState(false);
+    const [connectSourceId, setConnectSourceId] = useState<string | null>(null);
+    const [connectTargetId, setConnectTargetId] = useState<string | null>(null);
+
     useEffect(() => {
         if (isEnabled) {
             loadTree();
         }
     }, [isEnabled]);
 
+    // Debounced Search
+    useEffect(() => {
+        const timer = setTimeout(async () => {
+            if (searchQuery.trim().length >= 2) {
+                setIsSearching(true);
+                try {
+                    const results = await familyService.searchMembers(searchQuery);
+                    setSearchResults(results);
+                    setShowSearchResults(true);
+                } catch (err) {
+                    console.error('Search failed:', err);
+                } finally {
+                    setIsSearching(false);
+                }
+            } else {
+                setSearchResults([]);
+                setShowSearchResults(false);
+            }
+        }, 500);
+
+        return () => clearTimeout(timer);
+    }, [searchQuery]);
+
+    const handleSearchResultClick = (memberId: string) => {
+        const node = nodes.find(n => n.id === memberId);
+        if (node && reactFlowInstance) {
+            reactFlowInstance.setCenter(node.position.x, node.position.y, { zoom: 1.5, duration: 800 });
+            setSearchQuery('');
+            setShowSearchResults(false);
+        } else {
+            console.log('Node not found on map');
+        }
+    };
+
     const loadTree = async () => {
         try {
             setLoading(true);
-            const treeData = await familyService.getTreeData();
+            const data: TreeData = await familyService.getTreeData();
+            setAllMembers(data.members || []);
 
-            const members = treeData.members || [];
-            const parentChildRels = treeData.parentChild || [];
-            const partnerships = treeData.partnerships || [];
-
-            setAllMembers(members);
-
-            const initialNodes: Node[] = [];
-            const initialEdges: Edge[] = [];
-
-            // Create nodes for all members
-            members.forEach(member => {
-                if (!member.id) return;
-                const isOwner = String(user?.id) === String(member.user_id) || user?.role === 'admin';
-                initialNodes.push({
-                    id: member.id.toString(),
+            const layoutedElements = getLayoutedElements(
+                // Convert members to nodes
+                (data.members || []).map((m) => ({
+                    id: m.id.toString(),
                     type: 'member',
                     data: {
-                        ...member,
-                        label: `${member.first_name} ${member.last_name}`,
-                        isOwner,
-                        onAddRelative: (type: 'parent' | 'child' | 'spouse' | null) => {
-                            setSelectedMember(member);
+                        ...m,
+                        label: m.first_name,
+                        isOwner: user?.id === m.user_id.toString(), // Fix type comparison
+                        onAddRelative: (type: any) => {
+                            setSelectedMember(m);
                             setAddRelativeType(type);
                             setIsAddRelativeModalOpen(true);
                         }
                     },
-                    position: { x: 0, y: 0 }
-                });
-            });
-
-            // Create edges from parent-child relationships
-            parentChildRels.forEach(rel => {
-                const edgeStyle = rel.relationship_type === 'biological'
-                    ? {}
-                    : { strokeDasharray: '5 5' }; // Dashed for non-biological
-
-                initialEdges.push({
-                    id: `pc-${rel.parent_id}-${rel.child_id}`,
-                    source: rel.parent_id.toString(),
-                    target: rel.child_id.toString(),
-                    type: 'smoothstep',
-                    animated: rel.relationship_type === 'biological',
-                    style: edgeStyle,
-                    label: rel.relationship_type !== 'biological' ? getRelTypeLabel(rel.relationship_type) : undefined
-                });
-            });
-
-            // Fallback: use legacy father_id/mother_id if no parentChild relations
-            if (parentChildRels.length === 0) {
-                members.forEach(member => {
-                    if (member.father_id) {
-                        initialEdges.push({
-                            id: `e${member.father_id}-${member.id}`,
-                            source: member.father_id.toString(),
-                            target: member.id!.toString(),
-                            type: 'smoothstep',
-                            animated: true
-                        });
-                    }
-                    if (member.mother_id) {
-                        initialEdges.push({
-                            id: `e${member.mother_id}-${member.id}`,
-                            source: member.mother_id.toString(),
-                            target: member.id!.toString(),
-                            type: 'smoothstep',
-                            animated: true,
-                            style: { stroke: '#f472b6' }
-                        });
-                    }
-                });
-            }
-
-            // Add partnership edges (horizontal spousal connections)
-            partnerships.forEach(p => {
-                // Different styles based on relationship status
-                const getPartnershipStyle = (status: string) => {
-                    switch (status) {
-                        case 'married':
-                            return { stroke: '#ec4899', strokeWidth: 2 }; // Pink solid
-                        case 'divorced':
-                            return { stroke: '#9ca3af', strokeWidth: 2, strokeDasharray: '5,5' }; // Gray dashed
-                        case 'widowed':
-                            return { stroke: '#6b7280', strokeWidth: 2, strokeDasharray: '2,2' }; // Dark gray dotted
-                        case 'separated':
-                            return { stroke: '#f97316', strokeWidth: 2, strokeDasharray: '8,4' }; // Orange dashed
-                        case 'engaged':
-                            return { stroke: '#a855f7', strokeWidth: 2, strokeDasharray: '3,3' }; // Purple dotted
-                        case 'common_law':
-                            return { stroke: '#ec4899', strokeWidth: 1.5 }; // Pink thin
-                        default:
-                            return { stroke: '#ec4899', strokeWidth: 2 };
-                    }
-                };
-
-                const getPartnershipLabel = (status: string) => {
-                    switch (status) {
-                        case 'married': return '💕';
-                        case 'divorced': return '💔';
-                        case 'widowed': return '🕊️';
-                        case 'separated': return '⚡';
-                        case 'engaged': return '💍';
-                        case 'common_law': return '💑';
-                        default: return '💕';
-                    }
-                };
-
-                initialEdges.push({
-                    id: `sp-${p.person1_id}-${p.person2_id}`,
-                    source: p.person1_id.toString(),
-                    target: p.person2_id.toString(),
-                    sourceHandle: 'left',
-                    targetHandle: 'right',
-                    type: 'straight',
-                    style: getPartnershipStyle(p.status),
-                    label: getPartnershipLabel(p.status)
-                });
-            });
-
-            const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(
-                initialNodes,
-                initialEdges
+                    position: { x: 0, y: 0 },
+                })),
+                // Create edges from all relationship types
+                [
+                    // Parent-Child edges
+                    ...(data.parentChild || []).map((pc) => ({
+                        id: `pc-${pc.parent_id}-${pc.child_id}`,
+                        source: pc.parent_id.toString(),
+                        target: pc.child_id.toString(),
+                        type: 'smoothstep',
+                        style: { stroke: pc.relationship_type === 'biological' ? '#94a3b8' : '#94a3b8', strokeWidth: 2, strokeDasharray: pc.relationship_type === 'biological' ? undefined : '5,5' },
+                        // label: relationship labels can be noisy
+                    })),
+                    // Partnership edges
+                    ...(data.partnerships || []).map((p) => ({
+                        id: `part-${p.person1_id}-${p.person2_id}`,
+                        source: p.person1_id.toString(),
+                        target: p.person2_id.toString(),
+                        type: 'straight', // Partnership is usually beside
+                        style: { stroke: '#ec4899', strokeWidth: 3 },
+                        animated: false,
+                        label: p.status === 'divorced' ? '💔' : '❤️',
+                        labelStyle: { fill: '#ec4899', fontWeight: 700 },
+                        labelBgStyle: { fill: 'white', fillOpacity: 0.7 }
+                    }))
+                ]
             );
 
-            setNodes(layoutedNodes);
-            setEdges(layoutedEdges);
-        } catch (err) {
-            console.error('Failed to load tree:', err);
+            setNodes(layoutedElements.nodes);
+            setEdges(layoutedElements.edges);
+        } catch (error) {
+            console.error('Failed to load tree:', error);
         } finally {
             setLoading(false);
         }
+    };
+
+    const onConnect = useCallback((params: any) => {
+        if (params.source && params.target && params.source !== params.target) {
+            setConnectSourceId(params.source);
+            setConnectTargetId(params.target);
+            setIsConnectModalOpen(true);
+        }
+    }, []);
+
+    const getLayoutedElements = (nodes: Node[], edges: Edge[]) => {
+        const dagreGraph = new dagre.graphlib.Graph();
+        dagreGraph.setDefaultEdgeLabel(() => ({}));
+
+        const nodeWidth = 160;
+        const nodeHeight = 100;
+
+        dagreGraph.setGraph({ rankdir: 'TB' });
+
+        nodes.forEach((node) => {
+            dagreGraph.setNode(node.id, { width: nodeWidth, height: nodeHeight });
+        });
+
+        edges.forEach((edge) => {
+            dagreGraph.setEdge(edge.source, edge.target);
+        });
+
+        dagre.layout(dagreGraph);
+
+        nodes.forEach((node) => {
+            const nodeWithPosition = dagreGraph.node(node.id);
+            node.position = {
+                x: nodeWithPosition.x - nodeWidth / 2,
+                y: nodeWithPosition.y - nodeHeight / 2,
+            };
+        });
+
+        return { nodes, edges };
     };
 
     const getRelTypeLabel = (type: string) => {
@@ -351,13 +316,72 @@ export const FamilyTreePage: React.FC = () => {
 
     return (
         <div className="h-[calc(100vh-80px)] flex flex-col relative" dir="ltr">
-            <div className="absolute top-4 right-4 z-10 flex gap-2" dir="rtl">
-                <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur p-2 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700">
-                    <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                        <TreeDeciduous className="text-emerald-600" />
-                        שורשים
-                    </h1>
+            {/* Header Overlay */}
+            <div className="absolute top-4 right-4 z-10 flex flex-col gap-2 items-end" dir="rtl">
+                <div className="flex gap-4 items-center">
+                    <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur p-2 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700">
+                        <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                            <TreeDeciduous className="text-emerald-600" />
+                            שורשים
+                        </h1>
+                    </div>
+
+                    {/* Search Bar */}
+                    <div className="relative w-64">
+                        <div className="relative">
+                            <input
+                                type="text"
+                                placeholder="חפש בן משפחה..."
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                className="w-full pl-10 pr-4 py-2 rounded-xl text-sm border-none shadow-lg focus:ring-2 focus:ring-emerald-500 bg-white/90 dark:bg-slate-800/90 backdrop-blur"
+                            />
+                            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                                {isSearching ? <Loader2 size={16} className="animate-spin" /> : <Search size={16} />}
+                            </div>
+                            {searchQuery && (
+                                <button
+                                    onClick={() => setSearchQuery('')}
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                                >
+                                    <X size={14} />
+                                </button>
+                            )}
+                        </div>
+
+                        {/* Search Results Dropdown */}
+                        {showSearchResults && searchResults.length > 0 && (
+                            <div className="absolute top-full text-right left-0 w-full mt-2 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 max-h-64 overflow-y-auto z-50 py-2">
+                                {searchResults.map(member => (
+                                    <button
+                                        key={member.id}
+                                        onClick={() => handleSearchResultClick(member.id.toString())}
+                                        className="w-full px-4 py-2 text-right hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-3 transition-colors"
+                                    >
+                                        <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-600 flex items-center justify-center shrink-0 overflow-hidden">
+                                            {member.photo_url ? (
+                                                <img src={member.photo_url} className="w-full h-full object-cover" />
+                                            ) : (
+                                                <User size={14} className="text-slate-400" />
+                                            )}
+                                        </div>
+                                        <div>
+                                            <div className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                                                {member.first_name} {member.last_name}
+                                            </div>
+                                            {member.birth_date && (
+                                                <div className="text-xs text-slate-500">
+                                                    {new Date(member.birth_date).getFullYear()}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 </div>
+
                 <div className="flex gap-2">
                     <GedcomTools onSuccess={loadTree} />
                     <button
@@ -397,6 +421,7 @@ export const FamilyTreePage: React.FC = () => {
                 <div className="absolute top-4 left-4 z-10 bg-white/90 dark:bg-slate-900/90 backdrop-blur p-3 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 text-xs text-slate-500 space-y-1">
                     <div><Pencil size={12} className="inline text-amber-500 ml-1" /> לחץ שמאלי = עריכת פרטים</div>
                     <div><Link size={12} className="inline text-purple-500 ml-1" /> לחץ ימני = ניהול קשרים</div>
+                    <div><Network size={12} className="inline text-blue-500 ml-1" /> גרירה בין נקודות = חיבור</div>
                 </div>
             )}
 
@@ -422,9 +447,11 @@ export const FamilyTreePage: React.FC = () => {
                         onEdgesChange={onEdgesChange}
                         onNodeClick={handleNodeClick}
                         onNodeContextMenu={handleNodeContextMenu}
+                        onConnect={onConnect}
                         nodeTypes={nodeTypes}
                         fitView
                         attributionPosition="bottom-left"
+                        minZoom={0.1}
                     >
                         <Controls />
                         <MiniMap />
@@ -480,6 +507,19 @@ export const FamilyTreePage: React.FC = () => {
             <CommunityRequests
                 isOpen={isCommunityModalOpen}
                 onClose={() => setIsCommunityModalOpen(false)}
+                onSuccess={loadTree}
+            />
+
+            <ConnectNodesModal
+                isOpen={isConnectModalOpen}
+                sourceNodeId={connectSourceId}
+                targetNodeId={connectTargetId}
+                allMembers={allMembers}
+                onClose={() => {
+                    setIsConnectModalOpen(false);
+                    setConnectSourceId(null);
+                    setConnectTargetId(null);
+                }}
                 onSuccess={loadTree}
             />
         </div>
