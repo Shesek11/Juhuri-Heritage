@@ -15,13 +15,19 @@ import dagre from 'dagre';
 import { familyService, FamilyMember } from '../services/familyService';
 import { useFeatureFlag } from '../hooks/useFeatureFlag';
 import { useAuth } from '../contexts/AuthContext';
-import { User, Search, Plus, TreeDeciduous, Pencil } from 'lucide-react';
+import { User, Plus, TreeDeciduous, Pencil, Heart } from 'lucide-react';
 import { AddMemberModal } from './family/AddMemberModal';
 import { EditMemberModal } from './family/EditMemberModal';
 
+// Types for tree data
+interface TreeData {
+    members: FamilyMember[];
+    parentChild: { parent_id: number; child_id: number; relationship_type: string }[];
+    partnerships: { person1_id: number; person2_id: number; status: string }[];
+}
+
 // Custom Node Component
 const MemberNode = ({ data }: { data: FamilyMember & { label: string; isOwner: boolean } }) => {
-    // Determine colors and silhouette based on gender
     const getStyles = () => {
         switch (data.gender) {
             case 'male': return { border: 'border-blue-200', bg: 'bg-blue-100', iconColor: 'text-blue-400' };
@@ -31,9 +37,11 @@ const MemberNode = ({ data }: { data: FamilyMember & { label: string; isOwner: b
     };
 
     const styles = getStyles();
+    const displayName = data.title ? `${data.title} ${data.first_name}` : data.first_name;
+    const displayLastName = data.maiden_name ? `${data.last_name} (${data.maiden_name})` : data.last_name;
 
     return (
-        <div className={`px-4 py-2 shadow-md rounded-md bg-white border-2 w-[150px] flex flex-col items-center hover:shadow-lg transition-shadow cursor-pointer ${styles.border} ${data.isOwner ? 'ring-2 ring-amber-400' : ''}`}>
+        <div className={`px-4 py-2 shadow-md rounded-md bg-white border-2 w-[160px] flex flex-col items-center hover:shadow-lg transition-shadow cursor-pointer relative ${styles.border} ${data.isOwner ? 'ring-2 ring-amber-400' : ''}`}>
             <Handle type="target" position={Position.Top} className="w-16 !bg-slate-300" />
 
             {data.photo_url ? (
@@ -48,10 +56,16 @@ const MemberNode = ({ data }: { data: FamilyMember & { label: string; isOwner: b
                 </div>
             )}
 
-            <div className="text-xs font-bold text-center text-slate-800">{data.first_name}</div>
-            <div className="text-[10px] text-slate-500 text-center">{data.last_name}</div>
+            <div className="text-xs font-bold text-center text-slate-800">{displayName}</div>
+            <div className="text-[10px] text-slate-500 text-center">{displayLastName}</div>
+            {data.nickname && (
+                <div className="text-[9px] text-amber-600 mt-0.5">"{data.nickname}"</div>
+            )}
             {data.birth_date && (
-                <div className="text-[9px] text-slate-400 mt-1">{data.birth_date.substring(0, 4)}</div>
+                <div className="text-[9px] text-slate-400 mt-1">
+                    {data.birth_date.substring(0, 4)}
+                    {!data.is_alive && data.death_date && ` - ${data.death_date.substring(0, 4)}`}
+                </div>
             )}
 
             {data.isOwner && (
@@ -77,7 +91,7 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'TB') => 
     dagreGraph.setGraph({ rankdir: direction });
 
     nodes.forEach((node) => {
-        dagreGraph.setNode(node.id, { width: 150, height: 100 });
+        dagreGraph.setNode(node.id, { width: 160, height: 120 });
     });
 
     edges.forEach((edge) => {
@@ -92,8 +106,8 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'TB') => 
         node.sourcePosition = isHorizontal ? Position.Right : Position.Bottom;
 
         node.position = {
-            x: nodeWithPosition.x - 75,
-            y: nodeWithPosition.y - 50,
+            x: nodeWithPosition.x - 80,
+            y: nodeWithPosition.y - 60,
         };
 
         return node;
@@ -122,13 +136,20 @@ export const FamilyTreePage: React.FC = () => {
     const loadTree = async () => {
         try {
             setLoading(true);
-            const rawData = await familyService.getTreeData();
-            setAllMembers(rawData);
+            const treeData = await familyService.getTreeData() as unknown as TreeData;
+
+            // Handle both old format (array) and new format (object with members)
+            const members = Array.isArray(treeData) ? treeData : treeData.members;
+            const parentChildRels = Array.isArray(treeData) ? [] : (treeData.parentChild || []);
+            const partnerships = Array.isArray(treeData) ? [] : (treeData.partnerships || []);
+
+            setAllMembers(members);
 
             const initialNodes: Node[] = [];
             const initialEdges: Edge[] = [];
 
-            rawData.forEach(member => {
+            // Create nodes for all members
+            members.forEach(member => {
                 if (!member.id) return;
                 const isOwner = user?.id === member.user_id || user?.role === 'admin';
                 initialNodes.push({
@@ -137,27 +158,49 @@ export const FamilyTreePage: React.FC = () => {
                     data: { ...member, label: `${member.first_name} ${member.last_name}`, isOwner },
                     position: { x: 0, y: 0 }
                 });
-
-                if (member.father_id) {
-                    initialEdges.push({
-                        id: `e${member.father_id}-${member.id}`,
-                        source: member.father_id.toString(),
-                        target: member.id.toString(),
-                        type: 'smoothstep',
-                        animated: true
-                    });
-                }
-                if (member.mother_id) {
-                    initialEdges.push({
-                        id: `e${member.mother_id}-${member.id}`,
-                        source: member.mother_id.toString(),
-                        target: member.id.toString(),
-                        type: 'smoothstep',
-                        animated: true,
-                        style: { stroke: '#f472b6' }
-                    });
-                }
             });
+
+            // Create edges from parent-child relationships
+            parentChildRels.forEach(rel => {
+                const edgeStyle = rel.relationship_type === 'biological'
+                    ? {}
+                    : { strokeDasharray: '5 5' }; // Dashed for non-biological
+
+                initialEdges.push({
+                    id: `pc-${rel.parent_id}-${rel.child_id}`,
+                    source: rel.parent_id.toString(),
+                    target: rel.child_id.toString(),
+                    type: 'smoothstep',
+                    animated: rel.relationship_type === 'biological',
+                    style: edgeStyle,
+                    label: rel.relationship_type !== 'biological' ? getRelTypeLabel(rel.relationship_type) : undefined
+                });
+            });
+
+            // Fallback: use legacy father_id/mother_id if no parentChild relations
+            if (parentChildRels.length === 0) {
+                members.forEach(member => {
+                    if (member.father_id) {
+                        initialEdges.push({
+                            id: `e${member.father_id}-${member.id}`,
+                            source: member.father_id.toString(),
+                            target: member.id!.toString(),
+                            type: 'smoothstep',
+                            animated: true
+                        });
+                    }
+                    if (member.mother_id) {
+                        initialEdges.push({
+                            id: `e${member.mother_id}-${member.id}`,
+                            source: member.mother_id.toString(),
+                            target: member.id!.toString(),
+                            type: 'smoothstep',
+                            animated: true,
+                            style: { stroke: '#f472b6' }
+                        });
+                    }
+                });
+            }
 
             const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(
                 initialNodes,
@@ -173,10 +216,18 @@ export const FamilyTreePage: React.FC = () => {
         }
     };
 
+    const getRelTypeLabel = (type: string) => {
+        switch (type) {
+            case 'adopted': return 'מאומץ';
+            case 'foster': return 'אומנה';
+            case 'step': return 'חורג';
+            default: return '';
+        }
+    };
+
     const handleNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
         const memberData = node.data as FamilyMember & { isOwner: boolean };
         if (memberData.isOwner) {
-            // Find the full member data
             const fullMember = allMembers.find(m => m.id?.toString() === node.id);
             if (fullMember) {
                 setSelectedMember(fullMember);
@@ -210,6 +261,23 @@ export const FamilyTreePage: React.FC = () => {
                 >
                     <Plus size={16} className="inline ml-1" /> הוסף בן משפחה
                 </button>
+            </div>
+
+            {/* Legend */}
+            <div className="absolute bottom-4 right-4 z-10 bg-white/90 dark:bg-slate-900/90 backdrop-blur p-3 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 text-xs" dir="rtl">
+                <div className="font-bold mb-2">מקרא:</div>
+                <div className="flex items-center gap-2 mb-1">
+                    <div className="w-4 h-0.5 bg-slate-400"></div>
+                    <span>קשר הורה-ילד</span>
+                </div>
+                <div className="flex items-center gap-2 mb-1">
+                    <div className="w-4 h-0.5 border-t-2 border-dashed border-slate-400"></div>
+                    <span>קשר לא ביולוגי</span>
+                </div>
+                <div className="flex items-center gap-2">
+                    <Pencil size={12} className="text-amber-500" />
+                    <span>ניתן לעריכה</span>
+                </div>
             </div>
 
             {/* Help Text */}

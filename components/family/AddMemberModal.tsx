@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { CreateMemberInput, familyService } from '../../services/familyService';
-import { User, Calendar, MapPin, Heart, X, Check, Loader2, Upload } from 'lucide-react';
+import { User, X, Check, Loader2, Upload } from 'lucide-react';
 
 interface AddMemberModalProps {
     isOpen: boolean;
@@ -14,6 +14,9 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose,
         first_name: '',
         last_name: '',
         maiden_name: '',
+        nickname: '',
+        previous_name: '',
+        title: '',
         gender: 'male',
         is_alive: true,
         birth_date: '',
@@ -54,6 +57,7 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose,
 
                 <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
                     <div className="space-y-4">
+                        {/* Profile Photo */}
                         <div className="flex items-center gap-4">
                             <div className="w-24 h-24 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden flex items-center justify-center border border-slate-200 dark:border-slate-600 relative group">
                                 {formData.photo_url ? (
@@ -76,7 +80,6 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose,
                                             uploadData.append('file', file);
 
                                             try {
-                                                // TODO: Move to apiService but for now quick fix
                                                 const token = localStorage.getItem('token');
                                                 const res = await fetch('/api/upload', {
                                                     method: 'POST',
@@ -101,10 +104,22 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose,
                             </div>
                             <div className="flex-1">
                                 <h3 className="font-bold text-slate-800 dark:text-slate-200">תמונת פרופיל</h3>
-                                <p className="text-sm text-slate-500">לחץ על העיגול כדי להעלות תמונה. מומלץ תמונה מרובעת.</p>
+                                <p className="text-sm text-slate-500">לחץ על העיגול להעלאת תמונה.</p>
                             </div>
                         </div>
 
+                        {/* Title */}
+                        <div>
+                            <label className="block text-sm font-medium mb-1">תואר</label>
+                            <input
+                                value={formData.title}
+                                onChange={e => setFormData({ ...formData, title: e.target.value })}
+                                placeholder="ד&quot;ר, רב, עו&quot;ד..."
+                                className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
+                            />
+                        </div>
+
+                        {/* First & Last Name */}
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm font-medium mb-1">שם פרטי *</label>
@@ -126,6 +141,40 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose,
                             </div>
                         </div>
 
+                        {/* Maiden Name & Nickname */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium mb-1">שם נעורים</label>
+                                <input
+                                    value={formData.maiden_name}
+                                    onChange={e => setFormData({ ...formData, maiden_name: e.target.value })}
+                                    placeholder="שם משפחה לפני נישואין"
+                                    className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1">כינוי</label>
+                                <input
+                                    value={formData.nickname}
+                                    onChange={e => setFormData({ ...formData, nickname: e.target.value })}
+                                    placeholder="כינוי משפחתי"
+                                    className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Previous Name */}
+                        <div>
+                            <label className="block text-sm font-medium mb-1">שם קודם</label>
+                            <input
+                                value={formData.previous_name}
+                                onChange={e => setFormData({ ...formData, previous_name: e.target.value })}
+                                placeholder="במקרה של שינוי שם"
+                                className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
+                            />
+                        </div>
+
+                        {/* Gender & Is Alive */}
                         <div className="flex gap-4">
                             <div className="flex-1">
                                 <label className="block text-sm font-medium mb-1">מין</label>
@@ -160,12 +209,13 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose,
                             </div>
                         </div>
 
+                        {/* Dates */}
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm font-medium mb-1">תאריך לידה</label>
                                 <input
                                     type="date"
-                                    value={formData.birth_date || ''}
+                                    value={formData.birth_date}
                                     onChange={e => setFormData({ ...formData, birth_date: e.target.value })}
                                     className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
                                 />
@@ -175,7 +225,7 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose,
                                     <label className="block text-sm font-medium mb-1">תאריך פטירה</label>
                                     <input
                                         type="date"
-                                        value={formData.death_date || ''}
+                                        value={formData.death_date}
                                         onChange={e => setFormData({ ...formData, death_date: e.target.value })}
                                         className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
                                     />
@@ -183,6 +233,30 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose,
                             )}
                         </div>
 
+                        {/* Places */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium mb-1">מקום לידה</label>
+                                <input
+                                    value={formData.birth_place}
+                                    onChange={e => setFormData({ ...formData, birth_place: e.target.value })}
+                                    placeholder="עיר, מדינה"
+                                    className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
+                                />
+                            </div>
+                            {!formData.is_alive && (
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">מקום פטירה</label>
+                                    <input
+                                        value={formData.death_place}
+                                        onChange={e => setFormData({ ...formData, death_place: e.target.value })}
+                                        className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
+                                    />
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Biography */}
                         <div>
                             <label className="block text-sm font-medium mb-1">ביוגרפיה קצרה</label>
                             <textarea
@@ -203,7 +277,7 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose,
                         className="bg-emerald-600 text-white px-6 py-2 rounded-lg font-bold flex items-center gap-2 hover:bg-emerald-700 disabled:opacity-50"
                     >
                         {loading ? <Loader2 className="animate-spin" /> : <Check size={18} />}
-                        שמור
+                        הוסף
                     </button>
                 </div>
             </div>

@@ -19,6 +19,9 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                 first_name: member.first_name || '',
                 last_name: member.last_name || '',
                 maiden_name: member.maiden_name || '',
+                nickname: member.nickname || '',
+                previous_name: member.previous_name || '',
+                title: member.title || '',
                 gender: member.gender || 'male',
                 is_alive: member.is_alive ?? true,
                 birth_date: member.birth_date?.split('T')[0] || '',
@@ -61,6 +64,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
 
                 <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
                     <div className="space-y-4">
+                        {/* Profile Photo */}
                         <div className="flex items-center gap-4">
                             <div className="w-24 h-24 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden flex items-center justify-center border border-slate-200 dark:border-slate-600 relative group">
                                 {formData.photo_url ? (
@@ -111,6 +115,18 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                             </div>
                         </div>
 
+                        {/* Title */}
+                        <div>
+                            <label className="block text-sm font-medium mb-1">תואר</label>
+                            <input
+                                value={formData.title}
+                                onChange={e => setFormData({ ...formData, title: e.target.value })}
+                                placeholder="ד&quot;ר, רב, עו&quot;ד..."
+                                className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
+                            />
+                        </div>
+
+                        {/* First & Last Name */}
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm font-medium mb-1">שם פרטי *</label>
@@ -132,6 +148,40 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                             </div>
                         </div>
 
+                        {/* Maiden Name & Nickname */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium mb-1">שם נעורים</label>
+                                <input
+                                    value={formData.maiden_name}
+                                    onChange={e => setFormData({ ...formData, maiden_name: e.target.value })}
+                                    placeholder="שם משפחה לפני נישואין"
+                                    className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1">כינוי</label>
+                                <input
+                                    value={formData.nickname}
+                                    onChange={e => setFormData({ ...formData, nickname: e.target.value })}
+                                    placeholder="כינוי משפחתי"
+                                    className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Previous Name */}
+                        <div>
+                            <label className="block text-sm font-medium mb-1">שם קודם</label>
+                            <input
+                                value={formData.previous_name}
+                                onChange={e => setFormData({ ...formData, previous_name: e.target.value })}
+                                placeholder="במקרה של שינוי שם"
+                                className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
+                            />
+                        </div>
+
+                        {/* Gender & Is Alive */}
                         <div className="flex gap-4">
                             <div className="flex-1">
                                 <label className="block text-sm font-medium mb-1">מין</label>
@@ -166,6 +216,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                             </div>
                         </div>
 
+                        {/* Dates */}
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <label className="block text-sm font-medium mb-1">תאריך לידה</label>
@@ -189,6 +240,30 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                             )}
                         </div>
 
+                        {/* Places */}
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium mb-1">מקום לידה</label>
+                                <input
+                                    value={formData.birth_place}
+                                    onChange={e => setFormData({ ...formData, birth_place: e.target.value })}
+                                    placeholder="עיר, מדינה"
+                                    className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
+                                />
+                            </div>
+                            {!formData.is_alive && (
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">מקום פטירה</label>
+                                    <input
+                                        value={formData.death_place}
+                                        onChange={e => setFormData({ ...formData, death_place: e.target.value })}
+                                        className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
+                                    />
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Biography */}
                         <div>
                             <label className="block text-sm font-medium mb-1">ביוגרפיה קצרה</label>
                             <textarea
