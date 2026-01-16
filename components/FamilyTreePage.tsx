@@ -324,6 +324,54 @@ export const FamilyTreePage: React.FC = () => {
 
         dagre.layout(dagreGraph);
 
+        // --- Post-Processing: Center Pivot Nodes (Multi-Partners) ---
+        // Force nodes with multiple partners to be in the middle of their partners
+        const partnershipEdges = edges.filter(e => e.id.startsWith('part-'));
+        const partnerMap = new Map<string, string[]>();
+
+        partnershipEdges.forEach(e => {
+            if (!partnerMap.has(e.source)) partnerMap.set(e.source, []);
+            if (!partnerMap.has(e.target)) partnerMap.set(e.target, []);
+            partnerMap.get(e.source)?.push(e.target);
+            partnerMap.get(e.target)?.push(e.source);
+        });
+
+        const processedClusters = new Set<string>();
+
+        nodes.forEach(node => {
+            const partners = partnerMap.get(node.id) || [];
+            if (partners.length > 1 && !processedClusters.has(node.id)) {
+                // This is a pivot node with multiple partners
+                const clusterIds = [node.id, ...partners];
+
+                // Mark all as processed for this pass to avoid fighting
+                clusterIds.forEach(id => processedClusters.add(id));
+
+                // Get current Dagre positions
+                const clusterNodes = clusterIds.map(id => {
+                    const dNode = dagreGraph.node(id);
+                    return { id, x: dNode.x, width: dNode.width };
+                }).sort((a, b) => a.x - b.x);
+
+                // Find where the pivot currently is
+                const currentPivotIndex = clusterNodes.findIndex(n => n.id === node.id);
+                const desiredPivotIndex = Math.floor(clusterNodes.length / 2);
+
+                if (currentPivotIndex !== -1 && currentPivotIndex !== desiredPivotIndex) {
+                    // SWAP X coordinates between Pivot and the node currently in the middle
+                    const pivotNode = clusterNodes[currentPivotIndex];
+                    const targetNode = clusterNodes[desiredPivotIndex];
+
+                    const tempX = pivotNode.x;
+
+                    // Update in Dagre Graph so the next map step picks it up
+                    dagreGraph.node(pivotNode.id).x = targetNode.x;
+                    dagreGraph.node(targetNode.id).x = tempX;
+                }
+            }
+        });
+        // ------------------------------------------------------------
+
         // Map definitions
         const newNodes = nodes.map((node) => {
             const nodeWithPosition = dagreGraph.node(node.id);
