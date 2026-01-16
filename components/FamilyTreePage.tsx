@@ -46,8 +46,8 @@ const MemberNode = ({ data }: { data: FamilyMember & { label: string; isOwner: b
     const displayLastName = data.maiden_name ? `${data.last_name} (${data.maiden_name})` : data.last_name;
 
     return (
-        <div className={`px-4 py-2 shadow-md rounded-md bg-white border-2 w-[160px] flex flex-col items-center hover:shadow-lg transition-shadow cursor-pointer relative ${styles.border} ${data.isOwner ? 'ring-2 ring-amber-400' : ''}`}>
-            <Handle type="target" position={Position.Top} className="w-16 !bg-slate-300" />
+        <div className={`group px-4 py-2 shadow-md rounded-md bg-white border-2 w-[160px] flex flex-col items-center hover:shadow-lg transition-shadow cursor-pointer relative ${styles.border} ${data.isOwner ? 'ring-2 ring-amber-400' : ''}`}>
+            <Handle type="target" position={Position.Top} className="w-16 !bg-slate-300 opacity-0 group-hover:opacity-100 transition-opacity" />
 
             {data.photo_url ? (
                 <img
@@ -76,7 +76,7 @@ const MemberNode = ({ data }: { data: FamilyMember & { label: string; isOwner: b
             </div>
 
             {/* Quick Actions (Hover) */}
-            <div className="absolute top-0 right-0 p-1 opacity-0 hover:opacity-100 transition-opacity flex gap-1">
+            <div className="absolute top-0 right-0 p-1 opacity-0 hover:opacity-100 transition-opacity flex gap-1 z-20">
                 {data.isOwner && (
                     <>
                         <div className="bg-amber-500 text-white rounded-full p-0.5 shadow-sm" title="ניתן לעריכה">
@@ -98,12 +98,10 @@ const MemberNode = ({ data }: { data: FamilyMember & { label: string; isOwner: b
                 )}
             </div>
 
-            <Handle type="source" position={Position.Bottom} className="w-16 !bg-slate-300" />
-
             {/* Quick Add Button */}
             {data.isOwner && (
                 <div
-                    className="absolute -top-3 -right-3 bg-emerald-500 text-white rounded-full p-1 shadow-md hover:bg-emerald-600 hover:scale-110 transition-all z-10"
+                    className="absolute -top-3 -right-3 bg-emerald-500 text-white rounded-full p-1 shadow-md hover:bg-emerald-600 hover:scale-110 transition-all z-10 opacity-0 group-hover:opacity-100"
                     title="הוסף קרוב משפחה"
                     onClick={(e) => {
                         e.stopPropagation();
@@ -113,6 +111,20 @@ const MemberNode = ({ data }: { data: FamilyMember & { label: string; isOwner: b
                     <UserPlus size={12} />
                 </div>
             )}
+
+            {/* Connect Handle (Visual + Functional) */}
+            <div className="absolute -bottom-3 left-1/2 -translate-x-1/2 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-all z-20 pointer-events-none">
+                <div className="bg-blue-600 text-white text-[10px] px-2 py-0.5 rounded-full shadow-sm flex items-center gap-1 whitespace-nowrap mb-1">
+                    <Plus size={8} />
+                    <span>חבר</span>
+                </div>
+            </div>
+
+            <Handle
+                type="source"
+                position={Position.Bottom}
+                className="w-4 h-4 !bg-blue-500 !border-white !border-2 !-bottom-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity"
+            />
         </div>
     );
 };
@@ -122,6 +134,7 @@ const nodeTypes = {
 };
 
 export const FamilyTreePage: React.FC = () => {
+    // ... (rest of imports and hooks)
     const { isEnabled } = useFeatureFlag('family_tree_module');
     const { user } = useAuth();
     const [nodes, setNodes, onNodesChange] = useNodesState([]);
@@ -156,7 +169,8 @@ export const FamilyTreePage: React.FC = () => {
         }
     }, [isEnabled]);
 
-    // Debounced Search
+    // ... (useEffect for search and handlers stay same until getLayoutedElements)
+
     useEffect(() => {
         const timer = setTimeout(async () => {
             if (searchQuery.trim().length >= 2) {
@@ -223,7 +237,6 @@ export const FamilyTreePage: React.FC = () => {
                         target: pc.child_id.toString(),
                         type: 'smoothstep',
                         style: { stroke: pc.relationship_type === 'biological' ? '#94a3b8' : '#94a3b8', strokeWidth: 2, strokeDasharray: pc.relationship_type === 'biological' ? undefined : '5,5' },
-                        // label: relationship labels can be noisy
                     })),
                     // Partnership edges
                     ...(data.partnerships || []).map((p) => ({
@@ -274,6 +287,7 @@ export const FamilyTreePage: React.FC = () => {
         const nodeWidth = 160;
         const nodeHeight = 100;
 
+        // Use TB (Top-to-Bottom) but partnership edges will be ignored for rank calculation
         dagreGraph.setGraph({ rankdir: 'TB' });
 
         nodes.forEach((node) => {
@@ -281,13 +295,21 @@ export const FamilyTreePage: React.FC = () => {
         });
 
         edges.forEach((edge) => {
-            dagreGraph.setEdge(edge.source, edge.target);
+            // EXCLUDE partnership edges from Dagre layout calculation
+            // This prevents Dagre from forcing spouses to be above/below each other
+            if (!edge.id.startsWith('part-')) {
+                dagreGraph.setEdge(edge.source, edge.target);
+            }
         });
 
         dagre.layout(dagreGraph);
 
         nodes.forEach((node) => {
             const nodeWithPosition = dagreGraph.node(node.id);
+            // If node has no position (e.g. disconnected spouse), it might be at 0,0
+            // We need a strategy for disconnected nodes, but typically spouses are connected to children or parents
+            // If they are truly isolated, Dagre might not place them well.
+            // However, usually they have children. If they share children, Dagre will place them on the same rank above the child.
             node.position = {
                 x: nodeWithPosition.x - nodeWidth / 2,
                 y: nodeWithPosition.y - nodeHeight / 2,
