@@ -88,10 +88,12 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose,
                                                 const data = await res.json();
                                                 if (data.success) {
                                                     setFormData({ ...formData, photo_url: data.url });
+                                                } else {
+                                                    alert(data.error || 'שגיאה בהעלאת התמונה');
                                                 }
                                             } catch (err) {
                                                 console.error('Upload failed', err);
-                                                alert('שגיאה בהעלאת התמונה');
+                                                alert('שגיאת רשת בהעלאת התמונה');
                                             }
                                         }}
                                     />

@@ -43,7 +43,23 @@ router.post('/', authenticate, (req, res) => {
     upload.single('file')(req, res, (err) => {
         if (err) {
             console.error('Upload Multer Error:', err);
-            return res.status(500).json({ error: err.message || 'שגיאה בהעלאת הקובץ' });
+
+            // Return user-friendly error messages
+            let errorMessage = 'שגיאה בהעלאת הקובץ';
+            let statusCode = 500;
+
+            if (err.code === 'LIMIT_FILE_SIZE') {
+                errorMessage = 'הקובץ גדול מדי. הגודל המקסימלי הוא 15MB';
+                statusCode = 400;
+            } else if (err.message.includes('תמונה')) {
+                errorMessage = err.message;
+                statusCode = 400;
+            } else if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+                errorMessage = 'שגיאה בסוג הקובץ';
+                statusCode = 400;
+            }
+
+            return res.status(statusCode).json({ error: errorMessage });
         }
 
         if (!req.file) {
@@ -52,6 +68,8 @@ router.post('/', authenticate, (req, res) => {
 
         // Return URL relative to server
         const fileUrl = `/uploads/${req.file.filename}`;
+
+        console.log('Upload successful:', fileUrl);
 
         res.json({
             success: true,
