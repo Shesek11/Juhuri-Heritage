@@ -8,7 +8,8 @@ import ReactFlow, {
     Node,
     Edge,
     Position,
-    Handle
+    Handle,
+    ConnectionMode
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import dagre from 'dagre';
@@ -125,6 +126,15 @@ const MemberNode = ({ data }: { data: FamilyMember & { label: string; isOwner: b
                 position={Position.Bottom}
                 className="w-4 h-4 !bg-blue-500 !border-white !border-2 !-bottom-2 z-10 opacity-0 group-hover:opacity-100 transition-opacity"
             />
+
+            {/* Side Handles for Partnerships - separate Source/Target to ensure valid connections */}
+            {/* Right Side */}
+            <Handle type="source" position={Position.Right} id="right" className="!w-1 !h-1 !bg-transparent !border-none" style={{ top: '40%' }} />
+            <Handle type="target" position={Position.Right} id="right-target" className="!w-1 !h-1 !bg-transparent !border-none" style={{ top: '60%' }} />
+
+            {/* Left Side */}
+            <Handle type="source" position={Position.Left} id="left" className="!w-1 !h-1 !bg-transparent !border-none" style={{ top: '40%' }} />
+            <Handle type="target" position={Position.Left} id="left-target" className="!w-1 !h-1 !bg-transparent !border-none" style={{ top: '60%' }} />
         </div>
     );
 };
@@ -305,17 +315,8 @@ export const FamilyTreePage: React.FC = () => {
             if (edge.id.startsWith('part-')) {
                 const partnerA = edge.source;
                 const partnerB = edge.target;
-
-                // Check if they already share a child in the graph
-                // (This would be an optimization, but adding a virtual node is safer to GUARANTEE alignment)
                 const virtualNodeId = `virtual-child-${partnerA}-${partnerB}`;
-
-                // Add minimal virtual node
                 dagreGraph.setNode(virtualNodeId, { width: 1, height: 1, label: '' });
-
-                // Connect both partners to virtual node
-                // This forces them to be on the rank ABOVE the virtual node. Isolate them to same generation.
-                // Weight = 50 ensures these nodes are pulled tight together horizontally
                 dagreGraph.setEdge(partnerA, virtualNodeId, { minlen: 1, weight: 50, label: '' });
                 dagreGraph.setEdge(partnerB, virtualNodeId, { minlen: 1, weight: 50, label: '' });
             }
@@ -323,7 +324,8 @@ export const FamilyTreePage: React.FC = () => {
 
         dagre.layout(dagreGraph);
 
-        nodes.forEach((node) => {
+        // Map definitions
+        const newNodes = nodes.map((node) => {
             const nodeWithPosition = dagreGraph.node(node.id);
             if (nodeWithPosition) {
                 node.position = {
@@ -331,9 +333,33 @@ export const FamilyTreePage: React.FC = () => {
                     y: nodeWithPosition.y - nodeHeight / 2,
                 };
             }
+            return node;
         });
 
-        return { nodes, edges };
+        // Update Edges: Assign handles for partnerships based on X position
+        const newEdges = edges.map((edge) => {
+            if (edge.id.startsWith('part-')) {
+                const sourceNode = newNodes.find(n => n.id === edge.source);
+                const targetNode = newNodes.find(n => n.id === edge.target);
+
+                if (sourceNode && targetNode) {
+                    if (sourceNode.position.x < targetNode.position.x) {
+                        // Source is Left, Target is Right
+                        // Source (Left) uses "right" handle (type source)
+                        // Target (Right) uses "left-target" handle (type target)
+                        return { ...edge, sourceHandle: 'right', targetHandle: 'left-target' };
+                    } else {
+                        // Source is Right, Target is Left
+                        // Source (Right) uses "left" handle (type source)
+                        // Target (Left) uses "right-target" handle (type target)
+                        return { ...edge, sourceHandle: 'left', targetHandle: 'right-target' };
+                    }
+                }
+            }
+            return edge;
+        });
+
+        return { nodes: newNodes, edges: newEdges };
     };
 
     const getRelTypeLabel = (type: string) => {
@@ -523,6 +549,7 @@ export const FamilyTreePage: React.FC = () => {
                         fitView
                         attributionPosition="bottom-left"
                         minZoom={0.1}
+                        connectionMode={ConnectionMode.Loose}
                     >
                         <Controls />
                         <MiniMap />
