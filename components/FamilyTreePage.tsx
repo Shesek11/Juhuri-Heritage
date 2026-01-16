@@ -190,7 +190,8 @@ export const FamilyTreePage: React.FC = () => {
                         ...member,
                         label: `${member.first_name} ${member.last_name}`,
                         isOwner,
-                        onAddRelative: (type) => {
+                        onAddRelative: (type: 'parent' | 'child' | 'spouse' | null) => {
+                            setSelectedMember(member);
                             setAddRelativeType(type);
                             setIsAddRelativeModalOpen(true);
                         }
