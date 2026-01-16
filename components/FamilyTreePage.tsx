@@ -36,7 +36,7 @@ const MemberNode = ({ data }: { data: FamilyMember & { label: string } }) => {
 
             {data.photo_url ? (
                 <img
-                    src={data.photo_url.startsWith('http') ? data.photo_url : `http://localhost:3002${data.photo_url}`}
+                    src={data.photo_url}
                     className="w-12 h-12 rounded-full object-cover mb-2 border border-slate-100 shadow-sm"
                     alt={data.first_name}
                 />

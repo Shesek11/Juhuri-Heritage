@@ -43,7 +43,7 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose,
 
     return (
         <div className="fixed inset-0 z-[100] bg-black/50 flex items-center justify-center p-4 backdrop-blur-sm" onClick={onClose}>
-            <div className="bg-white dark:bg-slate-800 w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
+            <div className="bg-white dark:bg-slate-800 w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden" dir="rtl" onClick={e => e.stopPropagation()}>
                 <div className="p-4 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-emerald-50 dark:bg-emerald-900/20">
                     <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
                         <User className="text-emerald-600" size={20} />
@@ -57,7 +57,7 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose,
                         <div className="flex items-center gap-4">
                             <div className="w-24 h-24 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden flex items-center justify-center border border-slate-200 dark:border-slate-600 relative group">
                                 {formData.photo_url ? (
-                                    <img src={formData.photo_url.startsWith('http') ? formData.photo_url : `http://localhost:3002${formData.photo_url}`} alt="Preview" className="w-full h-full object-cover" />
+                                    <img src={formData.photo_url} alt="Preview" className="w-full h-full object-cover" />
                                 ) : (
                                     <User size={40} className="text-slate-400" />
                                 )}
@@ -78,7 +78,7 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose,
                                             try {
                                                 // TODO: Move to apiService but for now quick fix
                                                 const token = localStorage.getItem('token');
-                                                const res = await fetch('http://localhost:3002/api/upload', {
+                                                const res = await fetch('/api/upload', {
                                                     method: 'POST',
                                                     headers: {
                                                         'Authorization': `Bearer ${token}`
