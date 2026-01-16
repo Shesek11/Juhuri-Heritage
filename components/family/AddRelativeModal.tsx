@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CreateMemberInput, familyService, ParentChildType, PartnershipStatus } from '../../services/familyService';
-import { User, X, Check, Loader2, Upload, Users, Baby, Heart } from 'lucide-react';
+import { User, X, Check, Loader2, Upload, Users, Baby, Heart, UserPlus } from 'lucide-react';
 
 interface AddRelativeModalProps {
     isOpen: boolean;
@@ -9,7 +9,7 @@ interface AddRelativeModalProps {
         first_name: string;
         last_name: string;
     } | null;
-    relationType: 'parent' | 'child' | 'spouse' | null;
+    relationType?: 'parent' | 'child' | 'spouse' | null;
     onClose: () => void;
     onSuccess: () => void;
 }
@@ -38,6 +38,7 @@ export const AddRelativeModal: React.FC<AddRelativeModalProps> = ({
     onSuccess
 }) => {
     const [loading, setLoading] = useState(false);
+    const [activeType, setActiveType] = useState<'parent' | 'child' | 'spouse'>('child');
     const [relationshipSubType, setRelationshipSubType] = useState<ParentChildType>('biological');
     const [partnershipStatus, setPartnershipStatus] = useState<PartnershipStatus>('married');
     const [partnershipDate, setPartnershipDate] = useState('');
@@ -59,8 +60,14 @@ export const AddRelativeModal: React.FC<AddRelativeModalProps> = ({
         photo_url: '',
     });
 
+    useEffect(() => {
+        if (isOpen && relationType) {
+            setActiveType(relationType);
+        }
+    }, [isOpen, relationType]);
+
     // Reset form when modal opens with new relativeTo
-    React.useEffect(() => {
+    useEffect(() => {
         if (relativeTo) {
             setFormData(prev => ({
                 ...prev,
@@ -70,10 +77,10 @@ export const AddRelativeModal: React.FC<AddRelativeModalProps> = ({
         }
     }, [relativeTo]);
 
-    if (!isOpen || !relativeTo || !relationType) return null;
+    if (!isOpen || !relativeTo) return null;
 
     const getTitle = () => {
-        switch (relationType) {
+        switch (activeType) {
             case 'parent': return `הוספת הורה ל${relativeTo.first_name}`;
             case 'child': return `הוספת ילד/ה ל${relativeTo.first_name}`;
             case 'spouse': return `הוספת בן/בת זוג ל${relativeTo.first_name}`;
@@ -81,7 +88,7 @@ export const AddRelativeModal: React.FC<AddRelativeModalProps> = ({
     };
 
     const getIcon = () => {
-        switch (relationType) {
+        switch (activeType) {
             case 'parent': return <Users className="text-blue-600" size={20} />;
             case 'child': return <Baby className="text-green-600" size={20} />;
             case 'spouse': return <Heart className="text-pink-600" size={20} />;
@@ -89,10 +96,10 @@ export const AddRelativeModal: React.FC<AddRelativeModalProps> = ({
     };
 
     const getColor = () => {
-        switch (relationType) {
-            case 'parent': return 'bg-blue-50 dark:bg-blue-900/20';
-            case 'child': return 'bg-green-50 dark:bg-green-900/20';
-            case 'spouse': return 'bg-pink-50 dark:bg-pink-900/20';
+        switch (activeType) {
+            case 'parent': return 'bg-blue-50 dark:bg-blue-900/20 border-blue-100';
+            case 'child': return 'bg-green-50 dark:bg-green-900/20 border-green-100';
+            case 'spouse': return 'bg-pink-50 dark:bg-pink-900/20 border-pink-100';
         }
     };
 
@@ -105,21 +112,21 @@ export const AddRelativeModal: React.FC<AddRelativeModalProps> = ({
             const newMemberId = result.id;
 
             // Step 2: Create the relationship
-            if (relationType === 'parent') {
+            if (activeType === 'parent') {
                 // New person is parent of relativeTo
                 await familyService.addParentChild({
                     parent_id: newMemberId,
                     child_id: relativeTo.id,
                     relationship_type: relationshipSubType
                 });
-            } else if (relationType === 'child') {
+            } else if (activeType === 'child') {
                 // relativeTo is parent of new person
                 await familyService.addParentChild({
                     parent_id: relativeTo.id,
                     child_id: newMemberId,
                     relationship_type: relationshipSubType
                 });
-            } else if (relationType === 'spouse') {
+            } else if (activeType === 'spouse') {
                 await familyService.addPartnership({
                     person1_id: relativeTo.id,
                     person2_id: newMemberId,
@@ -140,30 +147,55 @@ export const AddRelativeModal: React.FC<AddRelativeModalProps> = ({
 
     return (
         <div className="fixed inset-0 z-[100] bg-black/50 flex items-center justify-center p-4 backdrop-blur-sm" onClick={onClose}>
-            <div className="bg-white dark:bg-slate-800 w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden" dir="rtl" onClick={e => e.stopPropagation()}>
-                <div className={`p-4 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center ${getColor()}`}>
-                    <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                        {getIcon()}
-                        {getTitle()}
-                    </h2>
-                    <button onClick={onClose}><X className="text-slate-400 hover:text-slate-600" /></button>
+            <div className="bg-white dark:bg-slate-800 w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]" dir="rtl" onClick={e => e.stopPropagation()}>
+
+                {/* Header with Type Selector */}
+                <div className={`p-4 border-b ${getColor()}`}>
+                    <div className="flex justify-between items-center mb-4">
+                        <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                            {getIcon()}
+                            {getTitle()}
+                        </h2>
+                        <button onClick={onClose}><X className="text-slate-400 hover:text-slate-600" /></button>
+                    </div>
+
+                    <div className="flex bg-white/50 dark:bg-black/20 p-1 rounded-xl">
+                        <button
+                            onClick={() => setActiveType('parent')}
+                            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all ${activeType === 'parent' ? 'bg-white shadow text-blue-600' : 'text-slate-500 hover:bg-white/50'}`}
+                        >
+                            <Users size={16} /> הורה
+                        </button>
+                        <button
+                            onClick={() => setActiveType('spouse')}
+                            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all ${activeType === 'spouse' ? 'bg-white shadow text-pink-600' : 'text-slate-500 hover:bg-white/50'}`}
+                        >
+                            <Heart size={16} /> בן/ת זוג
+                        </button>
+                        <button
+                            onClick={() => setActiveType('child')}
+                            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-sm font-medium transition-all ${activeType === 'child' ? 'bg-white shadow text-green-600' : 'text-slate-500 hover:bg-white/50'}`}
+                        >
+                            <Baby size={16} /> ילד/ה
+                        </button>
+                    </div>
                 </div>
 
-                <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+                <form onSubmit={handleSubmit} className="p-6 space-y-4 overflow-y-auto custom-scrollbar">
                     {/* Relationship Type Selection */}
-                    <div className="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-xl space-y-3">
-                        <div className="text-sm font-bold text-slate-700 dark:text-slate-200">סוג הקשר:</div>
+                    <div className="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-xl space-y-3 border border-slate-100 dark:border-slate-700">
+                        <div className="text-sm font-bold text-slate-700 dark:text-slate-200">פרטי הקשר:</div>
 
-                        {(relationType === 'parent' || relationType === 'child') && (
+                        {(activeType === 'parent' || activeType === 'child') && (
                             <div className="flex flex-wrap gap-2">
                                 {PARENT_CHILD_TYPES.map(type => (
                                     <button
                                         key={type.value}
                                         type="button"
                                         onClick={() => setRelationshipSubType(type.value)}
-                                        className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${relationshipSubType === type.value
-                                                ? 'bg-purple-600 text-white'
-                                                : 'bg-white dark:bg-slate-600 text-slate-600 dark:text-slate-200 hover:bg-slate-100'
+                                        className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${relationshipSubType === type.value
+                                                ? 'bg-slate-800 text-white border-slate-800'
+                                                : 'bg-white dark:bg-slate-600 text-slate-600 dark:text-slate-200 border-slate-200 hover:border-slate-300'
                                             }`}
                                     >
                                         {type.label}
@@ -172,7 +204,7 @@ export const AddRelativeModal: React.FC<AddRelativeModalProps> = ({
                             </div>
                         )}
 
-                        {relationType === 'spouse' && (
+                        {activeType === 'spouse' && (
                             <>
                                 <div className="flex flex-wrap gap-2">
                                     {PARTNERSHIP_STATUSES.map(status => (
@@ -180,9 +212,9 @@ export const AddRelativeModal: React.FC<AddRelativeModalProps> = ({
                                             key={status.value}
                                             type="button"
                                             onClick={() => setPartnershipStatus(status.value)}
-                                            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${partnershipStatus === status.value
-                                                    ? 'bg-pink-600 text-white'
-                                                    : 'bg-white dark:bg-slate-600 text-slate-600 dark:text-slate-200 hover:bg-slate-100'
+                                            className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all border ${partnershipStatus === status.value
+                                                    ? 'bg-pink-600 text-white border-pink-600'
+                                                    : 'bg-white dark:bg-slate-600 text-slate-600 dark:text-slate-200 border-slate-200 hover:border-slate-300'
                                                 }`}
                                         >
                                             {status.label}
@@ -204,7 +236,7 @@ export const AddRelativeModal: React.FC<AddRelativeModalProps> = ({
 
                     {/* Profile Photo */}
                     <div className="flex items-center gap-4">
-                        <div className="w-20 h-20 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden flex items-center justify-center border border-slate-200 dark:border-slate-600 relative group">
+                        <div className="w-20 h-20 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden flex items-center justify-center border border-slate-200 dark:border-slate-600 relative group shrink-0">
                             {formData.photo_url ? (
                                 <img src={formData.photo_url} alt="Preview" className="w-full h-full object-cover" />
                             ) : (
@@ -242,8 +274,42 @@ export const AddRelativeModal: React.FC<AddRelativeModalProps> = ({
                             </label>
                         </div>
                         <div className="flex-1">
-                            <h3 className="font-bold text-slate-800 dark:text-slate-200 text-sm">תמונה</h3>
-                            <p className="text-xs text-slate-500">לחץ להעלאה</p>
+                            <h3 className="font-bold text-slate-800 dark:text-slate-200 text-sm">תמונת פרופיל</h3>
+                            <p className="text-xs text-slate-500 mb-2">לחץ על העיגול כדי להעלות תמונה</p>
+
+                            <div className="flex gap-2">
+                                <div className="flex-1">
+                                    <label className="block text-xs font-medium mb-1">מין</label>
+                                    <select
+                                        value={formData.gender}
+                                        onChange={e => setFormData({ ...formData, gender: e.target.value as any })}
+                                        className="w-full p-1.5 rounded-lg border dark:bg-slate-700 dark:border-slate-600 text-sm"
+                                    >
+                                        <option value="male">זכר</option>
+                                        <option value="female">נקבה</option>
+                                        <option value="other">אחר</option>
+                                    </select>
+                                </div>
+                                <div className="flex-1">
+                                    <label className="block text-xs font-medium mb-1">חי?</label>
+                                    <div className="flex bg-slate-100 dark:bg-slate-700 p-1 rounded-lg h-[34px]">
+                                        <button
+                                            type="button"
+                                            onClick={() => setFormData({ ...formData, is_alive: true })}
+                                            className={`flex-1 text-xs rounded-md transition-all ${formData.is_alive ? 'bg-white dark:bg-slate-600 shadow text-emerald-600 font-bold' : 'text-slate-500'}`}
+                                        >
+                                            כן
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setFormData({ ...formData, is_alive: false })}
+                                            className={`flex-1 text-xs rounded-md transition-all ${!formData.is_alive ? 'bg-white dark:bg-slate-600 shadow text-slate-800 font-bold' : 'text-slate-500'}`}
+                                        >
+                                            לא
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
 
@@ -255,7 +321,7 @@ export const AddRelativeModal: React.FC<AddRelativeModalProps> = ({
                                 required
                                 value={formData.first_name}
                                 onChange={e => setFormData({ ...formData, first_name: e.target.value })}
-                                className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 text-sm"
+                                className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
                             />
                         </div>
                         <div>
@@ -264,43 +330,24 @@ export const AddRelativeModal: React.FC<AddRelativeModalProps> = ({
                                 required
                                 value={formData.last_name}
                                 onChange={e => setFormData({ ...formData, last_name: e.target.value })}
+                                className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 text-sm focus:ring-2 focus:ring-blue-500 outline-none"
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-xs font-medium mb-1">כינוי</label>
+                            <input
+                                value={formData.nickname}
+                                onChange={e => setFormData({ ...formData, nickname: e.target.value })}
                                 className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 text-sm"
                             />
                         </div>
-                    </div>
-
-                    {/* Gender & Status */}
-                    <div className="flex gap-3">
-                        <div className="flex-1">
-                            <label className="block text-xs font-medium mb-1">מין</label>
-                            <select
-                                value={formData.gender}
-                                onChange={e => setFormData({ ...formData, gender: e.target.value as any })}
+                        <div>
+                            <label className="block text-xs font-medium mb-1">שם נעורים</label>
+                            <input
+                                value={formData.maiden_name}
+                                onChange={e => setFormData({ ...formData, maiden_name: e.target.value })}
                                 className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 text-sm"
-                            >
-                                <option value="male">זכר</option>
-                                <option value="female">נקבה</option>
-                                <option value="other">אחר</option>
-                            </select>
-                        </div>
-                        <div className="flex-1">
-                            <label className="block text-xs font-medium mb-1">חי?</label>
-                            <div className="flex bg-slate-100 dark:bg-slate-700 p-1 rounded-lg">
-                                <button
-                                    type="button"
-                                    onClick={() => setFormData({ ...formData, is_alive: true })}
-                                    className={`flex-1 text-xs py-1.5 rounded-md transition-all ${formData.is_alive ? 'bg-white dark:bg-slate-600 shadow text-emerald-600' : 'text-slate-500'}`}
-                                >
-                                    כן
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setFormData({ ...formData, is_alive: false })}
-                                    className={`flex-1 text-xs py-1.5 rounded-md transition-all ${!formData.is_alive ? 'bg-white dark:bg-slate-600 shadow text-slate-800' : 'text-slate-500'}`}
-                                >
-                                    לא
-                                </button>
-                            </div>
+                            />
                         </div>
                     </div>
 
@@ -317,14 +364,14 @@ export const AddRelativeModal: React.FC<AddRelativeModalProps> = ({
                 </form>
 
                 <div className="p-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 flex justify-end gap-3">
-                    <button onClick={onClose} className="px-4 py-2 text-slate-500 hover:bg-slate-200 rounded-lg text-sm">ביטול</button>
+                    <button onClick={onClose} className="px-4 py-2 text-slate-500 hover:bg-slate-200 rounded-lg text-sm transition-colors">ביטול</button>
                     <button
                         onClick={handleSubmit}
                         disabled={loading || !formData.first_name || !formData.last_name}
-                        className="bg-purple-600 text-white px-6 py-2 rounded-lg font-bold flex items-center gap-2 hover:bg-purple-700 disabled:opacity-50 text-sm"
+                        className="bg-slate-800 text-white px-6 py-2 rounded-lg font-bold flex items-center gap-2 hover:bg-slate-700 disabled:opacity-50 text-sm transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                     >
                         {loading ? <Loader2 className="animate-spin" size={16} /> : <Check size={16} />}
-                        צור וחבר
+                        צור וחבר למשפחה
                     </button>
                 </div>
             </div>

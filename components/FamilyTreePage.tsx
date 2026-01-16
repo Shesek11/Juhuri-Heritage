@@ -15,7 +15,7 @@ import dagre from 'dagre';
 import { familyService, FamilyMember } from '../services/familyService';
 import { useFeatureFlag } from '../hooks/useFeatureFlag';
 import { useAuth } from '../contexts/AuthContext';
-import { User, Plus, TreeDeciduous, Pencil, Heart, Link } from 'lucide-react';
+import { User, Plus, TreeDeciduous, Pencil, Heart, Link, UserPlus } from 'lucide-react';
 import { AddMemberModal } from './family/AddMemberModal';
 import { EditMemberModal } from './family/EditMemberModal';
 import { RelationshipManager } from './family/RelationshipManager';
@@ -29,7 +29,7 @@ interface TreeData {
 }
 
 // Custom Node Component
-const MemberNode = ({ data }: { data: FamilyMember & { label: string; isOwner: boolean } }) => {
+const MemberNode = ({ data }: { data: FamilyMember & { label: string; isOwner: boolean; onAddRelative: (type: any) => void } }) => {
     const getStyles = () => {
         switch (data.gender) {
             case 'male': return { border: 'border-blue-200', bg: 'bg-blue-100', iconColor: 'text-blue-400' };
@@ -71,9 +71,21 @@ const MemberNode = ({ data }: { data: FamilyMember & { label: string; isOwner: b
             )}
 
             {data.isOwner && (
-                <div className="absolute -top-2 -right-2 bg-amber-500 text-white rounded-full p-1" title="ניתן לערוך">
-                    <Pencil size={10} />
-                </div>
+                <>
+                    <div className="absolute -top-2 -right-2 bg-amber-500 text-white rounded-full p-1 z-10" title="ניתן לערוך">
+                        <Pencil size={10} />
+                    </div>
+                    <button
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            data.onAddRelative(null);
+                        }}
+                        className="absolute -top-2 -left-2 bg-emerald-500 text-white rounded-full p-1 hover:bg-emerald-600 transition-colors shadow-sm z-50"
+                        title="הוסף קרוב משפחה"
+                    >
+                        <UserPlus size={10} />
+                    </button>
+                </>
             )}
 
             <Handle type="source" position={Position.Bottom} className="w-16 !bg-slate-300" />
@@ -97,7 +109,22 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'TB') => 
     });
 
     edges.forEach((edge) => {
-        dagreGraph.setEdge(edge.source, edge.target);
+        if (edge.type === 'straight') {
+            // Partnership edge: Use dummy node trick to force same rank/horizontal alignment
+            const dummyId = `__dummy_${edge.source}_${edge.target}`;
+            dagreGraph.setNode(dummyId, { width: 1, height: 1 });
+            dagreGraph.setEdge(edge.source, dummyId, { weight: 0, minlen: 1 });
+            dagreGraph.setEdge(edge.target, dummyId, { weight: 0, minlen: 1 });
+            // Also connect dummy to parents? No, just connecting them to a shared node often aligns them.
+            // Actually, connecting them TO the dummy makes the dummy a child. 
+            // Better: Dummy is parent of both? 
+            // If dummy -> Source and dummy -> Target, they are siblings. Siblings are same rank.
+            // Let's try: Dummy -> Source, Dummy -> Target.
+            // BUT edge.source might already have parents.
+            // If we add another parent (Dummy), Dagre handles multiple parents well.
+        } else {
+            dagreGraph.setEdge(edge.source, edge.target);
+        }
     });
 
     dagre.layout(dagreGraph);
@@ -159,7 +186,15 @@ export const FamilyTreePage: React.FC = () => {
                 initialNodes.push({
                     id: member.id.toString(),
                     type: 'member',
-                    data: { ...member, label: `${member.first_name} ${member.last_name}`, isOwner },
+                    data: {
+                        ...member,
+                        label: `${member.first_name} ${member.last_name}`,
+                        isOwner,
+                        onAddRelative: (type) => {
+                            setAddRelativeType(type);
+                            setIsAddRelativeModalOpen(true);
+                        }
+                    },
                     position: { x: 0, y: 0 }
                 });
             });
