@@ -43,6 +43,45 @@ export interface FamilyMember {
 export type ParentChildType = 'biological' | 'adopted' | 'foster' | 'step';
 export type PartnershipStatus = 'married' | 'divorced' | 'widowed' | 'common_law' | 'separated' | 'engaged';
 
+export interface MergeSuggestion {
+    id: number;
+    member1_id: number;
+    member2_id: number;
+    member1_first: string;
+    member1_last: string;
+    member1_birth?: string;
+    member1_photo?: string;
+    member1_owner?: number;
+    member2_first: string;
+    member2_last: string;
+    member2_birth?: string;
+    member2_photo?: string;
+    member2_owner?: number;
+    suggested_by?: number;
+    suggested_by_name?: string;
+    suggested_at: string;
+    confidence_score: number;
+    reason?: string;
+    status: 'pending' | 'approved' | 'rejected';
+}
+
+export interface LinkRequest {
+    id: number;
+    requester_id: number;
+    requester_name: string;
+    source_member_id: number;
+    source_first: string;
+    source_last: string;
+    target_member_id: number;
+    target_first: string;
+    target_last: string;
+    target_owner?: number;
+    relationship_type: 'same_person' | 'parent' | 'child' | 'spouse';
+    message?: string;
+    status: 'pending' | 'approved' | 'rejected';
+    created_at: string;
+}
+
 export interface ParentRelationship {
     id: number;
     parent_id: number;
@@ -186,5 +225,54 @@ export const familyService = {
             parentChild: { parent_id: number; child_id: number; relationship_type: string }[];
             partnerships: { person1_id: number; person2_id: number; status: string }[];
         }>(`/family/tree/${rootId || 0}`);
+    },
+
+    // =====================================================
+    // Community Features
+    // =====================================================
+
+    // Search with Soundex (phonetic)
+    searchMembers: (query: string, limit?: number) => {
+        return apiService.get<FamilyMember[]>(`/family/community/search?q=${encodeURIComponent(query)}&limit=${limit || 20}`);
+    },
+
+    // Find potential duplicates
+    findDuplicates: (memberId: number) => {
+        return apiService.get<(FamilyMember & { similarity_score: number })[]>(`/family/community/duplicates/${memberId}`);
+    },
+
+    // Merge Suggestions
+    getMergeSuggestions: () => {
+        return apiService.get<MergeSuggestion[]>('/family/community/suggestions');
+    },
+
+    createMergeSuggestion: (member1Id: number, member2Id: number, reason?: string) => {
+        return apiService.post<{ success: true; id: number }>('/family/community/suggestions', {
+            member1_id: member1Id,
+            member2_id: member2Id,
+            reason
+        });
+    },
+
+    respondToMergeSuggestion: (suggestionId: number, status: 'approved' | 'rejected', keepMemberId?: number) => {
+        return apiService.put(`/family/community/suggestions/${suggestionId}`, { status, keepMemberId });
+    },
+
+    // Link Requests
+    getLinkRequests: () => {
+        return apiService.get<LinkRequest[]>('/family/community/link-requests');
+    },
+
+    createLinkRequest: (sourceMemberId: number, targetMemberId: number, relationshipType: string, message?: string) => {
+        return apiService.post<{ success: true; id: number }>('/family/community/link-requests', {
+            source_member_id: sourceMemberId,
+            target_member_id: targetMemberId,
+            relationship_type: relationshipType,
+            message
+        });
+    },
+
+    respondToLinkRequest: (requestId: number, status: 'approved' | 'rejected') => {
+        return apiService.put(`/family/community/link-requests/${requestId}`, { status });
     }
 };
