@@ -13,9 +13,10 @@ async function runMigration() {
 
     const connection = await mysql.createConnection({
         host: process.env.DB_HOST || 'localhost',
-        user: process.env.DB_USER || 'root',
+        port: parseInt(process.env.DB_PORT) || 3306,
+        user: process.env.DB_USERNAME || process.env.DB_USER || 'root',
         password: process.env.DB_PASSWORD || '',
-        database: process.env.DB_NAME || 'juhuri',
+        database: process.env.DB_DATABASE || process.env.DB_NAME || 'juhuri',
         multipleStatements: true
     });
 
@@ -60,7 +61,7 @@ async function runMigration() {
             WHERE TABLE_SCHEMA = ? 
             AND TABLE_NAME LIKE 'family_%'
             ORDER BY TABLE_NAME
-        `, [process.env.DB_NAME || 'juhuri']);
+        `, [process.env.DB_DATABASE || process.env.DB_NAME || 'juhuri']);
 
         tables.forEach(t => console.log(`   ✓ ${t.TABLE_NAME}`));
 
@@ -72,7 +73,7 @@ async function runMigration() {
             WHERE TABLE_SCHEMA = ? 
             AND TABLE_NAME = 'family_members'
             AND COLUMN_NAME IN ('external_id', 'external_source', 'last_name_soundex', 'merged_into')
-        `, [process.env.DB_NAME || 'juhuri']);
+        `, [process.env.DB_DATABASE || process.env.DB_NAME || 'juhuri']);
 
         columns.forEach(c => console.log(`   ✓ ${c.COLUMN_NAME}`));
 
