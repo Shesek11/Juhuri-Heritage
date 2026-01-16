@@ -122,7 +122,7 @@ const nodeTypes = {
 };
 
 export const FamilyTreePage: React.FC = () => {
-    const { isEnabled } = useFeatureFlag('family_tree');
+    const { isEnabled } = useFeatureFlag('family_tree_module');
     const { user } = useAuth();
     const [nodes, setNodes, onNodesChange] = useNodesState([]);
     const [edges, setEdges, onEdgesChange] = useEdgesState([]);
