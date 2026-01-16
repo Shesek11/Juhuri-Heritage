@@ -14,11 +14,13 @@ import 'reactflow/dist/style.css';
 import dagre from 'dagre';
 import { familyService, FamilyMember } from '../services/familyService';
 import { useFeatureFlag } from '../hooks/useFeatureFlag';
-import { User, Search, Plus, TreeDeciduous } from 'lucide-react';
+import { useAuth } from '../contexts/AuthContext';
+import { User, Search, Plus, TreeDeciduous, Pencil } from 'lucide-react';
 import { AddMemberModal } from './family/AddMemberModal';
+import { EditMemberModal } from './family/EditMemberModal';
 
 // Custom Node Component
-const MemberNode = ({ data }: { data: FamilyMember & { label: string } }) => {
+const MemberNode = ({ data }: { data: FamilyMember & { label: string; isOwner: boolean } }) => {
     // Determine colors and silhouette based on gender
     const getStyles = () => {
         switch (data.gender) {
@@ -31,7 +33,7 @@ const MemberNode = ({ data }: { data: FamilyMember & { label: string } }) => {
     const styles = getStyles();
 
     return (
-        <div className={`px-4 py-2 shadow-md rounded-md bg-white border-2 w-[150px] flex flex-col items-center ${styles.border}`}>
+        <div className={`px-4 py-2 shadow-md rounded-md bg-white border-2 w-[150px] flex flex-col items-center hover:shadow-lg transition-shadow cursor-pointer ${styles.border} ${data.isOwner ? 'ring-2 ring-amber-400' : ''}`}>
             <Handle type="target" position={Position.Top} className="w-16 !bg-slate-300" />
 
             {data.photo_url ? (
@@ -50,6 +52,12 @@ const MemberNode = ({ data }: { data: FamilyMember & { label: string } }) => {
             <div className="text-[10px] text-slate-500 text-center">{data.last_name}</div>
             {data.birth_date && (
                 <div className="text-[9px] text-slate-400 mt-1">{data.birth_date.substring(0, 4)}</div>
+            )}
+
+            {data.isOwner && (
+                <div className="absolute -top-2 -right-2 bg-amber-500 text-white rounded-full p-1" title="ניתן לערוך">
+                    <Pencil size={10} />
+                </div>
             )}
 
             <Handle type="source" position={Position.Bottom} className="w-16 !bg-slate-300" />
@@ -96,10 +104,14 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[], direction = 'TB') => 
 
 export const FamilyTreePage: React.FC = () => {
     const { isEnabled } = useFeatureFlag('family_tree_module');
+    const { user } = useAuth();
     const [nodes, setNodes, onNodesChange] = useNodesState([]);
     const [edges, setEdges, onEdgesChange] = useEdgesState([]);
     const [loading, setLoading] = useState(true);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [selectedMember, setSelectedMember] = useState<FamilyMember | null>(null);
+    const [allMembers, setAllMembers] = useState<FamilyMember[]>([]);
 
     useEffect(() => {
         if (isEnabled) {
@@ -111,16 +123,18 @@ export const FamilyTreePage: React.FC = () => {
         try {
             setLoading(true);
             const rawData = await familyService.getTreeData();
+            setAllMembers(rawData);
 
             const initialNodes: Node[] = [];
             const initialEdges: Edge[] = [];
 
             rawData.forEach(member => {
                 if (!member.id) return;
+                const isOwner = user?.id === member.user_id || user?.role === 'admin';
                 initialNodes.push({
                     id: member.id.toString(),
                     type: 'member',
-                    data: { ...member, label: `${member.first_name} ${member.last_name}` },
+                    data: { ...member, label: `${member.first_name} ${member.last_name}`, isOwner },
                     position: { x: 0, y: 0 }
                 });
 
@@ -159,6 +173,18 @@ export const FamilyTreePage: React.FC = () => {
         }
     };
 
+    const handleNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
+        const memberData = node.data as FamilyMember & { isOwner: boolean };
+        if (memberData.isOwner) {
+            // Find the full member data
+            const fullMember = allMembers.find(m => m.id?.toString() === node.id);
+            if (fullMember) {
+                setSelectedMember(fullMember);
+                setIsEditModalOpen(true);
+            }
+        }
+    }, [allMembers]);
+
     if (!isEnabled) {
         return (
             <div className="flex flex-col items-center justify-center p-8 text-center min-h-[50vh]">
@@ -186,6 +212,14 @@ export const FamilyTreePage: React.FC = () => {
                 </button>
             </div>
 
+            {/* Help Text */}
+            {user && (
+                <div className="absolute top-4 left-4 z-10 bg-white/90 dark:bg-slate-900/90 backdrop-blur p-2 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 text-xs text-slate-500">
+                    <Pencil size={12} className="inline text-amber-500 ml-1" />
+                    לחץ על כרטיס עם מסגרת כתומה לעריכה
+                </div>
+            )}
+
             {loading ? (
                 <div className="flex-1 flex items-center justify-center text-slate-400">טוען עץ משפחה...</div>
             ) : nodes.length === 0 ? (
@@ -206,6 +240,7 @@ export const FamilyTreePage: React.FC = () => {
                         edges={edges}
                         onNodesChange={onNodesChange}
                         onEdgesChange={onEdgesChange}
+                        onNodeClick={handleNodeClick}
                         nodeTypes={nodeTypes}
                         fitView
                         attributionPosition="bottom-left"
@@ -220,6 +255,16 @@ export const FamilyTreePage: React.FC = () => {
             <AddMemberModal
                 isOpen={isAddModalOpen}
                 onClose={() => setIsAddModalOpen(false)}
+                onSuccess={loadTree}
+            />
+
+            <EditMemberModal
+                isOpen={isEditModalOpen}
+                member={selectedMember}
+                onClose={() => {
+                    setIsEditModalOpen(false);
+                    setSelectedMember(null);
+                }}
                 onSuccess={loadTree}
             />
         </div>

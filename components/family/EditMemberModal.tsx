@@ -1,0 +1,216 @@
+import React, { useState, useEffect } from 'react';
+import { FamilyMember, familyService } from '../../services/familyService';
+import { User, X, Check, Loader2, Upload, Pencil } from 'lucide-react';
+
+interface EditMemberModalProps {
+    isOpen: boolean;
+    member: FamilyMember | null;
+    onClose: () => void;
+    onSuccess: () => void;
+}
+
+export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member, onClose, onSuccess }) => {
+    const [loading, setLoading] = useState(false);
+    const [formData, setFormData] = useState<Partial<FamilyMember>>({});
+
+    useEffect(() => {
+        if (member) {
+            setFormData({
+                first_name: member.first_name || '',
+                last_name: member.last_name || '',
+                maiden_name: member.maiden_name || '',
+                gender: member.gender || 'male',
+                is_alive: member.is_alive ?? true,
+                birth_date: member.birth_date?.split('T')[0] || '',
+                death_date: member.death_date?.split('T')[0] || '',
+                birth_place: member.birth_place || '',
+                death_place: member.death_place || '',
+                biography: member.biography || '',
+                photo_url: member.photo_url || '',
+            });
+        }
+    }, [member]);
+
+    if (!isOpen || !member) return null;
+
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true);
+        try {
+            await familyService.updateMember(member.id, formData);
+            onSuccess();
+            onClose();
+        } catch (err: any) {
+            console.error(err);
+            alert(err.message || 'שגיאה בעדכון בן משפחה');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 z-[100] bg-black/50 flex items-center justify-center p-4 backdrop-blur-sm" onClick={onClose}>
+            <div className="bg-white dark:bg-slate-800 w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden" dir="rtl" onClick={e => e.stopPropagation()}>
+                <div className="p-4 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-amber-50 dark:bg-amber-900/20">
+                    <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                        <Pencil className="text-amber-600" size={20} />
+                        עריכת בן משפחה
+                    </h2>
+                    <button onClick={onClose}><X className="text-slate-400 hover:text-slate-600" /></button>
+                </div>
+
+                <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-4">
+                            <div className="w-24 h-24 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden flex items-center justify-center border border-slate-200 dark:border-slate-600 relative group">
+                                {formData.photo_url ? (
+                                    <img src={formData.photo_url} alt="Preview" className="w-full h-full object-cover" />
+                                ) : (
+                                    <User size={40} className="text-slate-400" />
+                                )}
+
+                                <label className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                                    <Upload className="text-white" size={24} />
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        className="hidden"
+                                        onChange={async (e) => {
+                                            const file = e.target.files?.[0];
+                                            if (!file) return;
+
+                                            const uploadData = new FormData();
+                                            uploadData.append('file', file);
+
+                                            try {
+                                                const token = localStorage.getItem('token');
+                                                const res = await fetch('/api/upload', {
+                                                    method: 'POST',
+                                                    headers: {
+                                                        'Authorization': `Bearer ${token}`
+                                                    },
+                                                    body: uploadData
+                                                });
+                                                const data = await res.json();
+                                                if (data.success) {
+                                                    setFormData({ ...formData, photo_url: data.url });
+                                                }
+                                            } catch (err) {
+                                                console.error('Upload failed', err);
+                                                alert('שגיאה בהעלאת התמונה');
+                                            }
+                                        }}
+                                    />
+                                </label>
+                            </div>
+                            <div className="flex-1">
+                                <h3 className="font-bold text-slate-800 dark:text-slate-200">תמונת פרופיל</h3>
+                                <p className="text-sm text-slate-500">לחץ על העיגול כדי להחליף תמונה.</p>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium mb-1">שם פרטי *</label>
+                                <input
+                                    required
+                                    value={formData.first_name}
+                                    onChange={e => setFormData({ ...formData, first_name: e.target.value })}
+                                    className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1">שם משפחה *</label>
+                                <input
+                                    required
+                                    value={formData.last_name}
+                                    onChange={e => setFormData({ ...formData, last_name: e.target.value })}
+                                    className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="flex gap-4">
+                            <div className="flex-1">
+                                <label className="block text-sm font-medium mb-1">מין</label>
+                                <select
+                                    value={formData.gender}
+                                    onChange={e => setFormData({ ...formData, gender: e.target.value as any })}
+                                    className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
+                                >
+                                    <option value="male">זכר</option>
+                                    <option value="female">נקבה</option>
+                                    <option value="other">אחר</option>
+                                </select>
+                            </div>
+                            <div className="flex-1">
+                                <label className="block text-sm font-medium mb-1">חי?</label>
+                                <div className="flex bg-slate-100 dark:bg-slate-700 p-1 rounded-lg">
+                                    <button
+                                        type="button"
+                                        onClick={() => setFormData({ ...formData, is_alive: true })}
+                                        className={`flex-1 text-sm py-1.5 rounded-md transition-all ${formData.is_alive ? 'bg-white dark:bg-slate-600 shadow text-emerald-600' : 'text-slate-500'}`}
+                                    >
+                                        כן
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setFormData({ ...formData, is_alive: false })}
+                                        className={`flex-1 text-sm py-1.5 rounded-md transition-all ${!formData.is_alive ? 'bg-white dark:bg-slate-600 shadow text-slate-800' : 'text-slate-500'}`}
+                                    >
+                                        לא
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium mb-1">תאריך לידה</label>
+                                <input
+                                    type="date"
+                                    value={formData.birth_date || ''}
+                                    onChange={e => setFormData({ ...formData, birth_date: e.target.value })}
+                                    className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
+                                />
+                            </div>
+                            {!formData.is_alive && (
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">תאריך פטירה</label>
+                                    <input
+                                        type="date"
+                                        value={formData.death_date || ''}
+                                        onChange={e => setFormData({ ...formData, death_date: e.target.value })}
+                                        className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
+                                    />
+                                </div>
+                            )}
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium mb-1">ביוגרפיה קצרה</label>
+                            <textarea
+                                value={formData.biography}
+                                onChange={e => setFormData({ ...formData, biography: e.target.value })}
+                                className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 h-20"
+                                placeholder="סיפור חיים קצר..."
+                            />
+                        </div>
+                    </div>
+                </form>
+
+                <div className="p-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 flex justify-end gap-3">
+                    <button onClick={onClose} className="px-4 py-2 text-slate-500 hover:bg-slate-200 rounded-lg">ביטול</button>
+                    <button
+                        onClick={handleSubmit}
+                        disabled={loading}
+                        className="bg-amber-600 text-white px-6 py-2 rounded-lg font-bold flex items-center gap-2 hover:bg-amber-700 disabled:opacity-50"
+                    >
+                        {loading ? <Loader2 className="animate-spin" /> : <Check size={18} />}
+                        עדכן
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};

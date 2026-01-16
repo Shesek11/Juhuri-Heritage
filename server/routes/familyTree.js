@@ -107,10 +107,20 @@ router.post('/members', authenticate, async (req, res) => {
     }
 });
 
-// Update Member (authenticated)
+// Update Member (authenticated, owner only)
 router.put('/members/:id', authenticate, async (req, res) => {
     try {
         const { id } = req.params;
+
+        // Check ownership
+        const [existing] = await pool.query('SELECT user_id FROM family_members WHERE id = ?', [id]);
+        if (existing.length === 0) {
+            return res.status(404).json({ error: 'בן משפחה לא נמצא' });
+        }
+        if (existing[0].user_id !== req.user.id && req.user.role !== 'admin') {
+            return res.status(403).json({ error: 'אין הרשאה לערוך בן משפחה זה' });
+        }
+
         const {
             first_name, last_name, maiden_name, gender,
             birth_date, death_date, birth_place, death_place,
@@ -147,7 +157,7 @@ router.get('/tree/:rootId', async (req, res) => {
     // Or we can just fetch ALL members if the DB is small (limit 500?)
     // Let's fetch all linked nodes for simple MVP.
     try {
-        const [allMembers] = await pool.query('SELECT id, first_name, last_name, gender, photo_url, father_id, mother_id, spouse_id FROM family_members LIMIT 1000');
+        const [allMembers] = await pool.query('SELECT id, user_id, first_name, last_name, gender, photo_url, birth_date, father_id, mother_id, spouse_id, is_alive FROM family_members LIMIT 1000');
         res.json(allMembers);
     } catch (err) {
         res.status(500).json({ error: 'Failed to fetch tree' });
