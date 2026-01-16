@@ -1,11 +1,20 @@
-import ELK from 'elkjs/lib/elk.bundled.js';
-import type { ElkNode, ElkExtendedEdge } from 'elkjs';
+import dagre from 'dagre';
 import { Node, Edge } from 'reactflow';
 import { FamilyMember } from './familyService';
 
-const elk = new ELK();
+// Try to import ELK, but provide fallback if it fails
+let ELK: any = null;
+let elk: any = null;
 
-// Layout Options for the main graph
+try {
+    // Dynamic import to prevent build failures
+    ELK = require('elkjs/lib/elk.bundled.js');
+    elk = new ELK();
+} catch (e) {
+    console.warn('ELK layout engine not available, using Dagre fallback');
+}
+
+// ELK Layout Options
 const DEFAULT_LAYOUT_OPTIONS: Record<string, string> = {
     'elk.algorithm': 'layered',
     'elk.direction': 'DOWN',
@@ -13,11 +22,70 @@ const DEFAULT_LAYOUT_OPTIONS: Record<string, string> = {
     'elk.layered.spacing.nodeNodeBetweenLayers': '100',
     'elk.layered.nodePlacement.strategy': 'BRANDES_KOEPF',
     'elk.edgeRouting': 'ORTHOGONAL',
-    'org.eclipse.elk.layered.layering.strategy': 'NETWORK_SIMPLEX',
 };
 
-export const layoutElements = async (nodes: Node[], edges: Edge[], members: FamilyMember[]): Promise<{ nodes: Node[], edges: Edge[] }> => {
-    // 1. Identify Partnership Clusters
+// Dagre fallback layout
+const layoutWithDagre = (nodes: Node[], edges: Edge[]): { nodes: Node[], edges: Edge[] } => {
+    const dagreGraph = new dagre.graphlib.Graph();
+    dagreGraph.setDefaultEdgeLabel(() => ({}));
+    dagreGraph.setGraph({ rankdir: 'TB', nodesep: 50, ranksep: 80 });
+
+    const nodeWidth = 160;
+    const nodeHeight = 100;
+
+    nodes.forEach(node => {
+        dagreGraph.setNode(node.id, { width: nodeWidth, height: nodeHeight });
+    });
+
+    // Parent-Child edges
+    edges.forEach(edge => {
+        if (!edge.id.startsWith('part-')) {
+            dagreGraph.setEdge(edge.source, edge.target);
+        }
+    });
+
+    // Partnership edges with virtual child
+    edges.forEach(edge => {
+        if (edge.id.startsWith('part-')) {
+            const virtualId = `virtual-${edge.source}-${edge.target}`;
+            dagreGraph.setNode(virtualId, { width: 1, height: 1 });
+            dagreGraph.setEdge(edge.source, virtualId, { weight: 50 });
+            dagreGraph.setEdge(edge.target, virtualId, { weight: 50 });
+        }
+    });
+
+    dagre.layout(dagreGraph);
+
+    const newNodes = nodes.map(node => {
+        const pos = dagreGraph.node(node.id);
+        return {
+            ...node,
+            position: { x: pos.x - nodeWidth / 2, y: pos.y - nodeHeight / 2 }
+        };
+    });
+
+    const newEdges = edges.map(edge => {
+        if (edge.id.startsWith('part-')) {
+            const src = newNodes.find(n => n.id === edge.source);
+            const tgt = newNodes.find(n => n.id === edge.target);
+            if (src && tgt) {
+                return src.position.x < tgt.position.x
+                    ? { ...edge, sourceHandle: 'right', targetHandle: 'left-target' }
+                    : { ...edge, sourceHandle: 'left', targetHandle: 'right-target' };
+            }
+        }
+        return edge;
+    });
+
+    return { nodes: newNodes, edges: newEdges };
+};
+
+// ELK layout with clustering
+const layoutWithELK = async (nodes: Node[], edges: Edge[]): Promise<{ nodes: Node[], edges: Edge[] }> => {
+    if (!elk) {
+        return layoutWithDagre(nodes, edges);
+    }
+
     const partnerMap = new Map<string, Set<string>>();
     const allNodeIds = new Set(nodes.map(n => n.id));
 
@@ -35,25 +103,19 @@ export const layoutElements = async (nodes: Node[], edges: Edge[], members: Fami
 
     nodes.forEach(node => {
         if (visited.has(node.id)) return;
-
         const partners = partnerMap.get(node.id);
         if (partners && partners.size > 0) {
             const clusterMembers = new Set<string>();
             const queue = [node.id];
-
             while (queue.length > 0) {
                 const current = queue.shift()!;
                 if (clusterMembers.has(current)) continue;
-
                 clusterMembers.add(current);
                 visited.add(current);
-
-                const myPartners = partnerMap.get(current);
-                myPartners?.forEach(pId => {
+                partnerMap.get(current)?.forEach(pId => {
                     if (!visited.has(pId)) queue.push(pId);
                 });
             }
-
             clusters.push({
                 id: `cluster-${Array.from(clusterMembers).sort().join('-')}`,
                 members: Array.from(clusterMembers)
@@ -61,147 +123,95 @@ export const layoutElements = async (nodes: Node[], edges: Edge[], members: Fami
         }
     });
 
-    // 2. Build ELK Graph
-    const elkNodes: ElkNode[] = [];
+    const elkNodes: any[] = [];
     const memberToClusterId = new Map<string, string>();
 
-    // Create Cluster Compound Nodes
     clusters.forEach(cluster => {
-        // Find pivot (most connected node in cluster)
         let pivotId = cluster.members[0];
         let maxDegree = 0;
         cluster.members.forEach(mId => {
             const degree = partnerMap.get(mId)?.size || 0;
-            if (degree > maxDegree) {
-                maxDegree = degree;
-                pivotId = mId;
-            }
+            if (degree > maxDegree) { maxDegree = degree; pivotId = mId; }
         });
 
-        // Order: others sorted, pivot in middle
         const others = cluster.members.filter(m => m !== pivotId).sort();
-        const midPoint = Math.floor(others.length / 2);
-        const orderedMembers = [...others.slice(0, midPoint), pivotId, ...others.slice(midPoint)];
-
-        const children: ElkNode[] = orderedMembers.map(mId => ({
-            id: mId,
-            width: 160,
-            height: 100,
-        }));
+        const mid = Math.floor(others.length / 2);
+        const ordered = [...others.slice(0, mid), pivotId, ...others.slice(mid)];
 
         cluster.members.forEach(mId => memberToClusterId.set(mId, cluster.id));
 
         elkNodes.push({
             id: cluster.id,
-            children: children,
+            children: ordered.map(mId => ({ id: mId, width: 160, height: 100 })),
             layoutOptions: {
                 'elk.algorithm': 'layered',
                 'elk.direction': 'RIGHT',
                 'elk.spacing.nodeNode': '40',
-                'elk.padding': '[top=10,left=10,bottom=10,right=10]'
             }
         });
     });
 
-    // Add standalone nodes (no partners)
     nodes.forEach(node => {
         if (!memberToClusterId.has(node.id)) {
-            elkNodes.push({
-                id: node.id,
-                width: 160,
-                height: 100
-            });
+            elkNodes.push({ id: node.id, width: 160, height: 100 });
         }
     });
 
-    // 3. Build ELK Edges
-    const elkEdges: ElkExtendedEdge[] = [];
-
-    // Intra-cluster edges (force linear ordering)
-    clusters.forEach(cluster => {
-        for (let i = 0; i < cluster.members.length - 1; i++) {
-            const from = cluster.members[i];
-            const to = cluster.members[i + 1];
-            // Check if they are actually partners
-            if (partnerMap.get(from)?.has(to)) {
-                elkEdges.push({
-                    id: `elk-part-${from}-${to}`,
-                    sources: [from],
-                    targets: [to],
-                });
-            }
-        }
-    });
-
-    // Parent-Child edges
+    const elkEdges: any[] = [];
     edges.forEach(edge => {
         if (!edge.id.startsWith('part-')) {
-            elkEdges.push({
-                id: edge.id,
-                sources: [edge.source],
-                targets: [edge.target]
-            });
+            elkEdges.push({ id: edge.id, sources: [edge.source], targets: [edge.target] });
         }
     });
 
-    const graph: ElkNode = {
+    const graph = {
         id: 'root',
         layoutOptions: DEFAULT_LAYOUT_OPTIONS,
         children: elkNodes,
         edges: elkEdges
     };
 
-    // 4. Run Layout
-    try {
-        const layoutedGraph = await elk.layout(graph);
+    const layoutedGraph = await elk.layout(graph);
+    const layoutedNodes: Node[] = [];
 
-        // 5. Flatten & Map back to React Flow
-        const layoutedNodes: Node[] = [];
-
-        const processNode = (elkNode: ElkNode, parentX = 0, parentY = 0): void => {
-            const currentX = parentX + (elkNode.x || 0);
-            const currentY = parentY + (elkNode.y || 0);
-
-            if (allNodeIds.has(elkNode.id)) {
-                const originalNode = nodes.find(n => n.id === elkNode.id);
-                if (originalNode) {
-                    layoutedNodes.push({
-                        ...originalNode,
-                        position: { x: currentX, y: currentY }
-                    });
-                }
-            }
-
-            if (elkNode.children) {
-                elkNode.children.forEach(child => processNode(child, currentX, currentY));
-            }
-        };
-
-        if (layoutedGraph.children) {
-            layoutedGraph.children.forEach(child => processNode(child));
+    const processNode = (elkNode: any, parentX = 0, parentY = 0): void => {
+        const x = parentX + (elkNode.x || 0);
+        const y = parentY + (elkNode.y || 0);
+        if (allNodeIds.has(elkNode.id)) {
+            const orig = nodes.find(n => n.id === elkNode.id);
+            if (orig) layoutedNodes.push({ ...orig, position: { x, y } });
         }
+        elkNode.children?.forEach((child: any) => processNode(child, x, y));
+    };
 
-        // 6. Update Edges with correct handles
-        const layoutedEdges = edges.map(edge => {
-            if (edge.id.startsWith('part-')) {
-                const source = layoutedNodes.find(n => n.id === edge.source);
-                const target = layoutedNodes.find(n => n.id === edge.target);
-                if (source && target) {
-                    if (source.position.x < target.position.x) {
-                        return { ...edge, sourceHandle: 'right', targetHandle: 'left-target' };
-                    } else {
-                        return { ...edge, sourceHandle: 'left', targetHandle: 'right-target' };
-                    }
-                }
+    layoutedGraph.children?.forEach((child: any) => processNode(child));
+
+    const layoutedEdges = edges.map(edge => {
+        if (edge.id.startsWith('part-')) {
+            const src = layoutedNodes.find(n => n.id === edge.source);
+            const tgt = layoutedNodes.find(n => n.id === edge.target);
+            if (src && tgt) {
+                return src.position.x < tgt.position.x
+                    ? { ...edge, sourceHandle: 'right', targetHandle: 'left-target' }
+                    : { ...edge, sourceHandle: 'left', targetHandle: 'right-target' };
             }
-            return edge;
-        });
+        }
+        return edge;
+    });
 
-        return { nodes: layoutedNodes, edges: layoutedEdges };
+    return { nodes: layoutedNodes, edges: layoutedEdges };
+};
 
+// Main export - tries ELK first, falls back to Dagre
+export const layoutElements = async (
+    nodes: Node[],
+    edges: Edge[],
+    members: FamilyMember[]
+): Promise<{ nodes: Node[], edges: Edge[] }> => {
+    try {
+        return await layoutWithELK(nodes, edges);
     } catch (err) {
-        console.error('ELK Layout Failed:', err);
-        // Fallback: return original positions
-        return { nodes, edges };
+        console.error('ELK layout failed, using Dagre fallback:', err);
+        return layoutWithDagre(nodes, edges);
     }
 };
