@@ -15,7 +15,7 @@ import dagre from 'dagre';
 import { familyService, FamilyMember } from '../services/familyService';
 import { useFeatureFlag } from '../hooks/useFeatureFlag';
 import { useAuth } from '../contexts/AuthContext';
-import { User, Plus, TreeDeciduous, Pencil, Heart, Link, UserPlus, Users, Search, X, Loader2, Network } from 'lucide-react';
+import { User, Plus, TreeDeciduous, Pencil, Heart, Link, UserPlus, Users, Search, X, Loader2, Network, Trash2, LayoutGrid } from 'lucide-react';
 import { AddMemberModal } from './family/AddMemberModal';
 import { EditMemberModal } from './family/EditMemberModal';
 import { RelationshipManager } from './family/RelationshipManager';
@@ -32,7 +32,7 @@ interface TreeData {
 }
 
 // Custom Node Component
-const MemberNode = ({ data }: { data: FamilyMember & { label: string; isOwner: boolean; onAddRelative: (type: any) => void } }) => {
+const MemberNode = ({ data }: { data: FamilyMember & { label: string; isOwner: boolean; onAddRelative: (type: any) => void; onDelete: (id: number) => void } }) => {
     const getStyles = () => {
         switch (data.gender) {
             case 'male': return { border: 'border-blue-200', bg: 'bg-blue-100', iconColor: 'text-blue-400' };
@@ -76,11 +76,25 @@ const MemberNode = ({ data }: { data: FamilyMember & { label: string; isOwner: b
             </div>
 
             {/* Quick Actions (Hover) */}
-            <div className="absolute top-0 right-0 p-1 opacity-0 hover:opacity-100 transition-opacity">
+            <div className="absolute top-0 right-0 p-1 opacity-0 hover:opacity-100 transition-opacity flex gap-1">
                 {data.isOwner && (
-                    <div className="bg-amber-500 text-white rounded-full p-0.5 shadow-sm" title="ניתן לעריכה">
-                        <Pencil size={8} />
-                    </div>
+                    <>
+                        <div className="bg-amber-500 text-white rounded-full p-0.5 shadow-sm" title="ניתן לעריכה">
+                            <Pencil size={8} />
+                        </div>
+                        <div
+                            className="bg-red-500 text-white rounded-full p-0.5 shadow-sm cursor-pointer hover:bg-red-600"
+                            title="מחק פרופיל"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                if (confirm(`האם אתה בטוח שברצונך למחוק את ${data.first_name}? פעולה זו תסיר גם את הקשרים.`)) {
+                                    data.onDelete(data.id);
+                                }
+                            }}
+                        >
+                            <Trash2 size={8} />
+                        </div>
+                    </>
                 )}
             </div>
 
@@ -190,12 +204,13 @@ export const FamilyTreePage: React.FC = () => {
                     data: {
                         ...m,
                         label: m.first_name,
-                        isOwner: user?.id === m.user_id.toString(), // Fix type comparison
+                        isOwner: user?.id === m.user_id?.toString() || (user as any)?.role === 'admin',
                         onAddRelative: (type: any) => {
                             setSelectedMember(m);
                             setAddRelativeType(type);
                             setIsAddRelativeModalOpen(true);
-                        }
+                        },
+                        onDelete: handleDeleteNode
                     },
                     position: { x: 0, y: 0 },
                 })),
@@ -239,6 +254,16 @@ export const FamilyTreePage: React.FC = () => {
             setConnectSourceId(params.source);
             setConnectTargetId(params.target);
             setIsConnectModalOpen(true);
+        }
+    }, []);
+
+    const handleDeleteNode = useCallback(async (id: number) => {
+        try {
+            await familyService.deleteMember(id);
+            loadTree(); // Reload to refresh
+        } catch (error) {
+            console.error('Failed to delete member:', error);
+            alert('שגיאה במחיקת בן משפחה');
         }
     }, []);
 
@@ -383,6 +408,13 @@ export const FamilyTreePage: React.FC = () => {
                 </div>
 
                 <div className="flex gap-2">
+                    <button
+                        onClick={loadTree}
+                        className="bg-slate-100 text-slate-700 dark:bg-slate-700 dark:text-slate-300 px-3 py-2 rounded-xl text-sm font-bold shadow hover:bg-slate-200 dark:hover:bg-slate-600 flex items-center gap-1"
+                        title="סדר עץ מחדש"
+                    >
+                        <LayoutGrid size={16} />
+                    </button>
                     <GedcomTools onSuccess={loadTree} />
                     <button
                         onClick={() => setIsCommunityModalOpen(true)}
