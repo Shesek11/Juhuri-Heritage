@@ -19,6 +19,7 @@ import { User, Plus, TreeDeciduous, Pencil, Heart, Link } from 'lucide-react';
 import { AddMemberModal } from './family/AddMemberModal';
 import { EditMemberModal } from './family/EditMemberModal';
 import { RelationshipManager } from './family/RelationshipManager';
+import { AddRelativeModal } from './family/AddRelativeModal';
 
 // Types for tree data
 interface TreeData {
@@ -126,6 +127,8 @@ export const FamilyTreePage: React.FC = () => {
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isRelationshipModalOpen, setIsRelationshipModalOpen] = useState(false);
+    const [isAddRelativeModalOpen, setIsAddRelativeModalOpen] = useState(false);
+    const [addRelativeType, setAddRelativeType] = useState<'parent' | 'child' | 'spouse' | null>(null);
     const [selectedMember, setSelectedMember] = useState<FamilyMember | null>(null);
     const [allMembers, setAllMembers] = useState<FamilyMember[]>([]);
 
@@ -138,12 +141,11 @@ export const FamilyTreePage: React.FC = () => {
     const loadTree = async () => {
         try {
             setLoading(true);
-            const treeData = await familyService.getTreeData() as unknown as TreeData;
+            const treeData = await familyService.getTreeData();
 
-            // Handle both old format (array) and new format (object with members)
-            const members = Array.isArray(treeData) ? treeData : treeData.members;
-            const parentChildRels = Array.isArray(treeData) ? [] : (treeData.parentChild || []);
-            const partnerships = Array.isArray(treeData) ? [] : (treeData.partnerships || []);
+            const members = treeData.members || [];
+            const parentChildRels = treeData.parentChild || [];
+            const partnerships = treeData.partnerships || [];
 
             setAllMembers(members);
 
@@ -153,7 +155,7 @@ export const FamilyTreePage: React.FC = () => {
             // Create nodes for all members
             members.forEach(member => {
                 if (!member.id) return;
-                const isOwner = user?.id === member.user_id || user?.role === 'admin';
+                const isOwner = String(user?.id) === String(member.user_id) || user?.role === 'admin';
                 initialNodes.push({
                     id: member.id.toString(),
                     type: 'member',
@@ -203,6 +205,18 @@ export const FamilyTreePage: React.FC = () => {
                     }
                 });
             }
+
+            // Add partnership edges (horizontal spousal connections)
+            partnerships.forEach(p => {
+                initialEdges.push({
+                    id: `sp-${p.person1_id}-${p.person2_id}`,
+                    source: p.person1_id.toString(),
+                    target: p.person2_id.toString(),
+                    type: 'straight',
+                    style: { stroke: '#ec4899', strokeWidth: 2 },
+                    label: '💕'
+                });
+            });
 
             const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(
                 initialNodes,
@@ -346,9 +360,14 @@ export const FamilyTreePage: React.FC = () => {
                 member={selectedMember}
                 onClose={() => {
                     setIsEditModalOpen(false);
-                    setSelectedMember(null);
+                    // Keep selectedMember for AddRelativeModal
                 }}
                 onSuccess={loadTree}
+                onAddRelative={(type) => {
+                    setIsEditModalOpen(false);
+                    setAddRelativeType(type);
+                    setIsAddRelativeModalOpen(true);
+                }}
             />
 
             <RelationshipManager
@@ -357,6 +376,18 @@ export const FamilyTreePage: React.FC = () => {
                 allMembers={allMembers}
                 onClose={() => {
                     setIsRelationshipModalOpen(false);
+                    setSelectedMember(null);
+                }}
+                onSuccess={loadTree}
+            />
+
+            <AddRelativeModal
+                isOpen={isAddRelativeModalOpen}
+                relativeTo={selectedMember}
+                relationType={addRelativeType}
+                onClose={() => {
+                    setIsAddRelativeModalOpen(false);
+                    setAddRelativeType(null);
                     setSelectedMember(null);
                 }}
                 onSuccess={loadTree}

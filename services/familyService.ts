@@ -181,6 +181,10 @@ export const familyService = {
 
     // Get raw data for tree construction
     getTreeData: (rootId?: number) => {
-        return apiService.get<FamilyMember[]>(`/family/tree/${rootId || 0}`);
+        return apiService.get<{
+            members: FamilyMember[];
+            parentChild: { parent_id: number; child_id: number; relationship_type: string }[];
+            partnerships: { person1_id: number; person2_id: number; status: string }[];
+        }>(`/family/tree/${rootId || 0}`);
     }
 };

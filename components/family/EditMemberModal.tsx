@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { FamilyMember, familyService } from '../../services/familyService';
-import { User, X, Check, Loader2, Upload, Pencil } from 'lucide-react';
+import { User, X, Check, Loader2, Upload, Pencil, UserPlus, Users, Baby, Heart } from 'lucide-react';
 
 interface EditMemberModalProps {
     isOpen: boolean;
     member: FamilyMember | null;
     onClose: () => void;
     onSuccess: () => void;
+    onAddRelative?: (type: 'parent' | 'child' | 'spouse') => void;
 }
 
-export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member, onClose, onSuccess }) => {
+export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member, onClose, onSuccess, onAddRelative }) => {
     const [loading, setLoading] = useState(false);
     const [formData, setFormData] = useState<Partial<FamilyMember>>({});
 
@@ -276,16 +277,48 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                     </div>
                 </form>
 
-                <div className="p-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 flex justify-end gap-3">
-                    <button onClick={onClose} className="px-4 py-2 text-slate-500 hover:bg-slate-200 rounded-lg">ביטול</button>
-                    <button
-                        onClick={handleSubmit}
-                        disabled={loading}
-                        className="bg-amber-600 text-white px-6 py-2 rounded-lg font-bold flex items-center gap-2 hover:bg-amber-700 disabled:opacity-50"
-                    >
-                        {loading ? <Loader2 className="animate-spin" /> : <Check size={18} />}
-                        עדכן
-                    </button>
+                <div className="p-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
+                    {/* Quick Add Relative Buttons */}
+                    {onAddRelative && (
+                        <div className="mb-4">
+                            <div className="text-xs font-medium text-slate-500 mb-2">הוסף קרוב משפחה:</div>
+                            <div className="flex gap-2 flex-wrap">
+                                <button
+                                    type="button"
+                                    onClick={() => { onClose(); onAddRelative('parent'); }}
+                                    className="flex items-center gap-1 px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg text-sm hover:bg-blue-200"
+                                >
+                                    <Users size={14} /> הורה
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => { onClose(); onAddRelative('child'); }}
+                                    className="flex items-center gap-1 px-3 py-1.5 bg-green-100 text-green-700 rounded-lg text-sm hover:bg-green-200"
+                                >
+                                    <Baby size={14} /> ילד/ה
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => { onClose(); onAddRelative('spouse'); }}
+                                    className="flex items-center gap-1 px-3 py-1.5 bg-pink-100 text-pink-700 rounded-lg text-sm hover:bg-pink-200"
+                                >
+                                    <Heart size={14} /> בן/ת זוג
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="flex justify-end gap-3">
+                        <button onClick={onClose} className="px-4 py-2 text-slate-500 hover:bg-slate-200 rounded-lg">ביטול</button>
+                        <button
+                            onClick={handleSubmit}
+                            disabled={loading}
+                            className="bg-amber-600 text-white px-6 py-2 rounded-lg font-bold flex items-center gap-2 hover:bg-amber-700 disabled:opacity-50"
+                        >
+                            {loading ? <Loader2 className="animate-spin" /> : <Check size={18} />}
+                            עדכן
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
