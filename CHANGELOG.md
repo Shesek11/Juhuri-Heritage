@@ -2,6 +2,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.0.1] - 2026-01-16
+
+### 🐛 Fixes & Improvements
+- **UI Fixes**: Fixed non-functional "Add Recipe" and "Create Family Tree" buttons in empty states.
+- **Authentication**: Replaced Auth0 legacy email/password login with native implementation (Passport.js Google Auth + Native Email).
+- **Deployment**: Improved deployment stability and environment variable handling.
+
 ## [2.0.0] - 2026-01-15
 
 ### 🍲 Community & Culture Expansion
