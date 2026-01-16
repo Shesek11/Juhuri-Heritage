@@ -15,9 +15,10 @@ import dagre from 'dagre';
 import { familyService, FamilyMember } from '../services/familyService';
 import { useFeatureFlag } from '../hooks/useFeatureFlag';
 import { useAuth } from '../contexts/AuthContext';
-import { User, Plus, TreeDeciduous, Pencil, Heart } from 'lucide-react';
+import { User, Plus, TreeDeciduous, Pencil, Heart, Link } from 'lucide-react';
 import { AddMemberModal } from './family/AddMemberModal';
 import { EditMemberModal } from './family/EditMemberModal';
+import { RelationshipManager } from './family/RelationshipManager';
 
 // Types for tree data
 interface TreeData {
@@ -124,6 +125,7 @@ export const FamilyTreePage: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isRelationshipModalOpen, setIsRelationshipModalOpen] = useState(false);
     const [selectedMember, setSelectedMember] = useState<FamilyMember | null>(null);
     const [allMembers, setAllMembers] = useState<FamilyMember[]>([]);
 
@@ -236,6 +238,18 @@ export const FamilyTreePage: React.FC = () => {
         }
     }, [allMembers]);
 
+    const handleNodeContextMenu = useCallback((event: React.MouseEvent, node: Node) => {
+        event.preventDefault();
+        const memberData = node.data as FamilyMember & { isOwner: boolean };
+        if (memberData.isOwner) {
+            const fullMember = allMembers.find(m => m.id?.toString() === node.id);
+            if (fullMember) {
+                setSelectedMember(fullMember);
+                setIsRelationshipModalOpen(true);
+            }
+        }
+    }, [allMembers]);
+
     if (!isEnabled) {
         return (
             <div className="flex flex-col items-center justify-center p-8 text-center min-h-[50vh]">
@@ -282,9 +296,9 @@ export const FamilyTreePage: React.FC = () => {
 
             {/* Help Text */}
             {user && (
-                <div className="absolute top-4 left-4 z-10 bg-white/90 dark:bg-slate-900/90 backdrop-blur p-2 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 text-xs text-slate-500">
-                    <Pencil size={12} className="inline text-amber-500 ml-1" />
-                    לחץ על כרטיס עם מסגרת כתומה לעריכה
+                <div className="absolute top-4 left-4 z-10 bg-white/90 dark:bg-slate-900/90 backdrop-blur p-3 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700 text-xs text-slate-500 space-y-1">
+                    <div><Pencil size={12} className="inline text-amber-500 ml-1" /> לחץ שמאלי = עריכת פרטים</div>
+                    <div><Link size={12} className="inline text-purple-500 ml-1" /> לחץ ימני = ניהול קשרים</div>
                 </div>
             )}
 
@@ -309,6 +323,7 @@ export const FamilyTreePage: React.FC = () => {
                         onNodesChange={onNodesChange}
                         onEdgesChange={onEdgesChange}
                         onNodeClick={handleNodeClick}
+                        onNodeContextMenu={handleNodeContextMenu}
                         nodeTypes={nodeTypes}
                         fitView
                         attributionPosition="bottom-left"
@@ -331,6 +346,17 @@ export const FamilyTreePage: React.FC = () => {
                 member={selectedMember}
                 onClose={() => {
                     setIsEditModalOpen(false);
+                    setSelectedMember(null);
+                }}
+                onSuccess={loadTree}
+            />
+
+            <RelationshipManager
+                isOpen={isRelationshipModalOpen}
+                member={selectedMember}
+                allMembers={allMembers}
+                onClose={() => {
+                    setIsRelationshipModalOpen(false);
                     setSelectedMember(null);
                 }}
                 onSuccess={loadTree}
