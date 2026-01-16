@@ -29,6 +29,7 @@
     "mysql2": "^3.11.5",
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
+    "prop-types": "^15.8.1",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "react-leaflet": "^5.0.0",
