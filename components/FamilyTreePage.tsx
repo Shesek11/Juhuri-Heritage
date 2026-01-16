@@ -336,6 +336,45 @@ export const FamilyTreePage: React.FC = () => {
             partnerMap.get(e.target)?.push(e.source);
         });
 
+        // Helper to shift a node and its exclusive vertical line
+        const shiftVerticalSubtree = (rootId: string, dx: number, direction: 'up' | 'down', visited = new Set<string>()) => {
+            if (visited.has(rootId) || dx === 0) return;
+            visited.add(rootId);
+
+            // Move the current node in Dagre graph
+            const node = dagreGraph.node(rootId);
+            if (node) {
+                node.x += dx;
+            }
+
+            // Find neighbors in the specified direction
+            // Up = Find Parents (sources of edges where target is rootId)
+            // Down = Find Children (targets of edges where source is rootId)
+            const relevantEdges = edges.filter(e =>
+                !e.id.startsWith('part-') && // Only vertical edges
+                (direction === 'up' ? e.target === rootId : e.source === rootId)
+            );
+
+            relevantEdges.forEach(edge => {
+                const neighborId = direction === 'up' ? edge.source : edge.target;
+
+                // CHECK EXCLUSIVITY:
+                // Only move the neighbor if they don't have other "anchors" that prevent movement.
+                // For Parent (Up): Move if they have NO OTHER children (or only children in the specific moving set?).
+                // Simplest heuristic: Check if neighbor degree in opposite direction is 1 (i.e. this is their ONLY connection downwards/upwards)
+
+                const neighborConnections = edges.filter(e =>
+                    !e.id.startsWith('part-') &&
+                    (direction === 'up' ? e.source === neighborId : e.target === neighborId)
+                );
+
+                if (neighborConnections.length === 1) {
+                    // Safe to move, it's a single line
+                    shiftVerticalSubtree(neighborId, dx, direction, visited);
+                }
+            });
+        };
+
         const processedClusters = new Set<string>();
 
         nodes.forEach(node => {
@@ -362,11 +401,19 @@ export const FamilyTreePage: React.FC = () => {
                     const pivotNode = clusterNodes[currentPivotIndex];
                     const targetNode = clusterNodes[desiredPivotIndex];
 
-                    const tempX = pivotNode.x;
+                    const dxPivot = targetNode.x - pivotNode.x;
+                    const dxTarget = pivotNode.x - targetNode.x;
 
-                    // Update in Dagre Graph so the next map step picks it up
-                    dagreGraph.node(pivotNode.id).x = targetNode.x;
-                    dagreGraph.node(targetNode.id).x = tempX;
+                    // Apply Shifts (Recursively move exclusive trees)
+                    shiftVerticalSubtree(pivotNode.id, dxPivot, 'up');
+                    shiftVerticalSubtree(pivotNode.id, dxPivot, 'down');
+
+                    shiftVerticalSubtree(targetNode.id, dxTarget, 'up');
+                    shiftVerticalSubtree(targetNode.id, dxTarget, 'down');
+
+                    // NOTE: The `node.x` update happens inside shiftVerticalSubtree for the root nodes too.
+                    // But we must ensure the Dagre Layout logic picks up these changes (it returns `dagreGraph.node(id)` later).
+                    // shiftVerticalSubtree modifies `dagreGraph.node(id).x` directly, which is correct.
                 }
             }
         });
