@@ -42,6 +42,10 @@ app.use('/api/admin/features', require('./routes/features'));
 app.use('/api/recipes', require('./routes/recipes'));
 app.use('/api/marketplace', require('./routes/marketplace'));
 app.use('/api/family', require('./routes/familyTree'));
+app.use('/api/upload', require('./routes/upload'));
+
+// Serve uploaded files
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
 // Health check endpoint
 const db = require('./config/db');

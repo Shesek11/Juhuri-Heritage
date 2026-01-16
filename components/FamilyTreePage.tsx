@@ -19,21 +19,34 @@ import { AddMemberModal } from './family/AddMemberModal';
 
 // Custom Node Component
 const MemberNode = ({ data }: { data: FamilyMember & { label: string } }) => {
+    // Determine colors and silhouette based on gender
+    const getStyles = () => {
+        switch (data.gender) {
+            case 'male': return { border: 'border-blue-200', bg: 'bg-blue-100', iconColor: 'text-blue-400' };
+            case 'female': return { border: 'border-pink-200', bg: 'bg-pink-100', iconColor: 'text-pink-400' };
+            default: return { border: 'border-gray-200', bg: 'bg-gray-100', iconColor: 'text-gray-400' };
+        }
+    };
+
+    const styles = getStyles();
+
     return (
-        <div className={`px-4 py-2 shadow-md rounded-md bg-white border-2 w-[150px] flex flex-col items-center
-            ${data.gender === 'male' ? 'border-blue-200' : data.gender === 'female' ? 'border-pink-200' : 'border-gray-200'}
-        `}>
+        <div className={`px-4 py-2 shadow-md rounded-md bg-white border-2 w-[150px] flex flex-col items-center ${styles.border}`}>
             <Handle type="target" position={Position.Top} className="w-16 !bg-slate-300" />
 
             {data.photo_url ? (
-                <img src={data.photo_url} className="w-12 h-12 rounded-full object-cover mb-2 border border-slate-100" />
+                <img
+                    src={data.photo_url.startsWith('http') ? data.photo_url : `http://localhost:3002${data.photo_url}`}
+                    className="w-12 h-12 rounded-full object-cover mb-2 border border-slate-100 shadow-sm"
+                    alt={data.first_name}
+                />
             ) : (
-                <div className="w-12 h-12 rounded-full bg-slate-100 flex items-center justify-center mb-2 text-slate-400">
-                    <User size={20} />
+                <div className={`w-12 h-12 rounded-full ${styles.bg} flex items-center justify-center mb-2 ${styles.iconColor}`}>
+                    <User size={24} strokeWidth={2.5} />
                 </div>
             )}
 
-            <div className="text-xs font-bold text-center">{data.first_name}</div>
+            <div className="text-xs font-bold text-center text-slate-800">{data.first_name}</div>
             <div className="text-[10px] text-slate-500 text-center">{data.last_name}</div>
             {data.birth_date && (
                 <div className="text-[9px] text-slate-400 mt-1">{data.birth_date.substring(0, 4)}</div>

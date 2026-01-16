@@ -53,92 +53,143 @@ export const AddMemberModal: React.FC<AddMemberModalProps> = ({ isOpen, onClose,
                 </div>
 
                 <form onSubmit={handleSubmit} className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-medium mb-1">שם פרטי *</label>
-                            <input
-                                required
-                                value={formData.first_name}
-                                onChange={e => setFormData({ ...formData, first_name: e.target.value })}
-                                className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
-                            />
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium mb-1">שם משפחה *</label>
-                            <input
-                                required
-                                value={formData.last_name}
-                                onChange={e => setFormData({ ...formData, last_name: e.target.value })}
-                                className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
-                            />
-                        </div>
-                    </div>
+                    <div className="space-y-4">
+                        <div className="flex items-center gap-4">
+                            <div className="w-24 h-24 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden flex items-center justify-center border border-slate-200 dark:border-slate-600 relative group">
+                                {formData.photo_url ? (
+                                    <img src={formData.photo_url.startsWith('http') ? formData.photo_url : `http://localhost:3002${formData.photo_url}`} alt="Preview" className="w-full h-full object-cover" />
+                                ) : (
+                                    <User size={40} className="text-slate-400" />
+                                )}
 
-                    <div className="flex gap-4">
-                        <div className="flex-1">
-                            <label className="block text-sm font-medium mb-1">מין</label>
-                            <select
-                                value={formData.gender}
-                                onChange={e => setFormData({ ...formData, gender: e.target.value as any })}
-                                className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
-                            >
-                                <option value="male">זכר</option>
-                                <option value="female">נקבה</option>
-                                <option value="other">אחר</option>
-                            </select>
-                        </div>
-                        <div className="flex-1">
-                            <label className="block text-sm font-medium mb-1">חי?</label>
-                            <div className="flex bg-slate-100 dark:bg-slate-700 p-1 rounded-lg">
-                                <button
-                                    type="button"
-                                    onClick={() => setFormData({ ...formData, is_alive: true })}
-                                    className={`flex-1 text-sm py-1.5 rounded-md transition-all ${formData.is_alive ? 'bg-white dark:bg-slate-600 shadow text-emerald-600' : 'text-slate-500'}`}
-                                >
-                                    כן
-                                </button>
-                                <button
-                                    type="button"
-                                    onClick={() => setFormData({ ...formData, is_alive: false })}
-                                    className={`flex-1 text-sm py-1.5 rounded-md transition-all ${!formData.is_alive ? 'bg-white dark:bg-slate-600 shadow text-slate-800' : 'text-slate-500'}`}
-                                >
-                                    לא
-                                </button>
+                                <label className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
+                                    <Upload className="text-white" size={24} />
+                                    <input
+                                        type="file"
+                                        accept="image/*"
+                                        className="hidden"
+                                        onChange={async (e) => {
+                                            const file = e.target.files?.[0];
+                                            if (!file) return;
+
+                                            const uploadData = new FormData();
+                                            uploadData.append('file', file);
+
+                                            try {
+                                                // TODO: Move to apiService but for now quick fix
+                                                const token = localStorage.getItem('token');
+                                                const res = await fetch('http://localhost:3002/api/upload', {
+                                                    method: 'POST',
+                                                    headers: {
+                                                        'Authorization': `Bearer ${token}`
+                                                    },
+                                                    body: uploadData
+                                                });
+                                                const data = await res.json();
+                                                if (data.success) {
+                                                    setFormData({ ...formData, photo_url: data.url });
+                                                }
+                                            } catch (err) {
+                                                console.error('Upload failed', err);
+                                                alert('שגיאה בהעלאת התמונה');
+                                            }
+                                        }}
+                                    />
+                                </label>
+                            </div>
+                            <div className="flex-1">
+                                <h3 className="font-bold text-slate-800 dark:text-slate-200">תמונת פרופיל</h3>
+                                <p className="text-sm text-slate-500">לחץ על העיגול כדי להעלות תמונה. מומלץ תמונה מרובעת.</p>
                             </div>
                         </div>
-                    </div>
 
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-medium mb-1">תאריך לידה</label>
-                            <input
-                                type="date"
-                                value={formData.birth_date || ''}
-                                onChange={e => setFormData({ ...formData, birth_date: e.target.value })}
-                                className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
-                            />
-                        </div>
-                        {!formData.is_alive && (
+                        <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-sm font-medium mb-1">תאריך פטירה</label>
+                                <label className="block text-sm font-medium mb-1">שם פרטי *</label>
                                 <input
-                                    type="date"
-                                    value={formData.death_date || ''}
-                                    onChange={e => setFormData({ ...formData, death_date: e.target.value })}
+                                    required
+                                    value={formData.first_name}
+                                    onChange={e => setFormData({ ...formData, first_name: e.target.value })}
                                     className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
                                 />
                             </div>
-                        )}
-                    </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1">שם משפחה *</label>
+                                <input
+                                    required
+                                    value={formData.last_name}
+                                    onChange={e => setFormData({ ...formData, last_name: e.target.value })}
+                                    className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
+                                />
+                            </div>
+                        </div>
 
-                    <div>
-                        <label className="block text-sm font-medium mb-1">ביוגרפיה קצרה</label>
-                        <textarea
-                            value={formData.biography}
-                            onChange={e => setFormData({ ...formData, biography: e.target.value })}
-                            className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 h-20"
-                            placeholder="סיפור חיים קצר..."
-                        />
+                        <div className="flex gap-4">
+                            <div className="flex-1">
+                                <label className="block text-sm font-medium mb-1">מין</label>
+                                <select
+                                    value={formData.gender}
+                                    onChange={e => setFormData({ ...formData, gender: e.target.value as any })}
+                                    className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
+                                >
+                                    <option value="male">זכר</option>
+                                    <option value="female">נקבה</option>
+                                    <option value="other">אחר</option>
+                                </select>
+                            </div>
+                            <div className="flex-1">
+                                <label className="block text-sm font-medium mb-1">חי?</label>
+                                <div className="flex bg-slate-100 dark:bg-slate-700 p-1 rounded-lg">
+                                    <button
+                                        type="button"
+                                        onClick={() => setFormData({ ...formData, is_alive: true })}
+                                        className={`flex-1 text-sm py-1.5 rounded-md transition-all ${formData.is_alive ? 'bg-white dark:bg-slate-600 shadow text-emerald-600' : 'text-slate-500'}`}
+                                    >
+                                        כן
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setFormData({ ...formData, is_alive: false })}
+                                        className={`flex-1 text-sm py-1.5 rounded-md transition-all ${!formData.is_alive ? 'bg-white dark:bg-slate-600 shadow text-slate-800' : 'text-slate-500'}`}
+                                    >
+                                        לא
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-sm font-medium mb-1">תאריך לידה</label>
+                                <input
+                                    type="date"
+                                    value={formData.birth_date || ''}
+                                    onChange={e => setFormData({ ...formData, birth_date: e.target.value })}
+                                    className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
+                                />
+                            </div>
+                            {!formData.is_alive && (
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">תאריך פטירה</label>
+                                    <input
+                                        type="date"
+                                        value={formData.death_date || ''}
+                                        onChange={e => setFormData({ ...formData, death_date: e.target.value })}
+                                        className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
+                                    />
+                                </div>
+                            )}
+                        </div>
+
+                        <div>
+                            <label className="block text-sm font-medium mb-1">ביוגרפיה קצרה</label>
+                            <textarea
+                                value={formData.biography}
+                                onChange={e => setFormData({ ...formData, biography: e.target.value })}
+                                className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 h-20"
+                                placeholder="סיפור חיים קצר..."
+                            />
+                        </div>
                     </div>
                 </form>
 
