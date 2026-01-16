@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { FamDiagram } from 'basicprimitives/react';
+import { FamDiagram } from 'basicprimitivesreact';
 import { FamConfig, FamItemConfig, Enabled, PageFitMode, GroupByType, ConnectorType, ElbowType, LineType, Colors, AnnotationType } from 'basicprimitives';
 import { familyService, FamilyMember } from '../services/familyService';
 import { useAuth } from '../contexts/AuthContext';
