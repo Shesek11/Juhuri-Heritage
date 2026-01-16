@@ -315,8 +315,9 @@ export const FamilyTreePage: React.FC = () => {
 
                 // Connect both partners to virtual node
                 // This forces them to be on the rank ABOVE the virtual node. Isolate them to same generation.
-                dagreGraph.setEdge(partnerA, virtualNodeId, { minlen: 1, weight: 1, label: '' });
-                dagreGraph.setEdge(partnerB, virtualNodeId, { minlen: 1, weight: 1, label: '' });
+                // Weight = 50 ensures these nodes are pulled tight together horizontally
+                dagreGraph.setEdge(partnerA, virtualNodeId, { minlen: 1, weight: 50, label: '' });
+                dagreGraph.setEdge(partnerB, virtualNodeId, { minlen: 1, weight: 50, label: '' });
             }
         });
 
