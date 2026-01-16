@@ -179,7 +179,10 @@ export const FamilyTreePage: React.FC = () => {
                 <div className="flex-1 flex flex-col items-center justify-center text-slate-400">
                     <TreeDeciduous size={48} className="mb-4 opacity-50" />
                     <p>העץ ריק. היה הראשון להוסיף שורשים!</p>
-                    <button className="mt-4 bg-emerald-600 text-white px-6 py-2 rounded-xl font-bold">
+                    <button
+                        onClick={() => setIsAddModalOpen(true)}
+                        className="mt-4 bg-emerald-600 text-white px-6 py-2 rounded-xl font-bold"
+                    >
                         יצירת עץ חדש
                     </button>
                 </div>
