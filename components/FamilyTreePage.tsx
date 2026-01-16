@@ -246,6 +246,38 @@ export const FamilyTreePage: React.FC = () => {
 
             // Add partnership edges (horizontal spousal connections)
             partnerships.forEach(p => {
+                // Different styles based on relationship status
+                const getPartnershipStyle = (status: string) => {
+                    switch (status) {
+                        case 'married':
+                            return { stroke: '#ec4899', strokeWidth: 2 }; // Pink solid
+                        case 'divorced':
+                            return { stroke: '#9ca3af', strokeWidth: 2, strokeDasharray: '5,5' }; // Gray dashed
+                        case 'widowed':
+                            return { stroke: '#6b7280', strokeWidth: 2, strokeDasharray: '2,2' }; // Dark gray dotted
+                        case 'separated':
+                            return { stroke: '#f97316', strokeWidth: 2, strokeDasharray: '8,4' }; // Orange dashed
+                        case 'engaged':
+                            return { stroke: '#a855f7', strokeWidth: 2, strokeDasharray: '3,3' }; // Purple dotted
+                        case 'common_law':
+                            return { stroke: '#ec4899', strokeWidth: 1.5 }; // Pink thin
+                        default:
+                            return { stroke: '#ec4899', strokeWidth: 2 };
+                    }
+                };
+
+                const getPartnershipLabel = (status: string) => {
+                    switch (status) {
+                        case 'married': return '💕';
+                        case 'divorced': return '💔';
+                        case 'widowed': return '🕊️';
+                        case 'separated': return '⚡';
+                        case 'engaged': return '💍';
+                        case 'common_law': return '💑';
+                        default: return '💕';
+                    }
+                };
+
                 initialEdges.push({
                     id: `sp-${p.person1_id}-${p.person2_id}`,
                     source: p.person1_id.toString(),
@@ -253,8 +285,8 @@ export const FamilyTreePage: React.FC = () => {
                     sourceHandle: 'left',
                     targetHandle: 'right',
                     type: 'straight',
-                    style: { stroke: '#ec4899', strokeWidth: 2 },
-                    label: '💕'
+                    style: getPartnershipStyle(p.status),
+                    label: getPartnershipLabel(p.status)
                 });
             });
 
