@@ -227,7 +227,10 @@ export const RecipesPage: React.FC = () => {
                     <p className="text-slate-500 dark:text-slate-500 mb-6">
                         נסה לשנות את הסינון או להוסיף מתכון חדש
                     </p>
-                    <button className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all">
+                    <button
+                        onClick={() => setIsWizardOpen(true)}
+                        className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all"
+                    >
                         <Plus className="w-5 h-5" />
                         הוסף מתכון
                     </button>
