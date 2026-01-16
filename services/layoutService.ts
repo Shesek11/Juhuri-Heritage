@@ -1,4 +1,5 @@
-import ELK, { ElkNode, ElkExtendedEdge } from 'elkjs/lib/elk.bundled.js';
+import ELK from 'elkjs/lib/elk.bundled';
+import type { ElkNode, ElkExtendedEdge } from 'elkjs';
 import { Node, Edge, Position } from 'reactflow';
 import { FamilyMember } from './familyService';
 
