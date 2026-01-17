@@ -97,26 +97,42 @@ export function FamilyChartPage() {
 
             // Initialize or update chart
             if (containerRef.current && chartData.length > 0) {
+                console.log('[FamilyChart] Container ref exists:', containerRef.current);
+                console.log('[FamilyChart] Creating chart with data length:', chartData.length);
+
                 // Clear previous chart
                 containerRef.current.innerHTML = '';
 
-                // Create chart using the library API: createChart(container, data)
-                const chart = f3.createChart(containerRef.current, chartData as any);
+                try {
+                    // Create chart using the library API: createChart(container, data)
+                    console.log('[FamilyChart] Calling f3.createChart...');
+                    const chart = f3.createChart(containerRef.current, chartData as any);
+                    console.log('[FamilyChart] Chart created:', chart);
 
-                // Configure card display using the correct API
-                // setCardHtml() returns CardHtml instance, then chain setCardDisplay
-                (chart as any).setCardHtml()
-                    .setCardDisplay([
-                        ['first name', 'last name'],
-                        ['birthday']
-                    ])
-                    .setCardImageField('avatar');
+                    // Configure card display using the correct API
+                    console.log('[FamilyChart] Calling setCardHtml...');
+                    const cardHtml = (chart as any).setCardHtml();
+                    console.log('[FamilyChart] CardHtml instance:', cardHtml);
 
-                // Render the tree
-                chart.updateTree({ initial: true });
+                    cardHtml
+                        .setCardDisplay([
+                            ['first name', 'last name'],
+                            ['birthday']
+                        ])
+                        .setCardImageField('avatar');
 
-                // Store ref for later
-                chartRef.current = chart;
+                    // Render the tree
+                    console.log('[FamilyChart] Calling updateTree...');
+                    chart.updateTree({ initial: true });
+                    console.log('[FamilyChart] updateTree done. Container innerHTML length:', containerRef.current.innerHTML.length);
+
+                    // Store ref for later
+                    chartRef.current = chart;
+                } catch (chartError) {
+                    console.error('[FamilyChart] Error creating chart:', chartError);
+                }
+            } else {
+                console.log('[FamilyChart] Skipping chart creation - containerRef:', !!containerRef.current, 'dataLength:', chartData.length);
             }
         } catch (error) {
             console.error('Failed to load tree:', error);
