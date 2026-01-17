@@ -538,7 +538,7 @@ function App() {
         ) : (
           /* --- FAMILY TREE MODE --- */
           <div className="w-full animate-in slide-in-from-right duration-300">
-            <FamilyTreePage />
+            <FamilyChartPage />
           </div>
         )}
 
