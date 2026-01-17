@@ -251,7 +251,9 @@ export function layoutFamilyTree(
                     id: `marriage-${treeNode.id}-${treeNode.spouseId}`,
                     source: `person-${treeNode.id}`,
                     target: `person-${treeNode.spouseId}`,
-                    type: 'default',
+                    sourceHandle: 'spouse-left',
+                    targetHandle: 'spouse-right',
+                    type: 'straight',
                     style: { stroke: '#F472B6', strokeWidth: 3 }
                 });
             }
@@ -268,7 +270,9 @@ export function layoutFamilyTree(
                 id: `parent-${treeNode.id}-child-${child.id}`,
                 source: sourceId,
                 target: `person-${child.id}`,
-                type: 'default',
+                sourceHandle: null, // Use default bottom handle
+                targetHandle: null, // Use default top handle
+                type: 'smoothstep',
                 style: { stroke: '#94A3B8', strokeWidth: 2 }
             });
 
