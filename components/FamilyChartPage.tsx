@@ -1,6 +1,6 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import f3 from 'family-chart';
-import 'family-chart/dist/styles/family-chart.css';
+// CSS imported via CDN in index.html to avoid Vite resolution issues
 import { familyService, FamilyMember } from '../services/familyService';
 import { useAuth } from '../contexts/AuthContext';
 import { Plus, Loader2, Users } from 'lucide-react';
@@ -57,7 +57,7 @@ function convertToFamilyChartData(
                 'last name': member.last_name || '',
                 birthday: member.birth_date || '',
                 avatar: member.photo_url || '',
-                gender: member.gender === 'female' ? 'F' : 'M'
+                gender: (member.gender === 'female' ? 'F' : 'M') as 'F' | 'M'
             },
             rels: {
                 ...(father ? { father } : {}),
@@ -101,10 +101,10 @@ export function FamilyChartPage() {
                 containerRef.current.innerHTML = '';
 
                 // Create chart using the library API: createChart(container, data)
-                const chart = f3.createChart(containerRef.current, chartData);
+                const chart = f3.createChart(containerRef.current, chartData as any);
 
-                // Configure card display using cardHtml
-                chart.setCard(f3.cardHtml({
+                // Configure card display using cardHtml - cast to any to avoid type issues
+                (chart as any).setCard((f3.cardHtml as any)({
                     d3_selection_getter: (d: any) => d.data.avatar ?
                         `<img src="${d.data.avatar}" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid ${d.data.gender === 'F' ? '#EC4899' : '#3B82F6'};" />` :
                         `<div style="width: 50px; height: 50px; border-radius: 50%; background: ${d.data.gender === 'F' ? '#EC4899' : '#3B82F6'}; display: flex; align-items: center; justify-content: center; color: white; font-size: 20px; font-weight: bold;">${(d.data['first name'] || '?')[0]}</div>`,
