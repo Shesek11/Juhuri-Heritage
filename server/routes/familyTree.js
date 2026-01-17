@@ -10,11 +10,10 @@ const { authenticate } = require('../middleware/auth');
 // Debug route to clear all family data (Remove in production later!)
 router.get('/debug/reset-tree', async (req, res) => {
     try {
-        await pool.query('DELETE FROM parent_child_relationships');
-        await pool.query('DELETE FROM partnerships');
-        await pool.query('DELETE FROM family_members');
+        // Delete from child tables first to avoid foreign key constraints
         await pool.query('DELETE FROM family_parent_child');
         await pool.query('DELETE FROM family_partnerships');
+        await pool.query('DELETE FROM family_members');
         res.json({ message: '✅ Family tree cleared successfully' });
     } catch (error) {
         console.error(error);
