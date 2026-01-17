@@ -228,7 +228,13 @@ export function FamilyChartPage() {
 
             // Render the tree
             console.log('[FamilyChart] Calling updateTree...');
-            chart.updateTree({ initial: true });
+            // Try to find a good root (first member or one with many relations)
+            const mainId = allMembers.length > 0 ? `person-${allMembers[0].id}` : undefined;
+
+            chart.updateTree({
+                initial: true,
+                main_id: mainId // Force focus on a member to ensure visibility
+            });
             console.log('[FamilyChart] updateTree done. Container innerHTML length:', containerRef.current.innerHTML.length);
 
             // Store ref for later
@@ -296,17 +302,32 @@ export function FamilyChartPage() {
             {/* Chart Container */}
             <div className="flex-1 relative">
                 <style>{`
-                    /* Hide default SVG card elements that cause "ghosting" behind HTML cards */
-                    /* We target all direct children of .card that are NOT the foreignObject (which holds our HTML) */
-                    #FamilyChart svg .card rect { fill: transparent !important; stroke: none !important; filter: none !important; }
-                    #FamilyChart svg .card image { display: none !important; }
-                    #FamilyChart svg .card use { display: none !important; }
+                    /* AGGRESSIVE HIDE of default SVG elements */
+                    #FamilyChart svg .card rect,
+                    #FamilyChart svg .card image,
+                    #FamilyChart svg .card text,
+                    #FamilyChart svg .card use,
+                    #FamilyChart svg .card path,
+                    #FamilyChart svg .card-inner {
+                        display: none !important;
+                        opacity: 0 !important;
+                        visibility: hidden !important;
+                    }
                     
-                    /* Ensure connections are styled nicely */
-                    #FamilyChart svg .link { stroke: #94a3b8 !important; stroke-width: 2px !important; }
-                    
-                    /* Fix tooltip z-index if needed */
-                    .f3-card-html { overflow: visible !important; }
+                    /* Make the foreignObject (HTML) visible */
+                    #FamilyChart svg .card foreignObject {
+                        display: block !important;
+                        opacity: 1 !important;
+                        visibility: visible !important;
+                        overflow: visible !important;
+                    }
+
+                    /* Links/Edges styles */
+                    #FamilyChart svg .link { 
+                        stroke: #94a3b8 !important; 
+                        stroke-width: 2px !important; 
+                        fill: none !important;
+                    }
                 `}</style>
                 {allMembers.length > 0 ? (
                     <div
