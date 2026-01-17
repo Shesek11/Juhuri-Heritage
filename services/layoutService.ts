@@ -54,6 +54,8 @@ export function layoutFamilyTree(
     parentChild: ParentChildRel[],
     partnerships: PartnershipRel[]
 ): { nodes: Node[]; edges: Edge[] } {
+    console.log('[Layout] Input - members:', members?.length, 'parentChild:', parentChild?.length, 'partnerships:', partnerships?.length);
+
     if (!members || members.length === 0) {
         return { nodes: [], edges: [] };
     }
@@ -249,10 +251,8 @@ export function layoutFamilyTree(
                     id: `marriage-${treeNode.id}-${treeNode.spouseId}`,
                     source: `person-${treeNode.id}`,
                     target: `person-${treeNode.spouseId}`,
-                    type: 'smoothstep',
-                    style: { stroke: '#F472B6', strokeWidth: 3 },
-                    animated: false,
-                    markerEnd: { type: 'arrowclosed' as any, color: '#F472B6' }
+                    type: 'default',
+                    style: { stroke: '#F472B6', strokeWidth: 3 }
                 });
             }
         }
@@ -268,9 +268,8 @@ export function layoutFamilyTree(
                 id: `parent-${treeNode.id}-child-${child.id}`,
                 source: sourceId,
                 target: `person-${child.id}`,
-                type: 'smoothstep',
-                style: { stroke: '#94A3B8', strokeWidth: 2 },
-                animated: false
+                type: 'default',
+                style: { stroke: '#94A3B8', strokeWidth: 2 }
             });
 
             createNodes(child);
@@ -278,6 +277,9 @@ export function layoutFamilyTree(
     }
 
     trees.forEach(tree => createNodes(tree));
+
+    console.log('[Layout] Output - nodes:', nodes.length, 'edges:', edges.length);
+    console.log('[Layout] Edge IDs:', edges.map(e => e.id));
 
     return { nodes, edges };
 }
