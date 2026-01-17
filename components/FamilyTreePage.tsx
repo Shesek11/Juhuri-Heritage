@@ -8,6 +8,8 @@ import ReactFlow, {
     useNodesState,
     useEdgesState,
     NodeProps,
+    Handle,
+    Position,
     MarkerType
 } from 'reactflow';
 import 'reactflow/dist/style.css';
@@ -25,37 +27,69 @@ function FamilyMemberNode({ data }: NodeProps) {
     const color = data.color || '#6B7280';
 
     return (
-        <div
-            className="bg-white rounded-xl shadow-lg border-2 p-3 cursor-pointer hover:shadow-xl transition-all min-w-[140px]"
-            style={{ borderColor: color }}
-        >
-            <div className="flex flex-col items-center">
-                {member.photo_url ? (
-                    <img
-                        src={member.photo_url}
-                        alt={member.first_name}
-                        className="w-12 h-12 rounded-full object-cover mb-2 border-2"
-                        style={{ borderColor: color }}
-                    />
-                ) : (
-                    <div
-                        className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold mb-2"
-                        style={{ backgroundColor: color }}
-                    >
-                        <User className="w-6 h-6" />
-                    </div>
-                )}
-                <div className="text-center">
-                    <div className="font-semibold text-gray-800 text-sm">
-                        {member.first_name} {member.last_name || ''}
-                    </div>
-                    {member.birth_date && (
-                        <div className="text-xs text-gray-500">
-                            {member.birth_date.split('-')[0]}
+        <div className="relative">
+            {/* Top Handle - for incoming edges from parents */}
+            <Handle
+                type="target"
+                position={Position.Top}
+                className="!bg-slate-400 !w-3 !h-3"
+            />
+
+            {/* Left Handle - for spouse connections */}
+            <Handle
+                type="source"
+                position={Position.Left}
+                id="spouse-left"
+                className="!bg-pink-400 !w-3 !h-3"
+            />
+
+            {/* Right Handle - for spouse connections */}
+            <Handle
+                type="target"
+                position={Position.Right}
+                id="spouse-right"
+                className="!bg-pink-400 !w-3 !h-3"
+            />
+
+            <div
+                className="bg-white rounded-xl shadow-lg border-2 p-3 cursor-pointer hover:shadow-xl transition-all min-w-[140px]"
+                style={{ borderColor: color }}
+            >
+                <div className="flex flex-col items-center">
+                    {member.photo_url ? (
+                        <img
+                            src={member.photo_url}
+                            alt={member.first_name}
+                            className="w-12 h-12 rounded-full object-cover mb-2 border-2"
+                            style={{ borderColor: color }}
+                        />
+                    ) : (
+                        <div
+                            className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold mb-2"
+                            style={{ backgroundColor: color }}
+                        >
+                            <User className="w-6 h-6" />
                         </div>
                     )}
+                    <div className="text-center">
+                        <div className="font-semibold text-gray-800 text-sm">
+                            {member.first_name} {member.last_name || ''}
+                        </div>
+                        {member.birth_date && (
+                            <div className="text-xs text-gray-500">
+                                {member.birth_date.split('-')[0]}
+                            </div>
+                        )}
+                    </div>
                 </div>
             </div>
+
+            {/* Bottom Handle - for outgoing edges to children */}
+            <Handle
+                type="source"
+                position={Position.Bottom}
+                className="!bg-slate-400 !w-3 !h-3"
+            />
         </div>
     );
 }
