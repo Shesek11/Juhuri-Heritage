@@ -78,62 +78,19 @@ export function FamilyChartPage() {
 
     const [loading, setLoading] = useState(true);
     const [allMembers, setAllMembers] = useState<FamilyMember[]>([]);
+    const [parentChild, setParentChild] = useState<any[]>([]);
+    const [partnerships, setPartnerships] = useState<any[]>([]);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
+    // Load data only - separate from chart creation
     const loadTree = useCallback(async () => {
         try {
             setLoading(true);
             const data = await familyService.getTreeData();
             setAllMembers(data.members || []);
-
-            // Convert to family-chart format
-            const chartData = convertToFamilyChartData(
-                data.members || [],
-                data.parentChild || [],
-                data.partnerships || []
-            );
-
-            console.log('[FamilyChart] Data converted:', chartData);
-
-            // Initialize or update chart
-            if (containerRef.current && chartData.length > 0) {
-                console.log('[FamilyChart] Container ref exists:', containerRef.current);
-                console.log('[FamilyChart] Creating chart with data length:', chartData.length);
-
-                // Clear previous chart
-                containerRef.current.innerHTML = '';
-
-                try {
-                    // Create chart using the library API: createChart(container, data)
-                    console.log('[FamilyChart] Calling f3.createChart...');
-                    const chart = f3.createChart(containerRef.current, chartData as any);
-                    console.log('[FamilyChart] Chart created:', chart);
-
-                    // Configure card display using the correct API
-                    console.log('[FamilyChart] Calling setCardHtml...');
-                    const cardHtml = (chart as any).setCardHtml();
-                    console.log('[FamilyChart] CardHtml instance:', cardHtml);
-
-                    cardHtml
-                        .setCardDisplay([
-                            ['first name', 'last name'],
-                            ['birthday']
-                        ])
-                        .setCardImageField('avatar');
-
-                    // Render the tree
-                    console.log('[FamilyChart] Calling updateTree...');
-                    chart.updateTree({ initial: true });
-                    console.log('[FamilyChart] updateTree done. Container innerHTML length:', containerRef.current.innerHTML.length);
-
-                    // Store ref for later
-                    chartRef.current = chart;
-                } catch (chartError) {
-                    console.error('[FamilyChart] Error creating chart:', chartError);
-                }
-            } else {
-                console.log('[FamilyChart] Skipping chart creation - containerRef:', !!containerRef.current, 'dataLength:', chartData.length);
-            }
+            setParentChild(data.parentChild || []);
+            setPartnerships(data.partnerships || []);
+            console.log('[FamilyChart] Data loaded:', data.members?.length || 0, 'members');
         } catch (error) {
             console.error('Failed to load tree:', error);
         } finally {
@@ -141,9 +98,67 @@ export function FamilyChartPage() {
         }
     }, []);
 
+    // Initial data load
     useEffect(() => {
         loadTree();
     }, [loadTree]);
+
+    // Create chart AFTER loading is false and container exists
+    useEffect(() => {
+        // Only run when not loading and we have members
+        if (loading || allMembers.length === 0) {
+            console.log('[FamilyChart] Chart creation skipped - loading:', loading, 'members:', allMembers.length);
+            return;
+        }
+
+        // Wait for next tick to ensure DOM is ready
+        const timer = setTimeout(() => {
+            if (!containerRef.current) {
+                console.error('[FamilyChart] Container ref still null after timeout');
+                return;
+            }
+
+            console.log('[FamilyChart] Container ref exists:', containerRef.current);
+
+            // Convert to family-chart format
+            const chartData = convertToFamilyChartData(allMembers, parentChild, partnerships);
+            console.log('[FamilyChart] Data converted:', chartData);
+
+            // Clear previous chart
+            containerRef.current.innerHTML = '';
+
+            try {
+                // Create chart using the library API
+                console.log('[FamilyChart] Calling f3.createChart...');
+                const chart = f3.createChart(containerRef.current, chartData as any);
+                console.log('[FamilyChart] Chart created:', chart);
+
+                // Configure card display
+                console.log('[FamilyChart] Calling setCardHtml...');
+                const cardHtml = (chart as any).setCardHtml();
+                console.log('[FamilyChart] CardHtml instance:', cardHtml);
+
+                cardHtml
+                    .setCardDisplay([
+                        ['first name', 'last name'],
+                        ['birthday']
+                    ])
+                    .setCardImageField('avatar');
+
+                // Render the tree
+                console.log('[FamilyChart] Calling updateTree...');
+                chart.updateTree({ initial: true });
+                console.log('[FamilyChart] updateTree done. Container innerHTML length:', containerRef.current.innerHTML.length);
+
+                // Store ref for later
+                chartRef.current = chart;
+            } catch (chartError) {
+                console.error('[FamilyChart] Error creating chart:', chartError);
+            }
+        }, 100); // Small delay to ensure DOM is ready
+
+        return () => clearTimeout(timer);
+    }, [loading, allMembers, parentChild, partnerships]);
 
     if (loading) {
         return (
