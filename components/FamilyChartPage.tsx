@@ -245,11 +245,13 @@ export function FamilyChartPage() {
             // Render the tree
             console.log('[FamilyChart] Calling updateTree...');
             // Try to find a good root (first member or one with many relations)
-            const mainId = allMembers.length > 0 ? `person-${allMembers[0].id}` : undefined;
+            const fallbackId = allMembers.length > 0 ? `person-${allMembers[0].id}` : undefined;
+            const mainId = focusedMemberId || fallbackId;
 
             chart.updateTree({
                 initial: true,
-                main_id: mainId // Force focus on a member to ensure visibility
+                // @ts-ignore
+                main_id: mainId
             });
             console.log('[FamilyChart] updateTree done. Container innerHTML length:', containerRef.current.innerHTML.length);
 
