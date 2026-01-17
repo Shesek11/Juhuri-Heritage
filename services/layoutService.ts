@@ -270,8 +270,8 @@ export function layoutFamilyTree(
                 id: `parent-${treeNode.id}-child-${child.id}`,
                 source: sourceId,
                 target: `person-${child.id}`,
-                sourceHandle: null, // Use default bottom handle
-                targetHandle: null, // Use default top handle
+                sourceHandle: 'child-out',
+                targetHandle: 'parent-in',
                 type: 'smoothstep',
                 style: { stroke: '#94A3B8', strokeWidth: 2 }
             });

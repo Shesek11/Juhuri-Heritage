@@ -32,6 +32,7 @@ function FamilyMemberNode({ data }: NodeProps) {
             <Handle
                 type="target"
                 position={Position.Top}
+                id="parent-in"
                 className="!bg-slate-400 !w-3 !h-3"
             />
 
@@ -88,6 +89,7 @@ function FamilyMemberNode({ data }: NodeProps) {
             <Handle
                 type="source"
                 position={Position.Bottom}
+                id="child-out"
                 className="!bg-slate-400 !w-3 !h-3"
             />
         </div>
