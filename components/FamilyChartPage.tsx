@@ -103,34 +103,14 @@ export function FamilyChartPage() {
                 // Create chart using the library API: createChart(container, data)
                 const chart = f3.createChart(containerRef.current, chartData as any);
 
-                // Configure card display using cardHtml - cast to any to avoid type issues
-                (chart as any).setCard((f3.cardHtml as any)({
-                    d3_selection_getter: (d: any) => d.data.avatar ?
-                        `<img src="${d.data.avatar}" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; border: 2px solid ${d.data.gender === 'F' ? '#EC4899' : '#3B82F6'};" />` :
-                        `<div style="width: 50px; height: 50px; border-radius: 50%; background: ${d.data.gender === 'F' ? '#EC4899' : '#3B82F6'}; display: flex; align-items: center; justify-content: center; color: white; font-size: 20px; font-weight: bold;">${(d.data['first name'] || '?')[0]}</div>`,
-                    template: (d: any) => `
-                        <div style="
-                            background: white;
-                            border-radius: 12px;
-                            padding: 16px;
-                            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-                            min-width: 140px;
-                            text-align: center;
-                            border: 3px solid ${d.data.gender === 'F' ? '#EC4899' : '#3B82F6'};
-                            cursor: pointer;
-                        ">
-                            ${d.data.avatar ? `<img src="${d.data.avatar}" style="width: 50px; height: 50px; border-radius: 50%; object-fit: cover; margin: 0 auto 8px; display: block; border: 2px solid ${d.data.gender === 'F' ? '#EC4899' : '#3B82F6'};" />` : `
-                            <div style="width: 50px; height: 50px; border-radius: 50%; background: ${d.data.gender === 'F' ? '#EC4899' : '#3B82F6'}; margin: 0 auto 8px; display: flex; align-items: center; justify-content: center; color: white; font-size: 20px; font-weight: bold;">
-                                ${(d.data['first name'] || '?')[0]}
-                            </div>
-                            `}
-                            <div style="font-weight: bold; color: #1F2937; font-size: 14px;">
-                                ${d.data['first name']} ${d.data['last name'] || ''}
-                            </div>
-                            ${d.data.birthday ? `<div style="color: #6B7280; font-size: 11px;">${d.data.birthday.split('-')[0]}</div>` : ''}
-                        </div>
-                    `
-                }));
+                // Configure card display using the correct API
+                // setCardHtml() returns CardHtml instance, then chain setCardDisplay
+                (chart as any).setCardHtml()
+                    .setCardDisplay([
+                        ['first name', 'last name'],
+                        ['birthday']
+                    ])
+                    .setCardImageField('avatar');
 
                 // Render the tree
                 chart.updateTree({ initial: true });
