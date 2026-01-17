@@ -297,9 +297,10 @@ export function FamilyChartPage() {
             <div className="flex-1 relative">
                 <style>{`
                     /* Hide default SVG card elements that cause "ghosting" behind HTML cards */
-                    #FamilyChart svg .card-inner rect { fill: transparent !important; stroke: none !important; filter: none !important; }
-                    #FamilyChart svg .card-inner image { display: none !important; }
-                    #FamilyChart svg .card-inner use { display: none !important; }
+                    /* We target all direct children of .card that are NOT the foreignObject (which holds our HTML) */
+                    #FamilyChart svg .card rect { fill: transparent !important; stroke: none !important; filter: none !important; }
+                    #FamilyChart svg .card image { display: none !important; }
+                    #FamilyChart svg .card use { display: none !important; }
                     
                     /* Ensure connections are styled nicely */
                     #FamilyChart svg .link { stroke: #94a3b8 !important; stroke-width: 2px !important; }
