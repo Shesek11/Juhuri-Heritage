@@ -175,10 +175,54 @@ export function FamilyChartPage() {
             const cardHtml = (chart as any).setCardHtml();
             console.log('[FamilyChart] CardHtml instance:', cardHtml);
 
+            // Set explicit card dimensions
+            (cardHtml as any).card_dim = { w: 200, h: 220, text_x: 0, text_y: 0, img_w: 0, img_h: 0, img_x: 0, img_y: 0 };
+
             cardHtml
                 .setCardDisplay([
-                    ['first name', 'last name'],
-                    ['birthday']
+                    (d: any) => {
+                        const data = d.data;
+                        const color = data.gender === 'F' ? '#ec4899' : '#3b82f6'; // Pink-500 : Blue-500
+                        const bgColor = data.gender === 'F' ? '#fdf2f8' : '#eff6ff'; // Pink-50 : Blue-50
+                        const initials = (data['first name']?.[0] || '?') + (data['last name']?.[0] || '');
+
+                        return `
+                            <div style="
+                                display: flex;
+                                flex-direction: column;
+                                align-items: center;
+                                justify-content: flex-start;
+                                width: 180px;
+                                height: 200px;
+                                background: white;
+                                border: 2px solid ${color};
+                                border-radius: 12px;
+                                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+                                padding: 16px;
+                                font-family: sans-serif;
+                                box-sizing: border-box;
+                            ">
+                                <div style="margin-bottom: 12px;">
+                                    ${data.avatar
+                                ? `<img src="${data.avatar}" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid ${color}; background: white;" />`
+                                : `<div style="width: 80px; height: 80px; border-radius: 50%; background: ${bgColor}; color: ${color}; display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: bold; border: 2px solid ${color};">${initials}</div>`
+                            }
+                                </div>
+                                <div style="text-align: center; margin-bottom: 8px; width: 100%;">
+                                    <div style="font-weight: 700; font-size: 16px; color: #1e293b; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                        ${data['first name']}
+                                    </div>
+                                    <div style="font-weight: 400; font-size: 14px; color: #475569; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                        ${data['last name'] || ''}
+                                    </div>
+                                </div>
+                                ${data.birthday
+                                ? `<div style="font-size: 12px; color: #64748b; background: #f1f5f9; padding: 2px 8px; border-radius: 10px;">${data.birthday.split('-')[0]}</div>`
+                                : ''
+                            }
+                            </div>
+                        `;
+                    }
                 ])
                 .setCardImageField('avatar');
 
