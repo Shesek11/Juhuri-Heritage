@@ -3,8 +3,9 @@ import f3 from 'family-chart';
 // CSS imported via CDN in index.html to avoid Vite resolution issues
 import { familyService, FamilyMember } from '../services/familyService';
 import { useAuth } from '../contexts/AuthContext';
-import { Plus, Loader2, Users } from 'lucide-react';
+import { Plus, Loader2, Users, X, Link as LinkIcon } from 'lucide-react';
 import { AddMemberModal } from './family/AddMemberModal';
+import { ConnectNodesModal } from './family/ConnectNodesModal';
 
 // Adapter: Convert our database format to family-chart format
 function convertToFamilyChartData(
@@ -120,6 +121,12 @@ export function FamilyChartPage() {
     const [parentChild, setParentChild] = useState<any[]>([]);
     const [partnerships, setPartnerships] = useState<any[]>([]);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+
+    // Connection Flow State
+    const [connectSourceId, setConnectSourceId] = useState<string | null>(null);
+    const [connectTargetId, setConnectTargetId] = useState<string | null>(null);
+    const [isTargetSelectorOpen, setIsTargetSelectorOpen] = useState(false);
+    const [isConnectModalOpen, setIsConnectModalOpen] = useState(false);
     const [focusedMemberId, setFocusedMemberId] = useState<string | null>(null);
 
     // Expose actions for HTML cards
@@ -131,7 +138,8 @@ export function FamilyChartPage() {
             },
             addRel: (id: string) => {
                 const realId = parseInt(id.replace('person-', ''));
-                alert('הוספת קשר עבור: ' + realId);
+                setConnectSourceId(realId.toString());
+                setIsTargetSelectorOpen(true);
             }
         };
     }, []);
@@ -337,13 +345,18 @@ export function FamilyChartPage() {
                     #FamilyChart svg .card image,
                     #FamilyChart svg .card text,
                     #FamilyChart svg .card use,
-                    #FamilyChart svg .card path,
-                    #FamilyChart svg .card-inner {
+                    #FamilyChart svg .card path {
                         display: none !important;
                         opacity: 0 !important;
                         visibility: hidden !important;
                     }
                     
+                    /* Specific override for the main card rect if it has a class */
+                    #FamilyChart svg .card-main {
+                         fill: transparent !important;
+                         stroke: none !important;
+                    }
+
                     /* Make the foreignObject (HTML) visible */
                     #FamilyChart svg .card foreignObject {
                         display: block !important;
@@ -357,6 +370,9 @@ export function FamilyChartPage() {
                         stroke: #94a3b8 !important; 
                         stroke-width: 2px !important; 
                         fill: none !important;
+                        display: block !important;
+                        visibility: visible !important;
+                        opacity: 1 !important;
                     }
                 `}</style>
                 {allMembers.length > 0 ? (
@@ -368,15 +384,8 @@ export function FamilyChartPage() {
                     />
                 ) : (
                     <div className="flex flex-col items-center justify-center h-full text-slate-400">
-                        <Users className="w-16 h-16 mb-4 opacity-50" />
-                        <p className="text-lg mb-4">אין בני משפחה להצגה</p>
-                        <button
-                            onClick={() => setIsAddModalOpen(true)}
-                            className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-lg flex items-center gap-2"
-                        >
-                            <Plus className="w-5 h-5" />
-                            הוסף את בן המשפחה הראשון
-                        </button>
+                        <Loader2 className="w-8 h-8 animate-spin mb-4" />
+                        <p>טוען נתונים...</p>
                     </div>
                 )}
             </div>
