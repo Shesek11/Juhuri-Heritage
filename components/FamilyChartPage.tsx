@@ -120,6 +120,22 @@ export function FamilyChartPage() {
     const [parentChild, setParentChild] = useState<any[]>([]);
     const [partnerships, setPartnerships] = useState<any[]>([]);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+    const [focusedMemberId, setFocusedMemberId] = useState<string | null>(null);
+
+    // Expose actions for HTML cards
+    useEffect(() => {
+        (window as any).familyChartActions = {
+            edit: (id: string) => {
+                const realId = parseInt(id.replace('person-', ''));
+                alert('עריכה בקרוב: ' + realId);
+            },
+            addRel: (id: string) => {
+                const realId = parseInt(id.replace('person-', ''));
+                alert('הוספת קשר עבור: ' + realId);
+            }
+        };
+    }, []);
+
 
     // Load data only - separate from chart creation
     const loadTree = useCallback(async () => {
@@ -242,7 +258,7 @@ export function FamilyChartPage() {
         } catch (chartError) {
             console.error('[FamilyChart] Error creating chart:', chartError);
         }
-    }, [loading, allMembers, parentChild, partnerships]);
+    }, [loading, allMembers, parentChild, partnerships, focusedMemberId]);
 
     // Auto-render enabled again with safe data
     useEffect(() => {
@@ -272,8 +288,20 @@ export function FamilyChartPage() {
             <div className="bg-slate-800/80 backdrop-blur border-b border-slate-700 px-4 py-3 flex items-center justify-between z-10">
                 <div className="flex items-center gap-4">
                     <h1 className="text-xl font-bold text-white">🌳 אילן יוחסין</h1>
-                    <span className="text-slate-400 text-sm">{allMembers.length} בני משפחה</span>
-                    <span className="bg-purple-600/30 text-purple-300 px-2 py-1 rounded text-xs">Family Chart</span>
+                    <div className="flex items-center gap-2">
+                        <Users className="w-4 h-4 text-slate-400" />
+                        <select
+                            className="bg-slate-700 text-white text-sm rounded border border-slate-600 px-2 py-1 outline-none focus:ring-2 focus:ring-blue-500"
+                            onChange={(e) => setFocusedMemberId(e.target.value)}
+                            value={focusedMemberId || (allMembers.length > 0 ? `person-${allMembers[0].id}` : '')}
+                        >
+                            {allMembers.map(m => (
+                                <option key={m.id} value={`person-${m.id}`}>
+                                    {m.first_name} {m.last_name}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
                 </div>
 
                 <div className="flex items-center gap-3">
