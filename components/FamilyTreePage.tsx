@@ -95,6 +95,9 @@ export function FamilyTreePage() {
                 data.partnerships || []
             );
 
+            console.log('[FamilyTreePage] Setting nodes:', layoutedNodes.length);
+            console.log('[FamilyTreePage] Setting edges:', layoutedEdges.length, layoutedEdges);
+
             setNodes(layoutedNodes);
             setEdges(layoutedEdges);
         } catch (error) {
