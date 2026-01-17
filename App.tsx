@@ -22,7 +22,7 @@ import RecentAdditions from './components/widgets/RecentAdditions';
 import XPDisplay from './components/gamification/XPDisplay';
 import RecipesPage from './components/RecipesPage';
 import { MarketplacePage } from './components/MarketplacePage';
-import { FamilyTreePage } from './components/FamilyTreePage';
+import { FamilyChartPage } from './components/FamilyChartPage';
 import { Mic, Search, Scroll, Sun, Moon, Plus, Loader2, HeartHandshake, BookOpen, GraduationCap, Info, User as UserIcon, LogOut, Settings, LayoutDashboard, Menu, LogIn, ChevronDown, ChefHat, Store, TreeDeciduous } from 'lucide-react'; // Tree Icon
 
 
@@ -524,7 +524,7 @@ function App() {
         ) : (
           /* --- FAMILY TREE MODE --- */
           <div className="w-full animate-in slide-in-from-right duration-300">
-            <FamilyTreePage />
+            <FamilyChartPage />
           </div>
         )}
 
