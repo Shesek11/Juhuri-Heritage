@@ -10,7 +10,8 @@ import ReactFlow, {
     NodeProps,
     Handle,
     Position,
-    MarkerType
+    MarkerType,
+    Connection
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import { familyService, FamilyMember } from '../services/familyService';
@@ -20,6 +21,7 @@ import { Plus, Search, Loader2, User } from 'lucide-react';
 import { AddMemberModal } from './family/AddMemberModal';
 import { EditMemberModal } from './family/EditMemberModal';
 import { AddRelativeModal } from './family/AddRelativeModal';
+import { CreateRelationshipModal } from './family/CreateRelationshipModal';
 
 // Custom node component for family members
 function FamilyMemberNode({ data }: NodeProps) {
@@ -115,6 +117,13 @@ export function FamilyTreePage() {
     const [selectedMember, setSelectedMember] = useState<FamilyMember | null>(null);
     const [addRelativeType, setAddRelativeType] = useState<'parent' | 'child' | 'spouse'>('child');
 
+    // Connection modal
+    const [isCreateRelationshipModalOpen, setIsCreateRelationshipModalOpen] = useState(false);
+    const [pendingConnection, setPendingConnection] = useState<{
+        source: FamilyMember | null;
+        target: FamilyMember | null;
+    } | null>(null);
+
     // Search
     const [searchQuery, setSearchQuery] = useState('');
 
@@ -153,6 +162,63 @@ export function FamilyTreePage() {
             setIsEditModalOpen(true);
         }
     }, []);
+
+    // Handle connection between nodes (drag from handle to handle)
+    const handleConnect = useCallback((connection: Connection) => {
+        if (!connection.source || !connection.target) return;
+
+        // Extract member IDs from node IDs (format: person-{id})
+        const sourceId = parseInt(connection.source.replace('person-', ''));
+        const targetId = parseInt(connection.target.replace('person-', ''));
+
+        const sourceMember = allMembers.find(m => m.id === sourceId);
+        const targetMember = allMembers.find(m => m.id === targetId);
+
+        if (sourceMember && targetMember) {
+            setPendingConnection({
+                source: sourceMember,
+                target: targetMember
+            });
+            setIsCreateRelationshipModalOpen(true);
+        }
+    }, [allMembers]);
+
+    // Create relationship from modal
+    const handleCreateRelationship = useCallback(async (type: 'spouse' | 'parent' | 'child') => {
+        if (!pendingConnection?.source || !pendingConnection?.target) return;
+
+        try {
+            if (type === 'spouse') {
+                await familyService.addPartnership({
+                    person1_id: pendingConnection.source.id,
+                    person2_id: pendingConnection.target.id,
+                    status: 'married'
+                });
+            } else if (type === 'parent') {
+                // source is the parent, target is the child
+                await familyService.addParentChild({
+                    parent_id: pendingConnection.source.id,
+                    child_id: pendingConnection.target.id,
+                    relationship_type: 'biological'
+                });
+            } else if (type === 'child') {
+                // source is the child, target is the parent
+                await familyService.addParentChild({
+                    parent_id: pendingConnection.target.id,
+                    child_id: pendingConnection.source.id,
+                    relationship_type: 'biological'
+                });
+            }
+
+            // Reload tree to show new relationship
+            await loadTree();
+        } catch (error) {
+            console.error('Failed to create relationship:', error);
+        } finally {
+            setIsCreateRelationshipModalOpen(false);
+            setPendingConnection(null);
+        }
+    }, [pendingConnection, loadTree]);
 
     const handleSearch = useCallback(() => {
         if (!searchQuery.trim()) return;
@@ -225,6 +291,7 @@ export function FamilyTreePage() {
                         onNodesChange={onNodesChange}
                         onEdgesChange={onEdgesChange}
                         onNodeClick={handleNodeClick}
+                        onConnect={handleConnect}
                         nodeTypes={nodeTypes}
                         fitView
                         fitViewOptions={{ padding: 0.2 }}
@@ -297,6 +364,18 @@ export function FamilyTreePage() {
                     }}
                 />
             )}
+
+            {/* Create Relationship Modal - appears when dragging between handles */}
+            <CreateRelationshipModal
+                isOpen={isCreateRelationshipModalOpen}
+                onClose={() => {
+                    setIsCreateRelationshipModalOpen(false);
+                    setPendingConnection(null);
+                }}
+                sourceMember={pendingConnection?.source || null}
+                targetMember={pendingConnection?.target || null}
+                onCreateRelationship={handleCreateRelationship}
+            />
         </div>
     );
 }
