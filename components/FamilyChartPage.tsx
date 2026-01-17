@@ -295,6 +295,18 @@ export function FamilyChartPage() {
 
             {/* Chart Container */}
             <div className="flex-1 relative">
+                <style>{`
+                    /* Hide default SVG card elements that cause "ghosting" behind HTML cards */
+                    #FamilyChart svg .card-inner rect { fill: transparent !important; stroke: none !important; filter: none !important; }
+                    #FamilyChart svg .card-inner image { display: none !important; }
+                    #FamilyChart svg .card-inner use { display: none !important; }
+                    
+                    /* Ensure connections are styled nicely */
+                    #FamilyChart svg .link { stroke: #94a3b8 !important; stroke-width: 2px !important; }
+                    
+                    /* Fix tooltip z-index if needed */
+                    .f3-card-html { overflow: visible !important; }
+                `}</style>
                 {allMembers.length > 0 ? (
                     <div
                         ref={containerRef}
