@@ -1,11 +1,11 @@
 
-import { db } from './server/db.js';
+const db = require('./server/config/db');
 
 async function clearFamilyData() {
     try {
         console.log('🗑️ Clearing family tree data...');
 
-        // Delete in order of dependencies
+        // Delete in order of dependencies (child tables first)
         await db.query('DELETE FROM parent_child_relationships');
         await db.query('DELETE FROM partnerships');
         await db.query('DELETE FROM family_members');

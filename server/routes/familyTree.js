@@ -7,6 +7,21 @@ const { authenticate } = require('../middleware/auth');
 // MEMBER CRUD
 // =====================================================
 
+// Debug route to clear all family data (Remove in production later!)
+router.get('/debug/reset-tree', async (req, res) => {
+    try {
+        await pool.query('DELETE FROM parent_child_relationships');
+        await pool.query('DELETE FROM partnerships');
+        await pool.query('DELETE FROM family_members');
+        await pool.query('DELETE FROM family_parent_child');
+        await pool.query('DELETE FROM family_partnerships');
+        res.json({ message: '✅ Family tree cleared successfully' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
 // Get all family members (searchable)
 router.get('/members', async (req, res) => {
     try {
