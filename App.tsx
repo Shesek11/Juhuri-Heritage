@@ -530,17 +530,15 @@ function App() {
           <div className="w-full animate-in slide-in-from-right duration-300">
             <MarketplacePage />
           </div>
+        ) : activeTab === 'test-chart' ? (
+          /* --- TEST CHART MODE (DEBUG) --- */
+          <div className="w-full h-full">
+            <FamilyChartPage />
+          </div>
         ) : (
           /* --- FAMILY TREE MODE --- */
           <div className="w-full animate-in slide-in-from-right duration-300">
             <FamilyTreePage />
-          </div>
-        )}
-
-        {/* Debug Route - Remove in production */}
-        {activeTab === 'test-chart' && (
-          <div className="w-full h-full">
-            <FamilyChartPage />
           </div>
         )}
 
