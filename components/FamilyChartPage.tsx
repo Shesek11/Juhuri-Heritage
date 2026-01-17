@@ -104,61 +104,70 @@ export function FamilyChartPage() {
     }, [loadTree]);
 
     // Create chart AFTER loading is false and container exists
-    useEffect(() => {
+    const renderChart = useCallback(() => {
         // Only run when not loading and we have members
         if (loading || allMembers.length === 0) {
             console.log('[FamilyChart] Chart creation skipped - loading:', loading, 'members:', allMembers.length);
             return;
         }
 
-        // Wait for next tick to ensure DOM is ready
-        const timer = setTimeout(() => {
-            if (!containerRef.current) {
-                console.error('[FamilyChart] Container ref still null after timeout');
-                return;
-            }
+        if (!containerRef.current) {
+            console.error('[FamilyChart] Container ref is null');
+            return;
+        }
 
-            console.log('[FamilyChart] Container ref exists:', containerRef.current);
+        console.log('[FamilyChart] Container ref exists:', containerRef.current);
 
-            // Convert to family-chart format
-            const chartData = convertToFamilyChartData(allMembers, parentChild, partnerships);
-            console.log('[FamilyChart] Data converted:', chartData);
+        // Convert to family-chart format
+        const chartData = convertToFamilyChartData(allMembers, parentChild, partnerships);
+        console.log('[FamilyChart] Data converted:', chartData);
 
-            // Clear previous chart
-            containerRef.current.innerHTML = '';
+        // Clear previous chart
+        containerRef.current.innerHTML = '';
 
-            try {
-                // Create chart using the library API
-                console.log('[FamilyChart] Calling f3.createChart...');
-                const chart = f3.createChart(containerRef.current, chartData as any);
-                console.log('[FamilyChart] Chart created:', chart);
+        try {
+            // Create chart using the library API
+            console.log('[FamilyChart] Calling f3.createChart...');
+            const chart = f3.createChart(containerRef.current, chartData as any);
+            console.log('[FamilyChart] Chart created:', chart);
 
-                // Configure card display
-                console.log('[FamilyChart] Calling setCardHtml...');
-                const cardHtml = (chart as any).setCardHtml();
-                console.log('[FamilyChart] CardHtml instance:', cardHtml);
+            // Configure card display
+            console.log('[FamilyChart] Calling setCardHtml...');
+            const cardHtml = (chart as any).setCardHtml();
+            console.log('[FamilyChart] CardHtml instance:', cardHtml);
 
-                cardHtml
-                    .setCardDisplay([
-                        ['first name', 'last name'],
-                        ['birthday']
-                    ])
-                    .setCardImageField('avatar');
+            cardHtml
+                .setCardDisplay([
+                    ['first name', 'last name'],
+                    ['birthday']
+                ])
+                .setCardImageField('avatar');
 
-                // Render the tree
-                console.log('[FamilyChart] Calling updateTree...');
-                chart.updateTree({ initial: true });
-                console.log('[FamilyChart] updateTree done. Container innerHTML length:', containerRef.current.innerHTML.length);
+            // Render the tree
+            console.log('[FamilyChart] Calling updateTree...');
+            chart.updateTree({ initial: true });
+            console.log('[FamilyChart] updateTree done. Container innerHTML length:', containerRef.current.innerHTML.length);
 
-                // Store ref for later
-                chartRef.current = chart;
-            } catch (chartError) {
-                console.error('[FamilyChart] Error creating chart:', chartError);
-            }
-        }, 100); // Small delay to ensure DOM is ready
-
-        return () => clearTimeout(timer);
+            // Store ref for later
+            chartRef.current = chart;
+        } catch (chartError) {
+            console.error('[FamilyChart] Error creating chart:', chartError);
+        }
     }, [loading, allMembers, parentChild, partnerships]);
+
+    // Manual trigger only
+    // useEffect(() => {
+    //    if (!loading && allMembers.length > 0) {
+    //        const timer = setTimeout(renderChart, 100);
+    //        return () => clearTimeout(timer);
+    //    }
+    // }, [loading, allMembers, renderChart]);
+
+    const exportData = () => {
+        const chartData = convertToFamilyChartData(allMembers, parentChild, partnerships);
+        console.log('EXPORTED_DATA:', JSON.stringify(chartData, null, 2));
+        alert('Data logged to console (search for EXPORTED_DATA)');
+    };
 
     if (loading) {
         return (
@@ -179,6 +188,18 @@ export function FamilyChartPage() {
                 </div>
 
                 <div className="flex items-center gap-3">
+                    <button
+                        onClick={renderChart}
+                        className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm font-medium"
+                    >
+                        Render Chart
+                    </button>
+                    <button
+                        onClick={exportData}
+                        className="bg-slate-600 hover:bg-slate-700 text-white px-3 py-2 rounded-lg text-sm font-medium"
+                    >
+                        Export Data
+                    </button>
                     <button
                         onClick={() => setIsAddModalOpen(true)}
                         className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
