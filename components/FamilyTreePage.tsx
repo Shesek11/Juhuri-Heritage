@@ -1,41 +1,76 @@
-import React, { useState, useCallback, useEffect } from 'react';
-import { FamDiagram } from 'basicprimitivesreact';
-import {
-    FamConfig,
-    Enabled,
-    PageFitMode,
-    GroupByType,
-    ConnectorType,
-    ElbowType,
-    LineType,
-    NavigationMode,
-    OrientationType
-} from 'basicprimitives';
+import React, { useState, useCallback, useEffect, useMemo } from 'react';
+import ReactFlow, {
+    Node,
+    Edge,
+    Controls,
+    Background,
+    MiniMap,
+    useNodesState,
+    useEdgesState,
+    NodeProps,
+    MarkerType
+} from 'reactflow';
+import 'reactflow/dist/style.css';
 import { familyService, FamilyMember } from '../services/familyService';
+import { layoutFamilyTree } from '../services/layoutService';
 import { useAuth } from '../contexts/AuthContext';
-import { Plus, Search, Loader2, ZoomIn, ZoomOut, Maximize } from 'lucide-react';
+import { Plus, Search, Loader2, User } from 'lucide-react';
 import { AddMemberModal } from './family/AddMemberModal';
 import { EditMemberModal } from './family/EditMemberModal';
 import { AddRelativeModal } from './family/AddRelativeModal';
 
-// BasicPrimitives item interface
-interface FamilyItem {
-    id: number;
-    parents: number[];
-    spouses: number[];
-    title: string;
-    description: string;
-    image: string | null;
-    itemTitleColor: string;
-    groupTitle?: string;
+// Custom node component for family members
+function FamilyMemberNode({ data }: NodeProps) {
+    const member = data.member;
+    const color = data.color || '#6B7280';
+
+    return (
+        <div
+            className="bg-white rounded-xl shadow-lg border-2 p-3 cursor-pointer hover:shadow-xl transition-all min-w-[140px]"
+            style={{ borderColor: color }}
+        >
+            <div className="flex flex-col items-center">
+                {member.photo_url ? (
+                    <img
+                        src={member.photo_url}
+                        alt={member.first_name}
+                        className="w-12 h-12 rounded-full object-cover mb-2 border-2"
+                        style={{ borderColor: color }}
+                    />
+                ) : (
+                    <div
+                        className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold mb-2"
+                        style={{ backgroundColor: color }}
+                    >
+                        <User className="w-6 h-6" />
+                    </div>
+                )}
+                <div className="text-center">
+                    <div className="font-semibold text-gray-800 text-sm">
+                        {member.first_name} {member.last_name || ''}
+                    </div>
+                    {member.birth_date && (
+                        <div className="text-xs text-gray-500">
+                            {member.birth_date.split('-')[0]}
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
 }
+
+// Node types registration
+const nodeTypes = {
+    familyMember: FamilyMemberNode
+};
 
 export function FamilyTreePage() {
     const { user } = useAuth();
     const [loading, setLoading] = useState(true);
-    const [items, setItems] = useState<FamilyItem[]>([]);
     const [allMembers, setAllMembers] = useState<FamilyMember[]>([]);
-    const [cursorItem, setCursorItem] = useState<number | null>(null);
+    const [nodes, setNodes, onNodesChange] = useNodesState([]);
+    const [edges, setEdges, onEdgesChange] = useEdgesState([]);
 
     // Modals
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -53,147 +88,52 @@ export function FamilyTreePage() {
             const data = await familyService.getTreeData();
             setAllMembers(data.members || []);
 
-            // Build parent map: child_id -> [parent_ids]
-            const parentMap = new Map<number, number[]>();
-            (data.parentChild || []).forEach((pc: { parent_id: number; child_id: number }) => {
-                const existing = parentMap.get(pc.child_id) || [];
-                existing.push(pc.parent_id);
-                parentMap.set(pc.child_id, existing);
-            });
+            // Use our custom layout engine
+            const { nodes: layoutedNodes, edges: layoutedEdges } = layoutFamilyTree(
+                data.members || [],
+                data.parentChild || [],
+                data.partnerships || []
+            );
 
-            // Build spouse map: person_id -> [spouse_ids]
-            const spouseMap = new Map<number, number[]>();
-            (data.partnerships || []).forEach((p: { person1_id: number; person2_id: number }) => {
-                // Add both directions
-                const s1 = spouseMap.get(p.person1_id) || [];
-                if (!s1.includes(p.person2_id)) s1.push(p.person2_id);
-                spouseMap.set(p.person1_id, s1);
-
-                const s2 = spouseMap.get(p.person2_id) || [];
-                if (!s2.includes(p.person1_id)) s2.push(p.person1_id);
-                spouseMap.set(p.person2_id, s2);
-            });
-
-            // Convert to BasicPrimitives items
-            const familyItems: FamilyItem[] = (data.members || []).map((member: FamilyMember) => ({
-                id: member.id,
-                parents: parentMap.get(member.id) || [],
-                spouses: spouseMap.get(member.id) || [],
-                title: `${member.first_name} ${member.last_name || ''}`.trim(),
-                description: member.birth_date ? member.birth_date.split('-')[0] : '',
-                image: member.photo_url || null,
-                itemTitleColor: member.gender === 'male' ? '#3B82F6' :
-                    member.gender === 'female' ? '#EC4899' : '#6B7280',
-                groupTitle: member.last_name || undefined
-            }));
-
-            setItems(familyItems);
-
-            // Set cursor to first root item (person without parents)
-            const rootItem = familyItems.find(item => item.parents.length === 0);
-            if (rootItem) {
-                setCursorItem(rootItem.id);
-            }
+            setNodes(layoutedNodes);
+            setEdges(layoutedEdges);
         } catch (error) {
             console.error('Failed to load tree:', error);
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [setNodes, setEdges]);
 
     useEffect(() => {
         loadTree();
     }, [loadTree]);
 
-    const handleSearch = useCallback(() => {
-        if (!searchQuery.trim()) {
-            return;
-        }
-        const found = items.find(item =>
-            item.title.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-        if (found) {
-            setCursorItem(found.id);
-        }
-    }, [searchQuery, items]);
-
-    const openMemberDetails = (memberId: number) => {
-        const member = allMembers.find(m => m.id === memberId);
-        if (member) {
-            setSelectedMember(member);
+    const handleNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
+        if (node.data?.member) {
+            setSelectedMember(node.data.member);
             setIsEditModalOpen(true);
         }
-    };
+    }, []);
 
-    // BasicPrimitives configuration
-    const config: FamConfig = {
-        navigationMode: NavigationMode.Default,
-        pageFitMode: PageFitMode.None,
-        orientationType: OrientationType.Top,
-        hasSelectorCheckbox: Enabled.False,
-        groupByType: GroupByType.Children,
+    const handleSearch = useCallback(() => {
+        if (!searchQuery.trim()) return;
 
-        // Items
-        items: items,
-        cursorItem: cursorItem,
+        const found = nodes.find(node => {
+            const member = node.data?.member;
+            if (!member) return false;
+            const fullName = `${member.first_name} ${member.last_name || ''}`.toLowerCase();
+            return fullName.includes(searchQuery.toLowerCase());
+        });
 
-        // Connectors
-        arrowsDirection: GroupByType.Parents,
-        connectorType: ConnectorType.Squared,
-        elbowType: ElbowType.Round,
-        linesColor: '#64748B',
-        linesWidth: 2,
-        linesType: LineType.Solid,
-
-        // Layout
-        normalLevelShift: 60,
-        dotLevelShift: 30,
-        lineLevelShift: 20,
-        normalItemsInterval: 30,
-        dotItemsInterval: 10,
-        lineItemsInterval: 10,
-
-        // Callbacks
-        onCursorChanged: (event: any, data: any) => {
-            if (data.context) {
-                setCursorItem(data.context.id);
+        if (found) {
+            // You could implement fitView to the found node here
+            const member = found.data?.member;
+            if (member) {
+                setSelectedMember(member);
+                setIsEditModalOpen(true);
             }
-        },
-        onCursorChanging: (event: any, data: any) => {
-            // Allow cursor change
-            return true;
-        },
-
-        // Templates - using default built-in template
-        templates: [{
-            name: 'defaultTemplate',
-            itemSize: { width: 140, height: 80 },
-            minimizedItemSize: { width: 4, height: 4 },
-            onItemRender: ({ context }: { context: FamilyItem }) => {
-                return (
-                    <div
-                        className="w-full h-full bg-white rounded-lg shadow-md border-2 flex flex-col items-center justify-center p-2 cursor-pointer hover:shadow-lg transition-shadow"
-                        style={{ borderColor: context.itemTitleColor }}
-                        onClick={() => openMemberDetails(context.id)}
-                    >
-                        <div
-                            className="w-10 h-10 rounded-full flex items-center justify-center text-white font-bold text-sm mb-1"
-                            style={{ backgroundColor: context.itemTitleColor }}
-                        >
-                            {context.title.charAt(0).toUpperCase()}
-                        </div>
-                        <div className="text-center">
-                            <div className="font-medium text-gray-800 text-xs leading-tight">{context.title}</div>
-                            {context.description && (
-                                <div className="text-gray-500 text-xs">{context.description}</div>
-                            )}
-                        </div>
-                    </div>
-                );
-            }
-        }],
-        defaultTemplateName: 'defaultTemplate'
-    };
+        }
+    }, [searchQuery, nodes]);
 
     if (loading) {
         return (
@@ -206,10 +146,10 @@ export function FamilyTreePage() {
     return (
         <div className="h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex flex-col" dir="rtl">
             {/* Header */}
-            <div className="bg-slate-800/80 backdrop-blur border-b border-slate-700 px-4 py-3 flex items-center justify-between">
+            <div className="bg-slate-800/80 backdrop-blur border-b border-slate-700 px-4 py-3 flex items-center justify-between z-10">
                 <div className="flex items-center gap-4">
                     <h1 className="text-xl font-bold text-white">🌳 אילן יוחסין</h1>
-                    <span className="text-slate-400 text-sm">{items.length} בני משפחה</span>
+                    <span className="text-slate-400 text-sm">{allMembers.length} בני משפחה</span>
                 </div>
 
                 <div className="flex items-center gap-3">
@@ -238,9 +178,28 @@ export function FamilyTreePage() {
             </div>
 
             {/* Tree Container */}
-            <div className="flex-1 overflow-hidden relative">
-                {items.length > 0 ? (
-                    <FamDiagram centerOnCursor={true} config={config} />
+            <div className="flex-1">
+                {nodes.length > 0 ? (
+                    <ReactFlow
+                        nodes={nodes}
+                        edges={edges}
+                        onNodesChange={onNodesChange}
+                        onEdgesChange={onEdgesChange}
+                        onNodeClick={handleNodeClick}
+                        nodeTypes={nodeTypes}
+                        fitView
+                        fitViewOptions={{ padding: 0.2 }}
+                        minZoom={0.1}
+                        maxZoom={2}
+                        defaultViewport={{ x: 0, y: 0, zoom: 0.8 }}
+                    >
+                        <Controls className="!bg-slate-800 !border-slate-600 !rounded-lg" />
+                        <MiniMap
+                            className="!bg-slate-800 !border-slate-600 !rounded-lg"
+                            nodeColor={(node) => node.data?.color || '#6B7280'}
+                        />
+                        <Background color="#334155" gap={20} />
+                    </ReactFlow>
                 ) : (
                     <div className="flex flex-col items-center justify-center h-full text-slate-400">
                         <p className="text-lg mb-4">אין בני משפחה להצגה</p>

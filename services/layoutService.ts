@@ -1,156 +1,283 @@
-import dagre from 'dagre';
-import { Node, Edge } from 'reactflow';
-import { FamilyMember } from './familyService';
+/**
+ * Family Tree Layout Service
+ * 
+ * Custom layout algorithm designed specifically for family trees.
+ * Features:
+ * - Couples are placed side by side horizontally
+ * - Children are centered below their parents
+ * - Uses a recursive approach to calculate subtree widths
+ */
 
-// Try to import ELK
-let ELK: any = null;
-let elk: any = null;
+import { Node, Edge, Position } from 'reactflow';
 
-try {
-    ELK = require('elkjs/lib/elk.bundled.js');
-    elk = new ELK();
-} catch (e) {
-    console.warn('ELK not available, using Dagre');
+// Layout constants
+const NODE_WIDTH = 160;
+const NODE_HEIGHT = 100;
+const COUPLE_GAP = 30;  // Gap between spouses
+const SIBLING_GAP = 40; // Gap between siblings
+const LEVEL_GAP = 120;  // Vertical gap between generations
+
+export interface FamilyMemberData {
+    id: number;
+    first_name: string;
+    last_name?: string;
+    gender: 'male' | 'female' | 'other';
+    birth_date?: string;
+    photo_url?: string;
 }
 
-// Dagre layout with improved partner/child handling
-const layoutWithDagre = (nodes: Node[], edges: Edge[]): { nodes: Node[], edges: Edge[] } => {
-    const dagreGraph = new dagre.graphlib.Graph();
-    dagreGraph.setDefaultEdgeLabel(() => ({}));
-    dagreGraph.setGraph({ rankdir: 'TB', nodesep: 60, ranksep: 100, marginx: 20, marginy: 20 });
+export interface ParentChildRel {
+    parent_id: number;
+    child_id: number;
+}
 
-    const nodeWidth = 160;
-    const nodeHeight = 100;
+export interface PartnershipRel {
+    person1_id: number;
+    person2_id: number;
+}
 
-    // Build partner clusters
-    const partnerMap = new Map<string, Set<string>>();
-    edges.forEach(e => {
-        if (e.id.startsWith('part-')) {
-            if (!partnerMap.has(e.source)) partnerMap.set(e.source, new Set());
-            if (!partnerMap.has(e.target)) partnerMap.set(e.target, new Set());
-            partnerMap.get(e.source)!.add(e.target);
-            partnerMap.get(e.target)!.add(e.source);
+interface TreeNode {
+    id: number;
+    member: FamilyMemberData;
+    spouseId?: number;
+    children: TreeNode[];
+    x: number;
+    y: number;
+    subtreeWidth: number;
+}
+
+/**
+ * Main layout function
+ */
+export function layoutFamilyTree(
+    members: FamilyMemberData[],
+    parentChild: ParentChildRel[],
+    partnerships: PartnershipRel[]
+): { nodes: Node[]; edges: Edge[] } {
+    if (!members || members.length === 0) {
+        return { nodes: [], edges: [] };
+    }
+
+    // Build lookup maps
+    const memberMap = new Map<number, FamilyMemberData>();
+    members.forEach(m => memberMap.set(m.id, m));
+
+    // Build parent -> children map
+    const childrenMap = new Map<number, number[]>();
+    const hasParent = new Set<number>();
+
+    parentChild.forEach(pc => {
+        const children = childrenMap.get(pc.parent_id) || [];
+        if (!children.includes(pc.child_id)) {
+            children.push(pc.child_id);
+        }
+        childrenMap.set(pc.parent_id, children);
+        hasParent.add(pc.child_id);
+    });
+
+    // Build spouse map
+    const spouseMap = new Map<number, number>();
+    partnerships.forEach(p => {
+        spouseMap.set(p.person1_id, p.person2_id);
+        spouseMap.set(p.person2_id, p.person1_id);
+    });
+
+    // Find root nodes (people without parents)
+    const roots: number[] = [];
+    const processedInCouple = new Set<number>();
+
+    members.forEach(m => {
+        if (!hasParent.has(m.id) && !processedInCouple.has(m.id)) {
+            roots.push(m.id);
+            // If this person has a spouse, mark the spouse as processed
+            const spouseId = spouseMap.get(m.id);
+            if (spouseId !== undefined) {
+                processedInCouple.add(spouseId);
+            }
         }
     });
 
-    // Find clusters (connected partners)
-    const clusters: string[][] = [];
-    const visited = new Set<string>();
+    // If no roots found (circular or all have parents), just use first member
+    if (roots.length === 0 && members.length > 0) {
+        roots.push(members[0].id);
+    }
 
-    nodes.forEach(node => {
-        if (visited.has(node.id)) return;
-        const partners = partnerMap.get(node.id);
-        if (partners && partners.size > 0) {
-            const cluster: string[] = [];
-            const queue = [node.id];
-            while (queue.length > 0) {
-                const curr = queue.shift()!;
-                if (visited.has(curr)) continue;
-                visited.add(curr);
-                cluster.push(curr);
-                partnerMap.get(curr)?.forEach(p => {
-                    if (!visited.has(p)) queue.push(p);
+    // Build tree structure recursively
+    const builtIds = new Set<number>();
+
+    function buildTree(memberId: number): TreeNode | null {
+        if (builtIds.has(memberId)) return null;
+
+        const member = memberMap.get(memberId);
+        if (!member) return null;
+
+        builtIds.add(memberId);
+
+        const spouseId = spouseMap.get(memberId);
+        if (spouseId !== undefined) {
+            builtIds.add(spouseId);
+        }
+
+        // Get children from both this person and spouse
+        const allChildIds = new Set<number>();
+        (childrenMap.get(memberId) || []).forEach(c => allChildIds.add(c));
+        if (spouseId !== undefined) {
+            (childrenMap.get(spouseId) || []).forEach(c => allChildIds.add(c));
+        }
+
+        const children: TreeNode[] = [];
+        allChildIds.forEach(childId => {
+            const childNode = buildTree(childId);
+            if (childNode) {
+                children.push(childNode);
+            }
+        });
+
+        return {
+            id: memberId,
+            member: member,
+            spouseId: spouseId,
+            children: children,
+            x: 0,
+            y: 0,
+            subtreeWidth: 0
+        };
+    }
+
+    const trees: TreeNode[] = [];
+    roots.forEach(rootId => {
+        const tree = buildTree(rootId);
+        if (tree) trees.push(tree);
+    });
+
+    // Calculate subtree widths
+    function calculateWidth(node: TreeNode): number {
+        const hasSpouse = node.spouseId !== undefined;
+        const coupleWidth = hasSpouse ? (NODE_WIDTH * 2 + COUPLE_GAP) : NODE_WIDTH;
+
+        if (node.children.length === 0) {
+            node.subtreeWidth = coupleWidth;
+            return coupleWidth;
+        }
+
+        let childrenWidth = 0;
+        node.children.forEach((child, i) => {
+            childrenWidth += calculateWidth(child);
+            if (i < node.children.length - 1) {
+                childrenWidth += SIBLING_GAP;
+            }
+        });
+
+        node.subtreeWidth = Math.max(coupleWidth, childrenWidth);
+        return node.subtreeWidth;
+    }
+
+    trees.forEach(tree => calculateWidth(tree));
+
+    // Position nodes
+    function positionTree(node: TreeNode, startX: number, y: number) {
+        const hasSpouse = node.spouseId !== undefined;
+        const coupleWidth = hasSpouse ? (NODE_WIDTH * 2 + COUPLE_GAP) : NODE_WIDTH;
+
+        // Center the couple above children
+        const coupleX = startX + (node.subtreeWidth - coupleWidth) / 2;
+        node.x = coupleX;
+        node.y = y;
+
+        // Position children
+        let childX = startX;
+        node.children.forEach(child => {
+            positionTree(child, childX, y + LEVEL_GAP);
+            childX += child.subtreeWidth + SIBLING_GAP;
+        });
+    }
+
+    let currentX = 0;
+    trees.forEach(tree => {
+        positionTree(tree, currentX, 0);
+        currentX += tree.subtreeWidth + 100; // Gap between separate family trees
+    });
+
+    // Convert to ReactFlow nodes and edges
+    const nodes: Node[] = [];
+    const edges: Edge[] = [];
+    const processedNodes = new Set<number>();
+
+    function createNodes(treeNode: TreeNode) {
+        if (processedNodes.has(treeNode.id)) return;
+        processedNodes.add(treeNode.id);
+
+        const member = treeNode.member;
+        const color = member.gender === 'male' ? '#3B82F6' :
+            member.gender === 'female' ? '#EC4899' : '#6B7280';
+
+        // Main person node
+        nodes.push({
+            id: `person-${treeNode.id}`,
+            type: 'familyMember',
+            position: { x: treeNode.x, y: treeNode.y },
+            data: {
+                member: member,
+                color: color
+            },
+            sourcePosition: Position.Bottom,
+            targetPosition: Position.Top
+        });
+
+        // Spouse node if exists
+        if (treeNode.spouseId !== undefined) {
+            const spouse = memberMap.get(treeNode.spouseId);
+            if (spouse && !processedNodes.has(treeNode.spouseId)) {
+                processedNodes.add(treeNode.spouseId);
+                const spouseColor = spouse.gender === 'male' ? '#3B82F6' :
+                    spouse.gender === 'female' ? '#EC4899' : '#6B7280';
+
+                nodes.push({
+                    id: `person-${treeNode.spouseId}`,
+                    type: 'familyMember',
+                    position: { x: treeNode.x + NODE_WIDTH + COUPLE_GAP, y: treeNode.y },
+                    data: {
+                        member: spouse,
+                        color: spouseColor
+                    },
+                    sourcePosition: Position.Bottom,
+                    targetPosition: Position.Top
+                });
+
+                // Add marriage edge (horizontal line between spouses)
+                edges.push({
+                    id: `marriage-${treeNode.id}-${treeNode.spouseId}`,
+                    source: `person-${treeNode.id}`,
+                    target: `person-${treeNode.spouseId}`,
+                    type: 'smoothstep',
+                    style: { stroke: '#F472B6', strokeWidth: 3 },
+                    animated: false,
+                    markerEnd: { type: 'arrowclosed' as any, color: '#F472B6' }
                 });
             }
-            clusters.push(cluster);
         }
-    });
 
-    // Create virtual "couple" nodes for each cluster
-    const clusterMap = new Map<string, string>(); // member -> clusterId
-    const clusterCenters = new Map<string, string[]>(); // clusterId -> members
+        // Child edges
+        treeNode.children.forEach(child => {
+            // Connect from middle of couple (or single parent) to child
+            const sourceId = treeNode.spouseId !== undefined
+                ? `person-${treeNode.id}` // Could also create a virtual "couple" node
+                : `person-${treeNode.id}`;
 
-    clusters.forEach((cluster, idx) => {
-        const clusterId = `couple-${idx}`;
-        cluster.forEach(m => clusterMap.set(m, clusterId));
-        clusterCenters.set(clusterId, cluster);
-        // Add virtual couple node (will be used for child connections)
-        dagreGraph.setNode(clusterId, { width: nodeWidth * cluster.length + 40 * (cluster.length - 1), height: nodeHeight });
-    });
+            edges.push({
+                id: `parent-${treeNode.id}-child-${child.id}`,
+                source: sourceId,
+                target: `person-${child.id}`,
+                type: 'smoothstep',
+                style: { stroke: '#94A3B8', strokeWidth: 2 },
+                animated: false
+            });
 
-    // Add individual nodes
-    nodes.forEach(node => {
-        if (!clusterMap.has(node.id)) {
-            dagreGraph.setNode(node.id, { width: nodeWidth, height: nodeHeight });
-        }
-    });
-
-    // Add parent-child edges (connect to cluster if parent is in one)
-    edges.forEach(edge => {
-        if (!edge.id.startsWith('part-')) {
-            const sourceCluster = clusterMap.get(edge.source);
-            const targetCluster = clusterMap.get(edge.target);
-
-            // Source is parent, target is child
-            const effectiveSource = sourceCluster || edge.source;
-            const effectiveTarget = targetCluster || edge.target;
-
-            dagreGraph.setEdge(effectiveSource, effectiveTarget);
-        }
-    });
-
-    dagre.layout(dagreGraph);
-
-    // Position individual nodes within their clusters
-    const newNodes = nodes.map(node => {
-        const clusterId = clusterMap.get(node.id);
-
-        if (clusterId) {
-            // Node is part of a cluster
-            const clusterPos = dagreGraph.node(clusterId);
-            const clusterMembers = clusterCenters.get(clusterId)!;
-            const memberIndex = clusterMembers.indexOf(node.id);
-            const totalWidth = nodeWidth * clusterMembers.length + 40 * (clusterMembers.length - 1);
-            const startX = clusterPos.x - totalWidth / 2;
-
-            return {
-                ...node,
-                position: {
-                    x: startX + memberIndex * (nodeWidth + 40),
-                    y: clusterPos.y - nodeHeight / 2
-                }
-            };
-        } else {
-            // Standalone node
-            const pos = dagreGraph.node(node.id);
-            return {
-                ...node,
-                position: {
-                    x: pos.x - nodeWidth / 2,
-                    y: pos.y - nodeHeight / 2
-                }
-            };
-        }
-    });
-
-    // Update edge handles
-    const newEdges = edges.map(edge => {
-        if (edge.id.startsWith('part-')) {
-            const src = newNodes.find(n => n.id === edge.source);
-            const tgt = newNodes.find(n => n.id === edge.target);
-            if (src && tgt) {
-                return src.position.x < tgt.position.x
-                    ? { ...edge, sourceHandle: 'right', targetHandle: 'left-target' }
-                    : { ...edge, sourceHandle: 'left', targetHandle: 'right-target' };
-            }
-        }
-        return edge;
-    });
-
-    return { nodes: newNodes, edges: newEdges };
-};
-
-// Main export
-export const layoutElements = async (
-    nodes: Node[],
-    edges: Edge[],
-    members: FamilyMember[]
-): Promise<{ nodes: Node[], edges: Edge[] }> => {
-    try {
-        // Use improved Dagre for now (more reliable for family trees)
-        return layoutWithDagre(nodes, edges);
-    } catch (err) {
-        console.error('Layout failed:', err);
-        return { nodes, edges };
+            createNodes(child);
+        });
     }
-};
+
+    trees.forEach(tree => createNodes(tree));
+
+    return { nodes, edges };
+}
