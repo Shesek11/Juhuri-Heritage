@@ -247,12 +247,14 @@ export function layoutFamilyTree(
                 });
 
                 // Add marriage edge (horizontal line between spouses)
+                // Source node is on the LEFT, target is on the RIGHT
+                // So we connect source's RIGHT handle to target's LEFT handle
                 edges.push({
                     id: `marriage-${treeNode.id}-${treeNode.spouseId}`,
                     source: `person-${treeNode.id}`,
                     target: `person-${treeNode.spouseId}`,
-                    sourceHandle: 'spouse-left',
-                    targetHandle: 'spouse-right',
+                    sourceHandle: 'spouse-right',
+                    targetHandle: 'spouse-left',
                     type: 'straight',
                     style: { stroke: '#F472B6', strokeWidth: 3 }
                 });

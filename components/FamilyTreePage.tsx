@@ -36,17 +36,17 @@ function FamilyMemberNode({ data }: NodeProps) {
                 className="!bg-slate-400 !w-3 !h-3"
             />
 
-            {/* Left Handle - for spouse connections */}
+            {/* Left Handle - for spouse connections (incoming) */}
             <Handle
-                type="source"
+                type="target"
                 position={Position.Left}
                 id="spouse-left"
                 className="!bg-pink-400 !w-3 !h-3"
             />
 
-            {/* Right Handle - for spouse connections */}
+            {/* Right Handle - for spouse connections (outgoing) */}
             <Handle
-                type="target"
+                type="source"
                 position={Position.Right}
                 id="spouse-right"
                 className="!bg-pink-400 !w-3 !h-3"
