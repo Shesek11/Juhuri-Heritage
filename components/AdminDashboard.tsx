@@ -475,6 +475,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                             <th className="p-4">ניב</th>
                                             <th className="p-4">תרגום (עברית)</th>
                                             <th className="p-4">לטינית</th>
+                                            <th className="p-4">קירילית</th>
                                             {isAdmin && <th className="p-4">פעולות</th>}
                                         </tr>
                                     </thead>
@@ -532,6 +533,20 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                                             <span className="text-xs text-slate-500">{entry.translations[0]?.latin || '-'}</span>
                                                         )}
                                                     </td>
+                                                    <td className="p-4">
+                                                        {isEditing ? (
+                                                            <input
+                                                                type="text"
+                                                                value={editForm.cyrillic}
+                                                                onChange={(e) => setEditForm({ ...editForm, cyrillic: e.target.value })}
+                                                                className="w-full p-1 border rounded dark:bg-slate-800 dark:border-slate-600"
+                                                                placeholder="Кириллица..."
+                                                                dir="ltr"
+                                                            />
+                                                        ) : (
+                                                            <span className="text-xs text-slate-500">{entry.translations[0]?.cyrillic || '-'}</span>
+                                                        )}
+                                                    </td>
                                                     {isAdmin && (
                                                         <td className="p-4">
                                                             {isEditing ? (
@@ -550,7 +565,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                                 </tr>
                                             );
                                         })}
-                                        {filteredActive.length === 0 && (<tr><td colSpan={6} className="p-8 text-center text-slate-400">אין נתונים להצגה</td></tr>)}
+                                        {filteredActive.length === 0 && (<tr><td colSpan={7} className="p-8 text-center text-slate-400">אין נתונים להצגה</td></tr>)}
                                     </tbody>
                                 </table>
                             </div>
