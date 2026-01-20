@@ -18,7 +18,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
     const isAdmin = user.role === 'admin';
 
     const [entries, setEntries] = useState<DictionaryEntry[]>([]);
-    const [activeTab, setActiveTab] = useState<'table' | 'pending' | 'import' | 'dialects' | 'users' | 'logs' | 'features'>('table');
+    const [activeTab, setActiveTab] = useState<'table' | 'pending' | 'dialects' | 'users' | 'logs' | 'features'>('table');
     const [searchFilter, setSearchFilter] = useState('');
 
     // Dialect Management State
@@ -37,6 +37,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
         Array(15).fill('').map(() => Array(6).fill(''))
     );
     const [rowsToAdd, setRowsToAdd] = useState(1);
+    const [viewMode, setViewMode] = useState<'table' | 'bulk'>('table');
+    const [bulkNoTranslation, setBulkNoTranslation] = useState(false);
 
     // AI Generation State
     const [aiTopic, setAiTopic] = useState('');
@@ -189,9 +191,44 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
             refreshData();
             alert(`נשמרו בהצלחה ${savedCount} רשומות!`);
             handleClearGrid();
-            setActiveTab('table');
+            setViewMode('table');
         } else {
             alert('לא נמצאו נתונים תקינים לשמירה.');
+        }
+    };
+
+    const handleSaveBulkUntranslated = async () => {
+        const terms = gridData.map(row => row[0].trim()).filter(Boolean);
+        if (terms.length === 0) {
+            alert('לא נמצאו מילים לשמירה.');
+            return;
+        }
+
+        let savedCount = 0;
+        for (const term of terms) {
+            try {
+                const res = await fetch('/api/dictionary/entries/add-untranslated', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        term,
+                        detectedLanguage: 'Hebrew'
+                    })
+                });
+                if (res.ok) savedCount++;
+            } catch (e) {
+                console.error('Error saving term:', term, e);
+            }
+        }
+
+        if (savedCount > 0) {
+            refreshData();
+            alert(`נוספו בהצלחה ${savedCount} מילים ללא תרגום!`);
+            handleClearGrid();
+            setViewMode('table');
+        } else {
+            alert('שגיאה בשמירה.');
         }
     };
 
@@ -313,11 +350,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                         </button>
                     )}
                     {isAdmin && (
-                        <button onClick={() => setActiveTab('import')} className={`flex items-center gap-2 px-4 py-2 font-medium transition-colors whitespace-nowrap ${activeTab === 'import' ? 'text-green-600 border-b-2 border-green-600' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}>
-                            <FileSpreadsheet size={18} /> עורך טבלאי
-                        </button>
-                    )}
-                    {isAdmin && (
                         <button onClick={() => setActiveTab('features')} className={`flex items-center gap-2 px-4 py-2 font-medium transition-colors whitespace-nowrap ${activeTab === 'features' ? 'text-purple-600 border-b-2 border-purple-600' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}>
                             <ToggleLeft size={18} /> ניהול פיצ'רים
                         </button>
@@ -327,62 +359,141 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                 {/* Tab: Active Table */}
                 {activeTab === 'table' && (
                     <div className="flex-1 flex flex-col">
-                        <div className="mb-4 flex gap-4">
-                            <div className="relative flex-1">
-                                <Search className="absolute right-3 top-3 text-slate-400" size={20} />
-                                <input type="text" placeholder="חיפוש במאגר הפעיל..." value={searchFilter} onChange={(e) => setSearchFilter(e.target.value)} className="w-full p-3 pr-10 rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white" />
-                            </div>
+                        {/* Toolbar */}
+                        <div className="mb-4 flex flex-wrap gap-4 items-center">
+                            {viewMode === 'table' && (
+                                <div className="relative flex-1 min-w-[200px]">
+                                    <Search className="absolute right-3 top-3 text-slate-400" size={20} />
+                                    <input type="text" placeholder="חיפוש במאגר..." value={searchFilter} onChange={(e) => setSearchFilter(e.target.value)} className="w-full p-3 pr-10 rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white" />
+                                </div>
+                            )}
                             {isAdmin && (
                                 <>
-                                    <button onClick={() => setShowUntranslatedModal(true)} className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-600 text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all font-medium whitespace-nowrap">
-                                        <Plus size={18} /> הוסף מילה ללא תרגום
+                                    <button
+                                        onClick={() => setViewMode(viewMode === 'table' ? 'bulk' : 'table')}
+                                        className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-all ${viewMode === 'bulk' ? 'bg-green-600 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600'}`}
+                                    >
+                                        <FileSpreadsheet size={18} /> {viewMode === 'bulk' ? 'חזרה לתצוגה' : 'הוספה בבולק'}
                                     </button>
-                                    <button onClick={() => setShowAiModal(true)} className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all font-medium whitespace-nowrap">
-                                        <Sparkles size={18} /> יצירת מילים עם AI
-                                    </button>
+                                    {viewMode === 'table' && (
+                                        <>
+                                            <button onClick={() => setShowUntranslatedModal(true)} className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-600 text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all font-medium whitespace-nowrap">
+                                                <Plus size={18} /> הוסף מילה ללא תרגום
+                                            </button>
+                                            <button onClick={() => setShowAiModal(true)} className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all font-medium whitespace-nowrap">
+                                                <Sparkles size={18} /> יצירת מילים עם AI
+                                            </button>
+                                        </>
+                                    )}
                                 </>
                             )}
                         </div>
-                        <div className="bg-white dark:bg-slate-800 rounded-lg shadow border border-slate-200 dark:border-slate-700 overflow-hidden flex-1 overflow-y-auto min-h-[400px]">
-                            <table className="w-full text-sm text-right">
-                                <thead className="bg-slate-50 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 font-medium">
-                                    <tr>
-                                        <th className="p-4">מקור</th>
-                                        <th className="p-4">מונח (Term)</th>
-                                        <th className="p-4">ניב</th>
-                                        <th className="p-4">תרגום (עברית)</th>
-                                        <th className="p-4">אושר ע"י</th>
-                                        {isAdmin && <th className="p-4">פעולות</th>}
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-                                    {filteredActive.map((entry, idx) => (
-                                        <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-700/30 text-slate-800 dark:text-slate-200">
-                                            <td className="p-4">
-                                                <span className={`text-[10px] px-2 py-0.5 rounded-full border ${entry.source === 'AI' ? 'bg-purple-50 text-purple-600 border-purple-200' : entry.source === 'User' ? 'bg-blue-50 text-blue-600 border-blue-200' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>{entry.source || 'Manual'}</span>
-                                            </td>
-                                            <td className="p-4 font-bold">{entry.term}</td>
-                                            <td className="p-4"><span className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 px-2 py-1 rounded text-xs">{entry.translations[0]?.dialect || 'General'}</span></td>
-                                            <td className="p-4 text-lg">{entry.translations[0]?.hebrew}</td>
-                                            <td className="p-4 text-xs">
-                                                {entry.approvedBy ? (
-                                                    <div className="flex flex-col">
-                                                        <span className="font-bold text-green-600">{entry.approvedBy}</span>
-                                                        {entry.approvedAt && <span className="text-slate-400">{new Date(entry.approvedAt).toLocaleDateString()}</span>}
-                                                    </div>
-                                                ) : '-'}
-                                            </td>
-                                            {isAdmin && (
-                                                <td className="p-4">
-                                                    <button onClick={() => handleDelete(entry.term)} className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"><Trash2 size={16} /></button>
-                                                </td>
-                                            )}
+
+                        {/* View Mode: Table */}
+                        {viewMode === 'table' && (
+                            <div className="bg-white dark:bg-slate-800 rounded-lg shadow border border-slate-200 dark:border-slate-700 overflow-hidden flex-1 overflow-y-auto min-h-[400px]">
+                                <table className="w-full text-sm text-right">
+                                    <thead className="bg-slate-50 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 font-medium">
+                                        <tr>
+                                            <th className="p-4">מקור</th>
+                                            <th className="p-4">מונח (Term)</th>
+                                            <th className="p-4">ניב</th>
+                                            <th className="p-4">תרגום (עברית)</th>
+                                            <th className="p-4">אושר ע"י</th>
+                                            {isAdmin && <th className="p-4">פעולות</th>}
                                         </tr>
-                                    ))}
-                                    {filteredActive.length === 0 && (<tr><td colSpan={6} className="p-8 text-center text-slate-400">אין נתונים להצגה</td></tr>)}
-                                </tbody>
-                            </table>
-                        </div>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                                        {filteredActive.map((entry, idx) => (
+                                            <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-700/30 text-slate-800 dark:text-slate-200">
+                                                <td className="p-4">
+                                                    <span className={`text-[10px] px-2 py-0.5 rounded-full border ${entry.source === 'AI' ? 'bg-purple-50 text-purple-600 border-purple-200' : entry.source === 'User' ? 'bg-blue-50 text-blue-600 border-blue-200' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>{entry.source || 'Manual'}</span>
+                                                </td>
+                                                <td className="p-4 font-bold">{entry.term}</td>
+                                                <td className="p-4"><span className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 px-2 py-1 rounded text-xs">{entry.translations[0]?.dialect || 'General'}</span></td>
+                                                <td className="p-4 text-lg">{entry.translations[0]?.hebrew || <span className="text-amber-500 text-sm">מחכה לתרגום</span>}</td>
+                                                <td className="p-4 text-xs">
+                                                    {entry.approvedBy ? (
+                                                        <div className="flex flex-col">
+                                                            <span className="font-bold text-green-600">{entry.approvedBy}</span>
+                                                            {entry.approvedAt && <span className="text-slate-400">{new Date(entry.approvedAt).toLocaleDateString()}</span>}
+                                                        </div>
+                                                    ) : '-'}
+                                                </td>
+                                                {isAdmin && (
+                                                    <td className="p-4">
+                                                        <button onClick={() => handleDelete(entry.term)} className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"><Trash2 size={16} /></button>
+                                                    </td>
+                                                )}
+                                            </tr>
+                                        ))}
+                                        {filteredActive.length === 0 && (<tr><td colSpan={6} className="p-8 text-center text-slate-400">אין נתונים להצגה</td></tr>)}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+
+                        {/* Bulk Mode: Excel Grid */}
+                        {viewMode === 'bulk' && isAdmin && (
+                            <div className="flex-1 flex flex-col h-full">
+                                {/* Bulk options */}
+                                <div className="mb-4 flex items-center gap-4 bg-green-50 dark:bg-green-900/20 p-3 rounded-lg border border-green-200 dark:border-green-800">
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={bulkNoTranslation}
+                                            onChange={(e) => setBulkNoTranslation(e.target.checked)}
+                                            className="w-5 h-5 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
+                                        />
+                                        <span className="font-medium text-slate-700 dark:text-slate-300">הוסף ללא תרגום</span>
+                                        <span className="text-xs text-slate-500">(המילים יוצגו לקהילה לתרגום)</span>
+                                    </label>
+                                </div>
+
+                                <div className="flex-1 overflow-auto bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 shadow-inner rounded-lg relative">
+                                    <table className="w-full border-collapse text-sm">
+                                        <thead className="bg-slate-100 dark:bg-slate-900 sticky top-0 z-10 shadow-sm text-slate-600 dark:text-slate-300">
+                                            <tr>
+                                                <th className="border-b border-r dark:border-slate-700 p-2 min-w-[50px] bg-slate-100 dark:bg-slate-900 w-10 text-center">#</th>
+                                                <th className="border-b border-r dark:border-slate-700 p-2 min-w-[150px] text-right">מונח (Term) *</th>
+                                                {!bulkNoTranslation && (
+                                                    <>
+                                                        <th className="border-b border-r dark:border-slate-700 p-2 min-w-[150px] text-right">תרגום עברי *</th>
+                                                        <th className="border-b border-r dark:border-slate-700 p-2 min-w-[150px] text-right">תעתיק לטיני</th>
+                                                        <th className="border-b border-r dark:border-slate-700 p-2 min-w-[120px] text-right">ניב</th>
+                                                        <th className="border-b border-r dark:border-slate-700 p-2 min-w-[200px] text-right">הגדרה</th>
+                                                        <th className="border-b dark:border-slate-700 p-2 min-w-[100px] text-right">קירילית</th>
+                                                    </>
+                                                )}
+                                            </tr>
+                                        </thead>
+                                        <tbody className="bg-white dark:bg-slate-800">
+                                            {gridData.map((row, rIdx) => (
+                                                <tr key={rIdx} className="hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                                                    <td className="border-b border-r dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 text-center text-xs text-slate-400 select-none">{rIdx + 1}</td>
+                                                    {row.slice(0, bulkNoTranslation ? 1 : 6).map((cell, cIdx) => (
+                                                        <td key={cIdx} className="border-b border-r dark:border-slate-700 p-0 relative focus-within:ring-2 focus-within:ring-indigo-500 focus-within:z-10">
+                                                            <input type="text" value={cell} onChange={(e) => handleGridChange(rIdx, cIdx, e.target.value)} onPaste={(e) => handleGridPaste(e, rIdx, cIdx)} className="w-full h-full px-2 py-2 bg-transparent border-none outline-none text-slate-800 dark:text-slate-200" />
+                                                        </td>
+                                                    ))}
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <div className="mt-4 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50 p-3 rounded-lg border border-slate-200 dark:border-slate-700">
+                                    <div className="flex gap-2 items-center">
+                                        <button onClick={handleAddRows} className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 px-3 py-2 rounded hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors text-sm font-medium"><Plus size={16} /> הוסף</button>
+                                        <input type="number" min="1" value={rowsToAdd} onChange={(e) => setRowsToAdd(parseInt(e.target.value) || 1)} className="w-16 p-2 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-center text-sm" />
+                                        <span className="text-sm text-slate-500">שורות</span>
+                                        <div className="h-6 w-px bg-slate-300 dark:bg-slate-600 mx-2"></div>
+                                        <button onClick={handleClearGrid} className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 px-3 py-2 rounded hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors text-sm font-medium"><Eraser size={16} /> נקה טבלה</button>
+                                    </div>
+                                    <button onClick={() => { bulkNoTranslation ? handleSaveBulkUntranslated() : handleSaveGrid(); }} className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-2.5 rounded-lg font-bold shadow-lg shadow-green-600/20 transition-all"><Save size={18} /> שמור למאגר</button>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 )}
 
