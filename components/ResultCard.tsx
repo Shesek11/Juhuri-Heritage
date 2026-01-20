@@ -129,9 +129,21 @@ const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal }) => {
       <div className="p-6 bg-gradient-to-l from-indigo-500 to-purple-600 text-white relative">
         <div className="flex justify-between items-start">
           <div className="flex flex-col gap-1">
-            <span className="inline-block self-start px-2 py-1 bg-white/20 rounded-md text-xs font-medium backdrop-blur-sm">
-              {entry.detectedLanguage === 'Hebrew' ? 'עברית' : 'ג\'והורי'}
-            </span>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="inline-block px-2 py-1 bg-white/20 rounded-md text-xs font-medium backdrop-blur-sm">
+                {entry.detectedLanguage === 'Hebrew' ? 'עברית' : 'ג\'והורי'}
+              </span>
+              {/* Source Indicator Badge */}
+              {entry.source === 'AI' ? (
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-amber-500/80 rounded-md text-xs font-medium backdrop-blur-sm">
+                  🤖 תרגום AI
+                </span>
+              ) : (
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-emerald-500/80 rounded-md text-xs font-medium backdrop-blur-sm">
+                  ✓ מאגר קהילתי
+                </span>
+              )}
+            </div>
             <h2 className="text-4xl font-bold tracking-tight">{entry.term}</h2>
             {entry.pronunciationGuide && (
               <p className="text-indigo-100 font-mono text-sm opacity-90 dir-ltr text-right">{entry.pronunciationGuide}</p>
