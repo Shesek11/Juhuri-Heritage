@@ -687,50 +687,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                     </div>
                 )}
 
-                {/* Tab: Excel Grid (Admin Only) */}
-                {activeTab === 'import' && isAdmin && (
-                    <div className="flex-1 flex flex-col h-full">
-                        <div className="flex-1 overflow-auto bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 shadow-inner rounded-lg relative">
-                            <table className="w-full border-collapse text-sm">
-                                <thead className="bg-slate-100 dark:bg-slate-900 sticky top-0 z-10 shadow-sm text-slate-600 dark:text-slate-300">
-                                    <tr>
-                                        <th className="border-b border-r dark:border-slate-700 p-2 min-w-[50px] bg-slate-100 dark:bg-slate-900 w-10 text-center">#</th>
-                                        <th className="border-b border-r dark:border-slate-700 p-2 min-w-[150px] text-right">מונח (Term) *</th>
-                                        <th className="border-b border-r dark:border-slate-700 p-2 min-w-[150px] text-right">תרגום עברי *</th>
-                                        <th className="border-b border-r dark:border-slate-700 p-2 min-w-[150px] text-right">תעתיק לטיני</th>
-                                        <th className="border-b border-r dark:border-slate-700 p-2 min-w-[120px] text-right">ניב</th>
-                                        <th className="border-b border-r dark:border-slate-700 p-2 min-w-[200px] text-right">הגדרה</th>
-                                        <th className="border-b dark:border-slate-700 p-2 min-w-[100px] text-right">קירילית</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="bg-white dark:bg-slate-800">
-                                    {gridData.map((row, rIdx) => (
-                                        <tr key={rIdx} className="hover:bg-slate-50 dark:hover:bg-slate-700/50">
-                                            <td className="border-b border-r dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 text-center text-xs text-slate-400 select-none">{rIdx + 1}</td>
-                                            {row.map((cell, cIdx) => (
-                                                <td key={cIdx} className="border-b border-r dark:border-slate-700 p-0 relative focus-within:ring-2 focus-within:ring-indigo-500 focus-within:z-10">
-                                                    <input type="text" value={cell} onChange={(e) => handleGridChange(rIdx, cIdx, e.target.value)} onPaste={(e) => handleGridPaste(e, rIdx, cIdx)} className="w-full h-full px-2 py-2 bg-transparent border-none outline-none text-slate-800 dark:text-slate-200" />
-                                                </td>
-                                            ))}
-                                        </tr>
-                                    ))}
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <div className="mt-4 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50 p-3 rounded-lg border border-slate-200 dark:border-slate-700">
-                            <div className="flex gap-2 items-center">
-                                <button onClick={handleAddRows} className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 px-3 py-2 rounded hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors text-sm font-medium"><Plus size={16} /> הוסף</button>
-                                <input type="number" min="1" value={rowsToAdd} onChange={(e) => setRowsToAdd(parseInt(e.target.value) || 1)} className="w-16 p-2 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-center text-sm" />
-                                <span className="text-sm text-slate-500">שורות</span>
-                                <div className="h-6 w-px bg-slate-300 dark:bg-slate-600 mx-2"></div>
-                                <button onClick={handleClearGrid} className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 px-3 py-2 rounded hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors text-sm font-medium"><Eraser size={16} /> נקה טבלה</button>
-                            </div>
-                            <button onClick={handleSaveGrid} className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-2.5 rounded-lg font-bold shadow-lg shadow-green-600/20 transition-all"><Save size={18} /> שמור טבלה למאגר</button>
-                        </div>
-                    </div>
-                )}
-
                 {/* Tab: Feature Flags (Admin Only) */}
                 {activeTab === 'features' && isAdmin && (
                     <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full">
