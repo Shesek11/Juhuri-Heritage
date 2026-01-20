@@ -4,6 +4,7 @@ import { useAuth } from './contexts/AuthContext';
 import { DictionaryEntry, HistoryItem, DialectItem, User } from './types';
 import { searchDictionary, searchByAudio } from './services/geminiService';
 import { getDialects } from './services/storageService';
+import { featureFlagService, FeatureFlagsMap } from './services/featureFlagService';
 import apiService from './services/apiService';
 import { blobToBase64 } from './utils/audioUtils';
 import ResultCard from './components/ResultCard';
@@ -66,6 +67,9 @@ function App() {
   // Dynamic Dialects
   const [dialects, setDialects] = useState<DialectItem[]>([]);
 
+  // Feature Flags
+  const [featureFlags, setFeatureFlags] = useState<FeatureFlagsMap>({});
+
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
 
@@ -87,6 +91,14 @@ function App() {
         setDialects(dialectsList);
       } catch (err) {
         console.error('Failed to load dialects:', err);
+      }
+
+      // 4. Feature Flags
+      try {
+        const flags = await featureFlagService.getPublicFeatureFlags();
+        setFeatureFlags(flags);
+      } catch (err) {
+        console.error('Failed to load feature flags:', err);
       }
 
       // 4. Auth is now handled by usage of useAuth0 hook outside this effect
@@ -261,15 +273,15 @@ function App() {
                 שוק
               </button>
 
-              {/* Family Tree Tab - DISABLED FOR NOW
-              <button
-                onClick={() => setActiveTab('family')}
-                className={`flex items-center gap-2 px-6 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'family' ? 'bg-white dark:bg-slate-700 shadow-sm text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'}`}
-              >
-                <TreeDeciduous size={16} />
-                שורשים
-              </button>
-              */}
+              {featureFlags['family_tree'] && (
+                <button
+                  onClick={() => setActiveTab('family')}
+                  className={`flex items-center gap-2 px-6 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'family' ? 'bg-white dark:bg-slate-700 shadow-sm text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'}`}
+                >
+                  <TreeDeciduous size={16} />
+                  שורשים
+                </button>
+              )}
             </div>
 
             {/* Right Side: Actions */}
