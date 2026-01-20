@@ -23,6 +23,7 @@ import RecentAdditions from './components/widgets/RecentAdditions';
 import NeedsTranslation from './components/widgets/NeedsTranslation';
 import MissingDialects from './components/widgets/MissingDialects';
 import PendingApprovals from './components/widgets/PendingApprovals';
+import TranslationModal from './components/TranslationModal';
 import XPDisplay from './components/gamification/XPDisplay';
 import RecipesPage from './components/RecipesPage';
 import { MarketplacePage } from './components/MarketplacePage';
@@ -52,6 +53,9 @@ function App() {
     setAuthModalReason(reason);
     setIsAuthModalOpen(true);
   };
+
+  // Translation Modal State
+  const [translationModalEntry, setTranslationModalEntry] = useState<{ id: number; term: string } | null>(null);
 
   // Dictionary State
   const [query, setQuery] = useState('');
@@ -509,13 +513,13 @@ function App() {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in slide-in-from-bottom-8 duration-700 mb-6">
                     <div className="h-56 md:h-64">
                       <NeedsTranslation
-                        onTranslate={(entryId, term) => { console.log('Translate:', entryId, term); /* TODO: Open translation modal */ }}
+                        onTranslate={(entryId, term) => setTranslationModalEntry({ id: entryId, term })}
                         onOpenAuthModal={openAuthModal}
                       />
                     </div>
                     <div className="h-56 md:h-64">
                       <MissingDialects
-                        onAddDialect={(entryId, term, missing) => { console.log('Add dialect:', entryId, term, missing); /* TODO: Open dialect modal */ }}
+                        onAddDialect={(entryId, term, missing) => setTranslationModalEntry({ id: entryId, term })}
                         onOpenAuthModal={openAuthModal}
                       />
                     </div>
@@ -594,6 +598,18 @@ function App() {
           />
         )
       }
+
+      {/* Translation Modal */}
+      {translationModalEntry && (
+        <TranslationModal
+          entryId={translationModalEntry.id}
+          term={translationModalEntry.term}
+          onClose={() => setTranslationModalEntry(null)}
+          onSuccess={() => {
+            alert('התרגום נשלח לאישור! תודה על התרומה 🎉');
+          }}
+        />
+      )}
 
     </div >
   );
