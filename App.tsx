@@ -31,7 +31,7 @@ const STORAGE_KEY = 'juhuri_history';
 
 function App() {
   const { user, login, logout, isAuthenticated, refreshUser } = useAuth();
-  const [activeTab, setActiveTab] = useState<'dictionary' | 'tutor' | 'recipes' | 'marketplace' | 'family' | 'test-chart'>('dictionary');
+  const [activeTab, setActiveTab] = useState<'dictionary' | 'tutor' | 'recipes' | 'marketplace' | 'family'>('dictionary');
 
   // Note: 'user' is now fully managed by AuthContext, no need for local state sync
 
@@ -261,6 +261,7 @@ function App() {
                 שוק
               </button>
 
+              {/* Family Tree Tab - DISABLED FOR NOW
               <button
                 onClick={() => setActiveTab('family')}
                 className={`flex items-center gap-2 px-6 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'family' ? 'bg-white dark:bg-slate-700 shadow-sm text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'}`}
@@ -268,14 +269,7 @@ function App() {
                 <TreeDeciduous size={16} />
                 שורשים
               </button>
-              {/* Temporary Nav Button for Test Chart */}
-              <button
-                onClick={() => setActiveTab('test-chart')}
-                className={`flex items-center gap-2 px-6 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'test-chart' ? 'bg-white dark:bg-slate-700 shadow-sm text-blue-600 dark:text-blue-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'}`}
-              >
-                <BarChart size={16} /> {/* Assuming BarChart icon for a chart */}
-                Test Chart
-              </button>
+              */}
             </div>
 
             {/* Right Side: Actions */}
@@ -529,11 +523,6 @@ function App() {
           /* --- MARKETPLACE MODE --- */
           <div className="w-full animate-in slide-in-from-right duration-300">
             <MarketplacePage />
-          </div>
-        ) : activeTab === 'test-chart' ? (
-          /* --- TEST CHART MODE (DEBUG) --- */
-          <div className="w-full h-full">
-            <FamilyChartPage />
           </div>
         ) : (
           /* --- FAMILY TREE MODE --- */
