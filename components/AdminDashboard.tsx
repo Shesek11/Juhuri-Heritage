@@ -44,6 +44,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
     const [isGenerating, setIsGenerating] = useState(false);
     const [showAiModal, setShowAiModal] = useState(false);
 
+    // Untranslated Words Modal State
+    const [showUntranslatedModal, setShowUntranslatedModal] = useState(false);
+    const [untranslatedTerm, setUntranslatedTerm] = useState('');
+    const [untranslatedPronunciation, setUntranslatedPronunciation] = useState('');
+    const [isAddingUntranslated, setIsAddingUntranslated] = useState(false);
+
     useEffect(() => {
         if (isAuthorized) {
             refreshData();
@@ -327,9 +333,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                 <input type="text" placeholder="חיפוש במאגר הפעיל..." value={searchFilter} onChange={(e) => setSearchFilter(e.target.value)} className="w-full p-3 pr-10 rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white" />
                             </div>
                             {isAdmin && (
-                                <button onClick={() => setShowAiModal(true)} className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all font-medium whitespace-nowrap">
-                                    <Sparkles size={18} /> יצירת מילים עם AI
-                                </button>
+                                <>
+                                    <button onClick={() => setShowUntranslatedModal(true)} className="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-600 text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all font-medium whitespace-nowrap">
+                                        <Plus size={18} /> הוסף מילה ללא תרגום
+                                    </button>
+                                    <button onClick={() => setShowAiModal(true)} className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 text-white px-4 py-2 rounded-lg hover:shadow-lg transition-all font-medium whitespace-nowrap">
+                                        <Sparkles size={18} /> יצירת מילים עם AI
+                                    </button>
+                                </>
                             )}
                         </div>
                         <div className="bg-white dark:bg-slate-800 rounded-lg shadow border border-slate-200 dark:border-slate-700 overflow-hidden flex-1 overflow-y-auto min-h-[400px]">
@@ -637,6 +648,87 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                 <button onClick={() => setShowAiModal(false)} className="flex-1 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 rounded-lg text-slate-700 dark:text-slate-300 transition-colors">ביטול</button>
                                 <button onClick={handleAiGenerate} disabled={isGenerating || !aiTopic} className="flex-1 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg flex justify-center items-center gap-2 transition-colors disabled:opacity-50">
                                     {isGenerating ? <Loader2 className="animate-spin" size={18} /> : <Sparkles size={18} />} {isGenerating ? 'מייצר...' : 'צור מילים'}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* Untranslated Words Modal */}
+            {showUntranslatedModal && (
+                <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                    <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-2xl w-full max-w-md border border-slate-200 dark:border-slate-700">
+                        <h3 className="text-xl font-bold mb-4 text-slate-900 dark:text-white flex items-center gap-2">
+                            <Plus className="text-amber-500" /> הוסף מילה ללא תרגום
+                        </h3>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+                            הוסף מילה שהקהילה יוכל לתרגם. המילה תופיע בוידג'ט "מחכות לתרגום".
+                        </p>
+                        <div className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">מילה בעברית *</label>
+                                <input
+                                    type="text"
+                                    value={untranslatedTerm}
+                                    onChange={(e) => setUntranslatedTerm(e.target.value)}
+                                    className="w-full p-2 border rounded-lg dark:bg-slate-900 dark:border-slate-600 dark:text-white"
+                                    placeholder="למשל: אבא, אמא, שבת..."
+                                    dir="rtl"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">מדריך הגייה (אופציונלי)</label>
+                                <input
+                                    type="text"
+                                    value={untranslatedPronunciation}
+                                    onChange={(e) => setUntranslatedPronunciation(e.target.value)}
+                                    className="w-full p-2 border rounded-lg dark:bg-slate-900 dark:border-slate-600 dark:text-white"
+                                    placeholder="למשל: a-BA"
+                                    dir="ltr"
+                                />
+                            </div>
+                            <div className="flex gap-2 pt-2">
+                                <button
+                                    onClick={() => { setShowUntranslatedModal(false); setUntranslatedTerm(''); setUntranslatedPronunciation(''); }}
+                                    className="flex-1 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 rounded-lg text-slate-700 dark:text-slate-300 transition-colors"
+                                >
+                                    ביטול
+                                </button>
+                                <button
+                                    onClick={async () => {
+                                        if (!untranslatedTerm.trim()) return;
+                                        setIsAddingUntranslated(true);
+                                        try {
+                                            const res = await fetch('/api/dictionary/entries/add-untranslated', {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                credentials: 'include',
+                                                body: JSON.stringify({
+                                                    term: untranslatedTerm.trim(),
+                                                    detectedLanguage: 'Hebrew',
+                                                    pronunciationGuide: untranslatedPronunciation.trim() || null
+                                                })
+                                            });
+                                            if (res.ok) {
+                                                alert('המילה נוספה בהצלחה! היא תופיע בוידג\'ט "מחכות לתרגום".');
+                                                setShowUntranslatedModal(false);
+                                                setUntranslatedTerm('');
+                                                setUntranslatedPronunciation('');
+                                                refreshData();
+                                            } else {
+                                                alert('שגיאה בהוספת מילה');
+                                            }
+                                        } catch (e) {
+                                            alert('שגיאה בהוספת מילה');
+                                        } finally {
+                                            setIsAddingUntranslated(false);
+                                        }
+                                    }}
+                                    disabled={isAddingUntranslated || !untranslatedTerm.trim()}
+                                    className="flex-1 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg flex justify-center items-center gap-2 transition-colors disabled:opacity-50"
+                                >
+                                    {isAddingUntranslated ? <Loader2 className="animate-spin" size={18} /> : <Plus size={18} />}
+                                    {isAddingUntranslated ? 'מוסיף...' : 'הוסף לתרגום'}
                                 </button>
                             </div>
                         </div>
