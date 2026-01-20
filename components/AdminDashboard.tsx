@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Database, Save, Trash2, FileSpreadsheet, Search, CheckCircle, XCircle, Sparkles, Loader2, Download, AlertCircle, Plus, Eraser, MapPin, Globe, LogOut, Users as UsersIcon, ShieldAlert, KeyRound, Activity, UserCheck, ToggleLeft } from 'lucide-react';
+import { Database, Save, Trash2, FileSpreadsheet, Search, CheckCircle, XCircle, Sparkles, Loader2, Download, AlertCircle, Plus, Eraser, MapPin, Globe, LogOut, Users as UsersIcon, ShieldAlert, KeyRound, Activity, UserCheck, ToggleLeft, Pencil, X } from 'lucide-react';
 import FeatureFlagsPanel from './admin/FeatureFlagsPanel';
 import { getCustomEntries, addCustomEntry, deleteCustomEntry, approveEntry, downloadTemplate, getDialects, addDialect, deleteDialect, getSystemLogs } from '../services/storageService';
 import { generateBatchEntries } from '../services/geminiService';
@@ -51,6 +51,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
     const [untranslatedTerm, setUntranslatedTerm] = useState('');
     const [untranslatedPronunciation, setUntranslatedPronunciation] = useState('');
     const [isAddingUntranslated, setIsAddingUntranslated] = useState(false);
+
+    // Inline Editing State
+    const [editingEntryId, setEditingEntryId] = useState<number | null>(null);
+    const [editForm, setEditForm] = useState<{
+        hebrew: string;
+        latin: string;
+        cyrillic: string;
+        dialect: string;
+    }>({ hebrew: '', latin: '', cyrillic: '', dialect: 'General' });
 
     useEffect(() => {
         if (isAuthorized) {
@@ -245,6 +254,72 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
         refreshData();
     };
 
+    const handleStartEdit = (entry: DictionaryEntry) => {
+        // Find the entry ID - entries should have an id from the database
+        const entryId = (entry as any).id;
+        if (!entryId) {
+            alert('לא ניתן לערוך ערך זה - חסר מזהה');
+            return;
+        }
+        setEditingEntryId(entryId);
+        setEditForm({
+            hebrew: entry.translations[0]?.hebrew || '',
+            latin: entry.translations[0]?.latin || '',
+            cyrillic: entry.translations[0]?.cyrillic || '',
+            dialect: entry.translations[0]?.dialect || 'General'
+        });
+    };
+
+    const handleCancelEdit = () => {
+        setEditingEntryId(null);
+        setEditForm({ hebrew: '', latin: '', cyrillic: '', dialect: 'General' });
+    };
+
+    const handleSaveEdit = async () => {
+        if (!editingEntryId) return;
+
+        try {
+            // Find the translation ID for this entry
+            const entry = entries.find(e => (e as any).id === editingEntryId);
+            const translationId = (entry?.translations[0] as any)?.id;
+
+            if (translationId) {
+                // Update existing translation
+                await fetch(`/api/dictionary/translations/${translationId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        hebrew: editForm.hebrew,
+                        latin: editForm.latin,
+                        cyrillic: editForm.cyrillic
+                    })
+                });
+            } else {
+                // Add new translation to entry without one
+                await fetch(`/api/dictionary/entries/${editingEntryId}/suggest`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({
+                        dialect: editForm.dialect,
+                        hebrew: editForm.hebrew,
+                        latin: editForm.latin,
+                        cyrillic: editForm.cyrillic,
+                        reason: 'עריכה ידנית'
+                    })
+                });
+            }
+
+            handleCancelEdit();
+            refreshData();
+            alert('נשמר בהצלחה!');
+        } catch (err) {
+            console.error('Save edit error:', err);
+            alert('שגיאה בשמירה');
+        }
+    };
+
     const handleAiGenerate = async () => {
         if (!aiTopic.trim()) return;
         setIsGenerating(true);
@@ -399,34 +474,82 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                             <th className="p-4">מונח (Term)</th>
                                             <th className="p-4">ניב</th>
                                             <th className="p-4">תרגום (עברית)</th>
-                                            <th className="p-4">אושר ע"י</th>
+                                            <th className="p-4">לטינית</th>
                                             {isAdmin && <th className="p-4">פעולות</th>}
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
-                                        {filteredActive.map((entry, idx) => (
-                                            <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-700/30 text-slate-800 dark:text-slate-200">
-                                                <td className="p-4">
-                                                    <span className={`text-[10px] px-2 py-0.5 rounded-full border ${entry.source === 'AI' ? 'bg-purple-50 text-purple-600 border-purple-200' : entry.source === 'User' ? 'bg-blue-50 text-blue-600 border-blue-200' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>{entry.source || 'Manual'}</span>
-                                                </td>
-                                                <td className="p-4 font-bold">{entry.term}</td>
-                                                <td className="p-4"><span className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 px-2 py-1 rounded text-xs">{entry.translations[0]?.dialect || 'General'}</span></td>
-                                                <td className="p-4 text-lg">{entry.translations[0]?.hebrew || <span className="text-amber-500 text-sm">מחכה לתרגום</span>}</td>
-                                                <td className="p-4 text-xs">
-                                                    {entry.approvedBy ? (
-                                                        <div className="flex flex-col">
-                                                            <span className="font-bold text-green-600">{entry.approvedBy}</span>
-                                                            {entry.approvedAt && <span className="text-slate-400">{new Date(entry.approvedAt).toLocaleDateString()}</span>}
-                                                        </div>
-                                                    ) : '-'}
-                                                </td>
-                                                {isAdmin && (
+                                        {filteredActive.map((entry, idx) => {
+                                            const entryId = (entry as any).id;
+                                            const isEditing = editingEntryId === entryId;
+
+                                            return (
+                                                <tr key={idx} className={`text-slate-800 dark:text-slate-200 ${isEditing ? 'bg-amber-50 dark:bg-amber-900/20' : 'hover:bg-slate-50 dark:hover:bg-slate-700/30'}`}>
                                                     <td className="p-4">
-                                                        <button onClick={() => handleDelete(entry.term)} className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"><Trash2 size={16} /></button>
+                                                        <span className={`text-[10px] px-2 py-0.5 rounded-full border ${entry.source === 'AI' ? 'bg-purple-50 text-purple-600 border-purple-200' : entry.source === 'User' ? 'bg-blue-50 text-blue-600 border-blue-200' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>{entry.source || 'Manual'}</span>
                                                     </td>
-                                                )}
-                                            </tr>
-                                        ))}
+                                                    <td className="p-4 font-bold">{entry.term}</td>
+                                                    <td className="p-4">
+                                                        {isEditing ? (
+                                                            <select
+                                                                value={editForm.dialect}
+                                                                onChange={(e) => setEditForm({ ...editForm, dialect: e.target.value })}
+                                                                className="w-full p-1 border rounded text-xs dark:bg-slate-800 dark:border-slate-600"
+                                                            >
+                                                                {dialects.map(d => (
+                                                                    <option key={d.id} value={d.name}>{d.description || d.name}</option>
+                                                                ))}
+                                                            </select>
+                                                        ) : (
+                                                            <span className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 px-2 py-1 rounded text-xs">{entry.translations[0]?.dialect || 'General'}</span>
+                                                        )}
+                                                    </td>
+                                                    <td className="p-4">
+                                                        {isEditing ? (
+                                                            <input
+                                                                type="text"
+                                                                value={editForm.hebrew}
+                                                                onChange={(e) => setEditForm({ ...editForm, hebrew: e.target.value })}
+                                                                className="w-full p-1 border rounded dark:bg-slate-800 dark:border-slate-600"
+                                                                placeholder="תרגום עברי..."
+                                                                dir="rtl"
+                                                            />
+                                                        ) : (
+                                                            <span className="text-lg">{entry.translations[0]?.hebrew || <span className="text-amber-500 text-sm">מחכה לתרגום</span>}</span>
+                                                        )}
+                                                    </td>
+                                                    <td className="p-4">
+                                                        {isEditing ? (
+                                                            <input
+                                                                type="text"
+                                                                value={editForm.latin}
+                                                                onChange={(e) => setEditForm({ ...editForm, latin: e.target.value })}
+                                                                className="w-full p-1 border rounded dark:bg-slate-800 dark:border-slate-600"
+                                                                placeholder="Latin..."
+                                                                dir="ltr"
+                                                            />
+                                                        ) : (
+                                                            <span className="text-xs text-slate-500">{entry.translations[0]?.latin || '-'}</span>
+                                                        )}
+                                                    </td>
+                                                    {isAdmin && (
+                                                        <td className="p-4">
+                                                            {isEditing ? (
+                                                                <div className="flex gap-1">
+                                                                    <button onClick={handleSaveEdit} className="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded transition-colors" title="שמור"><Save size={16} /></button>
+                                                                    <button onClick={handleCancelEdit} className="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors" title="בטל"><X size={16} /></button>
+                                                                </div>
+                                                            ) : (
+                                                                <div className="flex gap-1">
+                                                                    <button onClick={() => handleStartEdit(entry)} className="p-2 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors" title="ערוך"><Pencil size={16} /></button>
+                                                                    <button onClick={() => handleDelete(entry.term)} className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors" title="מחק"><Trash2 size={16} /></button>
+                                                                </div>
+                                                            )}
+                                                        </td>
+                                                    )}
+                                                </tr>
+                                            );
+                                        })}
                                         {filteredActive.length === 0 && (<tr><td colSpan={6} className="p-8 text-center text-slate-400">אין נתונים להצגה</td></tr>)}
                                     </tbody>
                                 </table>

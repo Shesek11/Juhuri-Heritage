@@ -455,6 +455,46 @@ router.post('/translations/:id/vote', authenticate, async (req, res) => {
     }
 });
 
+// PUT /api/dictionary/translations/:id - Update translation (admin direct edit)
+router.put('/translations/:id', authenticate, requireApprover, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { hebrew, latin, cyrillic, dialectId } = req.body;
+
+        if (!hebrew) {
+            return res.status(400).json({ error: 'נדרש תרגום עברי' });
+        }
+
+        const updates = ['hebrew = ?'];
+        const values = [hebrew];
+
+        if (latin !== undefined) {
+            updates.push('latin = ?');
+            values.push(latin);
+        }
+        if (cyrillic !== undefined) {
+            updates.push('cyrillic = ?');
+            values.push(cyrillic);
+        }
+        if (dialectId !== undefined) {
+            updates.push('dialect_id = ?');
+            values.push(dialectId);
+        }
+
+        values.push(id);
+
+        await db.query(
+            `UPDATE translations SET ${updates.join(', ')} WHERE id = ?`,
+            values
+        );
+
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Update translation error:', err);
+        res.status(500).json({ error: 'שגיאה בעדכון תרגום' });
+    }
+});
+
 // POST /api/dictionary/entries/:id/suggest - Submit translation suggestion
 router.post('/entries/:id/suggest', authenticate, async (req, res) => {
     try {
