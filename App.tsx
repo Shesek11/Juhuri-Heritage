@@ -96,6 +96,7 @@ function App() {
       // 4. Feature Flags
       try {
         const flags = await featureFlagService.getPublicFeatureFlags();
+        console.log('Scaled Feature Flags:', flags);
         setFeatureFlags(flags);
       } catch (err) {
         console.error('Failed to load feature flags:', err);
@@ -273,7 +274,7 @@ function App() {
                 שוק
               </button>
 
-              {featureFlags['family_tree'] && (
+              {featureFlags['family_tree_module'] === 'active' && (
                 <button
                   onClick={() => setActiveTab('family')}
                   className={`flex items-center gap-2 px-6 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'family' ? 'bg-white dark:bg-slate-700 shadow-sm text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'}`}
