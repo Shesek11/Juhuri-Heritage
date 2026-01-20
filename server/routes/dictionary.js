@@ -554,6 +554,10 @@ router.get('/pending-suggestions', async (req, res) => {
         );
         res.json({ suggestions });
     } catch (err) {
+        // If table doesn't exist yet (migration not run), return empty
+        if (err.code === 'ER_NO_SUCH_TABLE') {
+            return res.json({ suggestions: [] });
+        }
         console.error('Pending suggestions error:', err);
         res.status(500).json({ error: 'שגיאה בטעינת הצעות' });
     }
@@ -631,13 +635,27 @@ router.post('/entries/add-untranslated', authenticate, requireApprover, async (r
             return res.status(400).json({ error: 'נדרש מונח' });
         }
 
-        const [result] = await db.query(
-            `INSERT INTO dictionary_entries (term, detected_language, pronunciation_guide, source, status, needs_translation, contributor_id) 
-             VALUES (?, ?, ?, 'Manual', 'active', TRUE, ?)`,
-            [term, detectedLanguage || 'Hebrew', pronunciationGuide || null, req.user.id]
-        );
-
-        res.json({ success: true, entryId: result.insertId });
+        // Try with needs_translation column, fall back to without it if column doesn't exist
+        try {
+            const [result] = await db.query(
+                `INSERT INTO dictionary_entries (term, detected_language, pronunciation_guide, source, status, needs_translation, contributor_id) 
+                 VALUES (?, ?, ?, 'Manual', 'active', TRUE, ?)`,
+                [term, detectedLanguage || 'Hebrew', pronunciationGuide || null, req.user.id]
+            );
+            res.json({ success: true, entryId: result.insertId });
+        } catch (colErr) {
+            // If needs_translation column doesn't exist, insert without it
+            if (colErr.code === 'ER_BAD_FIELD_ERROR') {
+                const [result] = await db.query(
+                    `INSERT INTO dictionary_entries (term, detected_language, pronunciation_guide, source, status, contributor_id) 
+                     VALUES (?, ?, ?, 'Manual', 'active', ?)`,
+                    [term, detectedLanguage || 'Hebrew', pronunciationGuide || null, req.user.id]
+                );
+                res.json({ success: true, entryId: result.insertId, note: 'migration_needed' });
+            } else {
+                throw colErr;
+            }
+        }
     } catch (err) {
         console.error('Add untranslated error:', err);
         res.status(500).json({ error: 'שגיאה בהוספת מילה' });
