@@ -10,7 +10,7 @@ interface TranslationModalProps {
 }
 
 const TranslationModal: React.FC<TranslationModalProps> = ({ entryId, term, onClose, onSuccess }) => {
-    const [dialects, setDialects] = useState<{ id: number; name: string }[]>([]);
+    const [dialects, setDialects] = useState<{ id: number; name: string; description?: string }[]>([]);
     const [selectedDialect, setSelectedDialect] = useState('General');
     const [hebrew, setHebrew] = useState('');
     const [latin, setLatin] = useState('');
@@ -21,9 +21,9 @@ const TranslationModal: React.FC<TranslationModalProps> = ({ entryId, term, onCl
 
     useEffect(() => {
         // Fetch dialects
-        apiService.get<{ dialects: { id: number; name: string }[] }>('/dialects')
+        apiService.get<{ dialects: { id: number; name: string; description?: string }[] }>('/dialects')
             .then(res => setDialects(res.dialects || []))
-            .catch(() => setDialects([{ id: 6, name: 'General' }]));
+            .catch(() => setDialects([{ id: 6, name: 'General', description: 'כללי (ללא ניב ספציפי)' }]));
     }, []);
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -89,7 +89,9 @@ const TranslationModal: React.FC<TranslationModalProps> = ({ entryId, term, onCl
                             className="w-full p-2.5 border rounded-lg dark:bg-slate-900 dark:border-slate-600 dark:text-white"
                         >
                             {dialects.map(d => (
-                                <option key={d.id} value={d.name}>{d.name}</option>
+                                <option key={d.id} value={d.name}>
+                                    {d.description || (d.name === 'General' ? 'כללי (ללא ניב ספציפי)' : d.name)}
+                                </option>
                             ))}
                         </select>
                     </div>
