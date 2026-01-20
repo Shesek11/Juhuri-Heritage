@@ -394,4 +394,255 @@ router.post('/entries/:id/comments', authenticate, async (req, res) => {
     }
 });
 
+// ============================================
+// COMMUNITY TRANSLATION FEATURES
+// ============================================
+
+// POST /api/dictionary/translations/:id/vote - Vote on a translation
+router.post('/translations/:id/vote', authenticate, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { voteType } = req.body; // 'up' or 'down'
+        const userId = req.user.id;
+
+        if (!['up', 'down'].includes(voteType)) {
+            return res.status(400).json({ error: 'סוג הצבעה לא חוקי' });
+        }
+
+        // Check if user already voted
+        const [existingVotes] = await db.query(
+            'SELECT * FROM translation_votes WHERE translation_id = ? AND user_id = ?',
+            [id, userId]
+        );
+
+        if (existingVotes.length > 0) {
+            const existing = existingVotes[0];
+            if (existing.vote_type === voteType) {
+                // Remove vote (toggle off)
+                await db.query('DELETE FROM translation_votes WHERE id = ?', [existing.id]);
+                await db.query(
+                    `UPDATE translations SET ${voteType === 'up' ? 'upvotes = upvotes - 1' : 'downvotes = downvotes - 1'} WHERE id = ?`,
+                    [id]
+                );
+                return res.json({ success: true, action: 'removed' });
+            } else {
+                // Change vote
+                await db.query('UPDATE translation_votes SET vote_type = ? WHERE id = ?', [voteType, existing.id]);
+                // Update counters: add to new, remove from old
+                const incr = voteType === 'up' ? 'upvotes = upvotes + 1, downvotes = downvotes - 1' : 'upvotes = upvotes - 1, downvotes = downvotes + 1';
+                await db.query(`UPDATE translations SET ${incr} WHERE id = ?`, [id]);
+                return res.json({ success: true, action: 'changed', voteType });
+            }
+        }
+
+        // Insert new vote
+        await db.query(
+            'INSERT INTO translation_votes (translation_id, user_id, vote_type) VALUES (?, ?, ?)',
+            [id, userId, voteType]
+        );
+        await db.query(
+            `UPDATE translations SET ${voteType === 'up' ? 'upvotes = upvotes + 1' : 'downvotes = downvotes + 1'} WHERE id = ?`,
+            [id]
+        );
+
+        // Award XP for community participation
+        await db.query('UPDATE users SET xp = xp + 5 WHERE id = ?', [userId]);
+
+        res.json({ success: true, action: 'added', voteType });
+    } catch (err) {
+        console.error('Vote error:', err);
+        res.status(500).json({ error: 'שגיאה בהצבעה' });
+    }
+});
+
+// POST /api/dictionary/entries/:id/suggest - Submit translation suggestion
+router.post('/entries/:id/suggest', authenticate, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { translationId, dialect, hebrew, latin, cyrillic, reason } = req.body;
+
+        if (!hebrew || !dialect) {
+            return res.status(400).json({ error: 'נדרש תרגום וניב' });
+        }
+
+        await db.query(
+            `INSERT INTO translation_suggestions 
+             (entry_id, translation_id, user_id, user_name, dialect, suggested_hebrew, suggested_latin, suggested_cyrillic, reason)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [id, translationId || null, req.user.id, req.user.name, dialect, hebrew, latin || '', cyrillic || '', reason || '']
+        );
+
+        // Award XP for contribution
+        await db.query('UPDATE users SET xp = xp + 20 WHERE id = ?', [req.user.id]);
+
+        res.json({ success: true, message: 'ההצעה נשלחה לאישור' });
+    } catch (err) {
+        console.error('Suggest error:', err);
+        res.status(500).json({ error: 'שגיאה בשליחת הצעה' });
+    }
+});
+
+// GET /api/dictionary/needs-translation - Words without translations (for widget)
+router.get('/needs-translation', async (req, res) => {
+    try {
+        const [entries] = await db.query(
+            `SELECT de.id, de.term, de.detected_language
+             FROM dictionary_entries de
+             LEFT JOIN translations t ON de.id = t.entry_id
+             WHERE de.status = 'active' AND t.id IS NULL
+             LIMIT 5`
+        );
+        res.json({ entries });
+    } catch (err) {
+        console.error('Needs translation error:', err);
+        res.status(500).json({ error: 'שגיאה בטעינת מילים' });
+    }
+});
+
+// GET /api/dictionary/missing-dialects - Words with partial translations (for widget)
+router.get('/missing-dialects', async (req, res) => {
+    try {
+        // Get all dialects
+        const [allDialects] = await db.query('SELECT id, name FROM dialects');
+        const dialectIds = allDialects.map(d => d.id);
+
+        // Find entries that don't have all dialects
+        const [entries] = await db.query(
+            `SELECT de.id, de.term, de.detected_language, 
+                    GROUP_CONCAT(DISTINCT d.name) as existing_dialects,
+                    COUNT(DISTINCT t.dialect_id) as dialect_count
+             FROM dictionary_entries de
+             JOIN translations t ON de.id = t.entry_id
+             JOIN dialects d ON t.dialect_id = d.id
+             WHERE de.status = 'active'
+             GROUP BY de.id
+             HAVING dialect_count < ?
+             LIMIT 5`,
+            [dialectIds.length]
+        );
+
+        // Calculate missing dialects for each
+        const result = entries.map(e => {
+            const existing = (e.existing_dialects || '').split(',');
+            const missing = allDialects.filter(d => !existing.includes(d.name)).map(d => d.name);
+            return {
+                id: e.id,
+                term: e.term,
+                detectedLanguage: e.detected_language,
+                existingDialects: existing,
+                missingDialects: missing
+            };
+        });
+
+        res.json({ entries: result });
+    } catch (err) {
+        console.error('Missing dialects error:', err);
+        res.status(500).json({ error: 'שגיאה בטעינת מילים' });
+    }
+});
+
+// GET /api/dictionary/pending-suggestions - Translations pending approval (for widget/admin)
+router.get('/pending-suggestions', async (req, res) => {
+    try {
+        const [suggestions] = await db.query(
+            `SELECT ts.*, de.term
+             FROM translation_suggestions ts
+             JOIN dictionary_entries de ON ts.entry_id = de.id
+             WHERE ts.status = 'pending'
+             ORDER BY ts.created_at DESC
+             LIMIT 10`
+        );
+        res.json({ suggestions });
+    } catch (err) {
+        console.error('Pending suggestions error:', err);
+        res.status(500).json({ error: 'שגיאה בטעינת הצעות' });
+    }
+});
+
+// PUT /api/dictionary/suggestions/:id/approve - Approve a suggestion (admin)
+router.put('/suggestions/:id/approve', authenticate, requireApprover, async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Get suggestion
+        const [suggestions] = await db.query('SELECT * FROM translation_suggestions WHERE id = ?', [id]);
+        if (suggestions.length === 0) {
+            return res.status(404).json({ error: 'הצעה לא נמצאה' });
+        }
+        const suggestion = suggestions[0];
+
+        // Get dialect ID
+        const [dialects] = await db.query('SELECT id FROM dialects WHERE name = ?', [suggestion.dialect]);
+        const dialectId = dialects[0]?.id || 6;
+
+        if (suggestion.translation_id) {
+            // Update existing translation
+            await db.query(
+                `UPDATE translations SET hebrew = ?, latin = ?, cyrillic = ? WHERE id = ?`,
+                [suggestion.suggested_hebrew, suggestion.suggested_latin, suggestion.suggested_cyrillic, suggestion.translation_id]
+            );
+        } else {
+            // Add new translation
+            await db.query(
+                `INSERT INTO translations (entry_id, dialect_id, hebrew, latin, cyrillic) VALUES (?, ?, ?, ?, ?)`,
+                [suggestion.entry_id, dialectId, suggestion.suggested_hebrew, suggestion.suggested_latin, suggestion.suggested_cyrillic]
+            );
+        }
+
+        // Mark suggestion as approved
+        await db.query(
+            'UPDATE translation_suggestions SET status = ?, reviewed_by = ?, reviewed_at = NOW() WHERE id = ?',
+            ['approved', req.user.id, id]
+        );
+
+        // Award XP to suggester
+        await db.query('UPDATE users SET xp = xp + 50 WHERE id = ?', [suggestion.user_id]);
+
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Approve suggestion error:', err);
+        res.status(500).json({ error: 'שגיאה באישור הצעה' });
+    }
+});
+
+// PUT /api/dictionary/suggestions/:id/reject - Reject a suggestion (admin)
+router.put('/suggestions/:id/reject', authenticate, requireApprover, async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        await db.query(
+            'UPDATE translation_suggestions SET status = ?, reviewed_by = ?, reviewed_at = NOW() WHERE id = ?',
+            ['rejected', req.user.id, id]
+        );
+
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Reject suggestion error:', err);
+        res.status(500).json({ error: 'שגיאה בדחיית הצעה' });
+    }
+});
+
+// POST /api/dictionary/entries/add-untranslated - Add word without translation (admin)
+router.post('/entries/add-untranslated', authenticate, requireApprover, async (req, res) => {
+    try {
+        const { term, detectedLanguage, pronunciationGuide } = req.body;
+
+        if (!term) {
+            return res.status(400).json({ error: 'נדרש מונח' });
+        }
+
+        const [result] = await db.query(
+            `INSERT INTO dictionary_entries (term, detected_language, pronunciation_guide, source, status, needs_translation, contributor_id) 
+             VALUES (?, ?, ?, 'Manual', 'active', TRUE, ?)`,
+            [term, detectedLanguage || 'Hebrew', pronunciationGuide || null, req.user.id]
+        );
+
+        res.json({ success: true, entryId: result.insertId });
+    } catch (err) {
+        console.error('Add untranslated error:', err);
+        res.status(500).json({ error: 'שגיאה בהוספת מילה' });
+    }
+});
+
 module.exports = router;
+

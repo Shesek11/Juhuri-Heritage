@@ -20,6 +20,9 @@ import HeroSection from './components/HeroSection';
 import WordOfTheDay from './components/widgets/WordOfTheDay';
 import CommunityTicker from './components/widgets/CommunityTicker';
 import RecentAdditions from './components/widgets/RecentAdditions';
+import NeedsTranslation from './components/widgets/NeedsTranslation';
+import MissingDialects from './components/widgets/MissingDialects';
+import PendingApprovals from './components/widgets/PendingApprovals';
 import XPDisplay from './components/gamification/XPDisplay';
 import RecipesPage from './components/RecipesPage';
 import { MarketplacePage } from './components/MarketplacePage';
@@ -501,11 +504,35 @@ function App() {
 
               {/* Widgets Grid - Only show if not searching (result is null) and not loading */}
               {!result && !loading && (
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in slide-in-from-bottom-8 duration-700 delay-200">
-                  <div className="h-64 md:h-80"><WordOfTheDay onSelectWord={(term) => { setQuery(term); handleSearch(undefined, term); }} /></div>
-                  <div className="h-64 md:h-80"><CommunityTicker /></div>
-                  <div className="h-64 md:h-80"><RecentAdditions onSelectWord={setQuery} /></div>
-                </div>
+                <>
+                  {/* Community Contribution Widgets - New Row */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in slide-in-from-bottom-8 duration-700 mb-6">
+                    <div className="h-56 md:h-64">
+                      <NeedsTranslation
+                        onTranslate={(entryId, term) => { console.log('Translate:', entryId, term); /* TODO: Open translation modal */ }}
+                        onOpenAuthModal={openAuthModal}
+                      />
+                    </div>
+                    <div className="h-56 md:h-64">
+                      <MissingDialects
+                        onAddDialect={(entryId, term, missing) => { console.log('Add dialect:', entryId, term, missing); /* TODO: Open dialect modal */ }}
+                        onOpenAuthModal={openAuthModal}
+                      />
+                    </div>
+                    <div className="h-56 md:h-64">
+                      <PendingApprovals
+                        onViewDetails={(suggestionId) => { console.log('View suggestion:', suggestionId); /* TODO: Open suggestion modal */ }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Original Widgets Row */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in slide-in-from-bottom-8 duration-700 delay-200">
+                    <div className="h-64 md:h-80"><WordOfTheDay onSelectWord={(term) => { setQuery(term); handleSearch(undefined, term); }} /></div>
+                    <div className="h-64 md:h-80"><CommunityTicker /></div>
+                    <div className="h-64 md:h-80"><RecentAdditions onSelectWord={setQuery} /></div>
+                  </div>
+                </>
               )}
 
 
