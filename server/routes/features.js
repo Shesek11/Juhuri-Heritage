@@ -21,7 +21,7 @@ router.put('/:key', authenticate, requireAdmin, async (req, res) => {
     const { key } = req.params;
     const { status } = req.body;
 
-    if (!['active', 'admin_only', 'disabled'].includes(status)) {
+    if (!['active', 'admin_only', 'coming_soon', 'disabled'].includes(status)) {
         return res.status(400).json({ error: 'סטטוס לא תקין' });
     }
 
@@ -71,9 +71,11 @@ router.get('/public', async (req, res) => {
             }
         }
 
-        let query = "SELECT feature_key, status FROM feature_flags WHERE status = 'active'";
+        // For regular users: return 'active' and 'coming_soon' flags
+        // For admins: also include 'admin_only' flags
+        let query = "SELECT feature_key, status FROM feature_flags WHERE status IN ('active', 'coming_soon')";
         if (isAdmin) {
-            query = "SELECT feature_key, status FROM feature_flags WHERE status IN ('active', 'admin_only')";
+            query = "SELECT feature_key, status FROM feature_flags WHERE status IN ('active', 'coming_soon', 'admin_only')";
         }
 
         const [flags] = await pool.query(query);

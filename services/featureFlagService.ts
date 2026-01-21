@@ -3,7 +3,7 @@
 
 import apiService from './apiService';
 
-export type FeatureFlagStatus = 'active' | 'admin_only' | 'disabled';
+export type FeatureFlagStatus = 'active' | 'admin_only' | 'coming_soon' | 'disabled';
 
 export interface FeatureFlag {
     id: number;

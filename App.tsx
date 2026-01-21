@@ -29,7 +29,7 @@ import RecipesPage from './components/RecipesPage';
 import { MarketplacePage } from './components/MarketplacePage';
 import { FamilyTreePage } from './components/FamilyTreePage';
 import { FamilyChartPage } from './components/FamilyChartPage';
-import { Mic, Search, Scroll, Sun, Moon, Plus, Loader2, HeartHandshake, BookOpen, GraduationCap, Info, User as UserIcon, LogOut, Settings, LayoutDashboard, Menu, LogIn, ChevronDown, ChefHat, Store, TreeDeciduous, BarChart } from 'lucide-react'; // Tree Icon
+import { Mic, Search, Scroll, Sun, Moon, Plus, Loader2, HeartHandshake, BookOpen, GraduationCap, Info, User as UserIcon, LogOut, Settings, LayoutDashboard, Menu, LogIn, ChevronDown, ChefHat, Store, TreeDeciduous, BarChart, Clock } from 'lucide-react';
 
 
 const STORAGE_KEY = 'juhuri_history';
@@ -80,6 +80,33 @@ function App() {
 
   // Feature Flags
   const [featureFlags, setFeatureFlags] = useState<FeatureFlagsMap>({});
+
+  // Derived: is current user an admin?
+  const isAdmin = user?.role === 'admin' || user?.role === 'approver';
+
+  // Helper: Check if a feature should be visible in header
+  const isFeatureVisible = (featureKey: string): boolean => {
+    const status = featureFlags[featureKey];
+    if (!status) return false; // disabled or not in response
+    if (status === 'active') return true;
+    if (status === 'coming_soon') return true;
+    if (status === 'admin_only') return isAdmin;
+    return false;
+  };
+
+  // Helper: Check if feature should show "בקרוב!" badge
+  const isComingSoon = (featureKey: string): boolean => {
+    return featureFlags[featureKey] === 'coming_soon';
+  };
+
+  // Helper: Check if user can access the real content (not just coming soon page)
+  const canAccessFeatureContent = (featureKey: string): boolean => {
+    const status = featureFlags[featureKey];
+    if (status === 'active') return true;
+    if (status === 'coming_soon') return isAdmin; // Only admins see real content
+    if (status === 'admin_only') return isAdmin;
+    return false;
+  };
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -285,13 +312,18 @@ function App() {
                 שוק
               </button>
 
-              {featureFlags['family_tree_module'] === 'active' && (
+              {isFeatureVisible('family_tree_module') && (
                 <button
                   onClick={() => setActiveTab('family')}
                   className={`flex items-center gap-2 px-6 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'family' ? 'bg-white dark:bg-slate-700 shadow-sm text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'}`}
                 >
                   <TreeDeciduous size={16} />
                   שורשים
+                  {isComingSoon('family_tree_module') && (
+                    <span className="px-1.5 py-0.5 text-[10px] bg-blue-500 text-white rounded-full font-bold animate-pulse">
+                      בקרוב!
+                    </span>
+                  )}
                 </button>
               )}
             </div>
@@ -591,7 +623,26 @@ function App() {
         ) : (
           /* --- FAMILY TREE MODE --- */
           <div className="w-full animate-in slide-in-from-right duration-300">
-            <FamilyChartPage />
+            {canAccessFeatureContent('family_tree_module') ? (
+              <FamilyChartPage />
+            ) : (
+              /* Coming Soon Placeholder */
+              <div className="min-h-[60vh] flex flex-col items-center justify-center text-center p-8">
+                <div className="w-24 h-24 bg-gradient-to-br from-emerald-400 to-teal-600 rounded-full flex items-center justify-center mb-6 shadow-lg shadow-emerald-500/30 animate-pulse">
+                  <TreeDeciduous className="w-12 h-12 text-white" />
+                </div>
+                <h2 className="text-3xl font-bold text-slate-800 dark:text-white mb-3">
+                  שורשים - בקרוב! 🌳
+                </h2>
+                <p className="text-lg text-slate-600 dark:text-slate-300 max-w-md mb-4">
+                  עץ המשפחה שלנו בפיתוח. בקרוב תוכלו לחקור ולבנות את עץ השורשים של משפחתכם!
+                </p>
+                <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-4 py-2 rounded-full">
+                  <Clock className="w-4 h-4" />
+                  <span>הפיצ'ר בשלבי פיתוח אחרונים</span>
+                </div>
+              </div>
+            )}
           </div>
         )}
 

@@ -2,7 +2,7 @@
 // Admin UI for managing feature flags (switchboard)
 
 import React, { useState, useEffect } from 'react';
-import { ToggleLeft, ToggleRight, Shield, Users, Ban, RefreshCw, Loader2 } from 'lucide-react';
+import { ToggleLeft, ToggleRight, Shield, Users, Ban, RefreshCw, Loader2, Clock } from 'lucide-react';
 import { featureFlagService, FeatureFlag, FeatureFlagStatus } from '../../services/featureFlagService';
 
 interface StatusConfig {
@@ -25,6 +25,12 @@ const STATUS_CONFIG: Record<FeatureFlagStatus, StatusConfig> = {
         color: 'text-amber-600 dark:text-amber-400',
         bgColor: 'bg-amber-100 dark:bg-amber-900/30'
     },
+    coming_soon: {
+        label: 'בקרוב',
+        icon: <Clock className="w-4 h-4" />,
+        color: 'text-blue-600 dark:text-blue-400',
+        bgColor: 'bg-blue-100 dark:bg-blue-900/30'
+    },
     disabled: {
         label: 'כבוי',
         icon: <Ban className="w-4 h-4" />,
@@ -33,7 +39,7 @@ const STATUS_CONFIG: Record<FeatureFlagStatus, StatusConfig> = {
     }
 };
 
-const STATUSES: FeatureFlagStatus[] = ['active', 'admin_only', 'disabled'];
+const STATUSES: FeatureFlagStatus[] = ['active', 'coming_soon', 'admin_only', 'disabled'];
 
 export const FeatureFlagsPanel: React.FC = () => {
     const [flags, setFlags] = useState<FeatureFlag[]>([]);
@@ -125,8 +131,8 @@ export const FeatureFlagsPanel: React.FC = () => {
                         <div
                             key={flag.feature_key}
                             className={`p-4 rounded-xl border transition-all ${isUpdating
-                                    ? 'border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20'
-                                    : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800'
+                                ? 'border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20'
+                                : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800'
                                 }`}
                         >
                             <div className="flex items-start justify-between gap-4">
@@ -161,8 +167,8 @@ export const FeatureFlagsPanel: React.FC = () => {
                                                 onClick={() => handleStatusChange(flag, status)}
                                                 disabled={isUpdating}
                                                 className={`p-2 rounded-lg transition-all text-sm ${isActive
-                                                        ? `${config.bgColor} ${config.color} ring-2 ring-offset-1 ring-current`
-                                                        : 'hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400'
+                                                    ? `${config.bgColor} ${config.color} ring-2 ring-offset-1 ring-current`
+                                                    : 'hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400'
                                                     } ${isUpdating ? 'opacity-50 cursor-wait' : ''}`}
                                                 title={config.label}
                                             >
