@@ -15,89 +15,121 @@
 .f3 .cursor-pointer {
   cursor: pointer;
 }
+
 .f3 svg.main_svg {
   width: 100%;
   height: 100%;
 }
+
 .f3 svg.main_svg text {
   fill: currentColor;
 }
-.f3 rect.card-female, .f3 .card-female .card-body-rect, .f3 .card-female .text-overflow-mask {
+
+.f3 rect.card-female,
+.f3 .card-female .card-body-rect,
+.f3 .card-female .text-overflow-mask {
   fill: var(--female-color);
 }
-.f3 rect.card-male, .f3 .card-male .card-body-rect, .f3 .card-male .text-overflow-mask {
+
+.f3 rect.card-male,
+.f3 .card-male .card-body-rect,
+.f3 .card-male .text-overflow-mask {
   fill: var(--male-color);
 }
-.f3 .card-genderless .card-body-rect, .f3 .card-genderless .text-overflow-mask {
+
+.f3 .card-genderless .card-body-rect,
+.f3 .card-genderless .text-overflow-mask {
   fill: var(--genderless-color);
 }
+
 .f3 .card_add .card-body-rect {
   fill: #3b5560;
   stroke-width: 4px;
   stroke: #fff;
   cursor: pointer;
 }
+
 .f3 g.card_add text {
   fill: #fff;
 }
+
 .f3 .card-main-outline {
   stroke: currentColor;
   stroke-width: 3px;
 }
+
 .f3 .card_family_tree rect {
   transition: 0.3s;
 }
+
 .f3 .card_family_tree:hover rect {
   transform: scale(1.1);
 }
+
 .f3 .card_add_relative {
   cursor: pointer;
   color: #fff;
   transition: 0.3s;
 }
+
 .f3 .card_add_relative circle {
   fill: rgba(0, 0, 0, 0);
 }
+
 .f3 .card_add_relative:hover {
   color: black;
 }
+
 .f3 .card_edit.pencil_icon {
   color: #fff;
   transition: 0.3s;
 }
+
 .f3 .card_edit.pencil_icon:hover {
   color: black;
 }
-.f3 .card_break_link, .f3 .link_upper, .f3 .link_lower, .f3 .link_particles {
+
+.f3 .card_break_link,
+.f3 .link_upper,
+.f3 .link_lower,
+.f3 .link_particles {
   transform-origin: 50% 50%;
   transition: 1s;
 }
+
 .f3 .card_break_link {
   color: #fff;
 }
+
 .f3 .card_break_link.closed .link_upper {
   transform: translate(-140.5px, 655.6px);
 }
+
 .f3 .card_break_link.closed .link_upper g {
   transform: rotate(-58deg);
 }
+
 .f3 .card_break_link.closed .link_particles {
   transform: scale(0);
 }
+
 .f3 .input-field input {
   height: 2.5rem !important;
 }
-.f3 .input-field > label:not(.label-icon).active {
+
+.f3 .input-field>label:not(.label-icon).active {
   -webkit-transform: translateY(-8px) scale(0.8);
   transform: translateY(-8px) scale(0.8);
 }
+
 .f3.f3-cont {
-  width:100%;
-  height:900px;
-  max-height:70vh;
+  width: 100%;
+  height: 900px;
+  max-height: 70vh;
   background-color: var(--background-color);
   color: var(--text-color);
 }
+
 .f3 {
   position: relative;
   display: flex;
@@ -175,7 +207,8 @@
   padding: 5px 10px;
 }
 
-.f3-remove-relative-btn:hover, .f3-remove-relative-btn.active {
+.f3-remove-relative-btn:hover,
+.f3-remove-relative-btn.active {
   background-color: var(--text-color);
   border-color: var(--text-color);
   color: var(--background-color);
@@ -194,7 +227,8 @@
   margin-right: 5px;
 }
 
-.f3-info-field-label, .f3-form-field label {
+.f3-info-field-label,
+.f3-form-field label {
   font-weight: bold;
   font-size: 12px;
   display: block;
@@ -206,7 +240,7 @@
   display: block;
   border: none;
   outline: none;
-  border-bottom: 1px solid rgba(255,255,255,0.2);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
   padding-bottom: 1px;
   margin-bottom: 10px;
   min-height: 18px;
@@ -370,6 +404,7 @@
   right: -2px;
   z-index: -1;
 }
+
 .f3 div.mini-tree svg {
   width: 55px;
 }
@@ -429,13 +464,13 @@
 }
 
 .f3 .f3-remove-relative-active .card.card-main .card-inner {
-  transform: translate(0, 0)!important;
-  opacity: 1!important;
+  transform: translate(0, 0) !important;
+  opacity: 1 !important;
 }
 
 
 
-.f3 div.card > div {
+.f3 div.card>div {
   transition: transform 0.2s ease-in-out;
   box-shadow: 0 0 0 0 rgba(0, 0, 0, 0.8);
 }
@@ -445,17 +480,23 @@
   transition: outline 0.5s ease-in-out;
 }
 
-.f3 div.card-female .card-inner, .f3 div.card-female .person-icon svg {
+.f3 div.card-female .card-inner,
+.f3 div.card-female .person-icon svg {
   background-color: var(--female-color);
 }
-.f3 div.card-male .card-inner, .f3 div.card-male .person-icon svg {
+
+.f3 div.card-male .card-inner,
+.f3 div.card-male .person-icon svg {
   background-color: var(--male-color);
 }
-.f3 div.card-genderless .card-inner, .f3 div.card-genderless .person-icon svg {
+
+.f3 div.card-genderless .card-inner,
+.f3 div.card-genderless .person-icon svg {
   background-color: var(--genderless-color);
 }
 
-.f3 div.card-new-rel .card-inner, .f3 div.card-new-rel .person-icon svg {
+.f3 div.card-new-rel .card-inner,
+.f3 div.card-new-rel .person-icon svg {
   background-color: var(--background-color);
 }
 
@@ -477,11 +518,15 @@
   border-style: dashed;
   outline: 0px !important;
 }
-.f3 div.card-new-rel.card-female .card-inner, .f3 div.card-to-add.card-female .card-inner {
+
+.f3 div.card-new-rel.card-female .card-inner,
+.f3 div.card-to-add.card-female .card-inner {
   border-color: var(--female-color);
   color: var(--female-color);
 }
-.f3 div.card-new-rel.card-male .card-inner, .f3 div.card-to-add.card-male .card-inner {
+
+.f3 div.card-new-rel.card-male .card-inner,
+.f3 div.card-to-add.card-male .card-inner {
   color: var(--male-color);
   border-color: var(--male-color);
 }
@@ -504,19 +549,25 @@
   border-style: dashed;
   outline: 0px !important;
 }
-.f3 div.card-new-rel.card-female .card-inner, .f3 div.card-unknown.card-female .card-inner {
+
+.f3 div.card-new-rel.card-female .card-inner,
+.f3 div.card-unknown.card-female .card-inner {
   border-color: var(--female-color);
   color: var(--female-color);
 }
-.f3 div.card-new-rel.card-male .card-inner, .f3 div.card-unknown.card-male .card-inner {
+
+.f3 div.card-new-rel.card-male .card-inner,
+.f3 div.card-unknown.card-male .card-inner {
   color: var(--male-color);
   border-color: var(--male-color);
 }
 
-.f3 div.card:hover > div {
+.f3 div.card:hover>div {
   transform: translate(0, -2px);
 }
-.f3 div.card-main .card-inner, .f3 div.card:hover .card-inner {
+
+.f3 div.card-main .card-inner,
+.f3 div.card:hover .card-inner {
   box-shadow: 0 0 20px 0 rgba(0, 0, 0, 0.8);
 }
 
@@ -562,7 +613,7 @@
 }
 
 .f3-form hr {
-  border-style: solid; 
+  border-style: solid;
   border-width: thin 0 0 0;
   opacity: 0.15;
 }
@@ -582,7 +633,8 @@
   z-index: 2;
 }
 
-.f3-back-button, .f3-forward-button {
+.f3-back-button,
+.f3-forward-button {
   width: 30px;
   height: 30px;
   transition: opacity 0.3s ease;
@@ -598,7 +650,8 @@
   height: 100%;
 }
 
-.f3-back-button.disabled, .f3-forward-button.disabled {
+.f3-back-button.disabled,
+.f3-forward-button.disabled {
   opacity: 0.5;
 }
 
@@ -611,8 +664,8 @@
   width: 100%;
   height: 100%;
   overflow: auto;
-  background-color: rgb(0,0,0);
-  background-color: rgba(0,0,0,0.4);
+  background-color: rgb(0, 0, 0);
+  background-color: rgba(0, 0, 0, 0.4);
 }
 
 .f3-modal-content {
@@ -640,7 +693,7 @@
   color: black;
   text-decoration: none;
   cursor: pointer;
-} 
+}
 
 .f3-popup {
   position: fixed;
@@ -682,7 +735,7 @@
   color: black;
   text-decoration: none;
   cursor: pointer;
-} 
+}
 
 
 
@@ -697,15 +750,16 @@
   outline: none;
   border-radius: 3px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, .6);
-  
+
   background-color: var(--text-color);
   color: var(--background-color);
-  
+
   transition: background-color .3s;
   font-size: 14px;
 }
 
-.f3-btn:hover, .f3-btn:focus {
+.f3-btn:hover,
+.f3-btn:focus {
   background-color: var(--background-color);
   color: var(--text-color);
 }
@@ -749,6 +803,7 @@
   padding: 10px;
   width: 100%;
 }
+
 .f3-autocomplete input:focus {
   outline: none;
 }
@@ -776,14 +831,16 @@
   max-height: 300px;
 }
 
-.f3-autocomplete-item > div {
+.f3-autocomplete-item>div {
   padding: 10px;
   cursor: pointer;
   background-color: var(--background-color);
   border-bottom: 1px solid rgba(255, 255, 255, 0.2);
   transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out;
 }
-.f3-autocomplete-item > div:hover, .f3-autocomplete-item.f3-selected > div {
+
+.f3-autocomplete-item>div:hover,
+.f3-autocomplete-item.f3-selected>div {
   background-color: var(--text-color);
   color: var(--background-color);
 }
@@ -798,26 +855,26 @@
 }
 
 .f3-kinship-info .f3-info-field {
-  color:#b3b01e
+  color: #b3b01e
 }
 
 .f3-kinship-info-icon {
-  cursor:pointer;
-  display:inline-block;
-  width:18px;
-  height:18px;
-  color:#04a4f4;
-  position:relative;
-  top:4px;
-  left:2px;
+  cursor: pointer;
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  color: #04a4f4;
+  position: relative;
+  top: 4px;
+  left: 2px;
 }
 
 .f3-kinship-info .f3 {
-  width:100%;
+  width: 100%;
   height: 100%;
-  position:relative;
-  background-color:rgb(33,33,33);
-  color:#fff;
+  position: relative;
+  background-color: rgb(33, 33, 33);
+  color: #fff;
 }
 
 .f3 .f3-kinship-info .card-kinship-self {
@@ -885,15 +942,15 @@
    ============================================ */
 
 /* Hide all SVG graphical elements inside cards */
-.f3 svg.main_svg .card > rect,
-.f3 svg.main_svg .card > circle,
-.f3 svg.main_svg .card > path,
-.f3 svg.main_svg .card > ellipse,
-.f3 svg.main_svg .card > polygon,
-.f3 svg.main_svg .card > text,
-.f3 svg.main_svg .card > use,
-.f3 svg.main_svg .card > image,
-.f3 svg.main_svg .card > g:not(.card_add_relative):not(.card_edit),
+.f3 svg.main_svg .card>rect,
+.f3 svg.main_svg .card>circle,
+.f3 svg.main_svg .card>path,
+.f3 svg.main_svg .card>ellipse,
+.f3 svg.main_svg .card>polygon,
+.f3 svg.main_svg .card>text,
+.f3 svg.main_svg .card>use,
+.f3 svg.main_svg .card>image,
+.f3 svg.main_svg .card>g:not(.card_add_relative):not(.card_edit),
 .f3 svg.main_svg .card .card-body-rect,
 .f3 svg.main_svg .card .text-overflow-mask,
 .f3 svg.main_svg .card .card-main-outline,
@@ -925,4 +982,16 @@
   display: block !important;
   visibility: visible !important;
   opacity: 1 !important;
+}
+
+/* Hide silhouette/person icons completely */
+.f3 svg.main_svg .card .person-icon,
+.f3 svg.main_svg .card image,
+.f3 svg.main_svg .card use,
+.f3 div.card .person-icon svg,
+.f3 div.card-image-circle svg:not(.mini-tree),
+.f3 div.card-image-rect .person-icon {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
 }
