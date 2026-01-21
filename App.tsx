@@ -297,20 +297,34 @@ function App() {
                 <GraduationCap size={16} />
                 מורה פרטי
               </button>
-              <button
-                onClick={() => setActiveTab('recipes')}
-                className={`flex items-center gap-2 px-6 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'recipes' ? 'bg-white dark:bg-slate-700 shadow-sm text-amber-600 dark:text-amber-300' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'}`}
-              >
-                <ChefHat size={16} />
-                מתכונים
-              </button>
-              <button
-                onClick={() => setActiveTab('marketplace')}
-                className={`flex items-center gap-2 px-6 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'marketplace' ? 'bg-white dark:bg-slate-700 shadow-sm text-orange-600 dark:text-orange-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'}`}
-              >
-                <Store size={16} />
-                שוק
-              </button>
+              {isFeatureVisible('recipes_module') && (
+                <button
+                  onClick={() => setActiveTab('recipes')}
+                  className={`flex items-center gap-2 px-6 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'recipes' ? 'bg-white dark:bg-slate-700 shadow-sm text-amber-600 dark:text-amber-300' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'}`}
+                >
+                  <ChefHat size={16} />
+                  מתכונים
+                  {isComingSoon('recipes_module') && (
+                    <span className="px-1.5 py-0.5 text-[10px] bg-blue-500 text-white rounded-full font-bold animate-pulse">
+                      בקרוב!
+                    </span>
+                  )}
+                </button>
+              )}
+              {isFeatureVisible('marketplace_module') && (
+                <button
+                  onClick={() => setActiveTab('marketplace')}
+                  className={`flex items-center gap-2 px-6 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'marketplace' ? 'bg-white dark:bg-slate-700 shadow-sm text-orange-600 dark:text-orange-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'}`}
+                >
+                  <Store size={16} />
+                  שוק
+                  {isComingSoon('marketplace_module') && (
+                    <span className="px-1.5 py-0.5 text-[10px] bg-blue-500 text-white rounded-full font-bold animate-pulse">
+                      בקרוב!
+                    </span>
+                  )}
+                </button>
+              )}
 
               {isFeatureVisible('family_tree_module') && (
                 <button
@@ -613,12 +627,48 @@ function App() {
         ) : activeTab === 'recipes' ? (
           /* --- RECIPES MODE --- */
           <div className="w-full animate-in slide-in-from-right duration-300">
-            <RecipesPage />
+            {canAccessFeatureContent('recipes_module') ? (
+              <RecipesPage />
+            ) : (
+              <div className="min-h-[60vh] flex flex-col items-center justify-center text-center p-8">
+                <div className="w-24 h-24 bg-gradient-to-br from-amber-400 to-orange-600 rounded-full flex items-center justify-center mb-6 shadow-lg shadow-amber-500/30 animate-pulse">
+                  <ChefHat className="w-12 h-12 text-white" />
+                </div>
+                <h2 className="text-3xl font-bold text-slate-800 dark:text-white mb-3">
+                  מתכונים - בקרוב! 🍲
+                </h2>
+                <p className="text-lg text-slate-600 dark:text-slate-300 max-w-md mb-4">
+                  אוסף המתכונים הקווקזיים שלנו בפיתוח. בקרוב תוכלו לגלות מתכונים מסורתיים!
+                </p>
+                <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-4 py-2 rounded-full">
+                  <Clock className="w-4 h-4" />
+                  <span>הפיצ'ר בשלבי פיתוח אחרונים</span>
+                </div>
+              </div>
+            )}
           </div>
         ) : activeTab === 'marketplace' ? (
           /* --- MARKETPLACE MODE --- */
           <div className="w-full animate-in slide-in-from-right duration-300">
-            <MarketplacePage />
+            {canAccessFeatureContent('marketplace_module') ? (
+              <MarketplacePage />
+            ) : (
+              <div className="min-h-[60vh] flex flex-col items-center justify-center text-center p-8">
+                <div className="w-24 h-24 bg-gradient-to-br from-orange-400 to-red-600 rounded-full flex items-center justify-center mb-6 shadow-lg shadow-orange-500/30 animate-pulse">
+                  <Store className="w-12 h-12 text-white" />
+                </div>
+                <h2 className="text-3xl font-bold text-slate-800 dark:text-white mb-3">
+                  שוק - בקרוב! 🛒
+                </h2>
+                <p className="text-lg text-slate-600 dark:text-slate-300 max-w-md mb-4">
+                  השוק הקהילתי שלנו בפיתוח. בקרוב תוכלו למצוא עסקים ומוכרים מהקהילה!
+                </p>
+                <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-4 py-2 rounded-full">
+                  <Clock className="w-4 h-4" />
+                  <span>הפיצ'ר בשלבי פיתוח אחרונים</span>
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           /* --- FAMILY TREE MODE --- */
