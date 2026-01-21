@@ -31,6 +31,60 @@ import { FamilyTreePage } from './components/FamilyTreePage';
 import { FamilyChartPage } from './components/FamilyChartPage';
 import { Mic, Search, Scroll, Sun, Moon, Plus, Loader2, HeartHandshake, BookOpen, GraduationCap, Info, User as UserIcon, LogOut, Settings, LayoutDashboard, Menu, LogIn, ChevronDown, ChefHat, Store, TreeDeciduous, BarChart, Clock } from 'lucide-react';
 
+// NavTab Component for Desktop Navigation
+interface NavTabProps {
+  active: boolean;
+  onClick: () => void;
+  icon: React.ReactNode;
+  label: string;
+  color?: string;
+  comingSoon?: boolean;
+}
+
+const NavTab: React.FC<NavTabProps> = ({ active, onClick, icon, label, comingSoon }) => (
+  <button
+    onClick={onClick}
+    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${active
+      ? 'bg-white/10 text-white shadow-sm'
+      : 'text-slate-400 hover:text-white hover:bg-white/5'
+      }`}
+  >
+    {icon}
+    <span>{label}</span>
+    {comingSoon && (
+      <span className="px-1.5 py-0.5 text-[9px] bg-blue-500 text-white rounded-full font-bold">
+        בקרוב
+      </span>
+    )}
+  </button>
+);
+
+// MobileNavTab Component for Mobile Navigation
+interface MobileNavTabProps {
+  active: boolean;
+  onClick: () => void;
+  icon: React.ReactNode;
+  label: string;
+  comingSoon?: boolean;
+}
+
+const MobileNavTab: React.FC<MobileNavTabProps> = ({ active, onClick, icon, label, comingSoon }) => (
+  <button
+    onClick={onClick}
+    className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl text-xs font-medium transition-all min-w-[70px] ${active
+      ? 'bg-amber-500/20 text-amber-400'
+      : 'text-slate-400 hover:text-white'
+      }`}
+  >
+    <div className="relative">
+      {icon}
+      {comingSoon && (
+        <span className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full" />
+      )}
+    </div>
+    <span>{label}</span>
+  </button>
+);
 
 const STORAGE_KEY = 'juhuri_history';
 
@@ -271,215 +325,247 @@ function App() {
 
   return (
     <div className={`min-h-screen ${theme === 'dark' ? 'dark bg-slate-900' : 'bg-slate-50'} dir-rtl font-rubik transition-colors duration-300`}>
-      {/* Header / Nav */}
-      <header className="fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-slate-900/80 dark:bg-slate-950/90 backdrop-blur-md border-b border-slate-700/50 shadow-lg">
-        <div className="max-w-7xl mx-auto px-4 md:px-6 h-16 flex items-center justify-between">
+      {/* Header / Nav - Clean Modern Design */}
+      <header className="fixed top-0 left-0 right-0 z-50 bg-slate-900 backdrop-blur-xl border-b border-slate-800">
+        <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
 
-          <div className="flex items-center gap-4">
-            {/* Logo - Text Only for now, simplistic */}
-            <span className="text-xl font-bold text-white drop-shadow-md hidden md:block">Juhuri Heritage</span>
+          {/* Right: Logo */}
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 bg-gradient-to-br from-amber-400 to-orange-600 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/20">
+              <Scroll size={18} className="text-white" />
+            </div>
+            <span className="text-lg font-bold text-white hidden sm:block">Juhuri Heritage</span>
           </div>
 
-          <div className="flex items-center gap-3">
-            {/* Center: Tabs */}
-            <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
-              <button
+          {/* Center: Navigation Tabs (Desktop) */}
+          <nav className="hidden md:flex items-center">
+            <div className="flex bg-slate-800/80 p-1 rounded-xl gap-0.5">
+              <NavTab
+                active={activeTab === 'dictionary'}
                 onClick={() => setActiveTab('dictionary')}
-                className={`flex items-center gap-2 px-6 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'dictionary' ? 'bg-white dark:bg-slate-700 shadow-sm text-slate-900 dark:text-white' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'}`}
-              >
-                <BookOpen size={16} />
-                מילון
-              </button>
-              <button
+                icon={<BookOpen size={16} />}
+                label="מילון"
+              />
+              <NavTab
+                active={activeTab === 'tutor'}
                 onClick={() => setActiveTab('tutor')}
-                className={`flex items-center gap-2 px-6 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'tutor' ? 'bg-white dark:bg-slate-700 shadow-sm text-indigo-600 dark:text-indigo-300' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'}`}
-              >
-                <GraduationCap size={16} />
-                מורה פרטי
-              </button>
+                icon={<GraduationCap size={16} />}
+                label="מורה פרטי"
+              />
               {isFeatureVisible('recipes_module') && (
-                <button
+                <NavTab
+                  active={activeTab === 'recipes'}
                   onClick={() => setActiveTab('recipes')}
-                  className={`flex items-center gap-2 px-6 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'recipes' ? 'bg-white dark:bg-slate-700 shadow-sm text-amber-600 dark:text-amber-300' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'}`}
-                >
-                  <ChefHat size={16} />
-                  מתכונים
-                  {isComingSoon('recipes_module') && (
-                    <span className="px-1.5 py-0.5 text-[10px] bg-blue-500 text-white rounded-full font-bold animate-pulse">
-                      בקרוב!
-                    </span>
-                  )}
-                </button>
+                  icon={<ChefHat size={16} />}
+                  label="מתכונים"
+                  comingSoon={isComingSoon('recipes_module')}
+                />
               )}
               {isFeatureVisible('marketplace_module') && (
-                <button
+                <NavTab
+                  active={activeTab === 'marketplace'}
                   onClick={() => setActiveTab('marketplace')}
-                  className={`flex items-center gap-2 px-6 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'marketplace' ? 'bg-white dark:bg-slate-700 shadow-sm text-orange-600 dark:text-orange-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'}`}
-                >
-                  <Store size={16} />
-                  שוק
-                  {isComingSoon('marketplace_module') && (
-                    <span className="px-1.5 py-0.5 text-[10px] bg-blue-500 text-white rounded-full font-bold animate-pulse">
-                      בקרוב!
-                    </span>
-                  )}
-                </button>
+                  icon={<Store size={16} />}
+                  label="שוק"
+                  comingSoon={isComingSoon('marketplace_module')}
+                />
               )}
-
               {isFeatureVisible('family_tree_module') && (
-                <button
+                <NavTab
+                  active={activeTab === 'family'}
                   onClick={() => setActiveTab('family')}
-                  className={`flex items-center gap-2 px-6 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'family' ? 'bg-white dark:bg-slate-700 shadow-sm text-emerald-600 dark:text-emerald-400' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700'}`}
-                >
-                  <TreeDeciduous size={16} />
-                  שורשים
-                  {isComingSoon('family_tree_module') && (
-                    <span className="px-1.5 py-0.5 text-[10px] bg-blue-500 text-white rounded-full font-bold animate-pulse">
-                      בקרוב!
-                    </span>
-                  )}
-                </button>
+                  icon={<TreeDeciduous size={16} />}
+                  label="שורשים"
+                  comingSoon={isComingSoon('family_tree_module')}
+                />
               )}
             </div>
+          </nav>
 
-            {/* Right Side: Actions */}
-            <div className="flex items-center gap-3 min-w-[200px] justify-end relative">
+          {/* Left: Actions */}
+          <div className="flex items-center gap-2">
+            {/* XP Display (Desktop) */}
+            <div className="hidden sm:block">
+              <XPDisplay />
+            </div>
 
-              {/* Admin Button (Visible only to authorized users) */}
-              {user && (user.role === 'admin' || user.role === 'approver') && (
-                <>
-                  <button
-                    onClick={() => setIsMobileAdminOpen(true)}
-                    className="hidden sm:flex items-center gap-1 px-2 py-1.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 rounded-lg hover:bg-emerald-200 dark:hover:bg-emerald-900/50 transition-colors text-sm font-bold"
-                    title="ניהול מהיר"
-                  >
-                    🛡️
-                  </button>
+            {/* Admin Dropdown */}
+            {user && (user.role === 'admin' || user.role === 'approver') && (
+              <div className="hidden sm:block relative group">
+                <button className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/20 text-purple-300 rounded-lg hover:bg-purple-500/30 transition-all text-sm font-medium">
+                  <LayoutDashboard size={14} />
+                  <span className="hidden lg:inline">ניהול</span>
+                  <ChevronDown size={12} className="opacity-60 group-hover:rotate-180 transition-transform" />
+                </button>
+                <div className="absolute top-full left-0 mt-1 w-44 bg-slate-800 rounded-xl shadow-xl border border-slate-700 py-1 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
                   <button
                     onClick={() => setIsAdminOpen(true)}
-                    className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-lg hover:bg-purple-200 dark:hover:bg-purple-900/50 transition-colors text-sm font-bold"
+                    className="w-full text-right px-3 py-2 text-sm text-slate-200 hover:bg-slate-700/50 flex items-center gap-2"
                   >
-                    <LayoutDashboard size={16} />
-                    <span>ניהול</span>
+                    <LayoutDashboard size={14} className="text-purple-400" />
+                    ממשק ניהול
                   </button>
-                </>
-              )}
-
-              {/* Contribute Button (Contextual) */}
-              {activeTab === 'dictionary' && (
-                <button
-                  onClick={() => setIsContributeOpen(true)}
-                  className="hidden sm:flex items-center gap-2 px-3 py-1.5 bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-500 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors text-sm font-bold"
-                >
-                  <Plus size={16} />
-                  <span>הוסף מילה</span>
-                </button>
-              )}
-
-              {/* XP Display (for authenticated users) */}
-              <div className="hidden sm:block">
-                <XPDisplay />
+                  <button
+                    onClick={() => setIsMobileAdminOpen(true)}
+                    className="w-full text-right px-3 py-2 text-sm text-slate-200 hover:bg-slate-700/50 flex items-center gap-2"
+                  >
+                    <BarChart size={14} className="text-emerald-400" />
+                    ניהול מהיר
+                  </button>
+                </div>
               </div>
+            )}
 
-              {/* Unified Menu Dropdown */}
-              <div className="relative" onClick={e => e.stopPropagation()}>
-                <button
-                  onClick={() => setIsMenuOpen(!isMenuOpen)}
-                  className="flex items-center gap-2 p-1 pl-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full hover:shadow-md transition-all"
-                >
-                  <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-500 dark:text-slate-300 overflow-hidden">
-                    {user ? <UserIcon size={18} /> : <Menu size={18} />}
-                  </div>
-                  <ChevronDown size={14} className="text-slate-400" />
-                </button>
+            {/* Theme Toggle */}
+            <button
+              onClick={toggleTheme}
+              className="hidden sm:flex w-8 h-8 items-center justify-center rounded-lg bg-slate-800 text-slate-400 hover:text-white transition-all"
+              title={theme === 'light' ? 'מצב כהה' : 'מצב בהיר'}
+            >
+              {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
+            </button>
 
-                {isMenuOpen && (
-                  <div className="absolute top-full left-0 mt-2 w-60 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 py-1 z-50 text-right animate-in fade-in slide-in-from-top-2 overflow-hidden">
-                    {/* User Header */}
-                    {user ? (
-                      <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
-                        <p className="font-bold text-slate-800 dark:text-white truncate">{user.name}</p>
-                        <p className="text-xs text-slate-500 truncate">{user.email}</p>
-                      </div>
-                    ) : (
-                      <div className="p-2">
-                        <button
-                          onClick={() => { openAuthModal(); setIsMenuOpen(false); }}
-                          className="w-full bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg py-2 text-sm font-bold flex items-center justify-center gap-2"
-                        >
-                          <LogIn size={16} /> התחברות / הרשמה
-                        </button>
-                      </div>
+            {/* User Menu */}
+            <div className="relative" onClick={e => e.stopPropagation()}>
+              <button
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+                className="flex items-center gap-1 p-1 bg-slate-800 rounded-lg hover:bg-slate-700 transition-all"
+              >
+                <div className="w-7 h-7 rounded-md bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center text-white">
+                  {user ? <UserIcon size={14} /> : <Menu size={14} />}
+                </div>
+                <ChevronDown size={12} className="text-slate-500 hidden sm:block" />
+              </button>
+
+              {isMenuOpen && (
+                <div className="absolute top-full left-0 mt-2 w-56 bg-slate-800 rounded-xl shadow-2xl border border-slate-700 overflow-hidden z-50 animate-in fade-in slide-in-from-top-2">
+                  {user ? (
+                    <div className="px-3 py-2.5 bg-slate-900/50 border-b border-slate-700">
+                      <p className="font-bold text-white text-sm truncate">{user.name}</p>
+                      <p className="text-xs text-slate-400 truncate">{user.email}</p>
+                    </div>
+                  ) : (
+                    <div className="p-2 border-b border-slate-700">
+                      <button
+                        onClick={() => { openAuthModal(); setIsMenuOpen(false); }}
+                        className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-lg py-2 text-sm font-bold flex items-center justify-center gap-2"
+                      >
+                        <LogIn size={14} />
+                        התחברות
+                      </button>
+                    </div>
+                  )}
+
+                  <div className="py-1">
+                    {user && (
+                      <button
+                        onClick={() => { setIsMenuOpen(false); setIsProfileModalOpen(true); }}
+                        className="w-full text-right px-3 py-2 text-sm text-slate-200 hover:bg-slate-700/50 flex items-center gap-2"
+                      >
+                        <Settings size={14} className="text-slate-400" />
+                        הגדרות פרופיל
+                      </button>
                     )}
 
-                    <div className="py-1">
-                      {user && (
+                    {/* Mobile Admin */}
+                    {user && (user.role === 'admin' || user.role === 'approver') && (
+                      <button
+                        onClick={() => { setIsAdminOpen(true); setIsMenuOpen(false); }}
+                        className="w-full sm:hidden text-right px-3 py-2 text-sm text-purple-300 hover:bg-purple-500/10 flex items-center gap-2"
+                      >
+                        <LayoutDashboard size={14} />
+                        ממשק ניהול
+                      </button>
+                    )}
+
+                    <div className="h-px bg-slate-700 my-1" />
+
+                    {/* Mobile Theme */}
+                    <button
+                      onClick={toggleTheme}
+                      className="w-full sm:hidden text-right px-3 py-2 text-sm text-slate-200 hover:bg-slate-700/50 flex items-center gap-2"
+                    >
+                      {theme === 'light' ? <Moon size={14} /> : <Sun size={14} className="text-amber-400" />}
+                      {theme === 'light' ? 'מצב כהה' : 'מצב בהיר'}
+                    </button>
+
+                    <button
+                      onClick={() => { setIsAboutOpen(true); setIsMenuOpen(false); }}
+                      className="w-full text-right px-3 py-2 text-sm text-slate-200 hover:bg-slate-700/50 flex items-center gap-2"
+                    >
+                      <Info size={14} className="text-slate-400" />
+                      אודות
+                    </button>
+
+                    {user && (
+                      <>
+                        <div className="h-px bg-slate-700 my-1" />
                         <button
-                          onClick={() => { setIsMenuOpen(false); setIsProfileModalOpen(true); }}
-                          className="w-full text-right px-4 py-2.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2"
+                          onClick={() => { logout(); setIsMenuOpen(false); }}
+                          className="w-full text-right px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 flex items-center gap-2"
                         >
-                          <Settings size={16} className="text-slate-400" /> הגדרות פרופיל
+                          <LogOut size={14} />
+                          יציאה
                         </button>
-                      )}
-
-                      {/* Mobile: Admin Button in Menu */}
-                      {user && (user.role === 'admin' || user.role === 'approver') && (
-                        <button
-                          onClick={() => { setIsAdminOpen(true); setIsMenuOpen(false); }}
-                          className="w-full sm:hidden text-right px-4 py-2.5 text-sm text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 flex items-center gap-2"
-                        >
-                          <LayoutDashboard size={16} /> ממשק ניהול
-                        </button>
-                      )}
-
-                      {/* Mobile: Contribute Button in Menu */}
-                      <button
-                        onClick={() => { setIsContributeOpen(true); setIsMenuOpen(false); }}
-                        className="w-full sm:hidden text-right px-4 py-2.5 text-sm text-amber-600 dark:text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/20 flex items-center gap-2"
-                      >
-                        <Plus size={16} /> הוסף מילה
-                      </button>
-
-                      <div className="h-px bg-slate-100 dark:bg-slate-700 my-1"></div>
-
-                      <button
-                        onClick={toggleTheme}
-                        className="w-full text-right px-4 py-2.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2"
-                      >
-                        {theme === 'light' ? <Moon size={16} className="text-slate-400" /> : <Sun size={16} className="text-amber-400" />}
-                        {theme === 'light' ? 'מצב כהה' : 'מצב בהיר'}
-                      </button>
-
-                      <button
-                        onClick={() => { setIsAboutOpen(true); setIsMenuOpen(false); }}
-                        className="w-full text-right px-4 py-2.5 text-sm text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50 flex items-center gap-2"
-                      >
-                        <Info size={16} className="text-slate-400" /> אודות ומקורות
-                      </button>
-
-                      {user && (
-                        <>
-                          <div className="h-px bg-slate-100 dark:bg-slate-700 my-1"></div>
-                          <button
-                            onClick={() => logout()}
-                            className="w-full text-right px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 flex items-center gap-2"
-                          >
-                            <LogOut size={16} /> יציאה מהמערכת
-                          </button>
-                        </>
-                      )}
-                    </div>
+                      </>
+                    )}
                   </div>
-                )}
-              </div>
-
+                </div>
+              )}
             </div>
+          </div>
+        </div>
+
+        {/* Mobile Navigation Bar */}
+        <div className="md:hidden border-t border-slate-800 bg-slate-900/95">
+          <div className="flex overflow-x-auto py-1.5 px-2 gap-0.5 scrollbar-hide">
+            <MobileNavTab
+              active={activeTab === 'dictionary'}
+              onClick={() => setActiveTab('dictionary')}
+              icon={<BookOpen size={18} />}
+              label="מילון"
+            />
+            <MobileNavTab
+              active={activeTab === 'tutor'}
+              onClick={() => setActiveTab('tutor')}
+              icon={<GraduationCap size={18} />}
+              label="מורה"
+            />
+            {isFeatureVisible('recipes_module') && (
+              <MobileNavTab
+                active={activeTab === 'recipes'}
+                onClick={() => setActiveTab('recipes')}
+                icon={<ChefHat size={18} />}
+                label="מתכונים"
+                comingSoon={isComingSoon('recipes_module')}
+              />
+            )}
+            {isFeatureVisible('marketplace_module') && (
+              <MobileNavTab
+                active={activeTab === 'marketplace'}
+                onClick={() => setActiveTab('marketplace')}
+                icon={<Store size={18} />}
+                label="שוק"
+                comingSoon={isComingSoon('marketplace_module')}
+              />
+            )}
+            {isFeatureVisible('family_tree_module') && (
+              <MobileNavTab
+                active={activeTab === 'family'}
+                onClick={() => setActiveTab('family')}
+                icon={<TreeDeciduous size={18} />}
+                label="שורשים"
+                comingSoon={isComingSoon('family_tree_module')}
+              />
+            )}
           </div>
         </div>
       </header>
 
       {/* Main Content Area */}
-      <main className="w-full relative z-10 flex flex-col items-center pb-20 pt-16" onClick={() => setIsMenuOpen(false)}>
+      <main className="w-full relative z-10 flex flex-col items-center pb-20 pt-14 md:pt-14" onClick={() => setIsMenuOpen(false)}>
+        {/* Extra padding for mobile nav bar */}
+        <div className="md:hidden h-12" />
 
         {activeTab === 'dictionary' ? (
           /* --- DICTIONARY MODE --- */
@@ -554,7 +640,14 @@ function App() {
 
             <div className="w-full max-w-6xl mx-auto px-4 mt-0 relative z-20">
 
-
+              {/* Floating CTA: Add Word Button */}
+              <button
+                onClick={() => setIsContributeOpen(true)}
+                className="fixed bottom-6 left-6 z-40 flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-full shadow-xl shadow-amber-500/30 hover:shadow-amber-500/50 hover:scale-105 transition-all font-bold text-sm group"
+              >
+                <Plus size={20} className="group-hover:rotate-90 transition-transform" />
+                <span className="hidden sm:inline">הוסף מילה</span>
+              </button>
 
               {/* Widgets Grid - Only show if not searching (result is null) and not loading */}
               {!result && !loading && (
