@@ -5,6 +5,7 @@ import { familyService, FamilyMember } from '../services/familyService';
 import { useAuth } from '../contexts/AuthContext';
 import { Plus, Loader2, Users, X, Link as LinkIcon } from 'lucide-react';
 import { AddMemberModal } from './family/AddMemberModal';
+import { EditMemberModal } from './family/EditMemberModal';
 import { ConnectNodesModal } from './family/ConnectNodesModal';
 
 // Adapter: Convert our database format to family-chart format
@@ -129,12 +130,20 @@ export function FamilyChartPage() {
     const [isConnectModalOpen, setIsConnectModalOpen] = useState(false);
     const [focusedMemberId, setFocusedMemberId] = useState<string | null>(null);
 
+    // Edit Modal State
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [selectedMember, setSelectedMember] = useState<FamilyMember | null>(null);
+
     // Expose actions for HTML cards
     useEffect(() => {
         (window as any).familyChartActions = {
             edit: (id: string) => {
                 const realId = parseInt(id.replace('person-', ''));
-                alert('עריכה בקרוב: ' + realId);
+                const member = allMembers.find(m => m.id === realId);
+                if (member) {
+                    setSelectedMember(member);
+                    setIsEditModalOpen(true);
+                }
             },
             addRel: (id: string) => {
                 const realId = parseInt(id.replace('person-', ''));
@@ -142,7 +151,7 @@ export function FamilyChartPage() {
                 setIsTargetSelectorOpen(true);
             }
         };
-    }, []);
+    }, [allMembers]);
 
 
     // Load data only - separate from chart creation
@@ -211,21 +220,28 @@ export function FamilyChartPage() {
                         const initials = (data['first name']?.[0] || '?') + (data['last name']?.[0] || '');
 
                         return `
-                            <div style="
-                                display: flex;
-                                flex-direction: column;
-                                align-items: center;
-                                justify-content: flex-start;
-                                width: 180px;
-                                height: 200px;
-                                background: white;
-                                border: 2px solid ${color};
-                                border-radius: 12px;
-                                box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-                                padding: 16px;
-                                font-family: sans-serif;
-                                box-sizing: border-box;
-                            ">
+                            <div 
+                                onclick="window.familyChartActions && window.familyChartActions.edit('${d.id}')"
+                                style="
+                                    display: flex;
+                                    flex-direction: column;
+                                    align-items: center;
+                                    justify-content: flex-start;
+                                    width: 180px;
+                                    height: 200px;
+                                    background: white;
+                                    border: 2px solid ${color};
+                                    border-radius: 12px;
+                                    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+                                    padding: 16px;
+                                    font-family: sans-serif;
+                                    box-sizing: border-box;
+                                    cursor: pointer;
+                                    transition: transform 0.15s, box-shadow 0.15s;
+                                "
+                                onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 8px 20px rgba(0,0,0,0.15)'"
+                                onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='0 4px 6px -1px rgba(0,0,0,0.1)'"
+                            >
                                 <div style="margin-bottom: 12px;">
                                     ${data.avatar
                                 ? `<img src="${data.avatar}" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid ${color}; background: white;" />`
@@ -432,6 +448,28 @@ export function FamilyChartPage() {
                     }}
                 />
             )}
+
+            {/* Edit Member Modal */}
+            <EditMemberModal
+                isOpen={isEditModalOpen}
+                member={selectedMember}
+                onClose={() => {
+                    setIsEditModalOpen(false);
+                    setSelectedMember(null);
+                }}
+                onSuccess={() => {
+                    setIsEditModalOpen(false);
+                    setSelectedMember(null);
+                    loadTree();
+                }}
+                onAddRelative={(type) => {
+                    // Store member ID for relationship creation
+                    if (selectedMember) {
+                        setConnectSourceId(selectedMember.id.toString());
+                        setIsTargetSelectorOpen(true);
+                    }
+                }}
+            />
         </div>
     );
 }
