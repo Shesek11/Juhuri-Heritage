@@ -679,13 +679,20 @@ router.get('/missing-dialects', async (req, res) => {
 // GET /api/dictionary/pending-suggestions - Translations pending approval (for widget/admin)
 router.get('/pending-suggestions', async (req, res) => {
     try {
+        const limit = req.query.limit ? parseInt(req.query.limit) : 50; // Default 50 for admin, widget can pass limit=10
         const [suggestions] = await db.query(
-            `SELECT ts.*, de.term
+            `SELECT ts.id, ts.entry_id, ts.dialect, ts.suggested_hebrew, ts.suggested_latin, 
+                    ts.suggested_cyrillic, ts.user_id, ts.status, ts.created_at,
+                    ts.audio_url, ts.audio_duration, ts.translation_id,
+                    de.term,
+                    u.name as contributor_name
              FROM translation_suggestions ts
              JOIN dictionary_entries de ON ts.entry_id = de.id
+             LEFT JOIN users u ON ts.user_id = u.id
              WHERE ts.status = 'pending'
              ORDER BY ts.created_at DESC
-             LIMIT 10`
+             LIMIT ?`,
+            [limit]
         );
         res.json({ suggestions });
     } catch (err) {

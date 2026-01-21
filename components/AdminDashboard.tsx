@@ -1,6 +1,6 @@
 
-import React, { useState, useEffect } from 'react';
-import { Database, Save, Trash2, FileSpreadsheet, Search, CheckCircle, XCircle, Sparkles, Loader2, Download, AlertCircle, Plus, Eraser, MapPin, Globe, LogOut, Users as UsersIcon, ShieldAlert, KeyRound, Activity, UserCheck, ToggleLeft, Pencil, X } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Database, Save, Trash2, FileSpreadsheet, Search, CheckCircle, XCircle, Sparkles, Loader2, Download, AlertCircle, Plus, Eraser, MapPin, Globe, LogOut, Users as UsersIcon, ShieldAlert, KeyRound, Activity, UserCheck, ToggleLeft, Pencil, X, Play, Pause, Volume2, Edit3 } from 'lucide-react';
 import FeatureFlagsPanel from './admin/FeatureFlagsPanel';
 import { getCustomEntries, addCustomEntry, deleteCustomEntry, approveEntry, downloadTemplate, getDialects, addDialect, deleteDialect, getSystemLogs } from '../services/storageService';
 import { generateBatchEntries } from '../services/geminiService';
@@ -10,6 +10,24 @@ import { DictionaryEntry, Translation, DialectItem, User, UserRole, SystemEvent 
 interface AdminDashboardProps {
     user: User; // Current logged in user
     onClose: () => void;
+}
+
+// Translation Suggestion interface
+interface TranslationSuggestion {
+    id: number;
+    entry_id: number;
+    dialect: string;
+    suggested_hebrew: string;
+    suggested_latin: string;
+    suggested_cyrillic: string;
+    user_id: string | null;
+    status: string;
+    created_at: string;
+    audio_url: string | null;
+    audio_duration: number | null;
+    translation_id: number | null; // If set, this is a correction
+    term: string;
+    contributor_name: string | null;
 }
 
 const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
@@ -31,6 +49,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
 
     // Logs State
     const [logs, setLogs] = useState<SystemEvent[]>([]);
+
+    // Translation Suggestions State
+    const [suggestions, setSuggestions] = useState<TranslationSuggestion[]>([]);
+    const [playingAudioId, setPlayingAudioId] = useState<number | null>(null);
+    const audioRef = useRef<HTMLAudioElement | null>(null);
 
     // Grid State
     const [gridData, setGridData] = useState<string[][]>(
@@ -74,6 +97,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
         }
         if (activeTab === 'logs') {
             getSystemLogs().then(logs => setLogs(logs || []));
+        }
+        if (activeTab === 'pending') {
+            // Fetch translation suggestions
+            fetch('/api/dictionary/pending-suggestions')
+                .then(res => res.json())
+                .then(data => setSuggestions(data.suggestions || []))
+                .catch(err => console.error('Error fetching suggestions:', err));
         }
     }, [activeTab, isAdmin]);
 
@@ -368,6 +398,62 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
         if (newPassword && newPassword.trim()) {
             updateUser(userId, { password: newPassword });
             alert("הסיסמה שונתה בהצלחה.");
+        }
+    };
+
+    // --- Suggestion Handlers ---
+    const handleApproveSuggestion = async (suggestionId: number) => {
+        try {
+            const res = await fetch(`/api/dictionary/suggestions/${suggestionId}/approve`, {
+                method: 'PUT',
+                credentials: 'include'
+            });
+            if (res.ok) {
+                setSuggestions(prev => prev.filter(s => s.id !== suggestionId));
+                alert('ההצעה אושרה בהצלחה!');
+            } else {
+                alert('שגיאה באישור ההצעה');
+            }
+        } catch (err) {
+            console.error('Error approving suggestion:', err);
+            alert('שגיאה באישור ההצעה');
+        }
+    };
+
+    const handleRejectSuggestion = async (suggestionId: number) => {
+        if (!confirm('האם לדחות את ההצעה?')) return;
+        try {
+            const res = await fetch(`/api/dictionary/suggestions/${suggestionId}/reject`, {
+                method: 'PUT',
+                credentials: 'include'
+            });
+            if (res.ok) {
+                setSuggestions(prev => prev.filter(s => s.id !== suggestionId));
+                alert('ההצעה נדחתה');
+            } else {
+                alert('שגיאה בדחיית ההצעה');
+            }
+        } catch (err) {
+            console.error('Error rejecting suggestion:', err);
+            alert('שגיאה בדחיית ההצעה');
+        }
+    };
+
+    const handlePlayAudio = (suggestionId: number, audioUrl: string) => {
+        if (playingAudioId === suggestionId) {
+            // Stop playing
+            audioRef.current?.pause();
+            setPlayingAudioId(null);
+        } else {
+            // Start playing
+            if (audioRef.current) {
+                audioRef.current.pause();
+            }
+            const audio = new Audio(audioUrl);
+            audioRef.current = audio;
+            audio.play();
+            setPlayingAudioId(suggestionId);
+            audio.onended = () => setPlayingAudioId(null);
         }
     };
 
@@ -667,6 +753,106 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                     {pendingEntries.length === 0 && (<tr><td colSpan={5} className="p-12 text-center text-slate-400 flex flex-col items-center gap-2"><CheckCircle size={32} className="opacity-20" /><span>אין רשומות הממתינות לאישור</span></td></tr>)}
                                 </tbody>
                             </table>
+                        </div>
+
+                        {/* Translation Suggestions Section */}
+                        <div className="mt-6">
+                            <h3 className="text-lg font-bold text-slate-700 dark:text-slate-200 mb-3 flex items-center gap-2">
+                                <Volume2 size={20} className="text-indigo-500" />
+                                הצעות תרגום ({suggestions.length})
+                            </h3>
+                            <div className="bg-white dark:bg-slate-800 rounded-lg shadow border border-slate-200 dark:border-slate-700 overflow-hidden">
+                                <table className="w-full text-sm text-right">
+                                    <thead className="bg-slate-50 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 font-medium">
+                                        <tr>
+                                            <th className="p-4">מונח</th>
+                                            <th className="p-4">תרגום מוצע</th>
+                                            <th className="p-4">ניב</th>
+                                            <th className="p-4">תורם</th>
+                                            <th className="p-4">סוג</th>
+                                            <th className="p-4">אודיו</th>
+                                            <th className="p-4 w-40">פעולות</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                                        {suggestions.map((s) => (
+                                            <tr key={s.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/30 text-slate-800 dark:text-slate-200">
+                                                <td className="p-4 font-bold text-lg">{s.term}</td>
+                                                <td className="p-4">
+                                                    <div className="flex flex-col gap-1">
+                                                        <span className="font-medium">{s.suggested_hebrew}</span>
+                                                        {s.suggested_latin && <span className="text-xs text-slate-500">{s.suggested_latin}</span>}
+                                                    </div>
+                                                </td>
+                                                <td className="p-4">
+                                                    <span className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 px-2 py-1 rounded text-xs">
+                                                        {s.dialect || 'General'}
+                                                    </span>
+                                                </td>
+                                                <td className="p-4 text-xs text-slate-500">
+                                                    {s.contributor_name || (s.user_id ? 'משתמש רשום' : 'אורח')}
+                                                </td>
+                                                <td className="p-4">
+                                                    {s.translation_id ? (
+                                                        <span className="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-2 py-1 rounded text-xs flex items-center gap-1 w-fit">
+                                                            <Edit3 size={12} />
+                                                            תיקון
+                                                        </span>
+                                                    ) : (
+                                                        <span className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-2 py-1 rounded text-xs">
+                                                            חדש
+                                                        </span>
+                                                    )}
+                                                </td>
+                                                <td className="p-4">
+                                                    {s.audio_url ? (
+                                                        <button
+                                                            onClick={() => handlePlayAudio(s.id, s.audio_url!)}
+                                                            className={`p-2 rounded-full transition-all ${playingAudioId === s.id
+                                                                    ? 'bg-indigo-500 text-white animate-pulse'
+                                                                    : 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200'
+                                                                }`}
+                                                            title={playingAudioId === s.id ? 'עצור' : 'נגן הקלטה'}
+                                                        >
+                                                            {playingAudioId === s.id ? <Pause size={16} /> : <Play size={16} />}
+                                                        </button>
+                                                    ) : (
+                                                        <span className="text-slate-400 text-xs">—</span>
+                                                    )}
+                                                </td>
+                                                <td className="p-4">
+                                                    <div className="flex gap-2">
+                                                        <button
+                                                            onClick={() => handleApproveSuggestion(s.id)}
+                                                            className="p-2 bg-green-100 text-green-700 hover:bg-green-200 rounded transition-colors"
+                                                            title="אשר"
+                                                        >
+                                                            <CheckCircle size={18} />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleRejectSuggestion(s.id)}
+                                                            className="p-2 bg-red-100 text-red-700 hover:bg-red-200 rounded transition-colors"
+                                                            title="דחה"
+                                                        >
+                                                            <XCircle size={18} />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        ))}
+                                        {suggestions.length === 0 && (
+                                            <tr>
+                                                <td colSpan={7} className="p-12 text-center text-slate-400">
+                                                    <div className="flex flex-col items-center gap-2">
+                                                        <CheckCircle size={32} className="opacity-20" />
+                                                        <span>אין הצעות תרגום ממתינות</span>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 )}
