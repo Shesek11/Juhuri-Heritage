@@ -1,383 +1,125 @@
-import React, { useState, useCallback, useEffect, useMemo } from 'react';
-import ReactFlow, {
-    Node,
-    Edge,
-    Controls,
-    Background,
-    MiniMap,
-    useNodesState,
-    useEdgesState,
-    NodeProps,
-    Handle,
-    Position,
-    MarkerType,
-    Connection
-} from 'reactflow';
-import 'reactflow/dist/style.css';
-import { familyService, FamilyMember } from '../services/familyService';
-import { layoutFamilyTree } from '../services/layoutService';
+/**
+ * Family Tree Page - Using Balkan FamilyTreeJS
+ * Clean, professional family tree visualization
+ */
+
+import React, { useState } from 'react';
+import { Plus, Download, Upload, Search } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
-import { Plus, Search, Loader2, User } from 'lucide-react';
+import BalkanFamilyTree from './family/BalkanFamilyTree';
 import { AddMemberModal } from './family/AddMemberModal';
-import { EditMemberModal } from './family/EditMemberModal';
-import { AddRelativeModal } from './family/AddRelativeModal';
-import { CreateRelationshipModal } from './family/CreateRelationshipModal';
+import { BalkanNode } from '../services/balkanService';
 
-// Custom node component for family members
-function FamilyMemberNode({ data }: NodeProps) {
-    const member = data.member;
-    const color = data.color || '#6B7280';
-
-    return (
-        <div className="relative">
-            {/* Top Handle - for incoming edges from parents */}
-            <Handle
-                type="target"
-                position={Position.Top}
-                id="parent-in"
-                className="!bg-slate-400 !w-3 !h-3"
-            />
-
-            {/* Left Handle - for spouse connections (incoming) */}
-            <Handle
-                type="target"
-                position={Position.Left}
-                id="spouse-left"
-                className="!bg-pink-400 !w-3 !h-3"
-            />
-
-            {/* Right Handle - for spouse connections (outgoing) */}
-            <Handle
-                type="source"
-                position={Position.Right}
-                id="spouse-right"
-                className="!bg-pink-400 !w-3 !h-3"
-            />
-
-            <div
-                className="bg-white rounded-xl shadow-lg border-2 p-3 cursor-pointer hover:shadow-xl transition-all min-w-[140px]"
-                style={{ borderColor: color }}
-            >
-                <div className="flex flex-col items-center">
-                    {member.photo_url ? (
-                        <img
-                            src={member.photo_url}
-                            alt={member.first_name}
-                            className="w-12 h-12 rounded-full object-cover mb-2 border-2"
-                            style={{ borderColor: color }}
-                        />
-                    ) : (
-                        <div
-                            className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold mb-2"
-                            style={{ backgroundColor: color }}
-                        >
-                            <User className="w-6 h-6" />
-                        </div>
-                    )}
-                    <div className="text-center">
-                        <div className="font-semibold text-gray-800 text-sm">
-                            {member.first_name} {member.last_name || ''}
-                        </div>
-                        {member.birth_date && (
-                            <div className="text-xs text-gray-500">
-                                {member.birth_date.split('-')[0]}
-                            </div>
-                        )}
-                    </div>
-                </div>
-            </div>
-
-            {/* Bottom Handle - for outgoing edges to children */}
-            <Handle
-                type="source"
-                position={Position.Bottom}
-                id="child-out"
-                className="!bg-slate-400 !w-3 !h-3"
-            />
-        </div>
-    );
-}
-
-// Node types registration
-const nodeTypes = {
-    familyMember: FamilyMemberNode
-};
-
-export function FamilyTreePage() {
+const FamilyTreePage: React.FC = () => {
     const { user } = useAuth();
-    const [loading, setLoading] = useState(true);
-    const [allMembers, setAllMembers] = useState<FamilyMember[]>([]);
-    const [nodes, setNodes, onNodesChange] = useNodesState([]);
-    const [edges, setEdges, onEdgesChange] = useEdgesState([]);
-
-    // Modals
-    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-    const [isAddRelativeModalOpen, setIsAddRelativeModalOpen] = useState(false);
-    const [selectedMember, setSelectedMember] = useState<FamilyMember | null>(null);
-    const [addRelativeType, setAddRelativeType] = useState<'parent' | 'child' | 'spouse'>('child');
-
-    // Connection modal
-    const [isCreateRelationshipModalOpen, setIsCreateRelationshipModalOpen] = useState(false);
-    const [pendingConnection, setPendingConnection] = useState<{
-        source: FamilyMember | null;
-        target: FamilyMember | null;
-    } | null>(null);
-
-    // Search
+    const [showAddModal, setShowAddModal] = useState(false);
+    const [selectedMember, setSelectedMember] = useState<BalkanNode | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
+    const [key, setKey] = useState(0); // For forcing refresh
 
-    const loadTree = useCallback(async () => {
-        try {
-            setLoading(true);
-            const data = await familyService.getTreeData();
-            setAllMembers(data.members || []);
+    const handleNodeClick = (node: BalkanNode) => {
+        setSelectedMember(node);
+        console.log('Selected member:', node);
+    };
 
-            // Use our custom layout engine
-            const { nodes: layoutedNodes, edges: layoutedEdges } = layoutFamilyTree(
-                data.members || [],
-                data.parentChild || [],
-                data.partnerships || []
-            );
-
-            console.log('[FamilyTreePage] Setting nodes:', layoutedNodes.length);
-            console.log('[FamilyTreePage] Setting edges:', layoutedEdges.length, layoutedEdges);
-
-            setNodes(layoutedNodes);
-            setEdges(layoutedEdges);
-        } catch (error) {
-            console.error('Failed to load tree:', error);
-        } finally {
-            setLoading(false);
-        }
-    }, [setNodes, setEdges]);
-
-    useEffect(() => {
-        loadTree();
-    }, [loadTree]);
-
-    const handleNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
-        if (node.data?.member) {
-            setSelectedMember(node.data.member);
-            setIsEditModalOpen(true);
-        }
-    }, []);
-
-    // Handle connection between nodes (drag from handle to handle)
-    const handleConnect = useCallback((connection: Connection) => {
-        if (!connection.source || !connection.target) return;
-
-        // Extract member IDs from node IDs (format: person-{id})
-        const sourceId = parseInt(connection.source.replace('person-', ''));
-        const targetId = parseInt(connection.target.replace('person-', ''));
-
-        const sourceMember = allMembers.find(m => m.id === sourceId);
-        const targetMember = allMembers.find(m => m.id === targetId);
-
-        if (sourceMember && targetMember) {
-            setPendingConnection({
-                source: sourceMember,
-                target: targetMember
-            });
-            setIsCreateRelationshipModalOpen(true);
-        }
-    }, [allMembers]);
-
-    // Create relationship from modal
-    const handleCreateRelationship = useCallback(async (type: 'spouse' | 'parent' | 'child') => {
-        if (!pendingConnection?.source || !pendingConnection?.target) return;
-
-        try {
-            if (type === 'spouse') {
-                await familyService.addPartnership({
-                    person1_id: pendingConnection.source.id,
-                    person2_id: pendingConnection.target.id,
-                    status: 'married'
-                });
-            } else if (type === 'parent') {
-                // source is the parent, target is the child
-                await familyService.addParentChild({
-                    parent_id: pendingConnection.source.id,
-                    child_id: pendingConnection.target.id,
-                    relationship_type: 'biological'
-                });
-            } else if (type === 'child') {
-                // source is the child, target is the parent
-                await familyService.addParentChild({
-                    parent_id: pendingConnection.target.id,
-                    child_id: pendingConnection.source.id,
-                    relationship_type: 'biological'
-                });
-            }
-
-            // Reload tree to show new relationship
-            await loadTree();
-        } catch (error) {
-            console.error('Failed to create relationship:', error);
-        } finally {
-            setIsCreateRelationshipModalOpen(false);
-            setPendingConnection(null);
-        }
-    }, [pendingConnection, loadTree]);
-
-    const handleSearch = useCallback(() => {
-        if (!searchQuery.trim()) return;
-
-        const found = nodes.find(node => {
-            const member = node.data?.member;
-            if (!member) return false;
-            const fullName = `${member.first_name} ${member.last_name || ''}`.toLowerCase();
-            return fullName.includes(searchQuery.toLowerCase());
-        });
-
-        if (found) {
-            // You could implement fitView to the found node here
-            const member = found.data?.member;
-            if (member) {
-                setSelectedMember(member);
-                setIsEditModalOpen(true);
-            }
-        }
-    }, [searchQuery, nodes]);
-
-    if (loading) {
-        return (
-            <div className="flex items-center justify-center h-screen bg-gradient-to-br from-slate-900 to-slate-800">
-                <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
-            </div>
-        );
-    }
+    const handleMemberAdded = () => {
+        setShowAddModal(false);
+        // Force tree refresh
+        setKey(k => k + 1);
+    };
 
     return (
-        <div className="h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex flex-col" dir="rtl">
+        <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900">
             {/* Header */}
-            <div className="bg-slate-800/80 backdrop-blur border-b border-slate-700 px-4 py-3 flex items-center justify-between z-10">
-                <div className="flex items-center gap-4">
-                    <h1 className="text-xl font-bold text-white">🌳 אילן יוחסין</h1>
-                    <span className="text-slate-400 text-sm">{allMembers.length} בני משפחה</span>
-                </div>
+            <div className="sticky top-0 z-20 bg-slate-800/80 backdrop-blur border-b border-slate-700">
+                <div className="max-w-7xl mx-auto px-4 py-3">
+                    <div className="flex items-center justify-between gap-4">
+                        {/* Title */}
+                        <div className="flex items-center gap-3">
+                            <span className="text-2xl">🌳</span>
+                            <h1 className="text-xl font-bold text-white">אילן יוחסין</h1>
+                        </div>
 
-                <div className="flex items-center gap-3">
-                    {/* Search */}
-                    <div className="relative">
-                        <input
-                            type="text"
-                            placeholder="חיפוש..."
-                            value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                            className="bg-slate-700 text-white px-4 py-2 pl-10 rounded-lg border border-slate-600 focus:border-emerald-500 focus:outline-none w-56"
-                        />
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                        {/* Search */}
+                        <div className="flex-1 max-w-md">
+                            <div className="relative">
+                                <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                                <input
+                                    type="text"
+                                    placeholder="חפש בן משפחה..."
+                                    value={searchQuery}
+                                    onChange={(e) => setSearchQuery(e.target.value)}
+                                    className="w-full bg-slate-700/50 border border-slate-600 rounded-lg py-2 pr-10 pl-4 text-white placeholder-slate-400 focus:outline-none focus:border-emerald-500"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Actions */}
+                        <div className="flex items-center gap-2">
+                            <button
+                                onClick={() => setShowAddModal(true)}
+                                className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-lg transition"
+                            >
+                                <Plus className="w-4 h-4" />
+                                <span className="hidden sm:inline">הוסף בן משפחה</span>
+                            </button>
+
+                            <button className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition" title="ייצא">
+                                <Download className="w-5 h-5" />
+                            </button>
+
+                            <button className="p-2 text-slate-400 hover:text-white hover:bg-slate-700 rounded-lg transition" title="ייבא">
+                                <Upload className="w-5 h-5" />
+                            </button>
+                        </div>
                     </div>
-
-                    {/* Add Member Button */}
-                    <button
-                        onClick={() => setIsAddModalOpen(true)}
-                        className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
-                    >
-                        <Plus className="w-4 h-4" />
-                        הוסף בן משפחה
-                    </button>
                 </div>
             </div>
 
             {/* Tree Container */}
-            <div className="flex-1">
-                {nodes.length > 0 ? (
-                    <ReactFlow
-                        nodes={nodes}
-                        edges={edges}
-                        onNodesChange={onNodesChange}
-                        onEdgesChange={onEdgesChange}
-                        onNodeClick={handleNodeClick}
-                        onConnect={handleConnect}
-                        nodeTypes={nodeTypes}
-                        fitView
-                        fitViewOptions={{ padding: 0.2 }}
-                        minZoom={0.1}
-                        maxZoom={2}
-                        defaultViewport={{ x: 0, y: 0, zoom: 0.8 }}
-                    >
-                        <Controls className="!bg-slate-800 !border-slate-600 !rounded-lg" />
-                        <MiniMap
-                            className="!bg-slate-800 !border-slate-600 !rounded-lg"
-                            nodeColor={(node) => node.data?.color || '#6B7280'}
-                        />
-                        <Background color="#334155" gap={20} />
-                    </ReactFlow>
-                ) : (
-                    <div className="flex flex-col items-center justify-center h-full text-slate-400">
-                        <p className="text-lg mb-4">אין בני משפחה להצגה</p>
-                        <button
-                            onClick={() => setIsAddModalOpen(true)}
-                            className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-lg flex items-center gap-2"
-                        >
-                            <Plus className="w-5 h-5" />
-                            הוסף את בן המשפחה הראשון
-                        </button>
-                    </div>
-                )}
+            <div className="p-4">
+                <BalkanFamilyTree
+                    key={key}
+                    onNodeClick={handleNodeClick}
+                    onAddMember={() => setShowAddModal(true)}
+                />
             </div>
 
-            {/* Modals */}
-            {isAddModalOpen && (
+            {/* Selected Member Panel */}
+            {selectedMember && (
+                <div className="fixed bottom-4 right-4 z-30 bg-slate-800 border border-slate-600 rounded-xl shadow-2xl p-4 w-72">
+                    <div className="flex items-center justify-between mb-3">
+                        <h3 className="font-bold text-white">{selectedMember.name}</h3>
+                        <button
+                            onClick={() => setSelectedMember(null)}
+                            className="text-slate-400 hover:text-white"
+                        >
+                            ✕
+                        </button>
+                    </div>
+                    {selectedMember.title && (
+                        <p className="text-sm text-slate-400 mb-3">{selectedMember.title}</p>
+                    )}
+                    <div className="flex gap-2">
+                        <button className="flex-1 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-sm transition">
+                            ערוך
+                        </button>
+                        <button className="flex-1 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm transition">
+                            הוסף קרוב
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Add Member Modal */}
+            {showAddModal && (
                 <AddMemberModal
-                    isOpen={isAddModalOpen}
-                    onClose={() => setIsAddModalOpen(false)}
-                    onSuccess={() => {
-                        setIsAddModalOpen(false);
-                        loadTree();
-                    }}
+                    onClose={() => setShowAddModal(false)}
+                    onSave={handleMemberAdded}
                 />
             )}
-
-            {isEditModalOpen && selectedMember && (
-                <EditMemberModal
-                    isOpen={isEditModalOpen}
-                    onClose={() => {
-                        setIsEditModalOpen(false);
-                        setSelectedMember(null);
-                    }}
-                    member={selectedMember}
-                    onSuccess={() => {
-                        setIsEditModalOpen(false);
-                        setSelectedMember(null);
-                        loadTree();
-                    }}
-                />
-            )}
-
-            {isAddRelativeModalOpen && selectedMember && (
-                <AddRelativeModal
-                    isOpen={isAddRelativeModalOpen}
-                    onClose={() => {
-                        setIsAddRelativeModalOpen(false);
-                        setSelectedMember(null);
-                    }}
-                    relativeTo={selectedMember}
-                    relationType={addRelativeType}
-                    onSuccess={() => {
-                        setIsAddRelativeModalOpen(false);
-                        setSelectedMember(null);
-                        loadTree();
-                    }}
-                />
-            )}
-
-            {/* Create Relationship Modal - appears when dragging between handles */}
-            <CreateRelationshipModal
-                isOpen={isCreateRelationshipModalOpen}
-                onClose={() => {
-                    setIsCreateRelationshipModalOpen(false);
-                    setPendingConnection(null);
-                }}
-                sourceMember={pendingConnection?.source || null}
-                targetMember={pendingConnection?.target || null}
-                onCreateRelationship={handleCreateRelationship}
-            />
         </div>
     );
-}
+};
 
 export default FamilyTreePage;
