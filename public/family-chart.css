@@ -878,3 +878,51 @@
   margin-top: 5px;
   margin-bottom: 5px;
 }
+
+/* ============================================
+   JUHURI HERITAGE OVERRIDES 
+   Hide default SVG card elements, show only HTML cards
+   ============================================ */
+
+/* Hide all SVG graphical elements inside cards */
+.f3 svg.main_svg .card > rect,
+.f3 svg.main_svg .card > circle,
+.f3 svg.main_svg .card > path,
+.f3 svg.main_svg .card > ellipse,
+.f3 svg.main_svg .card > polygon,
+.f3 svg.main_svg .card > text,
+.f3 svg.main_svg .card > use,
+.f3 svg.main_svg .card > image,
+.f3 svg.main_svg .card > g:not(.card_add_relative):not(.card_edit),
+.f3 svg.main_svg .card .card-body-rect,
+.f3 svg.main_svg .card .text-overflow-mask,
+.f3 svg.main_svg .card .card-main-outline,
+.f3 svg.main_svg defs {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+}
+
+/* Keep connection lines visible with nice styling */
+.f3 svg.main_svg .link {
+  stroke: #0ea5e9 !important;
+  stroke-width: 2px !important;
+  fill: none !important;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Ensure foreignObject (HTML cards) are fully visible */
+.f3 svg.main_svg .card foreignObject {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  overflow: visible !important;
+}
+
+.f3 svg.main_svg .card foreignObject * {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
