@@ -4,7 +4,7 @@
  */
 
 import React, { useEffect, useRef, useState } from 'react';
-import { fetchBalkanTreeData, BalkanNode } from '../services/balkanService';
+import { fetchBalkanTreeData, BalkanNode } from '../../services/balkanService';
 
 // Declare global FamilyTree from CDN
 declare global {
