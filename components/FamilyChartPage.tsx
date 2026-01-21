@@ -410,7 +410,7 @@ export function FamilyChartPage() {
                     <div
                         ref={containerRef}
                         id="FamilyChart"
-                        className="w-full h-full"
+                        className="f3 w-full h-full"
                         style={{ minHeight: '500px' }}
                     />
                 ) : (
