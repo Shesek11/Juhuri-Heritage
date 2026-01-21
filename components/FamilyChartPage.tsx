@@ -340,39 +340,54 @@ export function FamilyChartPage() {
             {/* Chart Container */}
             <div className="flex-1 relative">
                 <style>{`
-                    /* AGGRESSIVE HIDE of default SVG elements */
-                    #FamilyChart svg .card rect,
-                    #FamilyChart svg .card image,
-                    #FamilyChart svg .card text,
-                    #FamilyChart svg .card use,
-                    #FamilyChart svg .card path {
-                        display: none !important;
-                        opacity: 0 !important;
-                        visibility: hidden !important;
+                    /* Make the SVG container properly positioned */
+                    #FamilyChart {
+                        position: relative;
+                        overflow: visible;
                     }
                     
-                    /* Specific override for the main card rect if it has a class */
-                    #FamilyChart svg .card-main {
-                         fill: transparent !important;
-                         stroke: none !important;
+                    #FamilyChart svg.main_svg {
+                        position: absolute;
+                        top: 0;
+                        left: 0;
+                        width: 100%;
+                        height: 100%;
+                        overflow: visible;
                     }
-
-                    /* Make the foreignObject (HTML) visible */
+                    
+                    /* Keep links visible */
+                    #FamilyChart svg .link { 
+                        stroke: #0ea5e9 !important; 
+                        stroke-width: 2px !important; 
+                        fill: none !important;
+                        display: block !important;
+                        visibility: visible !important;
+                        opacity: 1 !important;
+                    }
+                    
+                    /* Cards should be visible with proper transform */
+                    #FamilyChart svg .card {
+                        overflow: visible !important;
+                    }
+                    
                     #FamilyChart svg .card foreignObject {
                         display: block !important;
                         opacity: 1 !important;
                         visibility: visible !important;
                         overflow: visible !important;
                     }
-
-                    /* Links/Edges styles */
-                    #FamilyChart svg .link { 
-                        stroke: #94a3b8 !important; 
-                        stroke-width: 2px !important; 
-                        fill: none !important;
-                        display: block !important;
-                        visibility: visible !important;
-                        opacity: 1 !important;
+                    
+                    /* Hide the default rect/text but keep the card group positioned */
+                    #FamilyChart svg .card > rect:first-of-type,
+                    #FamilyChart svg .card > text,
+                    #FamilyChart svg .card > image:not([href*="avatar"]) {
+                        opacity: 0 !important;
+                    }
+                    
+                    /* Card styling */
+                    #FamilyChart svg .card-main {
+                        fill: transparent !important;
+                        stroke: none !important;
                     }
                 `}</style>
                 {allMembers.length > 0 ? (
