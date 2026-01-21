@@ -71,18 +71,19 @@ interface MobileNavTabProps {
 const MobileNavTab: React.FC<MobileNavTabProps> = ({ active, onClick, icon, label, comingSoon }) => (
   <button
     onClick={onClick}
-    className={`flex flex-col items-center gap-1 px-4 py-2 rounded-xl text-xs font-medium transition-all min-w-[70px] ${active
+    className={`flex flex-col items-center justify-center gap-0.5 p-2 rounded-xl text-[10px] font-medium transition-all min-w-[56px] ${active
       ? 'bg-amber-500/20 text-amber-400'
-      : 'text-slate-400 hover:text-white'
+      : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
       }`}
+    title={label}
   >
     <div className="relative">
       {icon}
       {comingSoon && (
-        <span className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full" />
+        <span className="absolute -top-1 -right-1 w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
       )}
     </div>
-    <span>{label}</span>
+    <span className="truncate max-w-[48px]">{label}</span>
   </button>
 );
 
@@ -518,7 +519,7 @@ function App() {
 
         {/* Mobile Navigation Bar */}
         <div className="md:hidden border-t border-slate-800 bg-slate-900/95">
-          <div className="flex overflow-x-auto py-1.5 px-2 gap-0.5 scrollbar-hide">
+          <div className="flex justify-around overflow-x-auto py-1 px-1 gap-0 scrollbar-hide">
             <MobileNavTab
               active={activeTab === 'dictionary'}
               onClick={() => setActiveTab('dictionary')}
