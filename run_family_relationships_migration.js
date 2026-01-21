@@ -66,8 +66,9 @@ async function runMigration() {
         // Check if columns already exist
         const [cols] = await connection.query(`
             SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS 
-            WHERE TABLE_SCHEMA = ? AND TABLE_NAME = 'family_members' AND COLUMN_NAME = 'nickname'
-        `, [process.env.DB_NAME || 'juhuri']);
+            WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'family_members' 
+            AND COLUMN_NAME IN ('nickname', 'previous_name', 'title')
+        `);
 
         if (cols.length === 0) {
             console.log('➕ Adding new columns to family_members...');
@@ -79,7 +80,7 @@ async function runMigration() {
             `);
             console.log('✅ Columns added');
         } else {
-            console.log('⏭️ Columns already exist, skipping...');
+            console.log('⏭️ Columns already exist (' + cols.map(c => c.COLUMN_NAME).join(', ') + '), skipping...');
         }
 
         // Create tables
