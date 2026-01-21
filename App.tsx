@@ -27,7 +27,7 @@ import TranslationModal from './components/TranslationModal';
 import XPDisplay from './components/gamification/XPDisplay';
 import RecipesPage from './components/RecipesPage';
 import { MarketplacePage } from './components/MarketplacePage';
-import { FamilyChartPage } from './components/FamilyChartPage';
+import { CommunityGraph } from './components/family/CommunityGraph';
 import { Mic, Search, Scroll, Sun, Moon, Plus, Loader2, HeartHandshake, BookOpen, GraduationCap, Info, User as UserIcon, LogOut, Settings, LayoutDashboard, Menu, LogIn, ChevronDown, ChefHat, Store, TreeDeciduous, BarChart, Clock } from 'lucide-react';
 
 // NavTab Component for Desktop Navigation
@@ -767,7 +767,7 @@ function App() {
           /* --- FAMILY TREE MODE --- */
           <div className="w-full animate-in slide-in-from-right duration-300">
             {canAccessFeatureContent('family_tree_module') ? (
-              <FamilyChartPage />
+              <CommunityGraph />
             ) : (
               /* Coming Soon Placeholder */
               <div className="min-h-[60vh] flex flex-col items-center justify-center text-center p-8">
