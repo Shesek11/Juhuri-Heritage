@@ -2,6 +2,36 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.5.0] - 2026-01-21
+
+### ✨ UI/UX Overhaul
+- **Header Redesign**: Complete modern redesign with gradient logo, centered navigation tabs, admin dropdown hover menu.
+- **Responsive Mobile Nav**: Compact, scalable navigation bar with icon-based tabs for small screens.
+- **Floating CTA**: "הוסף מילה" button moved to a prominent floating position in dictionary area.
+
+### 🔧 Feature Flags System
+- **4-State Control**: Features can now be `disabled`, `admin_only`, `coming_soon`, or `active`.
+- **"Coming Soon" Badges**: Visual indicator for features in development.
+- **Admin Preview**: Administrators can access `coming_soon` features before public release.
+
+### 🛠️ Admin Improvements
+- **Translation Suggestions Panel**: New section in AdminDashboard for managing community translation contributions.
+- **Audio Playback**: Listen to audio recordings attached to translation suggestions.
+- **Correction Badges**: Visual indicator distinguishing corrections vs new translations.
+- **Approve/Reject Actions**: Quick moderation buttons for each suggestion.
+
+### 📝 Enhanced Contribution Modal
+- **Full Translation Fields**: Hebrew, Latin, and Cyrillic spelling options.
+- **Audio Recording**: Built-in microphone recording with playback, timer, and re-record.
+- **Improved Validation**: Better feedback and error handling.
+- **Modern UI**: Gradient header, responsive design, max-height scroll.
+
+### 🐛 Bug Fixes
+- Fixed async `getDialects()` call causing modal crash.
+- Fixed email notification system routing.
+
+---
+
 ## [2.0.1] - 2026-01-16
 
 ### 🐛 Fixes & Improvements
