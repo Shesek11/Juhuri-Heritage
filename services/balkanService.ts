@@ -107,10 +107,11 @@ export function transformToBalkanFormat(data: TreeData): BalkanNode[] {
         if (parents?.fid) node.fid = parents.fid;
         if (parents?.mid) node.mid = parents.mid;
 
-        // Add partners
-        if (partners && partners.length > 0) {
-            node.pids = partners;
-        }
+        // TEMPORARILY DISABLED: pids causing stack overflow in Balkan library
+        // Need to investigate correct format for partner relationships
+        // if (partners && partners.length > 0) {
+        //     node.pids = partners;
+        // }
 
         // Add dates as title for display
         if (member.birth_date || member.death_date) {
