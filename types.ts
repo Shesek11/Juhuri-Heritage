@@ -1,9 +1,13 @@
 
 export interface Translation {
+  id?: number; // Database ID for voting
   dialect: string; // e.g., "General", "Derbent", "Quba"
   hebrew: string; // Text in Hebrew script
   latin: string; // Text in Latin/English script
   cyrillic: string; // Text in Cyrillic script
+  upvotes?: number; // Community upvote count
+  downvotes?: number; // Community downvote count
+  userVote?: 'up' | 'down' | null; // Current user's vote on this translation
 }
 
 export interface Example {

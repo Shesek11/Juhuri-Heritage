@@ -495,25 +495,120 @@ router.put('/translations/:id', authenticate, requireApprover, async (req, res) 
     }
 });
 
-// POST /api/dictionary/entries/:id/suggest - Submit translation suggestion
-router.post('/entries/:id/suggest', authenticate, async (req, res) => {
+// POST /api/dictionary/translations/:id/vote - Vote on a translation
+router.post('/translations/:id/vote', authenticate, async (req, res) => {
     try {
         const { id } = req.params;
-        const { translationId, dialect, hebrew, latin, cyrillic, reason } = req.body;
+        const { voteType } = req.body; // 'up', 'down', or null (remove vote)
+        const userId = req.user.id;
+
+        // Check for existing vote
+        const [existingVotes] = await db.query(
+            'SELECT id, vote_type FROM translation_votes WHERE translation_id = ? AND user_id = ?',
+            [id, userId]
+        );
+
+        const existingVote = existingVotes[0];
+
+        if (voteType === null) {
+            // Remove vote
+            if (existingVote) {
+                await db.query('DELETE FROM translation_votes WHERE id = ?', [existingVote.id]);
+                // Update counts
+                const countField = existingVote.vote_type === 'up' ? 'upvotes' : 'downvotes';
+                await db.query(`UPDATE translations SET ${countField} = GREATEST(${countField} - 1, 0) WHERE id = ?`, [id]);
+            }
+        } else if (existingVote) {
+            // Update existing vote
+            if (existingVote.vote_type !== voteType) {
+                await db.query('UPDATE translation_votes SET vote_type = ? WHERE id = ?', [voteType, existingVote.id]);
+                // Update counts: decrement old, increment new
+                const oldField = existingVote.vote_type === 'up' ? 'upvotes' : 'downvotes';
+                const newField = voteType === 'up' ? 'upvotes' : 'downvotes';
+                await db.query(`UPDATE translations SET ${oldField} = GREATEST(${oldField} - 1, 0), ${newField} = ${newField} + 1 WHERE id = ?`, [id]);
+            }
+        } else {
+            // Insert new vote
+            await db.query(
+                'INSERT INTO translation_votes (translation_id, user_id, vote_type) VALUES (?, ?, ?)',
+                [id, userId, voteType]
+            );
+            // Update counts
+            const countField = voteType === 'up' ? 'upvotes' : 'downvotes';
+            await db.query(`UPDATE translations SET ${countField} = ${countField} + 1 WHERE id = ?`, [id]);
+        }
+
+        // Award XP for first vote on this translation
+        if (!existingVote && voteType) {
+            await db.query('UPDATE users SET xp = xp + 2 WHERE id = ?', [userId]);
+        }
+
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Vote error:', err);
+        res.status(500).json({ error: 'שגיאה בהצבעה' });
+    }
+});
+
+// POST /api/dictionary/entries/:id/suggest - Submit translation suggestion
+// Support both JSON and FormData (with audio upload)
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+
+// Ensure uploads directory exists for suggestion audio
+const suggestionAudioDir = path.join(__dirname, '../../public/uploads/suggestion-audio');
+if (!fs.existsSync(suggestionAudioDir)) {
+    fs.mkdirSync(suggestionAudioDir, { recursive: true });
+}
+
+const suggestionAudioStorage = multer.diskStorage({
+    destination: (req, file, cb) => cb(null, suggestionAudioDir),
+    filename: (req, file, cb) => {
+        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+        const ext = path.extname(file.originalname) || '.webm';
+        cb(null, `suggestion-${uniqueSuffix}${ext}`);
+    }
+});
+
+const suggestionAudioUpload = multer({
+    storage: suggestionAudioStorage,
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB max
+    fileFilter: (req, file, cb) => {
+        const allowedTypes = ['audio/webm', 'audio/mp3', 'audio/mpeg', 'audio/wav', 'audio/ogg'];
+        if (allowedTypes.includes(file.mimetype)) {
+            cb(null, true);
+        } else {
+            cb(new Error('סוג קובץ לא נתמך. יש להעלות קובץ אודיו.'));
+        }
+    }
+});
+
+router.post('/entries/:id/suggest', authenticate, suggestionAudioUpload.single('audio'), async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { translationId, dialect, hebrew, latin, cyrillic, reason, audioDuration } = req.body;
 
         if (!hebrew || !dialect) {
             return res.status(400).json({ error: 'נדרש תרגום וניב' });
         }
 
+        // Handle audio file if uploaded
+        let audioUrl = null;
+        if (req.file) {
+            audioUrl = `/uploads/suggestion-audio/${req.file.filename}`;
+        }
+
         await db.query(
             `INSERT INTO translation_suggestions 
-             (entry_id, translation_id, user_id, user_name, dialect, suggested_hebrew, suggested_latin, suggested_cyrillic, reason)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [id, translationId || null, req.user.id, req.user.name, dialect, hebrew, latin || '', cyrillic || '', reason || '']
+             (entry_id, translation_id, user_id, user_name, dialect, suggested_hebrew, suggested_latin, suggested_cyrillic, reason, audio_url, audio_duration)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [id, translationId || null, req.user.id, req.user.name, dialect, hebrew, latin || '', cyrillic || '', reason || '', audioUrl, audioDuration || null]
         );
 
-        // Award XP for contribution
-        await db.query('UPDATE users SET xp = xp + 20 WHERE id = ?', [req.user.id]);
+        // Award XP for contribution (extra for audio)
+        const xpAmount = audioUrl ? 30 : 20;
+        await db.query('UPDATE users SET xp = xp + ? WHERE id = ?', [xpAmount, req.user.id]);
 
         res.json({ success: true, message: 'ההצעה נשלחה לאישור' });
     } catch (err) {

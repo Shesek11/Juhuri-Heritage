@@ -54,8 +54,12 @@ function App() {
     setIsAuthModalOpen(true);
   };
 
-  // Translation Modal State
-  const [translationModalEntry, setTranslationModalEntry] = useState<{ id: number; term: string } | null>(null);
+  // Translation Modal State (can include existing translation for correction mode)
+  const [translationModalEntry, setTranslationModalEntry] = useState<{
+    id: number;
+    term: string;
+    existingTranslation?: { id?: number; dialect: string; hebrew: string; latin: string; cyrillic: string }
+  } | null>(null);
 
   // Dictionary State
   const [query, setQuery] = useState('');
@@ -545,7 +549,23 @@ function App() {
                 {/* Results */}
                 {result && !loading && (
                   <div className="w-full animate-in slide-in-from-bottom-8 duration-500">
-                    <ResultCard entry={result} onOpenAuthModal={(reason) => openAuthModal(reason)} />
+                    <ResultCard
+                      entry={result}
+                      onOpenAuthModal={(reason) => openAuthModal(reason)}
+                      onSuggestCorrection={(translation, entryId, term) => {
+                        setTranslationModalEntry({
+                          id: Number(entryId),
+                          term,
+                          existingTranslation: {
+                            id: translation.id,
+                            dialect: translation.dialect,
+                            hebrew: translation.hebrew,
+                            latin: translation.latin,
+                            cyrillic: translation.cyrillic
+                          }
+                        });
+                      }}
+                    />
                   </div>
                 )}
 
@@ -600,16 +620,19 @@ function App() {
       }
 
       {/* Translation Modal */}
-      {translationModalEntry && (
-        <TranslationModal
-          entryId={translationModalEntry.id}
-          term={translationModalEntry.term}
-          onClose={() => setTranslationModalEntry(null)}
-          onSuccess={() => {
-            alert('התרגום נשלח לאישור! תודה על התרומה 🎉');
-          }}
-        />
-      )}
+      {
+        translationModalEntry && (
+          <TranslationModal
+            entryId={translationModalEntry.id}
+            term={translationModalEntry.term}
+            existingTranslation={translationModalEntry.existingTranslation}
+            onClose={() => setTranslationModalEntry(null)}
+            onSuccess={() => {
+              alert(translationModalEntry.existingTranslation ? 'התיקון נשלח לאישור! תודה 🎉' : 'התרגום נשלח לאישור! תודה על התרומה 🎉');
+            }}
+          />
+        )
+      }
 
     </div >
   );

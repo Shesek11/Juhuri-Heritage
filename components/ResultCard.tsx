@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { DictionaryEntry, Comment } from '../types';
-import { Volume2, Copy, Check, Settings2, Heart, MessageCircle, Send, Loader2 } from 'lucide-react';
+import { DictionaryEntry, Comment, Translation } from '../types';
+import { Volume2, Copy, Check, Settings2, Heart, MessageCircle, Send, Loader2, ThumbsUp, ThumbsDown, Edit3 } from 'lucide-react';
 import { generateSpeech } from '../services/geminiService';
 import { playBase64Audio } from '../utils/audioUtils';
 import apiService from '../services/apiService';
@@ -10,9 +10,10 @@ import VoiceRecorder from './audio/VoiceRecorder';
 interface ResultCardProps {
   entry: DictionaryEntry;
   onOpenAuthModal: (reason?: string) => void;
+  onSuggestCorrection?: (translation: Translation, entryId: string, term: string) => void;
 }
 
-const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal }) => {
+const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal, onSuggestCorrection }) => {
   const { isAuthenticated } = useAuth0();
   const [isPlaying, setIsPlaying] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -27,6 +28,23 @@ const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal }) => {
   const [newComment, setNewComment] = useState('');
   const [guestName, setGuestName] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Translation voting state - tracks votes per translation ID
+  const [translationVotes, setTranslationVotes] = useState<Record<number, { upvotes: number; downvotes: number; userVote: 'up' | 'down' | null }>>(
+    () => {
+      const initialVotes: Record<number, { upvotes: number; downvotes: number; userVote: 'up' | 'down' | null }> = {};
+      entry.translations.forEach(t => {
+        if (t.id) {
+          initialVotes[t.id] = {
+            upvotes: t.upvotes || 0,
+            downvotes: t.downvotes || 0,
+            userVote: t.userVote || null
+          };
+        }
+      });
+      return initialVotes;
+    }
+  );
   const [submitMessage, setSubmitMessage] = useState('');
 
   const handlePlay = async (text: string, id: string) => {
@@ -123,6 +141,46 @@ const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal }) => {
     }
   };
 
+  // Handle translation voting
+  const handleTranslationVote = async (translationId: number, voteType: 'up' | 'down') => {
+    if (!isAuthenticated) return onOpenAuthModal('כדי להצביע על תרגומים, יש להתחבר תחילה');
+    if (!translationId) return;
+
+    const currentVote = translationVotes[translationId];
+    const newUserVote = currentVote?.userVote === voteType ? null : voteType;
+
+    // Optimistic UI update
+    setTranslationVotes(prev => {
+      const current = prev[translationId] || { upvotes: 0, downvotes: 0, userVote: null };
+      let newUpvotes = current.upvotes;
+      let newDownvotes = current.downvotes;
+
+      // Remove previous vote
+      if (current.userVote === 'up') newUpvotes--;
+      if (current.userVote === 'down') newDownvotes--;
+
+      // Add new vote
+      if (newUserVote === 'up') newUpvotes++;
+      if (newUserVote === 'down') newDownvotes++;
+
+      return {
+        ...prev,
+        [translationId]: { upvotes: newUpvotes, downvotes: newDownvotes, userVote: newUserVote }
+      };
+    });
+
+    try {
+      await apiService.post(`/dictionary/translations/${translationId}/vote`, { voteType: newUserVote });
+    } catch (err) {
+      console.error('Vote failed', err);
+      // Revert on error
+      setTranslationVotes(prev => ({
+        ...prev,
+        [translationId]: currentVote || { upvotes: 0, downvotes: 0, userVote: null }
+      }));
+    }
+  };
+
   return (
     <div className="w-full max-w-2xl bg-white dark:bg-slate-800 rounded-2xl shadow-xl overflow-hidden border border-slate-100 dark:border-slate-700 transition-all font-rubik">
       {/* Header */}
@@ -187,27 +245,74 @@ const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal }) => {
         <div>
           <h3 className="text-sm uppercase tracking-wider text-slate-400 dark:text-slate-500 font-bold mb-3">תרגומים</h3>
           <div className="grid gap-4">
-            {entry.translations.map((t, idx) => (
-              <div key={idx} className="relative p-4 rounded-xl bg-slate-50 dark:bg-slate-700/50 hover:bg-indigo-50 dark:hover:bg-slate-700 transition-colors group border border-slate-100 dark:border-slate-700/50">
-                <div className="absolute top-3 left-3">
-                  <button
-                    onClick={() => handlePlay(t.hebrew, `trans-${idx}`)}
-                    className={`p-2 rounded-full text-slate-400 hover:text-indigo-600 dark:text-slate-500 dark:hover:text-indigo-400 opacity-0 group-hover:opacity-100 transition-all ${isPlaying === `trans-${idx}` ? 'text-indigo-600 opacity-100 animate-pulse' : ''}`}
-                  >
-                    <Volume2 size={20} />
-                  </button>
-                </div>
-
-                <div className="flex flex-col gap-1 pr-2">
-                  <div className="text-2xl font-bold text-slate-800 dark:text-slate-100 font-rubik">{t.hebrew}</div>
-                  <div className="flex items-center gap-2 text-sm">
-                    <span className="text-indigo-600 dark:text-indigo-400 font-bold bg-indigo-50 dark:bg-indigo-900/30 px-1.5 py-0.5 rounded text-xs">{t.dialect}</span>
-                    <span className="text-slate-600 dark:text-slate-300 font-mono tracking-wide">{t.latin}</span>
+            {entry.translations.map((t, idx) => {
+              const voteData = t.id ? translationVotes[t.id] : null;
+              return (
+                <div key={idx} className="relative p-4 rounded-xl bg-slate-50 dark:bg-slate-700/50 hover:bg-indigo-50 dark:hover:bg-slate-700 transition-colors group border border-slate-100 dark:border-slate-700/50">
+                  {/* Top-left: Play button */}
+                  <div className="absolute top-3 left-3 flex gap-1">
+                    <button
+                      onClick={() => handlePlay(t.hebrew, `trans-${idx}`)}
+                      className={`p-2 rounded-full text-slate-400 hover:text-indigo-600 dark:text-slate-500 dark:hover:text-indigo-400 opacity-0 group-hover:opacity-100 transition-all ${isPlaying === `trans-${idx}` ? 'text-indigo-600 opacity-100 animate-pulse' : ''}`}
+                    >
+                      <Volume2 size={20} />
+                    </button>
                   </div>
-                  <div className="text-lg text-slate-500 dark:text-slate-400 font-serif">{t.cyrillic}</div>
+
+                  <div className="flex flex-col gap-1 pr-2">
+                    <div className="text-2xl font-bold text-slate-800 dark:text-slate-100 font-rubik">{t.hebrew}</div>
+                    <div className="flex items-center gap-2 text-sm">
+                      <span className="text-indigo-600 dark:text-indigo-400 font-bold bg-indigo-50 dark:bg-indigo-900/30 px-1.5 py-0.5 rounded text-xs">{t.dialect}</span>
+                      <span className="text-slate-600 dark:text-slate-300 font-mono tracking-wide">{t.latin}</span>
+                    </div>
+                    <div className="text-lg text-slate-500 dark:text-slate-400 font-serif">{t.cyrillic}</div>
+
+                    {/* Voting and Correction Row */}
+                    <div className="flex items-center gap-3 mt-2 pt-2 border-t border-slate-200 dark:border-slate-600">
+                      {/* Voting Buttons */}
+                      {t.id && (
+                        <div className="flex items-center gap-1">
+                          <button
+                            onClick={() => handleTranslationVote(t.id!, 'up')}
+                            className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs transition-all ${voteData?.userVote === 'up'
+                              ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
+                              : 'text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-600'
+                              }`}
+                            title="הצבע לטובה"
+                          >
+                            <ThumbsUp size={14} />
+                            <span className="font-bold">{voteData?.upvotes || 0}</span>
+                          </button>
+                          <button
+                            onClick={() => handleTranslationVote(t.id!, 'down')}
+                            className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs transition-all ${voteData?.userVote === 'down'
+                              ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
+                              : 'text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-600'
+                              }`}
+                            title="הצבע נגד"
+                          >
+                            <ThumbsDown size={14} />
+                            <span className="font-bold">{voteData?.downvotes || 0}</span>
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Suggest Correction Button */}
+                      {entry.id && (
+                        <button
+                          onClick={() => onSuggestCorrection?.(t, entry.id!, entry.term)}
+                          className="flex items-center gap-1 px-2 py-1 rounded-md text-xs text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-all"
+                          title="הצע תיקון"
+                        >
+                          <Edit3 size={14} />
+                          <span>הצע תיקון</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 
