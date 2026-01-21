@@ -54,9 +54,9 @@ CREATE TABLE IF NOT EXISTS family_partnerships (
 async function runMigration() {
     const connection = await mysql.createConnection({
         host: process.env.DB_HOST || 'localhost',
-        user: process.env.DB_USER || 'root',
+        user: process.env.DB_USERNAME || process.env.DB_USER || 'root',
         password: process.env.DB_PASSWORD || '',
-        database: process.env.DB_NAME || 'juhuri',
+        database: process.env.DB_DATABASE || process.env.DB_NAME || 'juhuri',
         multipleStatements: true
     });
 
