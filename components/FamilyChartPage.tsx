@@ -377,17 +377,33 @@ export function FamilyChartPage() {
                         overflow: visible !important;
                     }
                     
-                    /* Hide the default rect/text but keep the card group positioned */
-                    #FamilyChart svg .card > rect:first-of-type,
+                    /* AGGRESSIVELY hide ALL default SVG card elements */
+                    #FamilyChart svg .card > rect,
+                    #FamilyChart svg .card > circle,
+                    #FamilyChart svg .card > ellipse,
+                    #FamilyChart svg .card > path:not(.link),
+                    #FamilyChart svg .card > polygon,
                     #FamilyChart svg .card > text,
-                    #FamilyChart svg .card > image:not([href*="avatar"]) {
+                    #FamilyChart svg .card > tspan,
+                    #FamilyChart svg .card > image,
+                    #FamilyChart svg .card > use,
+                    #FamilyChart svg .card .card-body,
+                    #FamilyChart svg .card .card-main,
+                    #FamilyChart svg .card-male,
+                    #FamilyChart svg .card-female,
+                    #FamilyChart svg defs {
+                        display: none !important;
+                        visibility: hidden !important;
                         opacity: 0 !important;
+                        pointer-events: none !important;
                     }
                     
-                    /* Card styling */
-                    #FamilyChart svg .card-main {
-                        fill: transparent !important;
-                        stroke: none !important;
+                    /* Keep only the foreignObject HTML card visible */
+                    #FamilyChart svg .card foreignObject,
+                    #FamilyChart svg .card foreignObject * {
+                        display: block !important;
+                        visibility: visible !important;
+                        opacity: 1 !important;
                     }
                 `}</style>
                 {allMembers.length > 0 ? (
