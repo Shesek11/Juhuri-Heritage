@@ -22,9 +22,9 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
   const [dialects, setDialects] = useState<DialectItem[]>([]);
 
   useEffect(() => {
-      if (isOpen) {
-          setDialects(getDialects());
-      }
+    if (isOpen) {
+      getDialects().then(d => setDialects(d || [])).catch(() => setDialects([]));
+    }
   }, [isOpen]);
 
   if (!isOpen) return null;
@@ -33,44 +33,44 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
     e.preventDefault();
     setLoading(true);
     setStatus('idle');
-    
+
     try {
       const result = await verifySuggestion({ term, translation, dialect });
       if (result.isValid) {
-        
+
         // Construct Entry Object
         const entry: DictionaryEntry = {
-            term: term,
-            detectedLanguage: 'Hebrew', 
-            translations: [{
-                dialect: dialect || 'General',
-                hebrew: translation, 
-                latin: term, 
-                cyrillic: ''
-            }],
-            definitions: [`User contribution: ${translation}`],
-            examples: [],
-            source: 'User',
-            status: 'pending',
-            contributorId: user?.id
+          term: term,
+          detectedLanguage: 'Hebrew',
+          translations: [{
+            dialect: dialect || 'General',
+            hebrew: translation,
+            latin: term,
+            cyrillic: ''
+          }],
+          definitions: [`User contribution: ${translation}`],
+          examples: [],
+          source: 'User',
+          status: 'pending',
+          contributorId: user?.id
         };
 
         // Save to DB
         addCustomEntry(entry);
-        
+
         // Update user stats
         if (user) {
-            incrementContribution(user.id);
+          incrementContribution(user.id);
         }
 
         setStatus('success');
         setFeedback("תודה! התרומה נשלחה לאישור המערכת ותתווסף לאחר בדיקה.");
         setTimeout(() => {
-            onClose();
-            setTerm('');
-            setTranslation('');
-            setDialect('');
-            setStatus('idle');
+          onClose();
+          setTerm('');
+          setTranslation('');
+          setDialect('');
+          setStatus('idle');
         }, 3000);
       } else {
         setStatus('error');
@@ -96,15 +96,15 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
             <X size={20} />
           </button>
         </div>
-        
+
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           <p className="text-sm text-slate-500 dark:text-slate-400 mb-2">
             עזרו לנו לתעד את השפה. אם אתם מכירים מילה של סבתא שחסרה במילון, הוסיפו אותה כאן.
           </p>
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">המילה (עברית או ג'והורי)</label>
-            <input 
-              type="text" 
+            <input
+              type="text"
               required
               value={term}
               onChange={(e) => setTerm(e.target.value)}
@@ -114,8 +114,8 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">תרגום ומשמעות</label>
-            <input 
-              type="text" 
+            <input
+              type="text"
               required
               value={translation}
               onChange={(e) => setTranslation(e.target.value)}
@@ -132,35 +132,35 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
             >
               <option value="">כללי / לא ידוע</option>
               {dialects.map(d => (
-                  <option key={d.id} value={d.name}>{d.description}</option>
+                <option key={d.id} value={d.name}>{d.description}</option>
               ))}
             </select>
           </div>
-          
+
           {/* User notice */}
           {!user && (
-              <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded">
-                  שים לב: אתה תורם כאורח. התחבר כדי לקבל קרדיט ולעקוב אחרי התרומות שלך.
-              </p>
+            <p className="text-xs text-amber-600 bg-amber-50 p-2 rounded">
+              שים לב: אתה תורם כאורח. התחבר כדי לקבל קרדיט ולעקוב אחרי התרומות שלך.
+            </p>
           )}
 
           {status === 'success' && (
             <div className="p-3 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-lg flex items-start gap-2 text-sm">
-                <CheckCircle size={16} className="mt-0.5 shrink-0" />
-                <span>{feedback}</span>
+              <CheckCircle size={16} className="mt-0.5 shrink-0" />
+              <span>{feedback}</span>
             </div>
           )}
 
           {status === 'error' && (
             <div className="p-3 bg-red-50 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg flex items-start gap-2 text-sm">
-                <AlertCircle size={16} className="mt-0.5 shrink-0" />
-                <span>{feedback}</span>
+              <AlertCircle size={16} className="mt-0.5 shrink-0" />
+              <span>{feedback}</span>
             </div>
           )}
 
           <div className="pt-2">
-            <button 
-              type="submit" 
+            <button
+              type="submit"
               disabled={loading}
               className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-amber-600 hover:bg-amber-700 text-white font-medium rounded-xl shadow-lg shadow-amber-500/30 transition-all disabled:opacity-70 disabled:cursor-not-allowed"
             >
