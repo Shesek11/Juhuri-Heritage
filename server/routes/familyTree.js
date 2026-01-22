@@ -462,7 +462,7 @@ router.get('/tree/:rootId', async (req, res) => {
     try {
         // Get all members with basic info
         const [allMembers] = await pool.query(`
-            SELECT id, user_id, first_name, last_name, maiden_name, nickname, title,
+            SELECT id, user_id, first_name, last_name, maiden_name,
                    gender, photo_url, birth_date, is_alive
             FROM family_members 
             LIMIT 1000

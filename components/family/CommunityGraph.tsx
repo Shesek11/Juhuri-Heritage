@@ -16,6 +16,7 @@ interface GraphNode extends d3.SimulationNodeDatum {
     gender: 'male' | 'female' | 'other';
     birthYear?: number;
     family?: string;
+    generation?: number;  // 0 = oldest ancestor, higher = younger generation
 }
 
 interface GraphEdge {
@@ -89,6 +90,47 @@ export const CommunityGraph: React.FC<CommunityGraphProps> = ({ onMemberSelect }
             setNodes(graphNodes);
             setEdges(graphEdges);
 
+            // Calculate generations based on parent-child relationships
+            const childToParents = new Map<number, number[]>();
+            graphEdges.filter(e => e.type === 'parent-child').forEach(e => {
+                const childId = typeof e.target === 'number' ? e.target : e.target.id;
+                const parentId = typeof e.source === 'number' ? e.source : e.source.id;
+                if (!childToParents.has(childId)) childToParents.set(childId, []);
+                childToParents.get(childId)!.push(parentId);
+            });
+
+            // Find roots (people with no parents)
+            const nodeIds = new Set(graphNodes.map(n => n.id));
+            const hasParent = new Set(childToParents.keys());
+            const roots = graphNodes.filter(n => !hasParent.has(n.id));
+
+            // BFS to assign generations
+            const generationMap = new Map<number, number>();
+            roots.forEach(r => generationMap.set(r.id, 0));
+
+            let changed = true;
+            while (changed) {
+                changed = false;
+                graphEdges.filter(e => e.type === 'parent-child').forEach(e => {
+                    const parentId = typeof e.source === 'number' ? e.source : e.source.id;
+                    const childId = typeof e.target === 'number' ? e.target : e.target.id;
+                    const parentGen = generationMap.get(parentId);
+                    if (parentGen !== undefined) {
+                        const currentChildGen = generationMap.get(childId);
+                        const newGen = parentGen + 1;
+                        if (currentChildGen === undefined || newGen > currentChildGen) {
+                            generationMap.set(childId, newGen);
+                            changed = true;
+                        }
+                    }
+                });
+            }
+
+            // Assign generation to nodes
+            graphNodes.forEach(n => {
+                n.generation = generationMap.get(n.id) ?? 0;
+            });
+
             console.log('[CommunityGraph] Loaded:', graphNodes.length, 'nodes,', graphEdges.length, 'edges');
         } catch (error) {
             console.error('[CommunityGraph] Error loading data:', error);
@@ -126,16 +168,56 @@ export const CommunityGraph: React.FC<CommunityGraphProps> = ({ onMemberSelect }
         svg.call(zoom);
         zoomRef.current = zoom;
 
-        // Create force simulation
+        // Calculate year range for timeline positioning
+        const years = nodes.map(n => n.birthYear).filter(y => y) as number[];
+        const minYear = years.length > 0 ? Math.min(...years) : 1940;
+        const maxYear = years.length > 0 ? Math.max(...years) : 2025;
+        const yearSpan = Math.max(maxYear - minYear, 50); // At least 50 years span
+        const padding = 80; // Top and bottom padding
+
+        // Helper to convert year to Y position
+        const yearToY = (year: number) => {
+            const normalized = (year - minYear) / yearSpan;
+            return padding + normalized * (height - 2 * padding);
+        };
+
+        // Draw 25-year markers on the left side
+        const startYear = Math.floor(minYear / 25) * 25;
+        const endYear = Math.ceil(maxYear / 25) * 25;
+        for (let year = startYear; year <= endYear; year += 25) {
+            const yPos = yearToY(year);
+
+            // Horizontal line across width
+            g.append('line')
+                .attr('x1', 0)
+                .attr('y1', yPos)
+                .attr('x2', width)
+                .attr('y2', yPos)
+                .attr('stroke', 'rgba(255,255,255,0.1)')
+                .attr('stroke-width', 1)
+                .attr('pointer-events', 'none');
+
+            // Year label
+            g.append('text')
+                .attr('x', 15)
+                .attr('y', yPos + 5)
+                .attr('font-size', '12px')
+                .attr('fill', 'rgba(255,255,255,0.4)')
+                .attr('pointer-events', 'none')
+                .text(year.toString());
+        }
+
+        // Create force simulation with birth-year based Y positioning
         const simulation = d3.forceSimulation<GraphNode>(nodes)
             .force('link', d3.forceLink<GraphNode, GraphEdge>(edges)
                 .id(d => d.id)
-                .distance(d => d.type === 'spouse' ? 60 : 100)
-                .strength(d => d.type === 'spouse' ? 1.5 : 0.5)
+                .distance(d => d.type === 'spouse' ? 50 : 80)
+                .strength(d => d.type === 'spouse' ? 2 : 0.3)
             )
             .force('charge', d3.forceManyBody().strength(-400))
-            .force('center', d3.forceCenter(width / 2, height / 2))
-            .force('collision', d3.forceCollide().radius(50));
+            .force('x', d3.forceX(width / 2).strength(0.15))
+            .force('y', d3.forceY<GraphNode>(d => yearToY(d.birthYear ?? ((minYear + maxYear) / 2))).strength(0.9))
+            .force('collision', d3.forceCollide().radius(45));
 
         // Edge colors by type
         const edgeColor = (type: string) => {
@@ -257,13 +339,13 @@ export const CommunityGraph: React.FC<CommunityGraphProps> = ({ onMemberSelect }
             d.fy = null;
         }
 
-        // Initial zoom to fit
+        // Initial zoom to fit - center on the graph
         setTimeout(() => {
-            svg.transition().duration(500).call(
+            svg.transition().duration(750).call(
                 zoom.transform,
-                d3.zoomIdentity.translate(width / 4, height / 4).scale(0.8)
+                d3.zoomIdentity.translate(0, 0).scale(1)
             );
-        }, 500);
+        }, 800);
 
         return () => {
             simulation.stop();
@@ -303,7 +385,7 @@ export const CommunityGraph: React.FC<CommunityGraphProps> = ({ onMemberSelect }
     }
 
     return (
-        <div className="h-full flex flex-col bg-slate-900">
+        <div className="flex flex-col bg-slate-900" style={{ height: 'calc(100vh - 60px)', minHeight: '600px' }}>
             {/* Header */}
             <div className="bg-slate-800/80 backdrop-blur px-4 py-3 flex items-center justify-between border-b border-slate-700">
                 <div className="flex items-center gap-3">
@@ -335,11 +417,12 @@ export const CommunityGraph: React.FC<CommunityGraphProps> = ({ onMemberSelect }
             </div>
 
             {/* Graph Container */}
-            <div ref={containerRef} className="flex-1 relative overflow-hidden">
+            <div ref={containerRef} className="flex-1 relative overflow-hidden" style={{ minHeight: '500px' }}>
                 <svg
                     ref={svgRef}
-                    className="w-full h-full"
-                    style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)' }}
+                    width="100%"
+                    height="100%"
+                    style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', display: 'block' }}
                 />
 
                 {/* Zoom Controls */}
