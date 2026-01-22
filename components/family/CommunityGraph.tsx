@@ -8,7 +8,8 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import * as d3 from 'd3';
 import { familyService, FamilyMember } from '../../services/familyService';
 import { EditMemberModal } from './EditMemberModal';
-import { Loader2, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
+import { AddMemberModal } from './AddMemberModal';
+import { Loader2, ZoomIn, ZoomOut, Maximize2, UserPlus } from 'lucide-react';
 
 interface GraphNode extends d3.SimulationNodeDatum {
     id: number;
@@ -41,6 +42,7 @@ export const CommunityGraph: React.FC<CommunityGraphProps> = ({ onMemberSelect }
     // Edit modal state
     const [selectedMember, setSelectedMember] = useState<FamilyMember | null>(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
     // Zoom ref for controls
     const zoomRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null);
@@ -395,23 +397,34 @@ export const CommunityGraph: React.FC<CommunityGraphProps> = ({ onMemberSelect }
                     </span>
                 </div>
 
-                {/* Legend */}
-                <div className="flex items-center gap-4 text-sm">
-                    <div className="flex items-center gap-1">
-                        <div className="w-3 h-3 rounded-full bg-blue-500" />
-                        <span className="text-slate-300">גבר</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                        <div className="w-3 h-3 rounded-full bg-pink-500" />
-                        <span className="text-slate-300">אישה</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                        <div className="w-6 h-0.5 bg-sky-500" />
-                        <span className="text-slate-300">הורה-ילד</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                        <div className="w-6 h-0.5 bg-pink-500" style={{ borderStyle: 'dashed' }} />
-                        <span className="text-slate-300">בני זוג</span>
+                <div className="flex items-center gap-4">
+                    {/* Add Person Button */}
+                    <button
+                        onClick={() => setIsAddModalOpen(true)}
+                        className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors shadow-sm"
+                    >
+                        <UserPlus size={16} />
+                        <span>הוסף אדם</span>
+                    </button>
+
+                    {/* Legend */}
+                    <div className="flex items-center gap-4 text-sm">
+                        <div className="flex items-center gap-1">
+                            <div className="w-3 h-3 rounded-full bg-blue-500" />
+                            <span className="text-slate-300">גבר</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                            <div className="w-3 h-3 rounded-full bg-pink-500" />
+                            <span className="text-slate-300">אישה</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                            <div className="w-6 h-0.5 bg-sky-500" />
+                            <span className="text-slate-300">הורה-ילד</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                            <div className="w-6 h-0.5 bg-pink-500" style={{ borderStyle: 'dashed' }} />
+                            <span className="text-slate-300">בני זוג</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -462,6 +475,16 @@ export const CommunityGraph: React.FC<CommunityGraphProps> = ({ onMemberSelect }
                 onSuccess={() => {
                     setIsEditModalOpen(false);
                     setSelectedMember(null);
+                    loadData();
+                }}
+            />
+
+            {/* Add Member Modal */}
+            <AddMemberModal
+                isOpen={isAddModalOpen}
+                onClose={() => setIsAddModalOpen(false)}
+                onSuccess={() => {
+                    setIsAddModalOpen(false);
                     loadData();
                 }}
             />
