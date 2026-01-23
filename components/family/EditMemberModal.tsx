@@ -14,6 +14,7 @@ interface EditMemberModalProps {
 export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member, onClose, onSuccess, onAddRelative, potentialRelations = [] }) => {
     const [loading, setLoading] = useState(false);
     const [activeTab, setActiveTab] = useState<'details' | 'connections'>('details');
+    const isEditing = !!member?.id;
     const [formData, setFormData] = useState<Partial<FamilyMember>>({});
 
     // Connection state
@@ -43,11 +44,20 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                 photo_url: member.photo_url || '',
             });
             fetchRelationships();
+        } else {
+            // Reset form for new member
+            setFormData({
+                gender: 'male',
+                is_alive: true
+            });
+            setParents([]);
+            setChildren([]);
+            setPartnerships([]);
         }
-    }, [member]);
+    }, [member, isOpen]);
 
     const fetchRelationships = async () => {
-        if (!member) return;
+        if (!member?.id) return;
         try {
             const [p, c, pt] = await Promise.all([
                 familyService.getParents(member.id),
@@ -63,7 +73,8 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
     };
 
     const handleConnect = async () => {
-        if (!member || !selectedConnectId) return;
+        if (!member?.id || !selectedConnectId) return;
+        // ... rest of handleConnect logic relies on member.id so we guard it
         setLoading(true);
         try {
             if (connectMode === 'parent') {
@@ -116,18 +127,22 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
         }
     };
 
-    if (!isOpen || !member) return null;
+    if (!isOpen) return null;
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
         try {
-            await familyService.updateMember(member.id, formData);
+            if (isEditing && member) {
+                await familyService.updateMember(member.id, formData);
+            } else {
+                await familyService.createMember(formData as any);
+            }
             onSuccess();
             onClose();
         } catch (err: any) {
             console.error(err);
-            alert(err.message || 'שגיאה בעדכון בן משפחה');
+            alert(err.message || 'שגיאה בשמירת בן משפחה');
         } finally {
             setLoading(false);
         }
@@ -138,8 +153,8 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
             <div className="bg-white dark:bg-slate-800 w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden" dir="rtl" onClick={e => e.stopPropagation()}>
                 <div className="p-4 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-amber-50 dark:bg-amber-900/20">
                     <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                        <Pencil className="text-amber-600" size={20} />
-                        עריכת בן משפחה
+                        {isEditing ? <Pencil className="text-amber-600" size={20} /> : <UserPlus className="text-amber-600" size={20} />}
+                        {isEditing ? 'עריכת בן משפחה' : 'הוספת בן משפחה'}
                     </h2>
                     <div className="flex gap-2">
                         <button
@@ -148,12 +163,14 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                         >
                             פרטים
                         </button>
-                        <button
-                            onClick={() => setActiveTab('connections')}
-                            className={`px-3 py-1 rounded-full text-sm ${activeTab === 'connections' ? 'bg-amber-600 text-white' : 'text-slate-600 hover:bg-slate-200'}`}
-                        >
-                            קשרי משפחה
-                        </button>
+                        {isEditing && (
+                            <button
+                                onClick={() => setActiveTab('connections')}
+                                className={`px-3 py-1 rounded-full text-sm ${activeTab === 'connections' ? 'bg-amber-600 text-white' : 'text-slate-600 hover:bg-slate-200'}`}
+                            >
+                                קשרי משפחה
+                            </button>
+                        )}
                         <button onClick={onClose}><X className="text-slate-400 hover:text-slate-600" /></button>
                     </div>
                 </div>
@@ -480,7 +497,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
 
                 <div className="p-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
                     {/* Only show quick add relative in Details tab */}
-                    {activeTab === 'details' && onAddRelative && (
+                    {activeTab === 'details' && onAddRelative && isEditing && (
                         <div className="mb-4">
                             <div className="text-xs font-medium text-slate-500 mb-2">הוסף קרוב משפחה:</div>
                             <div className="flex gap-2 flex-wrap">
@@ -518,7 +535,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                                 className="bg-amber-600 text-white px-6 py-2 rounded-lg font-bold flex items-center gap-2 hover:bg-amber-700 disabled:opacity-50"
                             >
                                 {loading ? <Loader2 className="animate-spin" /> : <Check size={18} />}
-                                עדכן
+                                {isEditing ? 'עדכן' : 'שמור'}
                             </button>
                         )}
                     </div>

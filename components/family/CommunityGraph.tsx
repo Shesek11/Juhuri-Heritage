@@ -8,7 +8,7 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import * as d3 from 'd3';
 import { familyService, FamilyMember } from '../../services/familyService';
 import { EditMemberModal } from './EditMemberModal';
-import { Loader2, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
+import { Loader2, ZoomIn, ZoomOut, Maximize2, UserPlus } from 'lucide-react';
 
 interface GraphNode extends d3.SimulationNodeDatum {
     id: number;
@@ -481,6 +481,16 @@ export const CommunityGraph: React.FC<CommunityGraphProps> = ({ onMemberSelect }
                         title="התאם לתצוגה"
                     >
                         <Maximize2 size={20} />
+                    </button>
+                    <button
+                        onClick={() => {
+                            setSelectedMember(null);
+                            setIsEditModalOpen(true);
+                        }}
+                        className="p-2 bg-amber-600 hover:bg-amber-700 rounded-lg text-white transition-colors mt-2 shadow-lg"
+                        title="הוסף בן משפחה חדש"
+                    >
+                        <UserPlus size={20} />
                     </button>
                 </div>
             </div>
