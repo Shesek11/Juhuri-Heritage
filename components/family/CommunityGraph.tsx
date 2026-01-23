@@ -8,8 +8,7 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import * as d3 from 'd3';
 import { familyService, FamilyMember } from '../../services/familyService';
 import { EditMemberModal } from './EditMemberModal';
-import { AddMemberModal } from './AddMemberModal';
-import { Loader2, ZoomIn, ZoomOut, Maximize2, UserPlus } from 'lucide-react';
+import { Loader2, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
 
 interface GraphNode extends d3.SimulationNodeDatum {
     id: number;
@@ -24,6 +23,7 @@ interface GraphEdge {
     source: number | GraphNode;
     target: number | GraphNode;
     type: 'parent-child' | 'spouse' | 'sibling';
+    status?: string; // For spouse: married, divorced, widowed
 }
 
 interface CommunityGraphProps {
@@ -42,7 +42,6 @@ export const CommunityGraph: React.FC<CommunityGraphProps> = ({ onMemberSelect }
     // Edit modal state
     const [selectedMember, setSelectedMember] = useState<FamilyMember | null>(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-    const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
     // Zoom ref for controls
     const zoomRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null);
@@ -85,7 +84,8 @@ export const CommunityGraph: React.FC<CommunityGraphProps> = ({ onMemberSelect }
                 graphEdges.push({
                     source: p.person1_id,
                     target: p.person2_id,
-                    type: 'spouse'
+                    type: 'spouse',
+                    status: p.status
                 });
             });
 
@@ -221,27 +221,37 @@ export const CommunityGraph: React.FC<CommunityGraphProps> = ({ onMemberSelect }
             .force('y', d3.forceY<GraphNode>(d => yearToY(d.birthYear ?? ((minYear + maxYear) / 2))).strength(0.9))
             .force('collision', d3.forceCollide().radius(45));
 
-        // Edge colors by type
-        const edgeColor = (type: string) => {
-            switch (type) {
-                case 'spouse': return '#ec4899'; // Pink
-                case 'parent-child': return '#0ea5e9'; // Sky blue
-                case 'sibling': return '#22c55e'; // Green
-                default: return '#94a3b8'; // Gray
+        // Edge colors and styles
+        const getEdgeColor = (d: GraphEdge) => {
+            if (d.type === 'spouse') {
+                if (d.status === 'divorced') return '#ef4444'; // Red for divorced
+                if (d.status === 'widowed') return '#64748b'; // Slate for widowed
+                return '#ec4899'; // Pink for married
             }
+            if (d.type === 'parent-child') return '#0ea5e9'; // Sky blue
+            return '#94a3b8';
         };
 
-        // Draw edges
+        const getEdgeDash = (d: GraphEdge) => {
+            if (d.type === 'spouse') {
+                if (d.status === 'divorced') return '2,2'; // Dotted
+                return '5,5'; // Dashed
+            }
+            return 'none';
+        };
+
+        // Draw edges as paths (Orthogonal routing)
         const link = g.append('g')
             .attr('class', 'links')
-            .selectAll('line')
+            .selectAll('path')
             .data(edges)
             .enter()
-            .append('line')
-            .attr('stroke', d => edgeColor(d.type))
-            .attr('stroke-width', d => d.type === 'spouse' ? 3 : 2)
-            .attr('stroke-opacity', 0.7)
-            .attr('stroke-dasharray', d => d.type === 'spouse' ? '5,5' : 'none');
+            .append('path')
+            .attr('stroke', d => getEdgeColor(d))
+            .attr('stroke-width', d => d.type === 'spouse' ? 2 : 2)
+            .attr('stroke-opacity', 0.6)
+            .attr('fill', 'none')
+            .attr('stroke-dasharray', d => getEdgeDash(d));
 
         // Draw nodes
         const node = g.append('g')
@@ -312,13 +322,35 @@ export const CommunityGraph: React.FC<CommunityGraphProps> = ({ onMemberSelect }
                 .attr('r', 25);
         });
 
-        // Simulation tick
+        // Simulation tick - update path d attribute
         simulation.on('tick', () => {
-            link
-                .attr('x1', d => (d.source as GraphNode).x || 0)
-                .attr('y1', d => (d.source as GraphNode).y || 0)
-                .attr('x2', d => (d.target as GraphNode).x || 0)
-                .attr('y2', d => (d.target as GraphNode).y || 0);
+            link.attr('d', d => {
+                const source = d.source as GraphNode;
+                const target = d.target as GraphNode;
+                const sx = source.x || 0;
+                const sy = source.y || 0;
+                const tx = target.x || 0;
+                const ty = target.y || 0;
+
+                // Orthogonal routing (Step-line)
+                // Move vertical, then horizontal, then vertical
+                const midY = (sy + ty) / 2;
+
+                // For parent-child, we want to go down from parent, then horizontal, then down to child
+                if (d.type === 'parent-child') {
+                    // Ensure parent is source (usually upper year/lower y value)
+                    // Actually, simulation doesn't guarantee source/target order by Y, but visually:
+                    return `M ${sx} ${sy} L ${sx} ${midY} L ${tx} ${midY} L ${tx} ${ty}`;
+                }
+
+                // For spouses (same generation approx), go horizontal first?
+                // Or just straight line for spouses looks okay with orthogonal too
+                // Let's try simple step: V -> H -> V
+                // If they are on same Y, midY is same, so it becomes just H line? No, sy=ty.
+                // If sy=ty, it draws straight line.
+                // If not, it steps.
+                return `M ${sx} ${sy} L ${sx} ${midY} L ${tx} ${midY} L ${tx} ${ty}`;
+            });
 
             node.attr('transform', d => `translate(${d.x || 0},${d.y || 0})`);
         });
@@ -397,34 +429,23 @@ export const CommunityGraph: React.FC<CommunityGraphProps> = ({ onMemberSelect }
                     </span>
                 </div>
 
-                <div className="flex items-center gap-4">
-                    {/* Add Person Button */}
-                    <button
-                        onClick={() => setIsAddModalOpen(true)}
-                        className="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg text-sm font-medium transition-colors shadow-sm"
-                    >
-                        <UserPlus size={16} />
-                        <span>הוסף אדם</span>
-                    </button>
-
-                    {/* Legend */}
-                    <div className="flex items-center gap-4 text-sm">
-                        <div className="flex items-center gap-1">
-                            <div className="w-3 h-3 rounded-full bg-blue-500" />
-                            <span className="text-slate-300">גבר</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                            <div className="w-3 h-3 rounded-full bg-pink-500" />
-                            <span className="text-slate-300">אישה</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                            <div className="w-6 h-0.5 bg-sky-500" />
-                            <span className="text-slate-300">הורה-ילד</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                            <div className="w-6 h-0.5 bg-pink-500" style={{ borderStyle: 'dashed' }} />
-                            <span className="text-slate-300">בני זוג</span>
-                        </div>
+                {/* Legend */}
+                <div className="flex items-center gap-4 text-sm">
+                    <div className="flex items-center gap-1">
+                        <div className="w-3 h-3 rounded-full bg-blue-500" />
+                        <span className="text-slate-300">גבר</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                        <div className="w-3 h-3 rounded-full bg-pink-500" />
+                        <span className="text-slate-300">אישה</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                        <div className="w-6 h-0.5 bg-sky-500" />
+                        <span className="text-slate-300">הורה-ילד</span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                        <div className="w-6 h-0.5 bg-pink-500" style={{ borderStyle: 'dashed' }} />
+                        <span className="text-slate-300">בני זוג</span>
                     </div>
                 </div>
             </div>
@@ -477,16 +498,7 @@ export const CommunityGraph: React.FC<CommunityGraphProps> = ({ onMemberSelect }
                     setSelectedMember(null);
                     loadData();
                 }}
-            />
-
-            {/* Add Member Modal */}
-            <AddMemberModal
-                isOpen={isAddModalOpen}
-                onClose={() => setIsAddModalOpen(false)}
-                onSuccess={() => {
-                    setIsAddModalOpen(false);
-                    loadData();
-                }}
+                potentialRelations={allMembers}
             />
         </div>
     );
