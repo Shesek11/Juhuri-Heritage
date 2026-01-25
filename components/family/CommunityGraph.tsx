@@ -51,7 +51,7 @@ export const CommunityGraph: React.FC = () => {
         charge: -650,
         parentChildDistance: 50,
         spouseDistance: 70,
-        collisionRadius: 20,
+        collisionRadius: 50,
         yForceStrength: 1.00
     });
 
@@ -84,6 +84,9 @@ export const CommunityGraph: React.FC = () => {
 
     // Edge hover pulsing intervals (for continuous pulsing on hover)
     const edgeHoverIntervalsRef = useRef<NodeJS.Timeout[]>([]);
+
+    // Node hover pulsing intervals (for first-degree relatives)
+    const nodeHoverIntervalsRef = useRef<NodeJS.Timeout[]>([]);
 
     // Simulation ref for real-time parameter updates
     const simulationRef = useRef<d3.Simulation<GraphNode, undefined> | null>(null);
@@ -466,17 +469,183 @@ export const CommunityGraph: React.FC = () => {
                 .text(year.toString());
         }
 
-        // Initialize node positions for consistent layout (not random)
-        nodes.forEach((n, i) => {
-            if (!n.x || !n.y) {
-                // Start nodes in a grid pattern based on their index
-                const cols = Math.ceil(Math.sqrt(nodes.length));
-                const row = Math.floor(i / cols);
-                const col = i % cols;
-                n.x = (col + 0.5) * (width / cols);
-                n.y = (row + 0.5) * (height / Math.ceil(nodes.length / cols));
+        // Detect connected components (family groups) using Union-Find
+        const parent = new Map<number, number>();
+        const visibleNodeIds = nodes.filter(n => !n.isJunction).map(n => n.id);
+
+        // Initialize: each node is its own parent
+        visibleNodeIds.forEach(id => parent.set(id, id));
+
+        // Find function with path compression
+        const find = (id: number): number => {
+            if (parent.get(id) !== id) {
+                parent.set(id, find(parent.get(id)!));
+            }
+            return parent.get(id)!;
+        };
+
+        // Union function
+        const union = (id1: number, id2: number) => {
+            const root1 = find(id1);
+            const root2 = find(id2);
+            if (root1 !== root2) {
+                parent.set(root2, root1);
+            }
+        };
+
+        // Connect nodes through edges (including through junctions)
+        edges.forEach(edge => {
+            const sourceId = typeof edge.source === 'number' ? edge.source : edge.source.id;
+            const targetId = typeof edge.target === 'number' ? edge.target : edge.target.id;
+
+            const sourceNode = nodes.find(n => n.id === sourceId);
+            const targetNode = nodes.find(n => n.id === targetId);
+
+            // Skip if either is a junction - we'll connect through junctions
+            if (!sourceNode?.isJunction && !targetNode?.isJunction) {
+                union(sourceId, targetId);
+            } else if (sourceNode?.isJunction && !targetNode?.isJunction) {
+                // Find all real nodes connected to this junction and union them with target
+                edges.forEach(e2 => {
+                    const e2SourceId = typeof e2.source === 'number' ? e2.source : e2.source.id;
+                    const e2TargetId = typeof e2.target === 'number' ? e2.target : e2.target.id;
+
+                    if (e2SourceId === sourceId || e2TargetId === sourceId) {
+                        const otherId = e2SourceId === sourceId ? e2TargetId : e2SourceId;
+                        const otherNode = nodes.find(n => n.id === otherId);
+                        if (otherNode && !otherNode.isJunction && otherId !== targetId) {
+                            union(otherId, targetId);
+                        }
+                    }
+                });
+            } else if (!sourceNode?.isJunction && targetNode?.isJunction) {
+                // Find all real nodes connected to this junction and union them with source
+                edges.forEach(e2 => {
+                    const e2SourceId = typeof e2.source === 'number' ? e2.source : e2.source.id;
+                    const e2TargetId = typeof e2.target === 'number' ? e2.target : e2.target.id;
+
+                    if (e2SourceId === targetId || e2TargetId === targetId) {
+                        const otherId = e2SourceId === targetId ? e2TargetId : e2SourceId;
+                        const otherNode = nodes.find(n => n.id === otherId);
+                        if (otherNode && !otherNode.isJunction && otherId !== sourceId) {
+                            union(otherId, sourceId);
+                        }
+                    }
+                });
             }
         });
+
+        // Group nodes by component
+        const componentGroups = new Map<number, GraphNode[]>();
+        nodes.forEach(n => {
+            if (n.isJunction) return; // Skip junctions for positioning
+
+            const root = find(n.id);
+            if (!componentGroups.has(root)) {
+                componentGroups.set(root, []);
+            }
+            componentGroups.get(root)!.push(n);
+        });
+
+        const numComponents = componentGroups.size;
+        console.log('[CommunityGraph] Detected', numComponents, 'family components');
+
+        // Initialize node positions - separate components horizontally
+        let componentIndex = 0;
+        componentGroups.forEach((componentNodes, root) => {
+            const componentWidth = width / numComponents;
+            const baseX = componentIndex * componentWidth + componentWidth / 2;
+
+            componentNodes.forEach((n, i) => {
+                if (!n.x || !n.y) {
+                    // Position nodes in this component in a vertical stack based on birth year
+                    const yPos = n.birthYear ? yearToY(n.birthYear) : height / 2;
+
+                    // Add some horizontal spread within the component
+                    const spread = Math.min(componentWidth * 0.8, 400);
+                    const offset = (i % 5 - 2) * (spread / 5); // Spread across 5 columns
+
+                    n.x = baseX + offset;
+                    n.y = yPos;
+                }
+            });
+
+            componentIndex++;
+        });
+
+        // Position junction nodes at average of their connected nodes
+        nodes.forEach(n => {
+            if (n.isJunction && (!n.x || !n.y)) {
+                const connectedNodes = edges
+                    .filter(e => {
+                        const sourceId = typeof e.source === 'number' ? e.source : e.source.id;
+                        const targetId = typeof e.target === 'number' ? e.target : e.target.id;
+                        return sourceId === n.id || targetId === n.id;
+                    })
+                    .map(e => {
+                        const sourceId = typeof e.source === 'number' ? e.source : e.source.id;
+                        const targetId = typeof e.target === 'number' ? e.target : e.target.id;
+                        return nodes.find(node => node.id === (sourceId === n.id ? targetId : sourceId));
+                    })
+                    .filter(node => node && !node.isJunction) as GraphNode[];
+
+                if (connectedNodes.length > 0) {
+                    n.x = connectedNodes.reduce((sum, node) => sum + (node.x || 0), 0) / connectedNodes.length;
+                    n.y = connectedNodes.reduce((sum, node) => sum + (node.y || 0), 0) / connectedNodes.length;
+                } else {
+                    // Fallback if no connected nodes found
+                    n.x = width / 2;
+                    n.y = height / 2;
+                }
+            }
+        });
+
+        // Create a map of node to component for inter-component repulsion
+        const nodeToComponent = new Map<number, number>();
+        componentGroups.forEach((componentNodes, root) => {
+            componentNodes.forEach(n => {
+                nodeToComponent.set(n.id, root);
+            });
+        });
+
+        // Custom force to separate different family components
+        const componentSeparationForce = () => {
+            const alpha = simulation.alpha();
+            const strength = 300 * alpha; // Stronger at the beginning
+
+            nodes.forEach((nodeA, i) => {
+                if (nodeA.isJunction) return;
+
+                const componentA = nodeToComponent.get(nodeA.id);
+                if (!componentA) return;
+
+                for (let j = i + 1; j < nodes.length; j++) {
+                    const nodeB = nodes[j];
+                    if (nodeB.isJunction) continue;
+
+                    const componentB = nodeToComponent.get(nodeB.id);
+                    if (!componentB) continue;
+
+                    // Only apply force if nodes are in different components
+                    if (componentA !== componentB) {
+                        const dx = (nodeB.x || 0) - (nodeA.x || 0);
+                        const dy = (nodeB.y || 0) - (nodeA.y || 0);
+                        const distance = Math.sqrt(dx * dx + dy * dy);
+
+                        if (distance > 0 && distance < 500) { // Only repel if too close
+                            const force = strength / (distance * distance);
+                            const fx = (dx / distance) * force;
+                            const fy = (dy / distance) * force;
+
+                            nodeA.vx = (nodeA.vx || 0) - fx;
+                            nodeA.vy = (nodeA.vy || 0) - fy;
+                            nodeB.vx = (nodeB.vx || 0) + fx;
+                            nodeB.vy = (nodeB.vy || 0) + fy;
+                        }
+                    }
+                }
+            });
+        };
 
         // Create force simulation with birth-year based Y positioning
         const simulation = d3.forceSimulation<GraphNode>(nodes)
@@ -497,6 +666,7 @@ export const CommunityGraph: React.FC = () => {
             .force('x', d3.forceX(width / 2).strength(0.05))
             .force('y', d3.forceY<GraphNode>(d => yearToY(d.birthYear ?? ((minYear + maxYear) / 2))).strength(forceParams.yForceStrength))
             .force('collision', d3.forceCollide().radius(forceParams.collisionRadius))
+            .force('componentSeparation', componentSeparationForce) // Custom force for family separation
             .alpha(1.0)  // Start with high energy for better initial layout
             .alphaDecay(0.008)  // Slower cooling = more time to settle
             .velocityDecay(0.4); // More friction = smoother convergence
@@ -668,11 +838,53 @@ export const CommunityGraph: React.FC = () => {
                 const sourceId = typeof d.source === 'number' ? d.source : d.source.id;
                 const targetId = typeof d.target === 'number' ? d.target : d.target.id;
 
-                // Create continuous pulsing on both nodes for 3 seconds
-                [sourceId, targetId].forEach(nodeId => {
-                    const nodeData = nodes.find(n => n.id === nodeId);
-                    if (!nodeData || nodeData.isJunction) return;
+                // Find all real nodes connected (handling junction nodes) - same logic as hover
+                const connectedNodeIds: number[] = [];
 
+                // Check source
+                const sourceNode = nodes.find(n => n.id === sourceId);
+                if (sourceNode?.isJunction) {
+                    // Find all real nodes connected to this junction
+                    edges.forEach(edge => {
+                        const edgeSourceId = typeof edge.source === 'number' ? edge.source : edge.source.id;
+                        const edgeTargetId = typeof edge.target === 'number' ? edge.target : edge.target.id;
+
+                        if (edgeSourceId === sourceId) {
+                            const targetNode = nodes.find(n => n.id === edgeTargetId);
+                            if (targetNode && !targetNode.isJunction) connectedNodeIds.push(edgeTargetId);
+                        }
+                        if (edgeTargetId === sourceId) {
+                            const sourceNode = nodes.find(n => n.id === edgeSourceId);
+                            if (sourceNode && !sourceNode.isJunction) connectedNodeIds.push(edgeSourceId);
+                        }
+                    });
+                } else {
+                    connectedNodeIds.push(sourceId);
+                }
+
+                // Check target
+                const targetNode = nodes.find(n => n.id === targetId);
+                if (targetNode?.isJunction) {
+                    // Find all real nodes connected to this junction
+                    edges.forEach(edge => {
+                        const edgeSourceId = typeof edge.source === 'number' ? edge.source : edge.source.id;
+                        const edgeTargetId = typeof edge.target === 'number' ? edge.target : edge.target.id;
+
+                        if (edgeSourceId === targetId) {
+                            const targetNode = nodes.find(n => n.id === edgeTargetId);
+                            if (targetNode && !targetNode.isJunction) connectedNodeIds.push(edgeTargetId);
+                        }
+                        if (edgeTargetId === targetId) {
+                            const sourceNode = nodes.find(n => n.id === edgeSourceId);
+                            if (sourceNode && !sourceNode.isJunction) connectedNodeIds.push(edgeSourceId);
+                        }
+                    });
+                } else {
+                    connectedNodeIds.push(targetId);
+                }
+
+                // Create continuous pulsing on all connected nodes for 3 seconds
+                connectedNodeIds.forEach(nodeId => {
                     const nodeGroup = g.select(`g.node[data-id="${nodeId}"]`);
                     if (!nodeGroup.empty()) {
                         let pulseCount = 0;
@@ -785,58 +997,62 @@ export const CommunityGraph: React.FC = () => {
                 if (!firstSelectedNode) {
                     setFirstSelectedNode(d);
 
-                    // Create pulsing animation to show selection
-                    const nodeGroup = d3.select(event.currentTarget);
-                    const createSelectionPulse = () => {
-                        const ring = nodeGroup.insert('circle', ':first-child')
-                            .attr('class', 'selection-pulse')
-                            .attr('r', 25)
-                            .attr('fill', 'none')
-                            .attr('stroke', '#fbbf24')
-                            .attr('stroke-width', 3)
-                            .attr('opacity', 0.9);
+                    // Create pulsing animation to show selection - use reliable selector
+                    const nodeGroup = g.select(`g.node[data-id="${d.id}"]`);
+                    if (!nodeGroup.empty()) {
+                        const createSelectionPulse = () => {
+                            const ring = nodeGroup.insert('circle', ':first-child')
+                                .attr('class', 'selection-pulse')
+                                .attr('r', 25)
+                                .attr('fill', 'none')
+                                .attr('stroke', '#fbbf24') // Amber for first
+                                .attr('stroke-width', 4)
+                                .attr('opacity', 1.0);
 
-                        ring.transition()
-                            .duration(800)
-                            .ease(d3.easeQuadOut)
-                            .attr('r', 50)
-                            .attr('stroke-width', 1)
-                            .attr('opacity', 0)
-                            .remove();
-                    };
+                            ring.transition()
+                                .duration(800)
+                                .ease(d3.easeQuadOut)
+                                .attr('r', 55)
+                                .attr('stroke-width', 1)
+                                .attr('opacity', 0)
+                                .remove();
+                        };
 
-                    // Create 3 pulses for visual feedback
-                    createSelectionPulse();
-                    setTimeout(createSelectionPulse, 300);
-                    setTimeout(createSelectionPulse, 600);
+                        // Create 3 pulses for visual feedback
+                        createSelectionPulse();
+                        setTimeout(createSelectionPulse, 300);
+                        setTimeout(createSelectionPulse, 600);
+                    }
                 } else if (firstSelectedNode.id !== d.id) {
                     setSecondSelectedNode(d);
                     setConnectionMode('selecting-type');
 
-                    // Create pulsing animation for second selection
-                    const nodeGroup = d3.select(event.currentTarget);
-                    const createSelectionPulse = () => {
-                        const ring = nodeGroup.insert('circle', ':first-child')
-                            .attr('class', 'selection-pulse')
-                            .attr('r', 25)
-                            .attr('fill', 'none')
-                            .attr('stroke', '#10b981')
-                            .attr('stroke-width', 3)
-                            .attr('opacity', 0.9);
+                    // Create pulsing animation for second selection - use reliable selector
+                    const nodeGroup = g.select(`g.node[data-id="${d.id}"]`);
+                    if (!nodeGroup.empty()) {
+                        const createSelectionPulse = () => {
+                            const ring = nodeGroup.insert('circle', ':first-child')
+                                .attr('class', 'selection-pulse')
+                                .attr('r', 25)
+                                .attr('fill', 'none')
+                                .attr('stroke', '#10b981') // Green for second
+                                .attr('stroke-width', 4)
+                                .attr('opacity', 1.0);
 
-                        ring.transition()
-                            .duration(800)
-                            .ease(d3.easeQuadOut)
-                            .attr('r', 50)
-                            .attr('stroke-width', 1)
-                            .attr('opacity', 0)
-                            .remove();
-                    };
+                            ring.transition()
+                                .duration(800)
+                                .ease(d3.easeQuadOut)
+                                .attr('r', 55)
+                                .attr('stroke-width', 1)
+                                .attr('opacity', 0)
+                                .remove();
+                        };
 
-                    // Create 3 pulses for visual feedback
-                    createSelectionPulse();
-                    setTimeout(createSelectionPulse, 300);
-                    setTimeout(createSelectionPulse, 600);
+                        // Create 3 pulses for visual feedback
+                        createSelectionPulse();
+                        setTimeout(createSelectionPulse, 300);
+                        setTimeout(createSelectionPulse, 600);
+                    }
                 }
                 return;
             }
@@ -867,16 +1083,119 @@ export const CommunityGraph: React.FC = () => {
                     setTooltip({
                         visible: true,
                         x: rect.left - containerRect.left + rect.width / 2,
-                        y: rect.top - containerRect.top - 60, // More space above the circle
+                        y: rect.top - containerRect.top - 120, // Much more space above the circle
                         member: member
                     });
                 }
             }
+
+            // Find and pulse first-degree relatives
+            const firstDegreeRelatives: number[] = [];
+
+            edges.forEach(edge => {
+                const edgeSourceId = typeof edge.source === 'number' ? edge.source : edge.source.id;
+                const edgeTargetId = typeof edge.target === 'number' ? edge.target : edge.target.id;
+
+                // If this node is the source, add target (if not junction)
+                if (edgeSourceId === d.id) {
+                    const targetNode = nodes.find(n => n.id === edgeTargetId);
+                    if (targetNode && !targetNode.isJunction) {
+                        firstDegreeRelatives.push(edgeTargetId);
+                    } else if (targetNode?.isJunction) {
+                        // If target is junction, find all real nodes connected through it
+                        edges.forEach(e2 => {
+                            const e2SourceId = typeof e2.source === 'number' ? e2.source : e2.source.id;
+                            const e2TargetId = typeof e2.target === 'number' ? e2.target : e2.target.id;
+
+                            if (e2SourceId === edgeTargetId && e2TargetId !== d.id) {
+                                const realNode = nodes.find(n => n.id === e2TargetId);
+                                if (realNode && !realNode.isJunction) firstDegreeRelatives.push(e2TargetId);
+                            }
+                            if (e2TargetId === edgeTargetId && e2SourceId !== d.id) {
+                                const realNode = nodes.find(n => n.id === e2SourceId);
+                                if (realNode && !realNode.isJunction) firstDegreeRelatives.push(e2SourceId);
+                            }
+                        });
+                    }
+                }
+
+                // If this node is the target, add source (if not junction)
+                if (edgeTargetId === d.id) {
+                    const sourceNode = nodes.find(n => n.id === edgeSourceId);
+                    if (sourceNode && !sourceNode.isJunction) {
+                        firstDegreeRelatives.push(edgeSourceId);
+                    } else if (sourceNode?.isJunction) {
+                        // If source is junction, find all real nodes connected through it
+                        edges.forEach(e2 => {
+                            const e2SourceId = typeof e2.source === 'number' ? e2.source : e2.source.id;
+                            const e2TargetId = typeof e2.target === 'number' ? e2.target : e2.target.id;
+
+                            if (e2SourceId === edgeSourceId && e2TargetId !== d.id) {
+                                const realNode = nodes.find(n => n.id === e2TargetId);
+                                if (realNode && !realNode.isJunction) firstDegreeRelatives.push(e2TargetId);
+                            }
+                            if (e2TargetId === edgeSourceId && e2SourceId !== d.id) {
+                                const realNode = nodes.find(n => n.id === e2SourceId);
+                                if (realNode && !realNode.isJunction) firstDegreeRelatives.push(e2SourceId);
+                            }
+                        });
+                    }
+                }
+            });
+
+            // Remove duplicates
+            const uniqueRelatives = Array.from(new Set(firstDegreeRelatives));
+
+            // Pulse first-degree relatives
+            uniqueRelatives.forEach(relativeId => {
+                const nodeGroup = g.select(`g.node[data-id="${relativeId}"]`);
+                if (!nodeGroup.empty()) {
+                    const circle = nodeGroup.select('circle');
+
+                    // Enlarge the relative node slightly
+                    circle.transition()
+                        .duration(200)
+                        .attr('r', 28);
+
+                    // Create continuous pulsing
+                    const createPulse = () => {
+                        const ring = nodeGroup.insert('circle', ':first-child')
+                            .attr('class', 'node-hover-pulse')
+                            .attr('r', 25)
+                            .attr('fill', 'none')
+                            .attr('stroke', '#10b981') // Green for relatives
+                            .attr('stroke-width', 2)
+                            .attr('opacity', 0.6);
+
+                        ring.transition()
+                            .duration(1000)
+                            .ease(d3.easeQuadOut)
+                            .attr('r', 45)
+                            .attr('stroke-width', 1)
+                            .attr('opacity', 0)
+                            .remove();
+                    };
+
+                    // Start immediate pulse
+                    createPulse();
+
+                    // Continue pulsing every 600ms
+                    const interval = setInterval(createPulse, 600);
+                    nodeHoverIntervalsRef.current.push(interval);
+                }
+            });
         });
 
         node.on('mouseleave', function () {
-            // Restore circle size
-            d3.select(this).select('circle')
+            // Clear all node hover intervals
+            nodeHoverIntervalsRef.current.forEach(interval => clearInterval(interval));
+            nodeHoverIntervalsRef.current = [];
+
+            // Remove all node hover pulse rings
+            g.selectAll('.node-hover-pulse').remove();
+
+            // Restore all node circle sizes
+            g.selectAll('g.node circle')
                 .transition()
                 .duration(200)
                 .attr('r', 25);
