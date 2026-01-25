@@ -179,8 +179,6 @@ export const TraditionalFamilyTree: React.FC = () => {
         });
 
         const allPositioned: PositionedMember[] = [];
-        const NODE_WIDTH = 180;
-        const NODE_HEIGHT = 100;
         const HORIZONTAL_SPACING = 220;
         const VERTICAL_SPACING = 180;
         const FAMILY_GROUP_SPACING = 400;
@@ -199,66 +197,128 @@ export const TraditionalFamilyTree: React.FC = () => {
                 byGeneration.get(gen)!.push(m);
             });
 
-            // Sort each generation by birth year
-            byGeneration.forEach(genMembers => {
-                genMembers.sort((a, b) => {
-                    const yearA = a.birth_date ? new Date(a.birth_date).getFullYear() : 9999;
-                    const yearB = b.birth_date ? new Date(b.birth_date).getFullYear() : 9999;
-                    return yearA - yearB;
-                });
-            });
-
-            // Layout generation by generation
+            // Layout generation by generation, top to bottom
             const minGen = Math.min(...byGeneration.keys());
             const maxGen = Math.max(...byGeneration.keys());
 
+            // Track X positions for each person to position their children below them
+            const positionedInFamily = new Map<number, { x: number, y: number }>();
             let maxWidthInFamily = 0;
 
             for (let gen = minGen; gen <= maxGen; gen++) {
                 if (!byGeneration.has(gen)) continue;
 
                 const genMembers = byGeneration.get(gen)!;
+                const processed = new Set<number>();
                 let currentX = currentFamilyX;
 
-                // Handle partnerships - group spouses together
-                const processed = new Set<number>();
-
-                genMembers.forEach(person => {
-                    if (processed.has(person.id)) return;
-
-                    // Find all partners of this person
-                    const partners = partnerships
-                        .filter(p => p.person1_id === person.id || p.person2_id === person.id)
-                        .map(p => p.person1_id === person.id ? p.person2_id : p.person1_id)
-                        .map(partnerId => members.find(m => m.id === partnerId))
-                        .filter(p => p && generations.get(p.id) === gen) as FamilyMember[];
-
-                    // Position current person
-                    allPositioned.push({
-                        ...person,
-                        x: currentX,
-                        y: gen * VERTICAL_SPACING,
-                        generation: gen,
-                        familyGroupId: groupId
+                // For root generation (no parents), sort by birth year
+                if (gen === minGen) {
+                    genMembers.sort((a, b) => {
+                        const yearA = a.birth_date ? new Date(a.birth_date).getFullYear() : 9999;
+                        const yearB = b.birth_date ? new Date(b.birth_date).getFullYear() : 9999;
+                        return yearA - yearB;
                     });
-                    processed.add(person.id);
-                    currentX += HORIZONTAL_SPACING;
 
-                    // Position partners next to them
-                    partners.forEach(partner => {
-                        if (!processed.has(partner.id)) {
+                    // Position root generation with their partners
+                    genMembers.forEach(person => {
+                        if (processed.has(person.id)) return;
+
+                        const partners = partnerships
+                            .filter(p => p.person1_id === person.id || p.person2_id === person.id)
+                            .map(p => p.person1_id === person.id ? p.person2_id : p.person1_id)
+                            .map(partnerId => members.find(m => m.id === partnerId))
+                            .filter(p => p && generations.get(p.id) === gen) as FamilyMember[];
+
+                        positionedInFamily.set(person.id, { x: currentX, y: gen * VERTICAL_SPACING });
+                        allPositioned.push({
+                            ...person,
+                            x: currentX,
+                            y: gen * VERTICAL_SPACING,
+                            generation: gen,
+                            familyGroupId: groupId
+                        });
+                        processed.add(person.id);
+                        currentX += HORIZONTAL_SPACING;
+
+                        partners.forEach(partner => {
+                            if (!processed.has(partner.id)) {
+                                positionedInFamily.set(partner.id, { x: currentX, y: gen * VERTICAL_SPACING });
+                                allPositioned.push({
+                                    ...partner,
+                                    x: currentX,
+                                    y: gen * VERTICAL_SPACING,
+                                    generation: gen,
+                                    familyGroupId: groupId
+                                });
+                                processed.add(partner.id);
+                                currentX += HORIZONTAL_SPACING;
+                            }
+                        });
+                    });
+                } else {
+                    // For child generations, group by parents
+                    const childrenByParents = new Map<string, FamilyMember[]>();
+
+                    genMembers.forEach(child => {
+                        const parents = parentChildRelations
+                            .filter(rel => rel.child_id === child.id)
+                            .map(rel => rel.parent_id)
+                            .sort()
+                            .join('-');
+
+                        if (!childrenByParents.has(parents)) {
+                            childrenByParents.set(parents, []);
+                        }
+                        childrenByParents.get(parents)!.push(child);
+                    });
+
+                    // Sort children within each parent group by birth year
+                    childrenByParents.forEach(children => {
+                        children.sort((a, b) => {
+                            const yearA = a.birth_date ? new Date(a.birth_date).getFullYear() : 9999;
+                            const yearB = b.birth_date ? new Date(b.birth_date).getFullYear() : 9999;
+                            return yearA - yearB;
+                        });
+                    });
+
+                    // Position children below their parents
+                    childrenByParents.forEach((children, parentKey) => {
+                        const parentIds = parentKey.split('-').map(Number);
+
+                        // Calculate position below parents
+                        let baseX = currentFamilyX;
+                        if (parentIds.length > 0 && positionedInFamily.has(parentIds[0])) {
+                            const positions = parentIds
+                                .map(id => positionedInFamily.get(id))
+                                .filter(p => p !== undefined) as Array<{ x: number, y: number }>;
+
+                            if (positions.length > 0) {
+                                const avgX = positions.reduce((sum, p) => sum + p.x, 0) / positions.length;
+                                baseX = avgX - (children.length - 1) * HORIZONTAL_SPACING / 2;
+                            }
+                        }
+
+                        // Position this group of children
+                        let childX = Math.max(baseX, currentX);
+                        children.forEach(child => {
+                            if (processed.has(child.id)) return;
+
+                            positionedInFamily.set(child.id, { x: childX, y: gen * VERTICAL_SPACING });
                             allPositioned.push({
-                                ...partner,
-                                x: currentX,
+                                ...child,
+                                x: childX,
                                 y: gen * VERTICAL_SPACING,
                                 generation: gen,
                                 familyGroupId: groupId
                             });
-                            processed.add(partner.id);
-                            currentX += HORIZONTAL_SPACING;
-                        }
+                            processed.add(child.id);
+                            childX += HORIZONTAL_SPACING;
+                        });
+
+                        currentX = Math.max(currentX, childX);
                     });
-                });
+                }
 
                 maxWidthInFamily = Math.max(maxWidthInFamily, currentX - currentFamilyX);
             }
