@@ -163,18 +163,16 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                     <div className="flex gap-2">
                         <button
                             onClick={() => setActiveTab('details')}
-                            className={`px-3 py-1 rounded-full text-sm ${activeTab === 'details' ? 'bg-amber-600 text-white' : 'text-slate-600 hover:bg-slate-200'}`}
+                            className={`px-3 py-1 rounded-full text-sm ${activeTab === 'details' ? 'bg-amber-600 text-white' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'}`}
                         >
                             פרטים
                         </button>
-                        {isEditing && (
-                            <button
-                                onClick={() => setActiveTab('connections')}
-                                className={`px-3 py-1 rounded-full text-sm ${activeTab === 'connections' ? 'bg-amber-600 text-white' : 'text-slate-600 hover:bg-slate-200'}`}
-                            >
-                                קשרי משפחה
-                            </button>
-                        )}
+                        <button
+                            onClick={() => setActiveTab('connections')}
+                            className={`px-3 py-1 rounded-full text-sm ${activeTab === 'connections' ? 'bg-amber-600 text-white' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'}`}
+                        >
+                            קשרי משפחה {!isEditing && <span className="text-xs opacity-75">(קשר לאדם קיים)</span>}
+                        </button>
                         <button onClick={onClose}><X className="text-slate-400 hover:text-slate-600" /></button>
                     </div>
                 </div>
@@ -395,6 +393,22 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                     </form>
                 ) : (
                     <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto" dir="rtl">
+                        {!isEditing ? (
+                            <div className="text-center py-12">
+                                <Heart size={48} className="mx-auto text-slate-400 mb-4" />
+                                <h3 className="text-lg font-bold text-slate-700 dark:text-slate-200 mb-2">קשר אדם זה למשפחה</h3>
+                                <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
+                                    כדי לקשר אדם חדש למשפחה, קודם שמור את הפרטים הבסיסיים שלו.
+                                </p>
+                                <button
+                                    onClick={handleSubmit}
+                                    className="bg-amber-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-amber-700"
+                                >
+                                    שמור ועבור לקישור
+                                </button>
+                            </div>
+                        ) : (
+                            <>
                         {/* Parents Section */}
                         <div className="space-y-3">
                             <div className="flex justify-between items-center">
@@ -579,6 +593,8 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                                     </div>
                                 </div>
                             </div>
+                        )}
+                            </>
                         )}
                     </div>
                 )}

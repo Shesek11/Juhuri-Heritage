@@ -230,13 +230,17 @@ export const CommunityGraph: React.FC = () => {
         const simulation = d3.forceSimulation<GraphNode>(nodes)
             .force('link', d3.forceLink<GraphNode, GraphEdge>(edges)
                 .id(d => d.id)
-                .distance(d => d.type === 'spouse' ? 50 : 80)
-                .strength(d => d.type === 'spouse' ? 2 : 0.3)
+                .distance(d => {
+                    if (d.type === 'spouse') return 80;  // בני זוג קרובים
+                    if (d.type === 'parent-child') return 120;  // הורה-ילד רחוק יותר
+                    return 100;
+                })
+                .strength(d => d.type === 'spouse' ? 0.8 : 0.5)
             )
-            .force('charge', d3.forceManyBody().strength(-400))
-            .force('x', d3.forceX(width / 2).strength(0.15))
-            .force('y', d3.forceY<GraphNode>(d => yearToY(d.birthYear ?? ((minYear + maxYear) / 2))).strength(0.9))
-            .force('collision', d3.forceCollide().radius(45));
+            .force('charge', d3.forceManyBody().strength(-600))
+            .force('x', d3.forceX(width / 2).strength(0.1))
+            .force('y', d3.forceY<GraphNode>(d => yearToY(d.birthYear ?? ((minYear + maxYear) / 2))).strength(0.6))
+            .force('collision', d3.forceCollide().radius(50));
 
         // Edge colors and styles - improved visibility
         const getEdgeColor = (d: GraphEdge) => {
@@ -429,7 +433,7 @@ export const CommunityGraph: React.FC = () => {
         return () => {
             simulation.stop();
         };
-    }, [loading, nodes, edges, allMembers]);
+    }, [loading, nodes, edges, allMembers, connectionMode, firstSelectedNode]);
 
     // Connection mode handlers
     const startConnectionMode = () => {
@@ -522,7 +526,19 @@ export const CommunityGraph: React.FC = () => {
                     </span>
                 </div>
 
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3">
+                    {/* Add Person Button */}
+                    <button
+                        onClick={() => {
+                            setSelectedMember(null);
+                            setIsEditModalOpen(true);
+                        }}
+                        className="flex items-center gap-2 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 rounded-lg text-white text-sm font-medium transition-colors"
+                    >
+                        <UserPlus size={16} />
+                        <span>הוסף אדם</span>
+                    </button>
+
                     {/* Connection Mode Button */}
                     {connectionMode === 'none' ? (
                         <button
@@ -542,6 +558,8 @@ export const CommunityGraph: React.FC = () => {
                         </button>
                     )}
 
+                    <div className="w-px h-6 bg-slate-600" />
+
                     {/* Legend */}
                     <div className="flex items-center gap-4 text-sm">
                         <div className="flex items-center gap-1">
@@ -553,19 +571,33 @@ export const CommunityGraph: React.FC = () => {
                             <span className="text-slate-300">אישה</span>
                         </div>
                         <div className="flex items-center gap-1">
-                            <div className="w-6 h-0.5 bg-sky-400" />
+                            <svg width="24" height="12" className="inline">
+                                <line x1="0" y1="6" x2="24" y2="6" stroke="#38bdf8" strokeWidth="2.5" />
+                            </svg>
                             <span className="text-slate-300">הורה-ילד</span>
                         </div>
                         <div className="flex items-center gap-1">
-                            <div className="w-6 h-0.5 bg-pink-400" />
+                            <svg width="24" height="12" className="inline">
+                                <line x1="0" y1="6" x2="24" y2="6" stroke="#f472b6" strokeWidth="3" />
+                            </svg>
                             <span className="text-slate-300">נשואים</span>
                         </div>
                         <div className="flex items-center gap-1">
-                            <div className="w-6 h-0.5 bg-red-400" style={{ strokeDasharray: '5,5' }} />
+                            <svg width="24" height="12" className="inline">
+                                <line x1="0" y1="6" x2="24" y2="6" stroke="#f87171" strokeWidth="3" strokeDasharray="5,5" />
+                            </svg>
                             <span className="text-slate-300">גרושים</span>
                         </div>
                         <div className="flex items-center gap-1">
-                            <div className="w-6 h-0.5 bg-purple-400" style={{ strokeDasharray: '8,4' }} />
+                            <svg width="24" height="12" className="inline">
+                                <line x1="0" y1="6" x2="24" y2="6" stroke="#94a3b8" strokeWidth="2.5" strokeDasharray="2,4" />
+                            </svg>
+                            <span className="text-slate-300">אלמן/ה</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                            <svg width="24" height="12" className="inline">
+                                <line x1="0" y1="6" x2="24" y2="6" stroke="#a78bfa" strokeWidth="2" strokeDasharray="8,4" />
+                            </svg>
                             <span className="text-slate-300">אחים</span>
                         </div>
                     </div>
@@ -666,16 +698,6 @@ export const CommunityGraph: React.FC = () => {
                         title="התאם לתצוגה"
                     >
                         <Maximize2 size={20} />
-                    </button>
-                    <button
-                        onClick={() => {
-                            setSelectedMember(null);
-                            setIsEditModalOpen(true);
-                        }}
-                        className="p-2 bg-amber-600 hover:bg-amber-700 rounded-lg text-white transition-colors mt-2 shadow-lg"
-                        title="הוסף בן משפחה חדש"
-                    >
-                        <UserPlus size={20} />
                     </button>
                 </div>
             </div>
