@@ -51,8 +51,17 @@ export const TraditionalFamilyTree: React.FC = () => {
     }, [loadData]);
 
     // Build hierarchical tree from flat data
-    const buildHierarchy = useCallback((): FamilyMember | null => {
-        if (members.length === 0) return null;
+    const buildHierarchy = useCallback((): FamilyMember => {
+        if (members.length === 0) {
+            // Return dummy root
+            return {
+                id: -1,
+                first_name: 'כל',
+                last_name: 'המשפחות',
+                gender: 'unknown' as any,
+                is_alive: false,
+            };
+        }
 
         // Find root nodes (people who are not children in any parent-child relation)
         const childIds = new Set(parentChildRelations.map(rel => rel.child_id));
@@ -60,19 +69,28 @@ export const TraditionalFamilyTree: React.FC = () => {
 
         console.log('[TraditionalFamilyTree] Found', roots.length, 'root nodes:', roots.map(r => `${r.first_name} ${r.last_name}`));
 
-        if (roots.length === 0) {
-            // If no roots, just take first person
-            console.warn('[TraditionalFamilyTree] No root nodes found, using first member');
-            return members[0];
-        }
+        // Create virtual root that connects all real roots
+        const virtualRoot: FamilyMember = {
+            id: -1,
+            first_name: 'כל',
+            last_name: 'המשפחות',
+            gender: 'unknown' as any,
+            is_alive: false,
+        };
 
-        // For now, use the first root
-        // TODO: Support multiple root families
-        return roots[0];
+        return virtualRoot;
     }, [members, parentChildRelations]);
 
     // Get children of a person using parent-child relations
     const getChildren = useCallback((parentId: number): FamilyMember[] => {
+        // Special case: virtual root (-1) returns all real roots
+        if (parentId === -1) {
+            const childIds = new Set(parentChildRelations.map(rel => rel.child_id));
+            const roots = members.filter(m => !childIds.has(m.id));
+            console.log(`[TraditionalFamilyTree] Virtual root has ${roots.length} root families`);
+            return roots;
+        }
+
         // Find all child IDs for this parent
         const childIds = parentChildRelations
             .filter(rel => rel.parent_id === parentId)
@@ -116,12 +134,7 @@ export const TraditionalFamilyTree: React.FC = () => {
 
         // Build hierarchy
         const root = buildHierarchy();
-        if (!root) {
-            console.error('[TraditionalFamilyTree] No root found');
-            return;
-        }
-
-        console.log('[TraditionalFamilyTree] Root person:', root.first_name, root.last_name, 'ID:', root.id);
+        console.log('[TraditionalFamilyTree] Root:', root.first_name, root.last_name, 'ID:', root.id);
 
         // Create D3 hierarchy
         const hierarchy = d3.hierarchy(root, (d: FamilyMember) => {
@@ -139,9 +152,15 @@ export const TraditionalFamilyTree: React.FC = () => {
         // Apply layout
         const treeData = treeLayout(hierarchy);
 
+        // Filter out virtual root from display
+        const nodesToDisplay = treeData.descendants().filter(d => d.data.id !== -1);
+        const linksToDisplay = treeData.links().filter(l => l.source.data.id !== -1 && l.target.data.id !== -1);
+
+        console.log('[TraditionalFamilyTree] Displaying', nodesToDisplay.length, 'nodes (filtered virtual root)');
+
         // Draw links (lines between nodes)
         g.selectAll('.link')
-            .data(treeData.links())
+            .data(linksToDisplay)
             .enter()
             .append('path')
             .attr('class', 'link')
@@ -155,7 +174,7 @@ export const TraditionalFamilyTree: React.FC = () => {
 
         // Draw nodes
         const node = g.selectAll('.node')
-            .data(treeData.descendants())
+            .data(nodesToDisplay)
             .enter()
             .append('g')
             .attr('class', 'node')
