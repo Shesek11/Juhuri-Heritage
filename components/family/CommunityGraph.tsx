@@ -8,7 +8,7 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import * as d3 from 'd3';
 import { familyService, FamilyMember } from '../../services/familyService';
 import { EditMemberModal } from './EditMemberModal';
-import { Loader2, ZoomIn, ZoomOut, Maximize2, UserPlus, Link2, X, Search, Network, GitBranch, Circle } from 'lucide-react';
+import { Loader2, ZoomIn, ZoomOut, Maximize2, UserPlus, Link2, X, Search, Network, GitBranch, Circle, Info, Eye } from 'lucide-react';
 
 interface GraphNode extends d3.SimulationNodeDatum {
     id: number;
@@ -39,6 +39,7 @@ export const CommunityGraph: React.FC = () => {
     const [edges, setEdges] = useState<GraphEdge[]>([]);
     const [allMembers, setAllMembers] = useState<FamilyMember[]>([]);
     const [layoutMode, setLayoutMode] = useState<LayoutMode>('force');
+    const [showLegend, setShowLegend] = useState(false);
 
     // Edit modal state
     const [selectedMember, setSelectedMember] = useState<FamilyMember | null>(null);
@@ -592,9 +593,9 @@ export const CommunityGraph: React.FC = () => {
                 </div>
 
                 <div className="flex items-center gap-3">
-                    {/* Search Bar */}
-                    <div className="relative">
-                        <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                    {/* Search Bar - with fixed z-index */}
+                    <div className="relative z-[9999]">
+                        <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
                         <input
                             type="text"
                             placeholder="חפש אדם..."
@@ -611,10 +612,10 @@ export const CommunityGraph: React.FC = () => {
                                     setSearchResults([]);
                                 }
                             }}
-                            className="pr-9 pl-3 py-1.5 bg-slate-700 border border-slate-600 rounded-lg text-white text-sm placeholder-slate-400 focus:outline-none focus:border-amber-500 w-48"
+                            className="pr-9 pl-3 py-1.5 bg-slate-700 border border-slate-600 rounded-lg text-white text-sm placeholder-slate-400 focus:outline-none focus:border-amber-500 w-48 relative z-10"
                         />
                         {searchResults.length > 0 && (
-                            <div className="absolute top-full mt-1 w-64 bg-slate-800 border border-slate-600 rounded-lg shadow-xl max-h-64 overflow-y-auto z-[200]">
+                            <div className="absolute top-full mt-1 right-0 w-64 bg-slate-800 border border-slate-600 rounded-lg shadow-2xl max-h-64 overflow-y-auto">
                                 {searchResults.map(result => (
                                     <button
                                         key={result.id}
@@ -627,7 +628,7 @@ export const CommunityGraph: React.FC = () => {
                                                 setSearchResults([]);
                                             }
                                         }}
-                                        className="w-full text-right px-4 py-2 hover:bg-slate-700 transition-colors text-sm"
+                                        className="w-full text-right px-4 py-2 hover:bg-slate-700 transition-colors text-sm border-b border-slate-700 last:border-b-0"
                                     >
                                         <div className="font-medium text-white">{result.name}</div>
                                         {result.birthYear && (
@@ -674,88 +675,117 @@ export const CommunityGraph: React.FC = () => {
 
                     <div className="w-px h-6 bg-slate-600" />
 
-                    {/* Layout Mode Selector */}
-                    <div className="flex items-center gap-2 text-sm">
-                        <button
-                            onClick={() => setLayoutMode('force')}
-                            className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors ${
-                                layoutMode === 'force'
-                                    ? 'bg-amber-600 text-white'
-                                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                            }`}
-                            title="תצוגה מבוססת כוח עם ציר זמן"
-                        >
-                            <Network size={14} />
-                            <span>Force</span>
-                        </button>
-                        <button
-                            onClick={() => setLayoutMode('hierarchical')}
-                            className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors ${
-                                layoutMode === 'hierarchical'
-                                    ? 'bg-amber-600 text-white'
-                                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                            }`}
-                            title="עץ היררכי - דורות מלמעלה למטה"
-                        >
-                            <GitBranch size={14} />
-                            <span>Tree</span>
-                        </button>
-                        <button
-                            onClick={() => setLayoutMode('radial')}
-                            className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors ${
-                                layoutMode === 'radial'
-                                    ? 'bg-amber-600 text-white'
-                                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                            }`}
-                            title="עץ רדיאלי - דורות ממרכז החוצה"
-                        >
-                            <Circle size={14} />
-                            <span>Radial</span>
-                        </button>
+                    {/* View Mode Selector - Grouped with label */}
+                    <div className="flex items-center gap-2 bg-slate-700/50 px-3 py-1 rounded-lg">
+                        <Eye size={14} className="text-slate-400" />
+                        <span className="text-xs text-slate-400">תצוגה:</span>
+                        <div className="flex gap-1">
+                            <button
+                                onClick={() => setLayoutMode('force')}
+                                className={`px-2 py-1 rounded text-xs transition-colors ${
+                                    layoutMode === 'force'
+                                        ? 'bg-amber-600 text-white'
+                                        : 'text-slate-300 hover:bg-slate-600'
+                                }`}
+                                title="תצוגה מבוססת כוח עם ציר זמן"
+                            >
+                                <Network size={12} className="inline" />
+                            </button>
+                            <button
+                                onClick={() => setLayoutMode('hierarchical')}
+                                className={`px-2 py-1 rounded text-xs transition-colors ${
+                                    layoutMode === 'hierarchical'
+                                        ? 'bg-amber-600 text-white'
+                                        : 'text-slate-300 hover:bg-slate-600'
+                                }`}
+                                title="עץ היררכי - דורות מלמעלה למטה"
+                            >
+                                <GitBranch size={12} className="inline" />
+                            </button>
+                            <button
+                                onClick={() => setLayoutMode('radial')}
+                                className={`px-2 py-1 rounded text-xs transition-colors ${
+                                    layoutMode === 'radial'
+                                        ? 'bg-amber-600 text-white'
+                                        : 'text-slate-300 hover:bg-slate-600'
+                                }`}
+                                title="עץ רדיאלי - דורות ממרכז החוצה"
+                            >
+                                <Circle size={12} className="inline" />
+                            </button>
+                        </div>
                     </div>
 
                     <div className="w-px h-6 bg-slate-600" />
 
-                    {/* Legend */}
-                    <div className="flex items-center gap-4 text-sm">
-                        <div className="flex items-center gap-1">
-                            <div className="w-3 h-3 rounded-full bg-blue-500" />
-                            <span className="text-slate-300">גבר</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                            <div className="w-3 h-3 rounded-full bg-pink-500" />
-                            <span className="text-slate-300">אישה</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                            <svg width="24" height="12" className="inline">
-                                <line x1="0" y1="6" x2="24" y2="6" stroke="#38bdf8" strokeWidth="2.5" />
-                            </svg>
-                            <span className="text-slate-300">הורה-ילד</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                            <svg width="24" height="12" className="inline">
-                                <line x1="0" y1="6" x2="24" y2="6" stroke="#f472b6" strokeWidth="3" />
-                            </svg>
-                            <span className="text-slate-300">נשואים</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                            <svg width="24" height="12" className="inline">
-                                <line x1="0" y1="6" x2="24" y2="6" stroke="#f87171" strokeWidth="3" strokeDasharray="5,5" />
-                            </svg>
-                            <span className="text-slate-300">גרושים</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                            <svg width="24" height="12" className="inline">
-                                <line x1="0" y1="6" x2="24" y2="6" stroke="#94a3b8" strokeWidth="2.5" strokeDasharray="2,4" />
-                            </svg>
-                            <span className="text-slate-300">אלמן/ה</span>
-                        </div>
-                        <div className="flex items-center gap-1">
-                            <svg width="24" height="12" className="inline">
-                                <line x1="0" y1="6" x2="24" y2="6" stroke="#a78bfa" strokeWidth="2" strokeDasharray="8,4" />
-                            </svg>
-                            <span className="text-slate-300">אחים</span>
-                        </div>
+                    {/* Legend - as popup button */}
+                    <div className="relative">
+                        <button
+                            onClick={() => setShowLegend(!showLegend)}
+                            className="flex items-center gap-2 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-slate-300 text-sm transition-colors"
+                        >
+                            <Info size={14} />
+                            <span>מקרא</span>
+                        </button>
+
+                        {showLegend && (
+                            <>
+                                {/* Backdrop to close */}
+                                <div
+                                    className="fixed inset-0 z-[9998]"
+                                    onClick={() => setShowLegend(false)}
+                                />
+
+                                {/* Legend popup */}
+                                <div className="absolute left-0 top-full mt-2 bg-slate-800 border border-slate-600 rounded-lg shadow-2xl p-4 z-[9999] w-80">
+                                    <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
+                                        <Info size={14} />
+                                        מקרא סימנים
+                                    </h3>
+                                    <div className="space-y-2 text-sm">
+                                        <div className="flex items-center gap-2 pb-2 border-b border-slate-700">
+                                            <div className="w-4 h-4 rounded-full bg-blue-500 border-2 border-blue-600" />
+                                            <span className="text-slate-300">גבר</span>
+                                            <div className="w-4 h-4 rounded-full bg-pink-500 border-2 border-pink-600 mr-auto" />
+                                            <span className="text-slate-300">אישה</span>
+                                        </div>
+
+                                        <div className="space-y-1.5">
+                                            <div className="flex items-center gap-2">
+                                                <svg width="32" height="12" className="flex-shrink-0">
+                                                    <line x1="0" y1="6" x2="32" y2="6" stroke="#38bdf8" strokeWidth="2.5" />
+                                                </svg>
+                                                <span className="text-slate-300">הורה-ילד</span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <svg width="32" height="12" className="flex-shrink-0">
+                                                    <line x1="0" y1="6" x2="32" y2="6" stroke="#f472b6" strokeWidth="3" />
+                                                </svg>
+                                                <span className="text-slate-300">נשואים</span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <svg width="32" height="12" className="flex-shrink-0">
+                                                    <line x1="0" y1="6" x2="32" y2="6" stroke="#f87171" strokeWidth="3" strokeDasharray="5,5" />
+                                                </svg>
+                                                <span className="text-slate-300">גרושים</span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <svg width="32" height="12" className="flex-shrink-0">
+                                                    <line x1="0" y1="6" x2="32" y2="6" stroke="#94a3b8" strokeWidth="2.5" strokeDasharray="2,4" />
+                                                </svg>
+                                                <span className="text-slate-300">אלמן/ה</span>
+                                            </div>
+                                            <div className="flex items-center gap-2">
+                                                <svg width="32" height="12" className="flex-shrink-0">
+                                                    <line x1="0" y1="6" x2="32" y2="6" stroke="#a78bfa" strokeWidth="2" strokeDasharray="8,4" />
+                                                </svg>
+                                                <span className="text-slate-300">אחים</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </>
+                        )}
                     </div>
                 </div>
             </div>
