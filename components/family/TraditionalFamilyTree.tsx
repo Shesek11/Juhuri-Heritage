@@ -444,78 +444,94 @@ export const TraditionalFamilyTree: React.FC = () => {
             .attr('stroke-width', 3)
             .attr('stroke-dasharray', '5,5');
 
-        // Draw parent-child links with cleaner routing
-        // Group children by their parent pairs
-        const childrenByParentPair = new Map<string, { children: PositionedMember[], parents: PositionedMember[] }>();
+        // Draw parent-child links - simple direct lines
+        // Group children by their parent pairs for cleaner organization
+        const processedChildren = new Set<number>();
 
         parentChildRelations.forEach(rel => {
             const parent = positioned.find(m => m.id === rel.parent_id);
             const child = positioned.find(m => m.id === rel.child_id);
 
-            if (parent && child) {
-                // Get all parents of this child
-                const allParents = parentChildRelations
-                    .filter(r => r.child_id === child.id)
-                    .map(r => positioned.find(m => m.id === r.parent_id))
-                    .filter(p => p !== undefined) as PositionedMember[];
+            if (!parent || !child) return;
 
-                const parentKey = allParents.map(p => p.id).sort().join('-');
+            // Skip if we already drew lines for this child
+            if (processedChildren.has(child.id)) return;
 
-                if (!childrenByParentPair.has(parentKey)) {
-                    childrenByParentPair.set(parentKey, { children: [], parents: allParents });
-                }
+            // Get all parents of this child
+            const childParents = parentChildRelations
+                .filter(r => r.child_id === child.id)
+                .map(r => positioned.find(m => m.id === r.parent_id))
+                .filter(p => p !== undefined) as PositionedMember[];
 
-                const group = childrenByParentPair.get(parentKey)!;
-                if (!group.children.find(c => c.id === child.id)) {
-                    group.children.push(child);
-                }
-            }
-        });
+            // Get all siblings (same parents)
+            const parentIds = childParents.map(p => p.id).sort();
+            const siblings = positioned.filter(person => {
+                const personParents = parentChildRelations
+                    .filter(r => r.child_id === person.id)
+                    .map(r => r.parent_id)
+                    .sort();
 
-        // Draw links for each parent-children group
-        childrenByParentPair.forEach((group) => {
-            if (group.children.length === 0 || group.parents.length === 0) return;
+                return personParents.length > 0 &&
+                    personParents.length === parentIds.length &&
+                    personParents.every((id, i) => id === parentIds[i]);
+            });
 
-            // Calculate midpoint between parents
-            const parentX = group.parents.reduce((sum, p) => sum + p.x, 0) / group.parents.length;
-            const parentY = group.parents[0].y;
+            // Calculate parent midpoint
+            const parentX = childParents.reduce((sum, p) => sum + p.x, 0) / childParents.length;
+            const parentY = childParents[0].y;
 
-            // Calculate children span
-            const childrenXs = group.children.map(c => c.x);
-            const minChildX = Math.min(...childrenXs);
-            const maxChildX = Math.max(...childrenXs);
-            const childY = group.children[0].y;
+            // Sort siblings by X position
+            siblings.sort((a, b) => a.x - b.x);
 
-            // Draw vertical line from parent down
+            const minChildX = siblings[0].x;
+            const maxChildX = siblings[siblings.length - 1].x;
+            const midChildX = (minChildX + maxChildX) / 2;
+
+            // Draw vertical line from parents down to horizontal connector
+            const connectorY = parentY + 90;
             g.append('line')
                 .attr('class', 'parent-child-link')
                 .attr('x1', parentX)
                 .attr('y1', parentY + 40)
                 .attr('x2', parentX)
-                .attr('y2', childY - 100)
+                .attr('y2', connectorY)
                 .attr('stroke', '#64748b')
                 .attr('stroke-width', 2);
 
-            // Draw horizontal line connecting all children
-            if (group.children.length > 1) {
+            // If parent X is not aligned with middle of children, draw horizontal line
+            if (Math.abs(parentX - midChildX) > 10) {
                 g.append('line')
                     .attr('class', 'parent-child-link')
-                    .attr('x1', minChildX)
-                    .attr('y1', childY - 100)
-                    .attr('x2', maxChildX)
-                    .attr('y2', childY - 100)
+                    .attr('x1', parentX)
+                    .attr('y1', connectorY)
+                    .attr('x2', midChildX)
+                    .attr('y2', connectorY)
                     .attr('stroke', '#64748b')
                     .attr('stroke-width', 2);
             }
 
-            // Draw vertical lines to each child
-            group.children.forEach(child => {
+            // Draw horizontal line connecting siblings if more than one
+            if (siblings.length > 1) {
                 g.append('line')
                     .attr('class', 'parent-child-link')
-                    .attr('x1', child.x)
-                    .attr('y1', childY - 100)
-                    .attr('x2', child.x)
-                    .attr('y2', childY - 40)
+                    .attr('x1', minChildX)
+                    .attr('y1', connectorY)
+                    .attr('x2', maxChildX)
+                    .attr('y2', connectorY)
+                    .attr('stroke', '#64748b')
+                    .attr('stroke-width', 2);
+            }
+
+            // Draw vertical lines down to each child
+            siblings.forEach(sibling => {
+                processedChildren.add(sibling.id);
+
+                g.append('line')
+                    .attr('class', 'parent-child-link')
+                    .attr('x1', sibling.x)
+                    .attr('y1', connectorY)
+                    .attr('x2', sibling.x)
+                    .attr('y2', sibling.y - 40)
                     .attr('stroke', '#64748b')
                     .attr('stroke-width', 2);
             });
