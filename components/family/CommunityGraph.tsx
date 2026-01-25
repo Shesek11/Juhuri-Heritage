@@ -186,6 +186,13 @@ export const CommunityGraph: React.FC = () => {
         // LAYOUT-SPECIFIC POSITIONING
         if (layoutMode === 'force') {
             // FORCE LAYOUT - Timeline-based positioning
+
+            // CRITICAL FIX: Clear all fixed positions from previous layouts
+            nodes.forEach(n => {
+                n.fx = null;
+                n.fy = null;
+            });
+
             const years = nodes.map(n => n.birthYear).filter(y => y) as number[];
             const minYear = years.length > 0 ? Math.min(...years) : 1940;
             const maxYear = years.length > 0 ? Math.max(...years) : 2025;
@@ -618,28 +625,34 @@ export const CommunityGraph: React.FC = () => {
             );
 
         // Highlight the node with pulsing animation
+        // CRITICAL FIX: Select from within the graph-container group
         const svg = d3.select(svgRef.current);
-        const nodeGroup = svg.select(`g[data-id="${nodeId}"]`);
+        const graphContainer = svg.select('g.graph-container');
+        const nodeGroup = graphContainer.select(`g.node[data-id="${nodeId}"]`);
 
         if (!nodeGroup.empty()) {
             // Add a temporary highlight circle
             const circle = nodeGroup.select('circle');
             const radius = 25;
 
-            // Create pulsing ring effect
-            const ring = nodeGroup.insert('circle', 'circle')
-                .attr('r', radius)
-                .attr('fill', 'none')
-                .attr('stroke', '#f59e0b')
-                .attr('stroke-width', 4)
-                .attr('opacity', 1);
+            // Create multiple pulsing rings for stronger effect
+            for (let i = 0; i < 3; i++) {
+                setTimeout(() => {
+                    const ring = nodeGroup.insert('circle', 'circle')
+                        .attr('r', radius)
+                        .attr('fill', 'none')
+                        .attr('stroke', '#f59e0b')
+                        .attr('stroke-width', 4)
+                        .attr('opacity', 1);
 
-            // Pulse animation
-            ring.transition()
-                .duration(600)
-                .attr('r', radius + 15)
-                .attr('opacity', 0)
-                .remove();
+                    // Pulse animation
+                    ring.transition()
+                        .duration(800)
+                        .attr('r', radius + 20)
+                        .attr('opacity', 0)
+                        .remove();
+                }, i * 250);
+            }
 
             // Flash the node itself
             circle
