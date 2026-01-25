@@ -14,10 +14,16 @@ interface TreeNode extends d3.HierarchyNode<FamilyMember> {
     y?: number;
 }
 
+interface ParentChildRelation {
+    parent_id: number;
+    child_id: number;
+}
+
 export const TraditionalFamilyTree: React.FC = () => {
     const svgRef = useRef<SVGSVGElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const [members, setMembers] = useState<FamilyMember[]>([]);
+    const [parentChildRelations, setParentChildRelations] = useState<ParentChildRelation[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedMember, setSelectedMember] = useState<FamilyMember | null>(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -31,7 +37,8 @@ export const TraditionalFamilyTree: React.FC = () => {
             setLoading(true);
             const data = await familyService.getTreeData();
             setMembers(data.members || []);
-            console.log('[TraditionalFamilyTree] Loaded:', data.members?.length, 'members');
+            setParentChildRelations(data.parentChild || []);
+            console.log('[TraditionalFamilyTree] Loaded:', data.members?.length, 'members,', data.parentChild?.length, 'parent-child relations');
         } catch (error) {
             console.error('[TraditionalFamilyTree] Error loading data:', error);
         } finally {
@@ -47,23 +54,38 @@ export const TraditionalFamilyTree: React.FC = () => {
     const buildHierarchy = useCallback((): FamilyMember | null => {
         if (members.length === 0) return null;
 
-        // Find root nodes (people without parents)
-        const roots = members.filter(m => !m.father_id && !m.mother_id);
+        // Find root nodes (people who are not children in any parent-child relation)
+        const childIds = new Set(parentChildRelations.map(rel => rel.child_id));
+        const roots = members.filter(m => !childIds.has(m.id));
+
+        console.log('[TraditionalFamilyTree] Found', roots.length, 'root nodes:', roots.map(r => `${r.first_name} ${r.last_name}`));
 
         if (roots.length === 0) {
             // If no roots, just take first person
+            console.warn('[TraditionalFamilyTree] No root nodes found, using first member');
             return members[0];
         }
 
         // For now, use the first root
         // TODO: Support multiple root families
         return roots[0];
-    }, [members]);
+    }, [members, parentChildRelations]);
 
-    // Get children of a person
+    // Get children of a person using parent-child relations
     const getChildren = useCallback((parentId: number): FamilyMember[] => {
-        return members.filter(m => m.father_id === parentId || m.mother_id === parentId);
-    }, [members]);
+        // Find all child IDs for this parent
+        const childIds = parentChildRelations
+            .filter(rel => rel.parent_id === parentId)
+            .map(rel => rel.child_id);
+
+        // Get the actual member objects
+        const children = members.filter(m => childIds.includes(m.id));
+
+        if (children.length > 0) {
+            console.log(`[TraditionalFamilyTree] Parent ${parentId} has ${children.length} children:`, children.map(c => c.first_name));
+        }
+        return children;
+    }, [members, parentChildRelations]);
 
     // Initialize D3 tree
     useEffect(() => {
@@ -99,10 +121,15 @@ export const TraditionalFamilyTree: React.FC = () => {
             return;
         }
 
+        console.log('[TraditionalFamilyTree] Root person:', root.first_name, root.last_name, 'ID:', root.id);
+
         // Create D3 hierarchy
         const hierarchy = d3.hierarchy(root, (d: FamilyMember) => {
-            return getChildren(d.id);
+            const children = getChildren(d.id);
+            return children.length > 0 ? children : null;
         });
+
+        console.log('[TraditionalFamilyTree] Hierarchy depth:', hierarchy.height, 'Total nodes:', hierarchy.descendants().length);
 
         // Create tree layout
         const treeLayout = d3.tree<FamilyMember>()
