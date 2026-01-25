@@ -8,7 +8,7 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import * as d3 from 'd3';
 import { familyService, FamilyMember } from '../../services/familyService';
 import { EditMemberModal } from './EditMemberModal';
-import { Loader2, ZoomIn, ZoomOut, Maximize2, UserPlus, Link2, X, Search, Network, GitBranch, Circle, Info, Eye } from 'lucide-react';
+import { Loader2, ZoomIn, ZoomOut, Maximize2, UserPlus, Link2, X, Search, Network, GitBranch, Circle, Info, Eye, Palmtree } from 'lucide-react';
 
 interface GraphNode extends d3.SimulationNodeDatum {
     id: number;
@@ -31,7 +31,7 @@ interface GraphEdge {
 
 type ConnectionMode = 'none' | 'connecting' | 'selecting-type';
 type RelationshipType = 'parent-child' | 'spouse' | 'sibling';
-type LayoutMode = 'force' | 'hierarchical' | 'radial';
+type LayoutMode = 'force' | 'hierarchical' | 'radial' | 'islands';
 
 export const CommunityGraph: React.FC = () => {
     const svgRef = useRef<SVGSVGElement>(null);
@@ -348,6 +348,125 @@ export const CommunityGraph: React.FC = () => {
                     node.fy = node.y;
                 });
             });
+        } else if (layoutMode === 'islands') {
+            // FAMILY ISLANDS LAYOUT - Each family is a separate "island"
+
+            // 1. Group nodes into family clusters using Union-Find
+            const parent = new Map<number, number>();
+            nodes.forEach(n => parent.set(n.id, n.id));
+
+            const find = (id: number): number => {
+                if (parent.get(id) !== id) {
+                    parent.set(id, find(parent.get(id)!));
+                }
+                return parent.get(id)!;
+            };
+
+            const union = (id1: number, id2: number) => {
+                const root1 = find(id1);
+                const root2 = find(id2);
+                if (root1 !== root2) {
+                    parent.set(root2, root1);
+                }
+            };
+
+            // Connect through relationships
+            edges.forEach(e => {
+                const sourceId = typeof e.source === 'number' ? e.source : e.source.id;
+                const targetId = typeof e.target === 'number' ? e.target : e.target.id;
+                union(sourceId, targetId);
+            });
+
+            // Group nodes by family
+            const familyGroups = new Map<number, GraphNode[]>();
+            nodes.forEach(n => {
+                const familyId = find(n.id);
+                if (!familyGroups.has(familyId)) familyGroups.set(familyId, []);
+                familyGroups.get(familyId)!.push(n);
+            });
+
+            console.log('[Islands] Found', familyGroups.size, 'family islands');
+
+            // 2. Position islands in a grid pattern
+            const islandArray = Array.from(familyGroups.values());
+            const islandsPerRow = Math.ceil(Math.sqrt(islandArray.length));
+            const islandSpacing = 400; // Space between islands
+
+            // 3. For each island, create internal layout
+            islandArray.forEach((familyNodes, islandIdx) => {
+                // Calculate island position in grid
+                const row = Math.floor(islandIdx / islandsPerRow);
+                const col = islandIdx % islandsPerRow;
+                const islandCenterX = 200 + col * islandSpacing;
+                const islandCenterY = 200 + row * islandSpacing;
+
+                // Internal layout: circular arrangement for small families, force for larger
+                if (familyNodes.length <= 8) {
+                    // Small family - circular layout
+                    const radius = 80;
+                    const angleStep = (2 * Math.PI) / familyNodes.length;
+                    familyNodes.forEach((node, idx) => {
+                        const angle = idx * angleStep - Math.PI / 2; // Start from top
+                        node.x = islandCenterX + radius * Math.cos(angle);
+                        node.y = islandCenterY + radius * Math.sin(angle);
+                        node.fx = node.x;
+                        node.fy = node.y;
+                    });
+                } else {
+                    // Larger family - compact grid within island
+                    const nodesPerRow = Math.ceil(Math.sqrt(familyNodes.length));
+                    const spacing = 80;
+                    familyNodes.forEach((node, idx) => {
+                        const nodeRow = Math.floor(idx / nodesPerRow);
+                        const nodeCol = idx % nodesPerRow;
+                        const offsetX = -(nodesPerRow - 1) * spacing / 2;
+                        const offsetY = -(Math.ceil(familyNodes.length / nodesPerRow) - 1) * spacing / 2;
+                        node.x = islandCenterX + offsetX + nodeCol * spacing;
+                        node.y = islandCenterY + offsetY + nodeRow * spacing;
+                        node.fx = node.x;
+                        node.fy = node.y;
+                    });
+                }
+
+                // Store island info for rendering backgrounds
+                (familyNodes[0] as any).islandId = islandIdx;
+                (familyNodes[0] as any).islandCenter = { x: islandCenterX, y: islandCenterY };
+                (familyNodes[0] as any).islandSize = familyNodes.length;
+            });
+
+            // 4. Draw island backgrounds
+            const islandBackgrounds = g.insert('g', '.links').attr('class', 'island-backgrounds');
+            islandArray.forEach((familyNodes, islandIdx) => {
+                const xs = familyNodes.map(n => n.x!);
+                const ys = familyNodes.map(n => n.y!);
+                const minX = Math.min(...xs) - 60;
+                const maxX = Math.max(...xs) + 60;
+                const minY = Math.min(...ys) - 60;
+                const maxY = Math.max(...ys) + 60;
+
+                // Colorful island background
+                const colors = [
+                    'rgba(59, 130, 246, 0.08)',   // Blue
+                    'rgba(236, 72, 153, 0.08)',   // Pink
+                    'rgba(168, 85, 247, 0.08)',   // Purple
+                    'rgba(245, 158, 11, 0.08)',   // Amber
+                    'rgba(16, 185, 129, 0.08)',   // Emerald
+                    'rgba(239, 68, 68, 0.08)',    // Red
+                    'rgba(20, 184, 166, 0.08)',   // Teal
+                    'rgba(251, 146, 60, 0.08)',   // Orange
+                ];
+
+                islandBackgrounds.append('rect')
+                    .attr('x', minX)
+                    .attr('y', minY)
+                    .attr('width', maxX - minX)
+                    .attr('height', maxY - minY)
+                    .attr('rx', 20)
+                    .attr('fill', colors[islandIdx % colors.length])
+                    .attr('stroke', colors[islandIdx % colors.length].replace('0.08', '0.3'))
+                    .attr('stroke-width', 2)
+                    .attr('stroke-dasharray', '5,5');
+            });
         }
 
         // Edge colors and styles - vibrant and clear
@@ -380,8 +499,8 @@ export const CommunityGraph: React.FC = () => {
         };
 
         // Filter edges based on layout mode
-        const filteredEdges = layoutMode === 'force'
-            ? edges // Show all relationships in force layout
+        const filteredEdges = (layoutMode === 'force' || layoutMode === 'islands')
+            ? edges // Show all relationships in force and islands layout
             : edges.filter(e => e.type === 'parent-child'); // Only parent-child in tree/radial
 
         // Draw edges as paths with glow effect for better visibility
@@ -537,6 +656,26 @@ export const CommunityGraph: React.FC = () => {
                         const cx2 = sx + dx * (1 - curvature);
                         const cy2 = sy + dy * (1 - curvature);
                         return `M ${sx} ${sy} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${tx} ${ty}`;
+                    }
+                } else if (layoutMode === 'islands') {
+                    // Clean, gentle curves for islands - family members are close together
+                    const dx = tx - sx;
+                    const dy = ty - sy;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    if (d.type === 'spouse') {
+                        // Very subtle curve for spouses in islands
+                        const curvature = 0.2;
+                        const cx1 = sx + dx * curvature;
+                        const cy1 = sy - distance * 0.1;
+                        const cx2 = sx + dx * (1 - curvature);
+                        const cy2 = ty - distance * 0.1;
+                        return `M ${sx} ${sy} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${tx} ${ty}`;
+                    } else {
+                        // Gentle quadratic curve for other relationships
+                        const cx = (sx + tx) / 2;
+                        const cy = (sy + ty) / 2 - distance * 0.15;
+                        return `M ${sx} ${sy} Q ${cx} ${cy}, ${tx} ${ty}`;
                     }
                 } else {
                     // Straight lines for hierarchical/radial layouts
@@ -913,6 +1052,17 @@ export const CommunityGraph: React.FC = () => {
                                 title="עץ רדיאלי - דורות ממרכז החוצה"
                             >
                                 <Circle size={12} className="inline" />
+                            </button>
+                            <button
+                                onClick={() => setLayoutMode('islands')}
+                                className={`px-2 py-1 rounded text-xs transition-colors ${
+                                    layoutMode === 'islands'
+                                        ? 'bg-amber-600 text-white'
+                                        : 'text-slate-300 hover:bg-slate-600'
+                                }`}
+                                title="איים משפחתיים - כל משפחה נפרדת 🏝️"
+                            >
+                                <Palmtree size={12} className="inline" />
                             </button>
                         </div>
                     </div>
