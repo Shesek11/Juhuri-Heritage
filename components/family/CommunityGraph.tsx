@@ -366,9 +366,9 @@ export const CommunityGraph: React.FC = () => {
                 .sort((a, b) => b[1].length - a[1].length);
 
             // 3. Calculate tree layout parameters
-            const treeSpacing = 400; // Horizontal space between family trees
-            const generationHeight = 120; // Vertical space between generations
-            const personSpacing = 100; // Horizontal space between people in same generation
+            const treeSpacing = 500; // Horizontal space between family trees
+            const generationHeight = 140; // Vertical space between generations
+            const personSpacing = 150; // Horizontal space between people in same generation (increased to prevent text overlap)
             const treesPerRow = Math.ceil(Math.sqrt(familyArray.length));
 
             // 4. Position each family as a traditional hierarchical tree
@@ -553,14 +553,31 @@ export const CommunityGraph: React.FC = () => {
                 return parts.map(p => p[0] || '').join('').substring(0, 2);
             });
 
-        // Node labels (name below)
+        // Node labels (name below) - with background for better readability
+        node.append('rect')
+            .attr('x', d => {
+                const text = d.name.length > 18 ? d.name.substring(0, 15) + '...' : d.name;
+                return -(text.length * 3.5); // Approximate width based on character count
+            })
+            .attr('y', 32)
+            .attr('width', d => {
+                const text = d.name.length > 18 ? d.name.substring(0, 15) + '...' : d.name;
+                return text.length * 7; // Approximate width
+            })
+            .attr('height', 18)
+            .attr('rx', 4)
+            .attr('fill', 'rgba(30, 41, 59, 0.85)')
+            .attr('stroke', 'rgba(148, 163, 184, 0.3)')
+            .attr('stroke-width', 1)
+            .attr('pointer-events', 'none');
+
         node.append('text')
             .attr('text-anchor', 'middle')
             .attr('dy', '45px')
             .attr('font-size', '11px')
             .attr('fill', '#fff')
             .attr('pointer-events', 'none')
-            .text(d => d.name.length > 15 ? d.name.substring(0, 12) + '...' : d.name);
+            .text(d => d.name.length > 18 ? d.name.substring(0, 15) + '...' : d.name);
 
         // Click handler - support connection mode
         node.on('click', (event, d) => {
