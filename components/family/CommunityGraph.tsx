@@ -1269,10 +1269,12 @@ export const CommunityGraph: React.FC = () => {
 
         // Initial zoom to fit - center on the graph
         setTimeout(() => {
-            svg.transition().duration(750).call(
-                zoom.transform,
-                d3.zoomIdentity.translate(0, 0).scale(1)
-            );
+            if (zoomRef.current) {
+                svg.transition().duration(750).call(
+                    zoomRef.current.transform as any,
+                    d3.zoomIdentity.translate(0, 0).scale(1)
+                );
+            }
         }, 800);
 
         return () => {
