@@ -8,7 +8,7 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import * as d3 from 'd3';
 import { familyService, FamilyMember } from '../../services/familyService';
 import { EditMemberModal } from './EditMemberModal';
-import { Loader2, ZoomIn, ZoomOut, Maximize2, UserPlus, Link2, X, Search, Network, Info, Eye } from 'lucide-react';
+import { Loader2, ZoomIn, ZoomOut, Maximize2, UserPlus, Link2, X, Search, Network, Info, Eye, Sliders } from 'lucide-react';
 
 interface GraphNode extends d3.SimulationNodeDatum {
     id: number;
@@ -42,6 +42,18 @@ export const CommunityGraph: React.FC = () => {
     const [edges, setEdges] = useState<GraphEdge[]>([]);
     const [allMembers, setAllMembers] = useState<FamilyMember[]>([]);
     const [showLegend, setShowLegend] = useState(false);
+    const [showControls, setShowControls] = useState(false);
+
+    // Force simulation parameters (with sliders)
+    const [forceParams, setForceParams] = useState({
+        parentChildStrength: 0.85,
+        spouseStrength: 0.9,
+        charge: -300,
+        parentChildDistance: 100,
+        spouseDistance: 80,
+        collisionRadius: 40,
+        yForceStrength: 0.6
+    });
 
     // Edit modal state
     const [selectedMember, setSelectedMember] = useState<FamilyMember | null>(null);
@@ -61,6 +73,9 @@ export const CommunityGraph: React.FC = () => {
 
     // Pulsing animation control
     const pulsingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
+    // Simulation ref for real-time parameter updates
+    const simulationRef = useRef<d3.Simulation<GraphNode, undefined> | null>(null);
 
     // Load data
     const loadData = useCallback(async () => {
@@ -221,6 +236,44 @@ export const CommunityGraph: React.FC = () => {
         };
     }, []);
 
+    // Update simulation forces in real-time when parameters change
+    useEffect(() => {
+        if (!simulationRef.current) return;
+
+        const sim = simulationRef.current;
+
+        // Update link force
+        const linkForce = sim.force('link') as d3.ForceLink<GraphNode, GraphEdge>;
+        if (linkForce) {
+            linkForce
+                .distance(d => {
+                    if (d.type === 'spouse') return forceParams.spouseDistance;
+                    if (d.type === 'parent-child') return forceParams.parentChildDistance;
+                    return 100;
+                })
+                .strength(d => {
+                    if (d.type === 'spouse') return forceParams.spouseStrength;
+                    if (d.type === 'parent-child') return forceParams.parentChildStrength;
+                    return 0.5;
+                });
+        }
+
+        // Update charge force
+        sim.force('charge', d3.forceManyBody().strength(forceParams.charge));
+
+        // Update y-force
+        const yForce = sim.force('y') as d3.ForceY<GraphNode>;
+        if (yForce) {
+            yForce.strength(forceParams.yForceStrength);
+        }
+
+        // Update collision force
+        sim.force('collision', d3.forceCollide().radius(forceParams.collisionRadius));
+
+        // Restart simulation with new parameters
+        sim.alpha(0.3).restart();
+    }, [forceParams]);
+
     // Build the D3 visualization
     useEffect(() => {
         if (loading || nodes.length === 0 || !svgRef.current || !containerRef.current) return;
@@ -321,24 +374,25 @@ export const CommunityGraph: React.FC = () => {
             .force('link', d3.forceLink<GraphNode, GraphEdge>(edges)
                 .id(d => d.id)
                 .distance(d => {
-                    // Shorter distances for tighter family grouping
-                    if (d.type === 'spouse') return 80;
-                    if (d.type === 'parent-child') return 100;
+                    if (d.type === 'spouse') return forceParams.spouseDistance;
+                    if (d.type === 'parent-child') return forceParams.parentChildDistance;
                     return 100;
                 })
                 .strength(d => {
-                    // MUCH stronger parent-child connections to keep families together
-                    if (d.type === 'spouse') return 0.9;
-                    if (d.type === 'parent-child') return 0.85;
+                    if (d.type === 'spouse') return forceParams.spouseStrength;
+                    if (d.type === 'parent-child') return forceParams.parentChildStrength;
                     return 0.5;
                 })
             )
-            .force('charge', d3.forceManyBody().strength(-300)) // Weaker repulsion for tighter grouping
+            .force('charge', d3.forceManyBody().strength(forceParams.charge))
             .force('x', d3.forceX(width / 2).strength(0.05))
-            .force('y', d3.forceY<GraphNode>(d => yearToY(d.birthYear ?? ((minYear + maxYear) / 2))).strength(0.6))
-            .force('collision', d3.forceCollide().radius(40)) // Smaller collision radius
+            .force('y', d3.forceY<GraphNode>(d => yearToY(d.birthYear ?? ((minYear + maxYear) / 2))).strength(forceParams.yForceStrength))
+            .force('collision', d3.forceCollide().radius(forceParams.collisionRadius))
             .alpha(0.3)
             .alphaDecay(0.015);
+
+        // Store simulation ref for real-time updates
+        simulationRef.current = simulation;
 
         // Edge colors and styles - vibrant and clear
         const getEdgeColor = (d: GraphEdge) => {
@@ -1029,6 +1083,193 @@ export const CommunityGraph: React.FC = () => {
                     >
                         <Maximize2 size={20} />
                     </button>
+                </div>
+
+                {/* Force Controls Panel */}
+                <div className="absolute bottom-4 left-4 flex flex-col gap-2">
+                    {/* Toggle button */}
+                    <button
+                        onClick={() => setShowControls(!showControls)}
+                        className="p-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-white transition-colors"
+                        title="הגדרות כוחות"
+                    >
+                        <Sliders size={20} />
+                    </button>
+
+                    {/* Controls panel */}
+                    {showControls && (
+                        <div className="bg-slate-800 border border-slate-600 rounded-lg p-4 shadow-2xl w-80 max-h-96 overflow-y-auto">
+                            <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
+                                <Sliders size={14} />
+                                כוחות המשיכה
+                            </h3>
+
+                            <div className="space-y-4 text-sm">
+                                {/* Parent-Child Strength */}
+                                <div>
+                                    <div className="flex justify-between items-center mb-1">
+                                        <label className="text-slate-300">חוזק הורה-ילד</label>
+                                        <span className="text-amber-400 font-mono">{forceParams.parentChildStrength.toFixed(2)}</span>
+                                    </div>
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max="1"
+                                        step="0.05"
+                                        value={forceParams.parentChildStrength}
+                                        onChange={(e) => setForceParams(prev => ({ ...prev, parentChildStrength: parseFloat(e.target.value) }))}
+                                        className="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                                    />
+                                    <div className="flex justify-between text-xs text-slate-500 mt-1">
+                                        <span>חלש</span>
+                                        <span>חזק</span>
+                                    </div>
+                                </div>
+
+                                {/* Parent-Child Distance */}
+                                <div>
+                                    <div className="flex justify-between items-center mb-1">
+                                        <label className="text-slate-300">מרחק הורה-ילד</label>
+                                        <span className="text-amber-400 font-mono">{forceParams.parentChildDistance}</span>
+                                    </div>
+                                    <input
+                                        type="range"
+                                        min="50"
+                                        max="200"
+                                        step="10"
+                                        value={forceParams.parentChildDistance}
+                                        onChange={(e) => setForceParams(prev => ({ ...prev, parentChildDistance: parseInt(e.target.value) }))}
+                                        className="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                                    />
+                                    <div className="flex justify-between text-xs text-slate-500 mt-1">
+                                        <span>קרוב</span>
+                                        <span>רחוק</span>
+                                    </div>
+                                </div>
+
+                                {/* Spouse Strength */}
+                                <div>
+                                    <div className="flex justify-between items-center mb-1">
+                                        <label className="text-slate-300">חוזק בני זוג</label>
+                                        <span className="text-pink-400 font-mono">{forceParams.spouseStrength.toFixed(2)}</span>
+                                    </div>
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max="1"
+                                        step="0.05"
+                                        value={forceParams.spouseStrength}
+                                        onChange={(e) => setForceParams(prev => ({ ...prev, spouseStrength: parseFloat(e.target.value) }))}
+                                        className="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-pink-500"
+                                    />
+                                    <div className="flex justify-between text-xs text-slate-500 mt-1">
+                                        <span>חלש</span>
+                                        <span>חזק</span>
+                                    </div>
+                                </div>
+
+                                {/* Spouse Distance */}
+                                <div>
+                                    <div className="flex justify-between items-center mb-1">
+                                        <label className="text-slate-300">מרחק בני זוג</label>
+                                        <span className="text-pink-400 font-mono">{forceParams.spouseDistance}</span>
+                                    </div>
+                                    <input
+                                        type="range"
+                                        min="40"
+                                        max="150"
+                                        step="10"
+                                        value={forceParams.spouseDistance}
+                                        onChange={(e) => setForceParams(prev => ({ ...prev, spouseDistance: parseInt(e.target.value) }))}
+                                        className="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-pink-500"
+                                    />
+                                    <div className="flex justify-between text-xs text-slate-500 mt-1">
+                                        <span>קרוב</span>
+                                        <span>רחוק</span>
+                                    </div>
+                                </div>
+
+                                {/* Charge (Repulsion) */}
+                                <div>
+                                    <div className="flex justify-between items-center mb-1">
+                                        <label className="text-slate-300">דחייה</label>
+                                        <span className="text-red-400 font-mono">{forceParams.charge}</span>
+                                    </div>
+                                    <input
+                                        type="range"
+                                        min="-1000"
+                                        max="-50"
+                                        step="50"
+                                        value={forceParams.charge}
+                                        onChange={(e) => setForceParams(prev => ({ ...prev, charge: parseInt(e.target.value) }))}
+                                        className="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-red-500"
+                                    />
+                                    <div className="flex justify-between text-xs text-slate-500 mt-1">
+                                        <span>חזק</span>
+                                        <span>חלש</span>
+                                    </div>
+                                </div>
+
+                                {/* Collision Radius */}
+                                <div>
+                                    <div className="flex justify-between items-center mb-1">
+                                        <label className="text-slate-300">רדיוס התנגשות</label>
+                                        <span className="text-blue-400 font-mono">{forceParams.collisionRadius}</span>
+                                    </div>
+                                    <input
+                                        type="range"
+                                        min="20"
+                                        max="80"
+                                        step="5"
+                                        value={forceParams.collisionRadius}
+                                        onChange={(e) => setForceParams(prev => ({ ...prev, collisionRadius: parseInt(e.target.value) }))}
+                                        className="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                                    />
+                                    <div className="flex justify-between text-xs text-slate-500 mt-1">
+                                        <span>קטן</span>
+                                        <span>גדול</span>
+                                    </div>
+                                </div>
+
+                                {/* Y-Force Strength */}
+                                <div>
+                                    <div className="flex justify-between items-center mb-1">
+                                        <label className="text-slate-300">יישור ציר זמן (Y)</label>
+                                        <span className="text-emerald-400 font-mono">{forceParams.yForceStrength.toFixed(2)}</span>
+                                    </div>
+                                    <input
+                                        type="range"
+                                        min="0"
+                                        max="1"
+                                        step="0.05"
+                                        value={forceParams.yForceStrength}
+                                        onChange={(e) => setForceParams(prev => ({ ...prev, yForceStrength: parseFloat(e.target.value) }))}
+                                        className="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+                                    />
+                                    <div className="flex justify-between text-xs text-slate-500 mt-1">
+                                        <span>חופשי</span>
+                                        <span>קשיח</span>
+                                    </div>
+                                </div>
+
+                                {/* Reset button */}
+                                <button
+                                    onClick={() => setForceParams({
+                                        parentChildStrength: 0.85,
+                                        spouseStrength: 0.9,
+                                        charge: -300,
+                                        parentChildDistance: 100,
+                                        spouseDistance: 80,
+                                        collisionRadius: 40,
+                                        yForceStrength: 0.6
+                                    })}
+                                    className="w-full mt-2 px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-white text-xs transition-colors"
+                                >
+                                    איפוס לברירת מחדל
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
 
