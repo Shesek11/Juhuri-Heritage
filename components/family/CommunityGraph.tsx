@@ -115,48 +115,83 @@ export const CommunityGraph: React.FC = () => {
                 childToParentsMap.get(pc.child_id)!.push(pc.parent_id);
             });
 
-            // Create edges with junction nodes for children with 2 parents
+            // Group children by their parent pairs (for shared junction nodes)
+            const parentPairToChildren = new Map<string, number[]>();
             childToParentsMap.forEach((parents, childId) => {
                 if (parents.length === 2) {
-                    // Create invisible junction node for this parent pair + child
-                    const junctionId = nextJunctionId++;
-                    const child = members.find(m => m.id === childId);
-                    junctionNodes.push({
-                        id: junctionId,
-                        name: '',
-                        gender: 'other',
-                        birthYear: child?.birth_date ? new Date(child.birth_date).getFullYear() : undefined,
-                        isJunction: true
-                    });
+                    // Create a unique key for this parent pair (sorted to handle both orders)
+                    const pairKey = [parents[0], parents[1]].sort((a, b) => a - b).join('-');
+                    if (!parentPairToChildren.has(pairKey)) {
+                        parentPairToChildren.set(pairKey, []);
+                    }
+                    parentPairToChildren.get(pairKey)!.push(childId);
+                }
+            });
 
-                    // Connect both parents to junction
-                    graphEdges.push({
-                        source: parents[0],
-                        target: junctionId,
-                        type: 'parent-child'
-                    });
-                    graphEdges.push({
-                        source: parents[1],
-                        target: junctionId,
-                        type: 'parent-child'
-                    });
+            // Create junction nodes for parent pairs with shared children
+            const createdJunctions = new Map<string, number>(); // pairKey → junctionId
+            parentPairToChildren.forEach((childIds, pairKey) => {
+                const [parent1Id, parent2Id] = pairKey.split('-').map(Number);
 
-                    // Connect junction to child
+                // Create one junction node for this parent pair
+                const junctionId = nextJunctionId++;
+
+                // Position junction at average birth year of children
+                const childrenBirthYears = childIds
+                    .map(cid => members.find(m => m.id === cid)?.birth_date)
+                    .filter(bd => bd)
+                    .map(bd => new Date(bd!).getFullYear());
+                const avgBirthYear = childrenBirthYears.length > 0
+                    ? Math.round(childrenBirthYears.reduce((a, b) => a + b, 0) / childrenBirthYears.length)
+                    : undefined;
+
+                junctionNodes.push({
+                    id: junctionId,
+                    name: '',
+                    gender: 'other',
+                    birthYear: avgBirthYear,
+                    isJunction: true
+                });
+
+                // Connect both parents to junction
+                graphEdges.push({
+                    source: parent1Id,
+                    target: junctionId,
+                    type: 'parent-child'
+                });
+                graphEdges.push({
+                    source: parent2Id,
+                    target: junctionId,
+                    type: 'parent-child'
+                });
+
+                // Connect junction to all children of this parent pair
+                childIds.forEach(childId => {
                     graphEdges.push({
                         source: junctionId,
                         target: childId,
                         type: 'parent-child'
                     });
-                } else {
-                    // Single parent or 3+ parents - direct connections
-                    parents.forEach(parentId => {
-                        graphEdges.push({
-                            source: parentId,
-                            target: childId,
-                            type: 'parent-child'
-                        });
-                    });
+                });
+
+                createdJunctions.set(pairKey, junctionId);
+            });
+
+            // Handle children with single parent or 3+ parents (direct connections)
+            childToParentsMap.forEach((parents, childId) => {
+                if (parents.length === 2) {
+                    // Already handled by junction nodes above
+                    return;
                 }
+
+                // Single parent or 3+ parents - direct connections
+                parents.forEach(parentId => {
+                    graphEdges.push({
+                        source: parentId,
+                        target: childId,
+                        type: 'parent-child'
+                    });
+                });
             });
 
             // Partnerships (spouse relationships)
