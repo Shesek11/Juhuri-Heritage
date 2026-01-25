@@ -349,9 +349,26 @@ export const CommunityGraph: React.FC = () => {
                 });
             });
         } else if (layoutMode === 'islands') {
-            // GARDEN OF FAMILIES LAYOUT - Traditional family trees side-by-side
+            // GARDEN OF FAMILIES LAYOUT - Real hierarchical family trees using D3 tree layout
 
-            // 1. Group nodes by last name (family field)
+            // 1. Build parent-child map for hierarchy
+            const childrenMap = new Map<number, number[]>(); // parentId -> childIds
+            const parentMap = new Map<number, number[]>(); // childId -> parentIds
+
+            edges.forEach(e => {
+                if (e.type === 'parent-child') {
+                    const parentId = typeof e.source === 'number' ? e.source : e.source.id;
+                    const childId = typeof e.target === 'number' ? e.target : e.target.id;
+
+                    if (!childrenMap.has(parentId)) childrenMap.set(parentId, []);
+                    childrenMap.get(parentId)!.push(childId);
+
+                    if (!parentMap.has(childId)) parentMap.set(childId, []);
+                    parentMap.get(childId)!.push(parentId);
+                }
+            });
+
+            // 2. Group nodes by family name
             const familyGroups = new Map<string, GraphNode[]>();
             nodes.forEach(n => {
                 const familyName = n.family || 'לא ידוע';
@@ -361,77 +378,100 @@ export const CommunityGraph: React.FC = () => {
 
             console.log('[Garden] Found', familyGroups.size, 'family trees');
 
-            // 2. Sort families by size (larger families first) for better visual balance
+            // 3. Build hierarchical trees for each family
             const familyArray = Array.from(familyGroups.entries())
                 .sort((a, b) => b[1].length - a[1].length);
 
-            // 3. Calculate tree layout parameters
-            const treeSpacing = 500; // Horizontal space between family trees
-            const generationHeight = 140; // Vertical space between generations
-            const personSpacing = 150; // Horizontal space between people in same generation (increased to prevent text overlap)
+            const treeSpacing = 600;
             const treesPerRow = Math.ceil(Math.sqrt(familyArray.length));
 
-            // 4. Position each family as a traditional hierarchical tree
             familyArray.forEach(([familyName, familyNodes], treeIdx) => {
-                // Calculate tree position in garden grid
-                const row = Math.floor(treeIdx / treesPerRow);
-                const col = treeIdx % treesPerRow;
-                const treeBaseX = 200 + col * treeSpacing;
-                const treeBaseY = 100 + row * (generationHeight * 5); // Assume max ~5 generations per tree
-
-                // Group nodes by generation within this family
-                const genGroups = new Map<number, GraphNode[]>();
-                familyNodes.forEach(n => {
-                    const gen = n.generation || 0;
-                    if (!genGroups.has(gen)) genGroups.set(gen, []);
-                    genGroups.get(gen)!.push(n);
+                // Find root nodes (people with no parents in this family)
+                const familyNodeIds = new Set(familyNodes.map(n => n.id));
+                const roots = familyNodes.filter(n => {
+                    const parents = parentMap.get(n.id) || [];
+                    return parents.length === 0 || !parents.some(p => familyNodeIds.has(p));
                 });
 
-                // Sort generations (0 = oldest at top)
-                const generations = Array.from(genGroups.keys()).sort((a, b) => a - b);
+                if (roots.length === 0 && familyNodes.length > 0) {
+                    // Fallback: use oldest generation as roots
+                    const minGen = Math.min(...familyNodes.map(n => n.generation || 0));
+                    roots.push(...familyNodes.filter(n => (n.generation || 0) === minGen));
+                }
 
-                // Position each generation
-                generations.forEach((gen, genIdx) => {
-                    const genNodes = genGroups.get(gen)!;
-                    const genY = treeBaseY + genIdx * generationHeight;
+                // Build hierarchy structure recursively
+                interface TreeNode {
+                    node: GraphNode;
+                    children: TreeNode[];
+                }
 
-                    // Center this generation horizontally
-                    const genWidth = (genNodes.length - 1) * personSpacing;
-                    const startX = treeBaseX - genWidth / 2;
+                const buildTree = (nodeId: number, visited = new Set<number>()): TreeNode | null => {
+                    if (visited.has(nodeId)) return null;
+                    visited.add(nodeId);
 
-                    genNodes.forEach((node, nodeIdx) => {
-                        node.x = startX + nodeIdx * personSpacing;
-                        node.y = genY;
-                        node.fx = node.x;
-                        node.fy = node.y;
+                    const node = nodes.find(n => n.id === nodeId);
+                    if (!node || !familyNodeIds.has(nodeId)) return null;
+
+                    const childIds = childrenMap.get(nodeId) || [];
+                    const children = childIds
+                        .map(cid => buildTree(cid, visited))
+                        .filter((c): c is TreeNode => c !== null);
+
+                    return { node, children };
+                };
+
+                const trees = roots.map(r => buildTree(r.id)).filter((t): t is TreeNode => t !== null);
+
+                // Use D3 tree layout
+                const treeLayout = d3.tree<TreeNode>()
+                    .nodeSize([120, 140]) // [horizontal spacing, vertical spacing]
+                    .separation((a, b) => a.parent === b.parent ? 1 : 1.2);
+
+                // Calculate tree position in grid
+                const row = Math.floor(treeIdx / treesPerRow);
+                const col = treeIdx % treesPerRow;
+                const offsetX = 200 + col * treeSpacing;
+                const offsetY = 100 + row * 600;
+
+                // Position each tree
+                trees.forEach((tree, idx) => {
+                    const hierarchy = d3.hierarchy(tree, d => d.children);
+                    const treeData = treeLayout(hierarchy);
+
+                    // Apply positions
+                    treeData.each(d => {
+                        const graphNode = d.data.node;
+                        graphNode.x = offsetX + (d.x || 0) + (idx * 300); // Space multiple roots horizontally
+                        graphNode.y = offsetY + (d.y || 0);
+                        graphNode.fx = graphNode.x;
+                        graphNode.fy = graphNode.y;
                     });
                 });
 
-                // Store tree info for rendering
+                // Store tree info
                 (familyNodes[0] as any).treeId = treeIdx;
                 (familyNodes[0] as any).treeName = familyName;
             });
 
-            // 5. Draw family tree backgrounds with labels
+            // 4. Draw family tree backgrounds
             const treeBackgrounds = g.insert('g', '.links').attr('class', 'tree-backgrounds');
             familyArray.forEach(([familyName, familyNodes], treeIdx) => {
                 const xs = familyNodes.map(n => n.x!);
                 const ys = familyNodes.map(n => n.y!);
-                const minX = Math.min(...xs) - 50;
-                const maxX = Math.max(...xs) + 50;
-                const minY = Math.min(...ys) - 40;
+                const minX = Math.min(...xs) - 60;
+                const maxX = Math.max(...xs) + 60;
+                const minY = Math.min(...ys) - 50;
                 const maxY = Math.max(...ys) + 50;
 
-                // Tree background with softer colors
                 const colors = [
-                    'rgba(59, 130, 246, 0.06)',   // Blue
-                    'rgba(236, 72, 153, 0.06)',   // Pink
-                    'rgba(168, 85, 247, 0.06)',   // Purple
-                    'rgba(245, 158, 11, 0.06)',   // Amber
-                    'rgba(16, 185, 129, 0.06)',   // Emerald
-                    'rgba(239, 68, 68, 0.06)',    // Red
-                    'rgba(20, 184, 166, 0.06)',   // Teal
-                    'rgba(251, 146, 60, 0.06)',   // Orange
+                    'rgba(59, 130, 246, 0.06)',
+                    'rgba(236, 72, 153, 0.06)',
+                    'rgba(168, 85, 247, 0.06)',
+                    'rgba(245, 158, 11, 0.06)',
+                    'rgba(16, 185, 129, 0.06)',
+                    'rgba(239, 68, 68, 0.06)',
+                    'rgba(20, 184, 166, 0.06)',
+                    'rgba(251, 146, 60, 0.06)',
                 ];
 
                 treeBackgrounds.append('rect')
@@ -445,7 +485,6 @@ export const CommunityGraph: React.FC = () => {
                     .attr('stroke-width', 1.5)
                     .attr('stroke-dasharray', '4,4');
 
-                // Family name label at top
                 treeBackgrounds.append('text')
                     .attr('x', (minX + maxX) / 2)
                     .attr('y', minY - 10)
