@@ -348,6 +348,7 @@ export const CommunityGraph: React.FC = () => {
                     node.fy = node.y;
                 });
             });
+        }
 
         // Edge colors and styles - vibrant and clear
         const getEdgeColor = (d: GraphEdge) => {
