@@ -8,7 +8,7 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import * as d3 from 'd3';
 import { familyService, FamilyMember } from '../../services/familyService';
 import { EditMemberModal } from './EditMemberModal';
-import { Loader2, ZoomIn, ZoomOut, Maximize2, UserPlus } from 'lucide-react';
+import { Loader2, ZoomIn, ZoomOut, Maximize2, UserPlus, Link2, X } from 'lucide-react';
 
 interface GraphNode extends d3.SimulationNodeDatum {
     id: number;
@@ -26,11 +26,10 @@ interface GraphEdge {
     status?: string; // For spouse: married, divorced, widowed
 }
 
-interface CommunityGraphProps {
-    onMemberSelect?: (member: FamilyMember) => void;
-}
+type ConnectionMode = 'none' | 'connecting' | 'selecting-type';
+type RelationshipType = 'parent-child' | 'spouse' | 'sibling';
 
-export const CommunityGraph: React.FC<CommunityGraphProps> = ({ onMemberSelect }) => {
+export const CommunityGraph: React.FC = () => {
     const svgRef = useRef<SVGSVGElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
 
@@ -42,6 +41,11 @@ export const CommunityGraph: React.FC<CommunityGraphProps> = ({ onMemberSelect }
     // Edit modal state
     const [selectedMember, setSelectedMember] = useState<FamilyMember | null>(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+
+    // Connection mode state
+    const [connectionMode, setConnectionMode] = useState<ConnectionMode>('none');
+    const [firstSelectedNode, setFirstSelectedNode] = useState<GraphNode | null>(null);
+    const [secondSelectedNode, setSecondSelectedNode] = useState<GraphNode | null>(null);
 
     // Zoom ref for controls
     const zoomRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null);
@@ -102,7 +106,6 @@ export const CommunityGraph: React.FC<CommunityGraphProps> = ({ onMemberSelect }
             });
 
             // Find roots (people with no parents)
-            const nodeIds = new Set(graphNodes.map(n => n.id));
             const hasParent = new Set(childToParents.keys());
             const roots = graphNodes.filter(n => !hasParent.has(n.id));
 
@@ -176,6 +179,7 @@ export const CommunityGraph: React.FC<CommunityGraphProps> = ({ onMemberSelect }
         const maxYear = years.length > 0 ? Math.max(...years) : 2025;
         const yearSpan = Math.max(maxYear - minYear, 50); // At least 50 years span
         const padding = 80; // Top and bottom padding
+        const leftPadding = 60; // Left padding for year labels
 
         // Helper to convert year to Y position
         const yearToY = (year: number) => {
@@ -191,7 +195,7 @@ export const CommunityGraph: React.FC<CommunityGraphProps> = ({ onMemberSelect }
 
             // Horizontal line across width
             g.append('line')
-                .attr('x1', 0)
+                .attr('x1', leftPadding)
                 .attr('y1', yPos)
                 .attr('x2', width)
                 .attr('y2', yPos)
@@ -199,12 +203,25 @@ export const CommunityGraph: React.FC<CommunityGraphProps> = ({ onMemberSelect }
                 .attr('stroke-width', 1)
                 .attr('pointer-events', 'none');
 
-            // Year label
-            g.append('text')
-                .attr('x', 15)
-                .attr('y', yPos + 5)
-                .attr('font-size', '12px')
-                .attr('fill', 'rgba(255,255,255,0.4)')
+            // Year label - positioned better with background
+            const labelGroup = g.append('g');
+
+            labelGroup.append('rect')
+                .attr('x', 5)
+                .attr('y', yPos - 12)
+                .attr('width', 45)
+                .attr('height', 20)
+                .attr('fill', 'rgba(15, 23, 42, 0.8)')
+                .attr('rx', 4)
+                .attr('pointer-events', 'none');
+
+            labelGroup.append('text')
+                .attr('x', 27)
+                .attr('y', yPos + 4)
+                .attr('font-size', '13px')
+                .attr('font-weight', '600')
+                .attr('fill', 'rgba(255,255,255,0.7)')
+                .attr('text-anchor', 'middle')
                 .attr('pointer-events', 'none')
                 .text(year.toString());
         }
@@ -221,23 +238,33 @@ export const CommunityGraph: React.FC<CommunityGraphProps> = ({ onMemberSelect }
             .force('y', d3.forceY<GraphNode>(d => yearToY(d.birthYear ?? ((minYear + maxYear) / 2))).strength(0.9))
             .force('collision', d3.forceCollide().radius(45));
 
-        // Edge colors and styles
+        // Edge colors and styles - improved visibility
         const getEdgeColor = (d: GraphEdge) => {
             if (d.type === 'spouse') {
-                if (d.status === 'divorced') return '#ef4444'; // Red for divorced
-                if (d.status === 'widowed') return '#64748b'; // Slate for widowed
-                return '#ec4899'; // Pink for married
+                if (d.status === 'divorced') return '#f87171'; // Bright red for divorced
+                if (d.status === 'widowed') return '#94a3b8'; // Slate for widowed
+                return '#f472b6'; // Bright pink for married
             }
-            if (d.type === 'parent-child') return '#0ea5e9'; // Sky blue
+            if (d.type === 'parent-child') return '#38bdf8'; // Bright sky blue
+            if (d.type === 'sibling') return '#a78bfa'; // Purple for siblings
             return '#94a3b8';
         };
 
         const getEdgeDash = (d: GraphEdge) => {
             if (d.type === 'spouse') {
-                if (d.status === 'divorced') return '2,2'; // Dotted
-                return '5,5'; // Dashed
+                if (d.status === 'divorced') return '5,5'; // Dashed for divorced
+                if (d.status === 'widowed') return '2,4'; // Dotted for widowed
+                return 'none'; // Solid for married
             }
+            if (d.type === 'sibling') return '8,4'; // Long dash for siblings
             return 'none';
+        };
+
+        const getEdgeWidth = (d: GraphEdge) => {
+            if (d.type === 'spouse') return 3;
+            if (d.type === 'parent-child') return 2.5;
+            if (d.type === 'sibling') return 2;
+            return 2;
         };
 
         // Draw edges as paths (Orthogonal routing)
@@ -248,10 +275,11 @@ export const CommunityGraph: React.FC<CommunityGraphProps> = ({ onMemberSelect }
             .enter()
             .append('path')
             .attr('stroke', d => getEdgeColor(d))
-            .attr('stroke-width', d => d.type === 'spouse' ? 2 : 2)
-            .attr('stroke-opacity', 0.6)
+            .attr('stroke-width', d => getEdgeWidth(d))
+            .attr('stroke-opacity', 0.7)
             .attr('fill', 'none')
-            .attr('stroke-dasharray', d => getEdgeDash(d));
+            .attr('stroke-dasharray', d => getEdgeDash(d))
+            .attr('stroke-linecap', 'round');
 
         // Draw nodes
         const node = g.append('g')
@@ -297,9 +325,26 @@ export const CommunityGraph: React.FC<CommunityGraphProps> = ({ onMemberSelect }
             .attr('pointer-events', 'none')
             .text(d => d.name.length > 15 ? d.name.substring(0, 12) + '...' : d.name);
 
-        // Click handler
+        // Click handler - support connection mode
         node.on('click', (event, d) => {
             event.stopPropagation();
+
+            // If in connecting mode, handle node selection for connection
+            if (connectionMode === 'connecting') {
+                if (!firstSelectedNode) {
+                    setFirstSelectedNode(d);
+                    // Highlight selected node
+                    d3.select(event.currentTarget).select('circle')
+                        .attr('stroke-width', 5)
+                        .attr('stroke', '#fbbf24'); // Amber highlight
+                } else if (firstSelectedNode.id !== d.id) {
+                    setSecondSelectedNode(d);
+                    setConnectionMode('selecting-type');
+                }
+                return;
+            }
+
+            // Normal click - open edit modal
             const member = allMembers.find(m => m.id === d.id);
             if (member) {
                 setSelectedMember(member);
@@ -386,6 +431,54 @@ export const CommunityGraph: React.FC<CommunityGraphProps> = ({ onMemberSelect }
         };
     }, [loading, nodes, edges, allMembers]);
 
+    // Connection mode handlers
+    const startConnectionMode = () => {
+        setConnectionMode('connecting');
+        setFirstSelectedNode(null);
+        setSecondSelectedNode(null);
+    };
+
+    const cancelConnection = () => {
+        setConnectionMode('none');
+        setFirstSelectedNode(null);
+        setSecondSelectedNode(null);
+        // Refresh graph to clear highlights
+        loadData();
+    };
+
+    const createConnection = async (relationType: RelationshipType) => {
+        if (!firstSelectedNode || !secondSelectedNode) return;
+
+        try {
+            if (relationType === 'parent-child') {
+                await familyService.addParentChild({
+                    parent_id: firstSelectedNode.id,
+                    child_id: secondSelectedNode.id,
+                    relationship_type: 'biological'
+                });
+            } else if (relationType === 'spouse') {
+                await familyService.addPartnership({
+                    person1_id: firstSelectedNode.id,
+                    person2_id: secondSelectedNode.id,
+                    status: 'married'
+                });
+            } else if (relationType === 'sibling') {
+                // Siblings are calculated automatically based on shared parents
+                // Guide user to add parent-child relationships instead
+                alert('קשרי אחים נוצרים אוטומטית!\n\nכדי ליצור קשר אחים, הוסף את שני האנשים כילדים של אותם הורים.\nהמערכת תזהה אותם אוטומטית כאחים.');
+                cancelConnection();
+                return;
+            }
+
+            // Refresh data
+            await loadData();
+            cancelConnection();
+        } catch (error) {
+            console.error('Failed to create connection:', error);
+            alert('שגיאה ביצירת קשר');
+        }
+    };
+
     // Zoom controls
     const handleZoomIn = () => {
         if (svgRef.current && zoomRef.current) {
@@ -429,26 +522,64 @@ export const CommunityGraph: React.FC<CommunityGraphProps> = ({ onMemberSelect }
                     </span>
                 </div>
 
-                {/* Legend */}
-                <div className="flex items-center gap-4 text-sm">
-                    <div className="flex items-center gap-1">
-                        <div className="w-3 h-3 rounded-full bg-blue-500" />
-                        <span className="text-slate-300">גבר</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                        <div className="w-3 h-3 rounded-full bg-pink-500" />
-                        <span className="text-slate-300">אישה</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                        <div className="w-6 h-0.5 bg-sky-500" />
-                        <span className="text-slate-300">הורה-ילד</span>
-                    </div>
-                    <div className="flex items-center gap-1">
-                        <div className="w-6 h-0.5 bg-pink-500" style={{ borderStyle: 'dashed' }} />
-                        <span className="text-slate-300">בני זוג</span>
+                <div className="flex items-center gap-4">
+                    {/* Connection Mode Button */}
+                    {connectionMode === 'none' ? (
+                        <button
+                            onClick={startConnectionMode}
+                            className="flex items-center gap-2 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 rounded-lg text-white text-sm font-medium transition-colors"
+                        >
+                            <Link2 size={16} />
+                            <span>חבר אנשים</span>
+                        </button>
+                    ) : (
+                        <button
+                            onClick={cancelConnection}
+                            className="flex items-center gap-2 px-3 py-1.5 bg-red-600 hover:bg-red-700 rounded-lg text-white text-sm font-medium transition-colors"
+                        >
+                            <X size={16} />
+                            <span>ביטול</span>
+                        </button>
+                    )}
+
+                    {/* Legend */}
+                    <div className="flex items-center gap-4 text-sm">
+                        <div className="flex items-center gap-1">
+                            <div className="w-3 h-3 rounded-full bg-blue-500" />
+                            <span className="text-slate-300">גבר</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                            <div className="w-3 h-3 rounded-full bg-pink-500" />
+                            <span className="text-slate-300">אישה</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                            <div className="w-6 h-0.5 bg-sky-400" />
+                            <span className="text-slate-300">הורה-ילד</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                            <div className="w-6 h-0.5 bg-pink-400" />
+                            <span className="text-slate-300">נשואים</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                            <div className="w-6 h-0.5 bg-red-400" style={{ strokeDasharray: '5,5' }} />
+                            <span className="text-slate-300">גרושים</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                            <div className="w-6 h-0.5 bg-purple-400" style={{ strokeDasharray: '8,4' }} />
+                            <span className="text-slate-300">אחים</span>
+                        </div>
                     </div>
                 </div>
             </div>
+
+            {/* Connection Status Banner */}
+            {connectionMode === 'connecting' && (
+                <div className="bg-amber-600 text-white px-4 py-2 text-center text-sm">
+                    {firstSelectedNode
+                        ? `נבחר: ${firstSelectedNode.name} - כעת בחר את האדם השני לחיבור`
+                        : 'לחץ על אדם ראשון לחיבור'}
+                </div>
+            )}
 
             {/* Graph Container */}
             <div ref={containerRef} className="flex-1 relative overflow-hidden" style={{ minHeight: '500px' }}>
@@ -458,6 +589,60 @@ export const CommunityGraph: React.FC<CommunityGraphProps> = ({ onMemberSelect }
                     height="100%"
                     style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', display: 'block' }}
                 />
+
+                {/* Connection Type Selection Modal */}
+                {connectionMode === 'selecting-type' && firstSelectedNode && secondSelectedNode && (
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center backdrop-blur-sm z-50" onClick={cancelConnection}>
+                        <div className="bg-slate-800 rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl border border-slate-700" onClick={e => e.stopPropagation()}>
+                            <h3 className="text-xl font-bold text-white mb-4 text-center">בחר סוג קשר</h3>
+                            <p className="text-sm text-slate-300 mb-6 text-center">
+                                בין <span className="font-bold text-amber-400">{firstSelectedNode.name}</span> ל-<span className="font-bold text-amber-400">{secondSelectedNode.name}</span>
+                            </p>
+
+                            <div className="space-y-3">
+                                <button
+                                    onClick={() => createConnection('parent-child')}
+                                    className="w-full flex items-center gap-3 p-4 bg-sky-600 hover:bg-sky-700 rounded-lg text-white transition-colors"
+                                >
+                                    <div className="w-10 h-1 bg-sky-400" />
+                                    <div className="flex-1 text-right">
+                                        <div className="font-bold">הורה-ילד</div>
+                                        <div className="text-xs text-sky-200">{firstSelectedNode.name} הוא/היא הורה של {secondSelectedNode.name}</div>
+                                    </div>
+                                </button>
+
+                                <button
+                                    onClick={() => createConnection('spouse')}
+                                    className="w-full flex items-center gap-3 p-4 bg-pink-600 hover:bg-pink-700 rounded-lg text-white transition-colors"
+                                >
+                                    <div className="w-10 h-1 bg-pink-400" />
+                                    <div className="flex-1 text-right">
+                                        <div className="font-bold">בני זוג (נשואים)</div>
+                                        <div className="text-xs text-pink-200">{firstSelectedNode.name} ו-{secondSelectedNode.name} נשואים</div>
+                                    </div>
+                                </button>
+
+                                <button
+                                    onClick={() => createConnection('sibling')}
+                                    className="w-full flex items-center gap-3 p-4 bg-purple-600 hover:bg-purple-700 rounded-lg text-white transition-colors"
+                                >
+                                    <div className="w-10 h-1 bg-purple-400 border-dashed" />
+                                    <div className="flex-1 text-right">
+                                        <div className="font-bold">אחים</div>
+                                        <div className="text-xs text-purple-200">{firstSelectedNode.name} ו-{secondSelectedNode.name} הם אחים</div>
+                                    </div>
+                                </button>
+                            </div>
+
+                            <button
+                                onClick={cancelConnection}
+                                className="w-full mt-4 px-4 py-2 text-slate-400 hover:bg-slate-700 rounded-lg transition-colors"
+                            >
+                                ביטול
+                            </button>
+                        </div>
+                    </div>
+                )}
 
                 {/* Zoom Controls */}
                 <div className="absolute bottom-4 right-4 flex flex-col gap-2">

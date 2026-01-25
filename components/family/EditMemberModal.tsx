@@ -24,6 +24,8 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
     const [connectMode, setConnectMode] = useState<'none' | 'parent' | 'child' | 'spouse'>('none');
     const [selectedConnectId, setSelectedConnectId] = useState<number | ''>('');
     const [spouseStatus, setSpouseStatus] = useState<string>('married');
+    const [parentChildType, setParentChildType] = useState<string>('biological');
+    const [editingPartnership, setEditingPartnership] = useState<any | null>(null);
 
     useEffect(() => {
         if (member) {
@@ -81,13 +83,13 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                 await familyService.addParentChild({
                     parent_id: Number(selectedConnectId),
                     child_id: member.id,
-                    relationship_type: 'biological'
+                    relationship_type: parentChildType as any
                 });
             } else if (connectMode === 'child') {
                 await familyService.addParentChild({
                     parent_id: member.id,
                     child_id: Number(selectedConnectId),
-                    relationship_type: 'biological'
+                    relationship_type: parentChildType as any
                 });
             } else if (connectMode === 'spouse') {
                 await familyService.addPartnership({
@@ -99,6 +101,8 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
             await fetchRelationships();
             setConnectMode('none');
             setSelectedConnectId('');
+            setParentChildType('biological');
+            setSpouseStatus('married');
             onSuccess(); // Refresh graph
         } catch (error) {
             console.error(error);
@@ -417,12 +421,71 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                                 <button onClick={() => setConnectMode('spouse')} className="text-xs text-pink-600 hover:underline">+ חבר בן/ת זוג</button>
                             </div>
                             {partnerships.map(p => (
-                                <div key={p.id} className="flex justify-between items-center bg-slate-50 dark:bg-slate-800 p-2 rounded border dark:border-slate-700">
-                                    <div className="flex flex-col">
-                                        <span>{p.partner?.first_name} {p.partner?.last_name}</span>
-                                        <span className="text-xs text-slate-400">{p.status === 'married' ? 'נשואים' : p.status === 'divorced' ? 'גרושים' : p.status === 'widowed' ? 'אלמן/ה' : p.status}</span>
-                                    </div>
-                                    <button onClick={() => handleRemoveRelationship('spouse', p.id)} className="text-red-500 hover:bg-red-50 p-1 rounded"><X size={14} /></button>
+                                <div key={p.id} className="bg-slate-50 dark:bg-slate-800 p-3 rounded border dark:border-slate-700">
+                                    {editingPartnership?.id === p.id ? (
+                                        <div className="space-y-2">
+                                            <div className="flex justify-between items-center mb-2">
+                                                <span className="font-medium">{p.partner?.first_name} {p.partner?.last_name}</span>
+                                                <button onClick={() => setEditingPartnership(null)} className="text-xs text-slate-500">ביטול</button>
+                                            </div>
+                                            <select
+                                                className="w-full p-2 rounded border text-sm dark:bg-slate-700"
+                                                value={editingPartnership.status}
+                                                onChange={(e) => setEditingPartnership({ ...editingPartnership, status: e.target.value })}
+                                            >
+                                                <option value="married">נשואים</option>
+                                                <option value="divorced">גרושים</option>
+                                                <option value="widowed">אלמן/ה</option>
+                                                <option value="separated">פרודים</option>
+                                                <option value="engaged">מאורסים</option>
+                                                <option value="common_law">ידועים בציבור</option>
+                                            </select>
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={async () => {
+                                                        try {
+                                                            await familyService.updatePartnership(p.id, { status: editingPartnership.status });
+                                                            await fetchRelationships();
+                                                            setEditingPartnership(null);
+                                                            onSuccess();
+                                                        } catch (error) {
+                                                            alert('שגיאה בעדכון סטטוס');
+                                                        }
+                                                    }}
+                                                    className="flex-1 bg-green-600 text-white px-3 py-1 rounded text-xs hover:bg-green-700"
+                                                >
+                                                    <Check size={12} className="inline mr-1" /> שמור
+                                                </button>
+                                                <button onClick={() => handleRemoveRelationship('spouse', p.id)} className="text-red-500 hover:bg-red-50 px-3 py-1 rounded text-xs">מחק</button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="flex justify-between items-center">
+                                            <div className="flex flex-col flex-1">
+                                                <span>{p.partner?.first_name} {p.partner?.last_name}</span>
+                                                <span className="text-xs text-slate-400">
+                                                    {p.status === 'married' ? '💍 נשואים' :
+                                                     p.status === 'divorced' ? '💔 גרושים' :
+                                                     p.status === 'widowed' ? '🕊️ אלמן/ה' :
+                                                     p.status === 'separated' ? '↔️ פרודים' :
+                                                     p.status === 'engaged' ? '💝 מאורסים' :
+                                                     p.status === 'common_law' ? '🤝 ידועים בציבור' : p.status}
+                                                </span>
+                                            </div>
+                                            <div className="flex gap-1">
+                                                <button
+                                                    onClick={() => setEditingPartnership(p)}
+                                                    className="text-blue-600 hover:bg-blue-50 p-1 rounded"
+                                                    title="ערוך סטטוס"
+                                                >
+                                                    <Pencil size={14} />
+                                                </button>
+                                                <button onClick={() => handleRemoveRelationship('spouse', p.id)} className="text-red-500 hover:bg-red-50 p-1 rounded">
+                                                    <X size={14} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             ))}
                             {partnerships.length === 0 && <p className="text-sm text-slate-400 italic">אין בני זוג רשומים.</p>}
@@ -447,36 +510,61 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
 
                         {/* Connect Modal Overlay */}
                         {connectMode !== 'none' && (
-                            <div className="border-t pt-4 mt-4 bg-amber-50/50 p-4 rounded-lg">
+                            <div className="border-t pt-4 mt-4 bg-amber-50/50 dark:bg-amber-900/20 p-4 rounded-lg">
                                 <h4 className="font-bold mb-2 text-sm">
                                     {connectMode === 'parent' ? 'חיבור הורה' : connectMode === 'child' ? 'חיבור ילד' : 'חיבור בן/ת זוג'}
                                 </h4>
                                 <div className="space-y-2">
-                                    <select
-                                        className="w-full p-2 rounded border text-sm"
-                                        value={selectedConnectId}
-                                        onChange={e => setSelectedConnectId(e.target.value ? Number(e.target.value) : '')}
-                                    >
-                                        <option value="">בחר בן משפחה...</option>
-                                        {potentialRelations
-                                            .filter(m => m.id !== member?.id) // Don't allow self-connection
-                                            .map(m => (
-                                                <option key={m.id} value={m.id}>
-                                                    {m.first_name} {m.last_name} ({m.birth_date ? new Date(m.birth_date).getFullYear() : '?'})
-                                                </option>
-                                            ))}
-                                    </select>
+                                    <div>
+                                        <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">בחר אדם:</label>
+                                        <select
+                                            className="w-full p-2 rounded border text-sm dark:bg-slate-700 dark:border-slate-600"
+                                            value={selectedConnectId}
+                                            onChange={e => setSelectedConnectId(e.target.value ? Number(e.target.value) : '')}
+                                        >
+                                            <option value="">בחר בן משפחה...</option>
+                                            {potentialRelations
+                                                .filter(m => m.id !== member?.id) // Don't allow self-connection
+                                                .map(m => (
+                                                    <option key={m.id} value={m.id}>
+                                                        {m.first_name} {m.last_name} ({m.birth_date ? new Date(m.birth_date).getFullYear() : '?'})
+                                                    </option>
+                                                ))}
+                                        </select>
+                                    </div>
+
+                                    {(connectMode === 'parent' || connectMode === 'child') && (
+                                        <div>
+                                            <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">סוג קשר:</label>
+                                            <select
+                                                className="w-full p-2 rounded border text-sm dark:bg-slate-700 dark:border-slate-600"
+                                                value={parentChildType}
+                                                onChange={e => setParentChildType(e.target.value)}
+                                            >
+                                                <option value="biological">ביולוגי</option>
+                                                <option value="adopted">מאומץ</option>
+                                                <option value="foster">אומנה</option>
+                                                <option value="step">חורג</option>
+                                            </select>
+                                        </div>
+                                    )}
 
                                     {connectMode === 'spouse' && (
-                                        <select
-                                            className="w-full p-2 rounded border text-sm"
-                                            value={spouseStatus}
-                                            onChange={e => setSpouseStatus(e.target.value)}
-                                        >
-                                            <option value="married">נשואים</option>
-                                            <option value="divorced">גרושים</option>
-                                            <option value="widowed">אלמן/ה</option>
-                                        </select>
+                                        <div>
+                                            <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">סטטוס:</label>
+                                            <select
+                                                className="w-full p-2 rounded border text-sm dark:bg-slate-700 dark:border-slate-600"
+                                                value={spouseStatus}
+                                                onChange={e => setSpouseStatus(e.target.value)}
+                                            >
+                                                <option value="married">נשואים</option>
+                                                <option value="divorced">גרושים</option>
+                                                <option value="widowed">אלמן/ה</option>
+                                                <option value="separated">פרודים</option>
+                                                <option value="engaged">מאורסים</option>
+                                                <option value="common_law">ידועים בציבור</option>
+                                            </select>
+                                        </div>
                                     )}
 
                                     <div className="flex justify-end gap-2 mt-2">
