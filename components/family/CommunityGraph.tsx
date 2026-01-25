@@ -46,13 +46,13 @@ export const CommunityGraph: React.FC = () => {
 
     // Force simulation parameters (with sliders)
     const [forceParams, setForceParams] = useState({
-        parentChildStrength: 0.85,
-        spouseStrength: 0.9,
-        charge: -300,
-        parentChildDistance: 100,
-        spouseDistance: 80,
-        collisionRadius: 40,
-        yForceStrength: 0.6
+        parentChildStrength: 1.00,
+        spouseStrength: 1.00,
+        charge: -650,
+        parentChildDistance: 50,
+        spouseDistance: 70,
+        collisionRadius: 20,
+        yForceStrength: 1.00
     });
 
     // Edit modal state
@@ -305,8 +305,8 @@ export const CommunityGraph: React.FC = () => {
         // Update collision force
         sim.force('collision', d3.forceCollide().radius(forceParams.collisionRadius));
 
-        // Restart simulation with new parameters
-        sim.alpha(0.3).restart();
+        // Restart simulation with new parameters (higher alpha for better convergence)
+        sim.alpha(0.5).restart();
     }, [forceParams]);
 
     // Build the D3 visualization
@@ -423,8 +423,9 @@ export const CommunityGraph: React.FC = () => {
             .force('x', d3.forceX(width / 2).strength(0.05))
             .force('y', d3.forceY<GraphNode>(d => yearToY(d.birthYear ?? ((minYear + maxYear) / 2))).strength(forceParams.yForceStrength))
             .force('collision', d3.forceCollide().radius(forceParams.collisionRadius))
-            .alpha(0.3)
-            .alphaDecay(0.015);
+            .alpha(1.0)  // Start with high energy for better initial layout
+            .alphaDecay(0.008)  // Slower cooling = more time to settle
+            .velocityDecay(0.4); // More friction = smoother convergence
 
         // Store simulation ref for real-time updates
         simulationRef.current = simulation;
@@ -640,7 +641,7 @@ export const CommunityGraph: React.FC = () => {
         // Drag functions
         function dragstarted(event: d3.D3DragEvent<SVGGElement, GraphNode, unknown>, d: GraphNode) {
             stopPulsing(); // Stop pulsing on drag
-            if (!event.active) simulation.alphaTarget(0.3).restart();
+            if (!event.active) simulation.alphaTarget(0.5).restart();
             d.fx = d.x;
             d.fy = d.y;
         }
@@ -1290,13 +1291,13 @@ export const CommunityGraph: React.FC = () => {
                                 {/* Reset button */}
                                 <button
                                     onClick={() => setForceParams({
-                                        parentChildStrength: 0.85,
-                                        spouseStrength: 0.9,
-                                        charge: -300,
-                                        parentChildDistance: 100,
-                                        spouseDistance: 80,
-                                        collisionRadius: 40,
-                                        yForceStrength: 0.6
+                                        parentChildStrength: 1.00,
+                                        spouseStrength: 1.00,
+                                        charge: -650,
+                                        parentChildDistance: 50,
+                                        spouseDistance: 70,
+                                        collisionRadius: 20,
+                                        yForceStrength: 1.00
                                     })}
                                     className="w-full mt-2 px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-white text-xs transition-colors"
                                 >
