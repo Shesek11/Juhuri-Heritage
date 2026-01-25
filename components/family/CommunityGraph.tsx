@@ -237,6 +237,18 @@ export const CommunityGraph: React.FC = () => {
                 .text(year.toString());
             }
 
+            // Initialize node positions for consistent layout (not random)
+            nodes.forEach((n, i) => {
+                if (!n.x || !n.y) {
+                    // Start nodes in a grid pattern based on their index
+                    const cols = Math.ceil(Math.sqrt(nodes.length));
+                    const row = Math.floor(i / cols);
+                    const col = i % cols;
+                    n.x = (col + 0.5) * (width / cols);
+                    n.y = (row + 0.5) * (height / Math.ceil(nodes.length / cols));
+                }
+            });
+
             // Create force simulation with birth-year based Y positioning
             simulation = d3.forceSimulation<GraphNode>(nodes)
                 .force('link', d3.forceLink<GraphNode, GraphEdge>(edges)
@@ -251,7 +263,9 @@ export const CommunityGraph: React.FC = () => {
                 .force('charge', d3.forceManyBody().strength(-600))
                 .force('x', d3.forceX(width / 2).strength(0.1))
                 .force('y', d3.forceY<GraphNode>(d => yearToY(d.birthYear ?? ((minYear + maxYear) / 2))).strength(0.6))
-                .force('collision', d3.forceCollide().radius(50));
+                .force('collision', d3.forceCollide().radius(50))
+                .alpha(0.3) // Lower initial heat for more stable convergence
+                .alphaDecay(0.02); // Slower cooling for better convergence
         } else if (layoutMode === 'hierarchical') {
             // HIERARCHICAL TREE LAYOUT - Generations top to bottom
             const maxGen = Math.max(...nodes.map(n => n.generation || 0));
@@ -333,11 +347,16 @@ export const CommunityGraph: React.FC = () => {
             return 2;
         };
 
+        // Filter edges based on layout mode
+        const filteredEdges = layoutMode === 'force'
+            ? edges // Show all relationships in force layout
+            : edges.filter(e => e.type === 'parent-child'); // Only parent-child in tree/radial
+
         // Draw edges as paths (Orthogonal routing)
         const link = g.append('g')
             .attr('class', 'links')
             .selectAll('path')
-            .data(edges)
+            .data(filteredEdges)
             .enter()
             .append('path')
             .attr('stroke', d => getEdgeColor(d))
@@ -355,6 +374,7 @@ export const CommunityGraph: React.FC = () => {
             .enter()
             .append('g')
             .attr('class', 'node')
+            .attr('data-id', d => d.id) // Add data-id for focusOnNode
             .style('cursor', 'pointer')
             .call(d3.drag<SVGGElement, GraphNode>()
                 .on('start', dragstarted)
@@ -573,6 +593,71 @@ export const CommunityGraph: React.FC = () => {
         }
     };
 
+    // Focus on a specific node with zoom and highlight
+    const focusOnNode = (nodeId: number) => {
+        if (!svgRef.current || !zoomRef.current || !containerRef.current) return;
+
+        const node = nodes.find(n => n.id === nodeId);
+        if (!node || !node.x || !node.y) return;
+
+        const width = containerRef.current.clientWidth;
+        const height = containerRef.current.clientHeight;
+
+        // Calculate transform to center the node
+        const scale = 1.5;
+        const x = width / 2 - scale * node.x;
+        const y = height / 2 - scale * node.y;
+
+        // Zoom to node
+        d3.select(svgRef.current)
+            .transition()
+            .duration(750)
+            .call(
+                zoomRef.current.transform,
+                d3.zoomIdentity.translate(x, y).scale(scale)
+            );
+
+        // Highlight the node with pulsing animation
+        const svg = d3.select(svgRef.current);
+        const nodeGroup = svg.select(`g[data-id="${nodeId}"]`);
+
+        if (!nodeGroup.empty()) {
+            // Add a temporary highlight circle
+            const circle = nodeGroup.select('circle');
+            const radius = 25;
+
+            // Create pulsing ring effect
+            const ring = nodeGroup.insert('circle', 'circle')
+                .attr('r', radius)
+                .attr('fill', 'none')
+                .attr('stroke', '#f59e0b')
+                .attr('stroke-width', 4)
+                .attr('opacity', 1);
+
+            // Pulse animation
+            ring.transition()
+                .duration(600)
+                .attr('r', radius + 15)
+                .attr('opacity', 0)
+                .remove();
+
+            // Flash the node itself
+            circle
+                .transition()
+                .duration(200)
+                .attr('r', 30)
+                .transition()
+                .duration(200)
+                .attr('r', 25)
+                .transition()
+                .duration(200)
+                .attr('r', 30)
+                .transition()
+                .duration(200)
+                .attr('r', 25);
+        }
+    };
+
     if (loading) {
         return (
             <div className="flex items-center justify-center h-full bg-slate-900">
@@ -620,13 +705,10 @@ export const CommunityGraph: React.FC = () => {
                                     <button
                                         key={result.id}
                                         onClick={() => {
-                                            const member = allMembers.find(m => m.id === result.id);
-                                            if (member) {
-                                                setSelectedMember(member);
-                                                setIsEditModalOpen(true);
-                                                setSearchQuery('');
-                                                setSearchResults([]);
-                                            }
+                                            // Focus on the node with zoom and highlight
+                                            focusOnNode(result.id);
+                                            setSearchQuery('');
+                                            setSearchResults([]);
                                         }}
                                         className="w-full text-right px-4 py-2 hover:bg-slate-700 transition-colors text-sm border-b border-slate-700 last:border-b-0"
                                     >
