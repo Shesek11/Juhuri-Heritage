@@ -19,11 +19,27 @@ interface ParentChildRelation {
     child_id: number;
 }
 
+interface Partnership {
+    person1_id: number;
+    person2_id: number;
+    partnership_type?: string;
+    start_date?: string;
+    end_date?: string;
+}
+
+interface PositionedMember extends FamilyMember {
+    x: number;
+    y: number;
+    generation: number;
+    familyGroupId: number;
+}
+
 export const TraditionalFamilyTree: React.FC = () => {
     const svgRef = useRef<SVGSVGElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const [members, setMembers] = useState<FamilyMember[]>([]);
     const [parentChildRelations, setParentChildRelations] = useState<ParentChildRelation[]>([]);
+    const [partnerships, setPartnerships] = useState<Partnership[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedMember, setSelectedMember] = useState<FamilyMember | null>(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -38,7 +54,12 @@ export const TraditionalFamilyTree: React.FC = () => {
             const data = await familyService.getTreeData();
             setMembers(data.members || []);
             setParentChildRelations(data.parentChild || []);
-            console.log('[TraditionalFamilyTree] Loaded:', data.members?.length, 'members,', data.parentChild?.length, 'parent-child relations');
+            setPartnerships(data.partnerships || []);
+            console.log('[TraditionalFamilyTree] Loaded:',
+                data.members?.length, 'members,',
+                data.parentChild?.length, 'parent-child relations,',
+                data.partnerships?.length, 'partnerships'
+            );
         } catch (error) {
             console.error('[TraditionalFamilyTree] Error loading data:', error);
         } finally {
@@ -50,62 +71,206 @@ export const TraditionalFamilyTree: React.FC = () => {
         loadData();
     }, [loadData]);
 
-    // Build hierarchical tree from flat data
-    const buildHierarchy = useCallback((): FamilyMember => {
-        if (members.length === 0) {
-            // Return dummy root
-            return {
-                id: -1,
-                first_name: 'כל',
-                last_name: 'המשפחות',
-                gender: 'unknown' as any,
-                is_alive: false,
-            };
-        }
+    // Find connected family groups using Union-Find algorithm
+    const findFamilyGroups = useCallback((): Map<number, number> => {
+        const parent = new Map<number, number>();
 
-        // Find root nodes (people who are not children in any parent-child relation)
+        // Initialize: each person is their own parent
+        members.forEach(m => parent.set(m.id, m.id));
+
+        // Find function with path compression
+        const find = (id: number): number => {
+            if (parent.get(id) !== id) {
+                parent.set(id, find(parent.get(id)!));
+            }
+            return parent.get(id)!;
+        };
+
+        // Union function
+        const union = (id1: number, id2: number) => {
+            const root1 = find(id1);
+            const root2 = find(id2);
+            if (root1 !== root2) {
+                parent.set(root2, root1);
+            }
+        };
+
+        // Connect through partnerships
+        partnerships.forEach(p => {
+            union(p.person1_id, p.person2_id);
+        });
+
+        // Connect through parent-child relations
+        parentChildRelations.forEach(rel => {
+            union(rel.parent_id, rel.child_id);
+        });
+
+        // Map each person to their family group
+        const familyGroups = new Map<number, number>();
+        members.forEach(m => {
+            familyGroups.set(m.id, find(m.id));
+        });
+
+        const groupCount = new Set(familyGroups.values()).size;
+        console.log('[TraditionalFamilyTree] Found', groupCount, 'family groups');
+
+        return familyGroups;
+    }, [members, partnerships, parentChildRelations]);
+
+    // Calculate generation for each person
+    const calculateGenerations = useCallback((familyGroups: Map<number, number>): Map<number, number> => {
+        const generations = new Map<number, number>();
+        const visited = new Set<number>();
+
+        // Find root nodes (people without parents)
         const childIds = new Set(parentChildRelations.map(rel => rel.child_id));
         const roots = members.filter(m => !childIds.has(m.id));
 
-        console.log('[TraditionalFamilyTree] Found', roots.length, 'root nodes:', roots.map(r => `${r.first_name} ${r.last_name}`));
+        console.log('[TraditionalFamilyTree] Found', roots.length, 'root nodes');
 
-        // Create virtual root that connects all real roots
-        const virtualRoot: FamilyMember = {
-            id: -1,
-            first_name: 'כל',
-            last_name: 'המשפחות',
-            gender: 'unknown' as any,
-            is_alive: false,
-        };
+        // BFS to assign generations
+        const queue: Array<{ id: number, gen: number }> = [];
+        roots.forEach(root => {
+            queue.push({ id: root.id, gen: 0 });
+            generations.set(root.id, 0);
+        });
 
-        return virtualRoot;
-    }, [members, parentChildRelations]);
+        while (queue.length > 0) {
+            const { id, gen } = queue.shift()!;
+            if (visited.has(id)) continue;
+            visited.add(id);
 
-    // Get children of a person using parent-child relations
-    const getChildren = useCallback((parentId: number): FamilyMember[] => {
-        // Special case: virtual root (-1) returns all real roots
-        if (parentId === -1) {
-            const childIds = new Set(parentChildRelations.map(rel => rel.child_id));
-            const roots = members.filter(m => !childIds.has(m.id));
-            console.log(`[TraditionalFamilyTree] Virtual root has ${roots.length} root families`);
-            return roots;
+            // Get children
+            const children = parentChildRelations
+                .filter(rel => rel.parent_id === id)
+                .map(rel => rel.child_id);
+
+            children.forEach(childId => {
+                if (!generations.has(childId) || generations.get(childId)! < gen + 1) {
+                    generations.set(childId, gen + 1);
+                    queue.push({ id: childId, gen: gen + 1 });
+                }
+            });
         }
 
-        // Find all child IDs for this parent
-        const childIds = parentChildRelations
-            .filter(rel => rel.parent_id === parentId)
-            .map(rel => rel.child_id);
+        // Assign generation 0 to anyone not yet assigned (isolated nodes)
+        members.forEach(m => {
+            if (!generations.has(m.id)) {
+                generations.set(m.id, 0);
+            }
+        });
 
-        // Get the actual member objects
-        const children = members.filter(m => childIds.includes(m.id));
-
-        if (children.length > 0) {
-            console.log(`[TraditionalFamilyTree] Parent ${parentId} has ${children.length} children:`, children.map(c => c.first_name));
-        }
-        return children;
+        return generations;
     }, [members, parentChildRelations]);
 
-    // Initialize D3 tree
+    // Layout all family members
+    const layoutFamilies = useCallback((): PositionedMember[] => {
+        const familyGroups = findFamilyGroups();
+        const generations = calculateGenerations(familyGroups);
+
+        // Group members by family group
+        const groupedMembers = new Map<number, FamilyMember[]>();
+        members.forEach(m => {
+            const groupId = familyGroups.get(m.id)!;
+            if (!groupedMembers.has(groupId)) {
+                groupedMembers.set(groupId, []);
+            }
+            groupedMembers.get(groupId)!.push(m);
+        });
+
+        const allPositioned: PositionedMember[] = [];
+        const NODE_WIDTH = 180;
+        const NODE_HEIGHT = 100;
+        const HORIZONTAL_SPACING = 220;
+        const VERTICAL_SPACING = 180;
+        const FAMILY_GROUP_SPACING = 400;
+
+        let currentFamilyX = 0;
+
+        // Layout each family group separately
+        groupedMembers.forEach((groupMembers, groupId) => {
+            // Group by generation within this family
+            const byGeneration = new Map<number, FamilyMember[]>();
+            groupMembers.forEach(m => {
+                const gen = generations.get(m.id)!;
+                if (!byGeneration.has(gen)) {
+                    byGeneration.set(gen, []);
+                }
+                byGeneration.get(gen)!.push(m);
+            });
+
+            // Sort each generation by birth year
+            byGeneration.forEach(genMembers => {
+                genMembers.sort((a, b) => {
+                    const yearA = a.birth_date ? new Date(a.birth_date).getFullYear() : 9999;
+                    const yearB = b.birth_date ? new Date(b.birth_date).getFullYear() : 9999;
+                    return yearA - yearB;
+                });
+            });
+
+            // Layout generation by generation
+            const minGen = Math.min(...byGeneration.keys());
+            const maxGen = Math.max(...byGeneration.keys());
+
+            let maxWidthInFamily = 0;
+
+            for (let gen = minGen; gen <= maxGen; gen++) {
+                if (!byGeneration.has(gen)) continue;
+
+                const genMembers = byGeneration.get(gen)!;
+                let currentX = currentFamilyX;
+
+                // Handle partnerships - group spouses together
+                const processed = new Set<number>();
+
+                genMembers.forEach(person => {
+                    if (processed.has(person.id)) return;
+
+                    // Find all partners of this person
+                    const partners = partnerships
+                        .filter(p => p.person1_id === person.id || p.person2_id === person.id)
+                        .map(p => p.person1_id === person.id ? p.person2_id : p.person1_id)
+                        .map(partnerId => members.find(m => m.id === partnerId))
+                        .filter(p => p && generations.get(p.id) === gen) as FamilyMember[];
+
+                    // Position current person
+                    allPositioned.push({
+                        ...person,
+                        x: currentX,
+                        y: gen * VERTICAL_SPACING,
+                        generation: gen,
+                        familyGroupId: groupId
+                    });
+                    processed.add(person.id);
+                    currentX += HORIZONTAL_SPACING;
+
+                    // Position partners next to them
+                    partners.forEach(partner => {
+                        if (!processed.has(partner.id)) {
+                            allPositioned.push({
+                                ...partner,
+                                x: currentX,
+                                y: gen * VERTICAL_SPACING,
+                                generation: gen,
+                                familyGroupId: groupId
+                            });
+                            processed.add(partner.id);
+                            currentX += HORIZONTAL_SPACING;
+                        }
+                    });
+                });
+
+                maxWidthInFamily = Math.max(maxWidthInFamily, currentX - currentFamilyX);
+            }
+
+            currentFamilyX += maxWidthInFamily + FAMILY_GROUP_SPACING;
+        });
+
+        console.log('[TraditionalFamilyTree] Positioned', allPositioned.length, 'members');
+        return allPositioned;
+    }, [members, partnerships, parentChildRelations, findFamilyGroups, calculateGenerations]);
+
+    // Initialize D3 tree with custom layout
     useEffect(() => {
         if (!svgRef.current || !containerRef.current || loading || members.length === 0) return;
 
@@ -132,57 +297,92 @@ export const TraditionalFamilyTree: React.FC = () => {
         svg.call(zoom);
         zoomRef.current = zoom;
 
-        // Build hierarchy
-        const root = buildHierarchy();
-        console.log('[TraditionalFamilyTree] Root:', root.first_name, root.last_name, 'ID:', root.id);
+        // Layout all members
+        const positioned = layoutFamilies();
 
-        // Create D3 hierarchy
-        const hierarchy = d3.hierarchy(root, (d: FamilyMember) => {
-            const children = getChildren(d.id);
-            return children.length > 0 ? children : null;
+        console.log('[TraditionalFamilyTree] Positioned', positioned.length, 'members');
+
+        // Draw partnership links (horizontal lines between spouses)
+        const partnershipLinks = partnerships.flatMap(p => {
+            const person1 = positioned.find(m => m.id === p.person1_id);
+            const person2 = positioned.find(m => m.id === p.person2_id);
+            if (person1 && person2 && person1.generation === person2.generation) {
+                return [{
+                    source: person1,
+                    target: person2,
+                    type: 'partnership'
+                }];
+            }
+            return [];
         });
 
-        console.log('[TraditionalFamilyTree] Hierarchy depth:', hierarchy.height, 'Total nodes:', hierarchy.descendants().length);
+        g.selectAll('.partnership-link')
+            .data(partnershipLinks)
+            .enter()
+            .append('line')
+            .attr('class', 'partnership-link')
+            .attr('x1', d => d.source.x)
+            .attr('y1', d => d.source.y)
+            .attr('x2', d => d.target.x)
+            .attr('y2', d => d.target.y)
+            .attr('stroke', '#f59e0b')
+            .attr('stroke-width', 3)
+            .attr('stroke-dasharray', '5,5');
 
-        // Create tree layout
-        const treeLayout = d3.tree<FamilyMember>()
-            .size([width - 200, height - 200])
-            .separation((a, b) => (a.parent === b.parent ? 1 : 2));
+        // Draw parent-child links
+        const parentChildLinks = parentChildRelations.flatMap(rel => {
+            const parent = positioned.find(m => m.id === rel.parent_id);
+            const child = positioned.find(m => m.id === rel.child_id);
 
-        // Apply layout
-        const treeData = treeLayout(hierarchy);
+            if (parent && child) {
+                // Find parent's partner(s) in the same generation
+                const partners = partnerships
+                    .filter(p => p.person1_id === parent.id || p.person2_id === parent.id)
+                    .map(p => p.person1_id === parent.id ? p.person2_id : p.person1_id)
+                    .map(partnerId => positioned.find(m => m.id === partnerId))
+                    .filter(p => p && p.generation === parent.generation) as PositionedMember[];
 
-        // Filter out virtual root from display
-        const nodesToDisplay = treeData.descendants().filter(d => d.data.id !== -1);
-        const linksToDisplay = treeData.links().filter(l => l.source.data.id !== -1 && l.target.data.id !== -1);
+                // Calculate midpoint between parent and partner (if exists)
+                let parentX = parent.x;
+                if (partners.length > 0) {
+                    const partnerX = partners[0].x;
+                    parentX = (parent.x + partnerX) / 2;
+                }
 
-        console.log('[TraditionalFamilyTree] Displaying', nodesToDisplay.length, 'nodes (filtered virtual root)');
+                return [{
+                    parentX,
+                    parentY: parent.y,
+                    childX: child.x,
+                    childY: child.y
+                }];
+            }
+            return [];
+        });
 
-        // Draw links (lines between nodes)
-        g.selectAll('.link')
-            .data(linksToDisplay)
+        g.selectAll('.parent-child-link')
+            .data(parentChildLinks)
             .enter()
             .append('path')
-            .attr('class', 'link')
-            .attr('d', d3.linkVertical<any, TreeNode>()
-                .x(d => (d.x || 0) + 100)
-                .y(d => (d.y || 0) + 100)
-            )
+            .attr('class', 'parent-child-link')
+            .attr('d', d => {
+                // Draw line from parent down, then horizontal, then to child
+                return `M ${d.parentX},${d.parentY + 40} L ${d.parentX},${d.parentY + 80} L ${d.childX},${d.childY - 80} L ${d.childX},${d.childY - 40}`;
+            })
             .attr('fill', 'none')
             .attr('stroke', '#64748b')
             .attr('stroke-width', 2);
 
         // Draw nodes
         const node = g.selectAll('.node')
-            .data(nodesToDisplay)
+            .data(positioned)
             .enter()
             .append('g')
             .attr('class', 'node')
-            .attr('transform', d => `translate(${(d.x || 0) + 100},${(d.y || 0) + 100})`)
+            .attr('transform', d => `translate(${d.x},${d.y})`)
             .style('cursor', 'pointer')
             .on('click', (event, d) => {
                 event.stopPropagation();
-                setSelectedMember(d.data);
+                setSelectedMember(d);
                 setIsEditModalOpen(true);
             });
 
@@ -193,8 +393,8 @@ export const TraditionalFamilyTree: React.FC = () => {
             .attr('width', 160)
             .attr('height', 80)
             .attr('rx', 8)
-            .attr('fill', d => d.data.gender === 'female' ? '#fce7f3' : '#dbeafe')
-            .attr('stroke', d => d.data.gender === 'female' ? '#ec4899' : '#3b82f6')
+            .attr('fill', d => d.gender === 'female' ? '#fce7f3' : '#dbeafe')
+            .attr('stroke', d => d.gender === 'female' ? '#ec4899' : '#3b82f6')
             .attr('stroke-width', 3);
 
         // Node text - name
@@ -204,7 +404,7 @@ export const TraditionalFamilyTree: React.FC = () => {
             .attr('fill', '#1e293b')
             .attr('font-weight', 'bold')
             .attr('font-size', '14px')
-            .text(d => `${d.data.first_name} ${d.data.last_name || ''}`);
+            .text(d => `${d.first_name} ${d.last_name || ''}`);
 
         // Node text - birth year
         node.append('text')
@@ -212,7 +412,7 @@ export const TraditionalFamilyTree: React.FC = () => {
             .attr('text-anchor', 'middle')
             .attr('fill', '#64748b')
             .attr('font-size', '12px')
-            .text(d => d.data.birth_date ? `📅 ${new Date(d.data.birth_date).getFullYear()}` : '');
+            .text(d => d.birth_date ? `📅 ${new Date(d.birth_date).getFullYear()}` : '');
 
         // Node text - location
         node.append('text')
@@ -221,10 +421,10 @@ export const TraditionalFamilyTree: React.FC = () => {
             .attr('fill', '#64748b')
             .attr('font-size', '11px')
             .text(d => {
-                if (d.data.is_alive && d.data.current_residence) {
-                    return `📍 ${d.data.current_residence}`;
-                } else if (d.data.birth_place) {
-                    return `🏙️ ${d.data.birth_place}`;
+                if (d.is_alive && d.current_residence) {
+                    return `📍 ${d.current_residence}`;
+                } else if (d.birth_place) {
+                    return `🏙️ ${d.birth_place}`;
                 }
                 return '';
             });
@@ -245,7 +445,7 @@ export const TraditionalFamilyTree: React.FC = () => {
         }
 
         console.log('[TraditionalFamilyTree] Tree initialized successfully');
-    }, [members, loading, buildHierarchy, getChildren]);
+    }, [members, partnerships, parentChildRelations, loading, layoutFamilies]);
 
     // Search functionality
     const handleSearch = (query: string) => {
