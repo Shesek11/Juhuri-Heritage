@@ -8,7 +8,7 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import * as d3 from 'd3';
 import { familyService, FamilyMember } from '../../services/familyService';
 import { EditMemberModal } from './EditMemberModal';
-import { Loader2, ZoomIn, ZoomOut, Maximize2, UserPlus, Link2, X, Search, Network, GitBranch, Circle, Info, Eye, Palmtree } from 'lucide-react';
+import { Loader2, ZoomIn, ZoomOut, Maximize2, UserPlus, Link2, X, Search, Network, GitBranch, Circle, Info, Eye } from 'lucide-react';
 
 interface GraphNode extends d3.SimulationNodeDatum {
     id: number;
@@ -31,7 +31,7 @@ interface GraphEdge {
 
 type ConnectionMode = 'none' | 'connecting' | 'selecting-type';
 type RelationshipType = 'parent-child' | 'spouse' | 'sibling';
-type LayoutMode = 'force' | 'hierarchical' | 'radial' | 'islands';
+type LayoutMode = 'force' | 'hierarchical' | 'radial';
 
 export const CommunityGraph: React.FC = () => {
     const svgRef = useRef<SVGSVGElement>(null);
@@ -348,153 +348,6 @@ export const CommunityGraph: React.FC = () => {
                     node.fy = node.y;
                 });
             });
-        } else if (layoutMode === 'islands') {
-            // GARDEN OF FAMILIES LAYOUT - Real hierarchical family trees using D3 tree layout
-
-            // 1. Build parent-child map for hierarchy
-            const childrenMap = new Map<number, number[]>(); // parentId -> childIds
-            const parentMap = new Map<number, number[]>(); // childId -> parentIds
-
-            edges.forEach(e => {
-                if (e.type === 'parent-child') {
-                    const parentId = typeof e.source === 'number' ? e.source : e.source.id;
-                    const childId = typeof e.target === 'number' ? e.target : e.target.id;
-
-                    if (!childrenMap.has(parentId)) childrenMap.set(parentId, []);
-                    childrenMap.get(parentId)!.push(childId);
-
-                    if (!parentMap.has(childId)) parentMap.set(childId, []);
-                    parentMap.get(childId)!.push(parentId);
-                }
-            });
-
-            // 2. Group nodes by family name
-            const familyGroups = new Map<string, GraphNode[]>();
-            nodes.forEach(n => {
-                const familyName = n.family || 'לא ידוע';
-                if (!familyGroups.has(familyName)) familyGroups.set(familyName, []);
-                familyGroups.get(familyName)!.push(n);
-            });
-
-            console.log('[Garden] Found', familyGroups.size, 'family trees');
-
-            // 3. Build hierarchical trees for each family
-            const familyArray = Array.from(familyGroups.entries())
-                .sort((a, b) => b[1].length - a[1].length);
-
-            const treeSpacing = 600;
-            const treesPerRow = Math.ceil(Math.sqrt(familyArray.length));
-
-            familyArray.forEach(([familyName, familyNodes], treeIdx) => {
-                // Find root nodes (people with no parents in this family)
-                const familyNodeIds = new Set(familyNodes.map(n => n.id));
-                const roots = familyNodes.filter(n => {
-                    const parents = parentMap.get(n.id) || [];
-                    return parents.length === 0 || !parents.some(p => familyNodeIds.has(p));
-                });
-
-                if (roots.length === 0 && familyNodes.length > 0) {
-                    // Fallback: use oldest generation as roots
-                    const minGen = Math.min(...familyNodes.map(n => n.generation || 0));
-                    roots.push(...familyNodes.filter(n => (n.generation || 0) === minGen));
-                }
-
-                // Build hierarchy structure recursively
-                interface TreeNode {
-                    node: GraphNode;
-                    children: TreeNode[];
-                }
-
-                const buildTree = (nodeId: number, visited = new Set<number>()): TreeNode | null => {
-                    if (visited.has(nodeId)) return null;
-                    visited.add(nodeId);
-
-                    const node = nodes.find(n => n.id === nodeId);
-                    if (!node || !familyNodeIds.has(nodeId)) return null;
-
-                    const childIds = childrenMap.get(nodeId) || [];
-                    const children = childIds
-                        .map(cid => buildTree(cid, visited))
-                        .filter((c): c is TreeNode => c !== null);
-
-                    return { node, children };
-                };
-
-                const trees = roots.map(r => buildTree(r.id)).filter((t): t is TreeNode => t !== null);
-
-                // Use D3 tree layout
-                const treeLayout = d3.tree<TreeNode>()
-                    .nodeSize([120, 140]) // [horizontal spacing, vertical spacing]
-                    .separation((a, b) => a.parent === b.parent ? 1 : 1.2);
-
-                // Calculate tree position in grid
-                const row = Math.floor(treeIdx / treesPerRow);
-                const col = treeIdx % treesPerRow;
-                const offsetX = 200 + col * treeSpacing;
-                const offsetY = 100 + row * 600;
-
-                // Position each tree
-                trees.forEach((tree, idx) => {
-                    const hierarchy = d3.hierarchy(tree, d => d.children);
-                    const treeData = treeLayout(hierarchy);
-
-                    // Apply positions
-                    treeData.each(d => {
-                        const graphNode = d.data.node;
-                        graphNode.x = offsetX + (d.x || 0) + (idx * 300); // Space multiple roots horizontally
-                        graphNode.y = offsetY + (d.y || 0);
-                        graphNode.fx = graphNode.x;
-                        graphNode.fy = graphNode.y;
-                    });
-                });
-
-                // Store tree info
-                (familyNodes[0] as any).treeId = treeIdx;
-                (familyNodes[0] as any).treeName = familyName;
-            });
-
-            // 4. Draw family tree backgrounds
-            const treeBackgrounds = g.insert('g', '.links').attr('class', 'tree-backgrounds');
-            familyArray.forEach(([familyName, familyNodes], treeIdx) => {
-                const xs = familyNodes.map(n => n.x!);
-                const ys = familyNodes.map(n => n.y!);
-                const minX = Math.min(...xs) - 60;
-                const maxX = Math.max(...xs) + 60;
-                const minY = Math.min(...ys) - 50;
-                const maxY = Math.max(...ys) + 50;
-
-                const colors = [
-                    'rgba(59, 130, 246, 0.06)',
-                    'rgba(236, 72, 153, 0.06)',
-                    'rgba(168, 85, 247, 0.06)',
-                    'rgba(245, 158, 11, 0.06)',
-                    'rgba(16, 185, 129, 0.06)',
-                    'rgba(239, 68, 68, 0.06)',
-                    'rgba(20, 184, 166, 0.06)',
-                    'rgba(251, 146, 60, 0.06)',
-                ];
-
-                treeBackgrounds.append('rect')
-                    .attr('x', minX)
-                    .attr('y', minY)
-                    .attr('width', maxX - minX)
-                    .attr('height', maxY - minY)
-                    .attr('rx', 15)
-                    .attr('fill', colors[treeIdx % colors.length])
-                    .attr('stroke', colors[treeIdx % colors.length].replace('0.06', '0.25'))
-                    .attr('stroke-width', 1.5)
-                    .attr('stroke-dasharray', '4,4');
-
-                treeBackgrounds.append('text')
-                    .attr('x', (minX + maxX) / 2)
-                    .attr('y', minY - 10)
-                    .attr('text-anchor', 'middle')
-                    .attr('font-size', '14px')
-                    .attr('font-weight', 'bold')
-                    .attr('fill', colors[treeIdx % colors.length].replace('0.06', '0.8'))
-                    .text(`משפחת ${familyName} (${familyNodes.length})`);
-            });
-        }
 
         // Edge colors and styles - vibrant and clear
         const getEdgeColor = (d: GraphEdge) => {
@@ -526,9 +379,9 @@ export const CommunityGraph: React.FC = () => {
         };
 
         // Filter edges based on layout mode
-        const filteredEdges = (layoutMode === 'force' || layoutMode === 'islands')
-            ? edges // Show all relationships in force and islands layout
-            : edges.filter(e => e.type === 'parent-child'); // Only parent-child in tree/radial
+        const filteredEdges = layoutMode === 'force'
+            ? edges // Show all relationships in force layout
+            : edges.filter(e => e.type === 'parent-child'); // Only parent-child in hierarchical/radial
 
         // Draw edges as paths with glow effect for better visibility
         const link = g.append('g')
@@ -700,26 +553,6 @@ export const CommunityGraph: React.FC = () => {
                         const cx2 = sx + dx * (1 - curvature);
                         const cy2 = sy + dy * (1 - curvature);
                         return `M ${sx} ${sy} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${tx} ${ty}`;
-                    }
-                } else if (layoutMode === 'islands') {
-                    // Clean, gentle curves for islands - family members are close together
-                    const dx = tx - sx;
-                    const dy = ty - sy;
-                    const distance = Math.sqrt(dx * dx + dy * dy);
-
-                    if (d.type === 'spouse') {
-                        // Very subtle curve for spouses in islands
-                        const curvature = 0.2;
-                        const cx1 = sx + dx * curvature;
-                        const cy1 = sy - distance * 0.1;
-                        const cx2 = sx + dx * (1 - curvature);
-                        const cy2 = ty - distance * 0.1;
-                        return `M ${sx} ${sy} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${tx} ${ty}`;
-                    } else {
-                        // Gentle quadratic curve for other relationships
-                        const cx = (sx + tx) / 2;
-                        const cy = (sy + ty) / 2 - distance * 0.15;
-                        return `M ${sx} ${sy} Q ${cx} ${cy}, ${tx} ${ty}`;
                     }
                 } else {
                     // Straight lines for hierarchical/radial layouts
@@ -1096,17 +929,6 @@ export const CommunityGraph: React.FC = () => {
                                 title="עץ רדיאלי - דורות ממרכז החוצה"
                             >
                                 <Circle size={12} className="inline" />
-                            </button>
-                            <button
-                                onClick={() => setLayoutMode('islands')}
-                                className={`px-2 py-1 rounded text-xs transition-colors ${
-                                    layoutMode === 'islands'
-                                        ? 'bg-amber-600 text-white'
-                                        : 'text-slate-300 hover:bg-slate-600'
-                                }`}
-                                title="איים משפחתיים - כל משפחה נפרדת 🏝️"
-                            >
-                                <Palmtree size={12} className="inline" />
                             </button>
                         </div>
                     </div>
