@@ -128,7 +128,7 @@ export const TraditionalFamilyTree: React.FC = () => {
 
         console.log('[TraditionalFamilyTree] Found', roots.length, 'root nodes');
 
-        // BFS to assign generations
+        // BFS to assign initial generations based on parent-child relations
         const queue: Array<{ id: number, gen: number }> = [];
         roots.forEach(root => {
             queue.push({ id: root.id, gen: 0 });
@@ -160,8 +160,63 @@ export const TraditionalFamilyTree: React.FC = () => {
             }
         });
 
+        // CRITICAL FIX: Normalize generations for spouses
+        // Partners must be in the same generation for display
+        let changed = true;
+        let iterations = 0;
+        const maxIterations = 10;
+
+        while (changed && iterations < maxIterations) {
+            changed = false;
+            iterations++;
+
+            partnerships.forEach(p => {
+                const gen1 = generations.get(p.person1_id);
+                const gen2 = generations.get(p.person2_id);
+
+                if (gen1 !== undefined && gen2 !== undefined && gen1 !== gen2) {
+                    // Move both to the earlier (lower) generation
+                    const minGen = Math.min(gen1, gen2);
+
+                    if (gen1 !== minGen) {
+                        generations.set(p.person1_id, minGen);
+                        changed = true;
+                    }
+                    if (gen2 !== minGen) {
+                        generations.set(p.person2_id, minGen);
+                        changed = true;
+                    }
+
+                    // Now we need to update all descendants
+                    const adjustDescendants = (personId: number, adjustment: number) => {
+                        if (adjustment === 0) return;
+
+                        const children = parentChildRelations
+                            .filter(rel => rel.parent_id === personId)
+                            .map(rel => rel.child_id);
+
+                        children.forEach(childId => {
+                            const childGen = generations.get(childId)!;
+                            const newGen = childGen + adjustment;
+                            generations.set(childId, newGen);
+                            adjustDescendants(childId, adjustment);
+                        });
+                    };
+
+                    if (gen1 > minGen) {
+                        adjustDescendants(p.person1_id, minGen - gen1);
+                    }
+                    if (gen2 > minGen) {
+                        adjustDescendants(p.person2_id, minGen - gen2);
+                    }
+                }
+            });
+        }
+
+        console.log('[TraditionalFamilyTree] Normalized generations in', iterations, 'iterations');
+
         return generations;
-    }, [members, parentChildRelations]);
+    }, [members, parentChildRelations, partnerships]);
 
     // Layout all family members
     const layoutFamilies = useCallback((): PositionedMember[] => {
@@ -389,48 +444,82 @@ export const TraditionalFamilyTree: React.FC = () => {
             .attr('stroke-width', 3)
             .attr('stroke-dasharray', '5,5');
 
-        // Draw parent-child links
-        const parentChildLinks = parentChildRelations.flatMap(rel => {
+        // Draw parent-child links with cleaner routing
+        // Group children by their parent pairs
+        const childrenByParentPair = new Map<string, { children: PositionedMember[], parents: PositionedMember[] }>();
+
+        parentChildRelations.forEach(rel => {
             const parent = positioned.find(m => m.id === rel.parent_id);
             const child = positioned.find(m => m.id === rel.child_id);
 
             if (parent && child) {
-                // Find parent's partner(s) in the same generation
-                const partners = partnerships
-                    .filter(p => p.person1_id === parent.id || p.person2_id === parent.id)
-                    .map(p => p.person1_id === parent.id ? p.person2_id : p.person1_id)
-                    .map(partnerId => positioned.find(m => m.id === partnerId))
-                    .filter(p => p && p.generation === parent.generation) as PositionedMember[];
+                // Get all parents of this child
+                const allParents = parentChildRelations
+                    .filter(r => r.child_id === child.id)
+                    .map(r => positioned.find(m => m.id === r.parent_id))
+                    .filter(p => p !== undefined) as PositionedMember[];
 
-                // Calculate midpoint between parent and partner (if exists)
-                let parentX = parent.x;
-                if (partners.length > 0) {
-                    const partnerX = partners[0].x;
-                    parentX = (parent.x + partnerX) / 2;
+                const parentKey = allParents.map(p => p.id).sort().join('-');
+
+                if (!childrenByParentPair.has(parentKey)) {
+                    childrenByParentPair.set(parentKey, { children: [], parents: allParents });
                 }
 
-                return [{
-                    parentX,
-                    parentY: parent.y,
-                    childX: child.x,
-                    childY: child.y
-                }];
+                const group = childrenByParentPair.get(parentKey)!;
+                if (!group.children.find(c => c.id === child.id)) {
+                    group.children.push(child);
+                }
             }
-            return [];
         });
 
-        g.selectAll('.parent-child-link')
-            .data(parentChildLinks)
-            .enter()
-            .append('path')
-            .attr('class', 'parent-child-link')
-            .attr('d', d => {
-                // Draw line from parent down, then horizontal, then to child
-                return `M ${d.parentX},${d.parentY + 40} L ${d.parentX},${d.parentY + 80} L ${d.childX},${d.childY - 80} L ${d.childX},${d.childY - 40}`;
-            })
-            .attr('fill', 'none')
-            .attr('stroke', '#64748b')
-            .attr('stroke-width', 2);
+        // Draw links for each parent-children group
+        childrenByParentPair.forEach((group) => {
+            if (group.children.length === 0 || group.parents.length === 0) return;
+
+            // Calculate midpoint between parents
+            const parentX = group.parents.reduce((sum, p) => sum + p.x, 0) / group.parents.length;
+            const parentY = group.parents[0].y;
+
+            // Calculate children span
+            const childrenXs = group.children.map(c => c.x);
+            const minChildX = Math.min(...childrenXs);
+            const maxChildX = Math.max(...childrenXs);
+            const childY = group.children[0].y;
+
+            // Draw vertical line from parent down
+            g.append('line')
+                .attr('class', 'parent-child-link')
+                .attr('x1', parentX)
+                .attr('y1', parentY + 40)
+                .attr('x2', parentX)
+                .attr('y2', childY - 100)
+                .attr('stroke', '#64748b')
+                .attr('stroke-width', 2);
+
+            // Draw horizontal line connecting all children
+            if (group.children.length > 1) {
+                g.append('line')
+                    .attr('class', 'parent-child-link')
+                    .attr('x1', minChildX)
+                    .attr('y1', childY - 100)
+                    .attr('x2', maxChildX)
+                    .attr('y2', childY - 100)
+                    .attr('stroke', '#64748b')
+                    .attr('stroke-width', 2);
+            }
+
+            // Draw vertical lines to each child
+            group.children.forEach(child => {
+                g.append('line')
+                    .attr('class', 'parent-child-link')
+                    .attr('x1', child.x)
+                    .attr('y1', childY - 100)
+                    .attr('x2', child.x)
+                    .attr('y2', childY - 40)
+                    .attr('stroke', '#64748b')
+                    .attr('stroke-width', 2);
+            });
+        });
 
         // Draw nodes
         const node = g.selectAll('.node')
