@@ -349,123 +349,111 @@ export const CommunityGraph: React.FC = () => {
                 });
             });
         } else if (layoutMode === 'islands') {
-            // FAMILY ISLANDS LAYOUT - Each family is a separate "island"
+            // GARDEN OF FAMILIES LAYOUT - Traditional family trees side-by-side
 
-            // 1. Group nodes into family clusters using Union-Find
-            const parent = new Map<number, number>();
-            nodes.forEach(n => parent.set(n.id, n.id));
-
-            const find = (id: number): number => {
-                if (parent.get(id) !== id) {
-                    parent.set(id, find(parent.get(id)!));
-                }
-                return parent.get(id)!;
-            };
-
-            const union = (id1: number, id2: number) => {
-                const root1 = find(id1);
-                const root2 = find(id2);
-                if (root1 !== root2) {
-                    parent.set(root2, root1);
-                }
-            };
-
-            // Connect through relationships
-            edges.forEach(e => {
-                const sourceId = typeof e.source === 'number' ? e.source : e.source.id;
-                const targetId = typeof e.target === 'number' ? e.target : e.target.id;
-                union(sourceId, targetId);
-            });
-
-            // Group nodes by family
-            const familyGroups = new Map<number, GraphNode[]>();
+            // 1. Group nodes by last name (family field)
+            const familyGroups = new Map<string, GraphNode[]>();
             nodes.forEach(n => {
-                const familyId = find(n.id);
-                if (!familyGroups.has(familyId)) familyGroups.set(familyId, []);
-                familyGroups.get(familyId)!.push(n);
+                const familyName = n.family || 'לא ידוע';
+                if (!familyGroups.has(familyName)) familyGroups.set(familyName, []);
+                familyGroups.get(familyName)!.push(n);
             });
 
-            console.log('[Islands] Found', familyGroups.size, 'family islands');
+            console.log('[Garden] Found', familyGroups.size, 'family trees');
 
-            // 2. Position islands in a grid pattern
-            const islandArray = Array.from(familyGroups.values());
-            const islandsPerRow = Math.ceil(Math.sqrt(islandArray.length));
-            const islandSpacing = 400; // Space between islands
+            // 2. Sort families by size (larger families first) for better visual balance
+            const familyArray = Array.from(familyGroups.entries())
+                .sort((a, b) => b[1].length - a[1].length);
 
-            // 3. For each island, create internal layout
-            islandArray.forEach((familyNodes, islandIdx) => {
-                // Calculate island position in grid
-                const row = Math.floor(islandIdx / islandsPerRow);
-                const col = islandIdx % islandsPerRow;
-                const islandCenterX = 200 + col * islandSpacing;
-                const islandCenterY = 200 + row * islandSpacing;
+            // 3. Calculate tree layout parameters
+            const treeSpacing = 400; // Horizontal space between family trees
+            const generationHeight = 120; // Vertical space between generations
+            const personSpacing = 100; // Horizontal space between people in same generation
+            const treesPerRow = Math.ceil(Math.sqrt(familyArray.length));
 
-                // Internal layout: circular arrangement for small families, force for larger
-                if (familyNodes.length <= 8) {
-                    // Small family - circular layout
-                    const radius = 80;
-                    const angleStep = (2 * Math.PI) / familyNodes.length;
-                    familyNodes.forEach((node, idx) => {
-                        const angle = idx * angleStep - Math.PI / 2; // Start from top
-                        node.x = islandCenterX + radius * Math.cos(angle);
-                        node.y = islandCenterY + radius * Math.sin(angle);
+            // 4. Position each family as a traditional hierarchical tree
+            familyArray.forEach(([familyName, familyNodes], treeIdx) => {
+                // Calculate tree position in garden grid
+                const row = Math.floor(treeIdx / treesPerRow);
+                const col = treeIdx % treesPerRow;
+                const treeBaseX = 200 + col * treeSpacing;
+                const treeBaseY = 100 + row * (generationHeight * 5); // Assume max ~5 generations per tree
+
+                // Group nodes by generation within this family
+                const genGroups = new Map<number, GraphNode[]>();
+                familyNodes.forEach(n => {
+                    const gen = n.generation || 0;
+                    if (!genGroups.has(gen)) genGroups.set(gen, []);
+                    genGroups.get(gen)!.push(n);
+                });
+
+                // Sort generations (0 = oldest at top)
+                const generations = Array.from(genGroups.keys()).sort((a, b) => a - b);
+
+                // Position each generation
+                generations.forEach((gen, genIdx) => {
+                    const genNodes = genGroups.get(gen)!;
+                    const genY = treeBaseY + genIdx * generationHeight;
+
+                    // Center this generation horizontally
+                    const genWidth = (genNodes.length - 1) * personSpacing;
+                    const startX = treeBaseX - genWidth / 2;
+
+                    genNodes.forEach((node, nodeIdx) => {
+                        node.x = startX + nodeIdx * personSpacing;
+                        node.y = genY;
                         node.fx = node.x;
                         node.fy = node.y;
                     });
-                } else {
-                    // Larger family - compact grid within island
-                    const nodesPerRow = Math.ceil(Math.sqrt(familyNodes.length));
-                    const spacing = 80;
-                    familyNodes.forEach((node, idx) => {
-                        const nodeRow = Math.floor(idx / nodesPerRow);
-                        const nodeCol = idx % nodesPerRow;
-                        const offsetX = -(nodesPerRow - 1) * spacing / 2;
-                        const offsetY = -(Math.ceil(familyNodes.length / nodesPerRow) - 1) * spacing / 2;
-                        node.x = islandCenterX + offsetX + nodeCol * spacing;
-                        node.y = islandCenterY + offsetY + nodeRow * spacing;
-                        node.fx = node.x;
-                        node.fy = node.y;
-                    });
-                }
+                });
 
-                // Store island info for rendering backgrounds
-                (familyNodes[0] as any).islandId = islandIdx;
-                (familyNodes[0] as any).islandCenter = { x: islandCenterX, y: islandCenterY };
-                (familyNodes[0] as any).islandSize = familyNodes.length;
+                // Store tree info for rendering
+                (familyNodes[0] as any).treeId = treeIdx;
+                (familyNodes[0] as any).treeName = familyName;
             });
 
-            // 4. Draw island backgrounds
-            const islandBackgrounds = g.insert('g', '.links').attr('class', 'island-backgrounds');
-            islandArray.forEach((familyNodes, islandIdx) => {
+            // 5. Draw family tree backgrounds with labels
+            const treeBackgrounds = g.insert('g', '.links').attr('class', 'tree-backgrounds');
+            familyArray.forEach(([familyName, familyNodes], treeIdx) => {
                 const xs = familyNodes.map(n => n.x!);
                 const ys = familyNodes.map(n => n.y!);
-                const minX = Math.min(...xs) - 60;
-                const maxX = Math.max(...xs) + 60;
-                const minY = Math.min(...ys) - 60;
-                const maxY = Math.max(...ys) + 60;
+                const minX = Math.min(...xs) - 50;
+                const maxX = Math.max(...xs) + 50;
+                const minY = Math.min(...ys) - 40;
+                const maxY = Math.max(...ys) + 50;
 
-                // Colorful island background
+                // Tree background with softer colors
                 const colors = [
-                    'rgba(59, 130, 246, 0.08)',   // Blue
-                    'rgba(236, 72, 153, 0.08)',   // Pink
-                    'rgba(168, 85, 247, 0.08)',   // Purple
-                    'rgba(245, 158, 11, 0.08)',   // Amber
-                    'rgba(16, 185, 129, 0.08)',   // Emerald
-                    'rgba(239, 68, 68, 0.08)',    // Red
-                    'rgba(20, 184, 166, 0.08)',   // Teal
-                    'rgba(251, 146, 60, 0.08)',   // Orange
+                    'rgba(59, 130, 246, 0.06)',   // Blue
+                    'rgba(236, 72, 153, 0.06)',   // Pink
+                    'rgba(168, 85, 247, 0.06)',   // Purple
+                    'rgba(245, 158, 11, 0.06)',   // Amber
+                    'rgba(16, 185, 129, 0.06)',   // Emerald
+                    'rgba(239, 68, 68, 0.06)',    // Red
+                    'rgba(20, 184, 166, 0.06)',   // Teal
+                    'rgba(251, 146, 60, 0.06)',   // Orange
                 ];
 
-                islandBackgrounds.append('rect')
+                treeBackgrounds.append('rect')
                     .attr('x', minX)
                     .attr('y', minY)
                     .attr('width', maxX - minX)
                     .attr('height', maxY - minY)
-                    .attr('rx', 20)
-                    .attr('fill', colors[islandIdx % colors.length])
-                    .attr('stroke', colors[islandIdx % colors.length].replace('0.08', '0.3'))
-                    .attr('stroke-width', 2)
-                    .attr('stroke-dasharray', '5,5');
+                    .attr('rx', 15)
+                    .attr('fill', colors[treeIdx % colors.length])
+                    .attr('stroke', colors[treeIdx % colors.length].replace('0.06', '0.25'))
+                    .attr('stroke-width', 1.5)
+                    .attr('stroke-dasharray', '4,4');
+
+                // Family name label at top
+                treeBackgrounds.append('text')
+                    .attr('x', (minX + maxX) / 2)
+                    .attr('y', minY - 10)
+                    .attr('text-anchor', 'middle')
+                    .attr('font-size', '14px')
+                    .attr('font-weight', 'bold')
+                    .attr('fill', colors[treeIdx % colors.length].replace('0.06', '0.8'))
+                    .text(`משפחת ${familyName} (${familyNodes.length})`);
             });
         }
 
