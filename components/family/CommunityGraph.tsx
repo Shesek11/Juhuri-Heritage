@@ -82,6 +82,9 @@ export const CommunityGraph: React.FC = () => {
     // Pulsing animation control
     const pulsingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
+    // Edge hover pulsing intervals (for continuous pulsing on hover)
+    const edgeHoverIntervalsRef = useRef<NodeJS.Timeout[]>([]);
+
     // Simulation ref for real-time parameter updates
     const simulationRef = useRef<d3.Simulation<GraphNode, undefined> | null>(null);
 
@@ -555,61 +558,108 @@ export const CommunityGraph: React.FC = () => {
                 const sourceId = typeof d.source === 'number' ? d.source : d.source.id;
                 const targetId = typeof d.target === 'number' ? d.target : d.target.id;
 
-                // Pulse both connected nodes (skip junction nodes)
-                [sourceId, targetId].forEach(nodeId => {
-                    const nodeData = nodes.find(n => n.id === nodeId);
-                    if (!nodeData || nodeData.isJunction) return;
+                // Find all real nodes connected (handling junction nodes)
+                const connectedNodeIds: number[] = [];
 
+                // Check source
+                const sourceNode = nodes.find(n => n.id === sourceId);
+                if (sourceNode?.isJunction) {
+                    // Find all real nodes connected to this junction
+                    edges.forEach(edge => {
+                        const edgeSourceId = typeof edge.source === 'number' ? edge.source : edge.source.id;
+                        const edgeTargetId = typeof edge.target === 'number' ? edge.target : edge.target.id;
+
+                        if (edgeSourceId === sourceId) {
+                            const targetNode = nodes.find(n => n.id === edgeTargetId);
+                            if (targetNode && !targetNode.isJunction) connectedNodeIds.push(edgeTargetId);
+                        }
+                        if (edgeTargetId === sourceId) {
+                            const sourceNode = nodes.find(n => n.id === edgeSourceId);
+                            if (sourceNode && !sourceNode.isJunction) connectedNodeIds.push(edgeSourceId);
+                        }
+                    });
+                } else {
+                    connectedNodeIds.push(sourceId);
+                }
+
+                // Check target
+                const targetNode = nodes.find(n => n.id === targetId);
+                if (targetNode?.isJunction) {
+                    // Find all real nodes connected to this junction
+                    edges.forEach(edge => {
+                        const edgeSourceId = typeof edge.source === 'number' ? edge.source : edge.source.id;
+                        const edgeTargetId = typeof edge.target === 'number' ? edge.target : edge.target.id;
+
+                        if (edgeSourceId === targetId) {
+                            const targetNode = nodes.find(n => n.id === edgeTargetId);
+                            if (targetNode && !targetNode.isJunction) connectedNodeIds.push(edgeTargetId);
+                        }
+                        if (edgeTargetId === targetId) {
+                            const sourceNode = nodes.find(n => n.id === edgeSourceId);
+                            if (sourceNode && !sourceNode.isJunction) connectedNodeIds.push(edgeSourceId);
+                        }
+                    });
+                } else {
+                    connectedNodeIds.push(targetId);
+                }
+
+                // Create continuous pulsing on all connected nodes
+                connectedNodeIds.forEach(nodeId => {
                     const nodeGroup = g.select(`g.node[data-id="${nodeId}"]`);
                     if (!nodeGroup.empty()) {
                         const circle = nodeGroup.select('circle');
-
-                        // Create pulsing ring
-                        const ring = nodeGroup.insert('circle', ':first-child')
-                            .attr('class', 'edge-hover-pulse')
-                            .attr('r', 25)
-                            .attr('fill', 'none')
-                            .attr('stroke', '#f59e0b')
-                            .attr('stroke-width', 3)
-                            .attr('opacity', 0.8);
-
-                        ring.transition()
-                            .duration(800)
-                            .ease(d3.easeQuadOut)
-                            .attr('r', 50)
-                            .attr('stroke-width', 1)
-                            .attr('opacity', 0)
-                            .remove();
 
                         // Enlarge the node
                         circle.transition()
                             .duration(200)
                             .attr('r', 30);
+
+                        // Create continuous pulsing
+                        const createPulse = () => {
+                            const ring = nodeGroup.insert('circle', ':first-child')
+                                .attr('class', 'edge-hover-pulse')
+                                .attr('r', 25)
+                                .attr('fill', 'none')
+                                .attr('stroke', '#f59e0b')
+                                .attr('stroke-width', 3)
+                                .attr('opacity', 0.8);
+
+                            ring.transition()
+                                .duration(1000)
+                                .ease(d3.easeQuadOut)
+                                .attr('r', 50)
+                                .attr('stroke-width', 1)
+                                .attr('opacity', 0)
+                                .remove();
+                        };
+
+                        // Start immediate pulse
+                        createPulse();
+
+                        // Continue pulsing every 600ms
+                        const interval = setInterval(createPulse, 600);
+                        edgeHoverIntervalsRef.current.push(interval);
                     }
                 });
             })
             .on('mouseleave', function(event, d: GraphEdge) {
+                // Clear all hover intervals
+                edgeHoverIntervalsRef.current.forEach(interval => clearInterval(interval));
+                edgeHoverIntervalsRef.current = [];
+
+                // Remove all hover pulse rings
+                g.selectAll('.edge-hover-pulse').remove();
+
                 // Restore edge
                 d3.select(this)
                     .attr('stroke-opacity', 0.85)
                     .attr('stroke-width', getEdgeWidth(d));
 
-                // Restore node sizes
-                const sourceId = typeof d.source === 'number' ? d.source : d.source.id;
-                const targetId = typeof d.target === 'number' ? d.target : d.target.id;
-
-                [sourceId, targetId].forEach(nodeId => {
-                    const nodeData = nodes.find(n => n.id === nodeId);
-                    if (!nodeData || nodeData.isJunction) return;
-
-                    const nodeGroup = g.select(`g.node[data-id="${nodeId}"]`);
-                    if (!nodeGroup.empty()) {
-                        nodeGroup.select('circle')
-                            .transition()
-                            .duration(200)
-                            .attr('r', 25);
-                    }
-                });
+                // Restore all visible node sizes
+                g.selectAll('g.node circle')
+                    .transition()
+                    .duration(200)
+                    .attr('r', 25);
             })
             .on('click', function(event, d: GraphEdge) {
                 event.stopPropagation();
@@ -734,13 +784,59 @@ export const CommunityGraph: React.FC = () => {
             if (connectionMode === 'connecting') {
                 if (!firstSelectedNode) {
                     setFirstSelectedNode(d);
-                    // Highlight selected node
-                    d3.select(event.currentTarget).select('circle')
-                        .attr('stroke-width', 5)
-                        .attr('stroke', '#fbbf24'); // Amber highlight
+
+                    // Create pulsing animation to show selection
+                    const nodeGroup = d3.select(event.currentTarget);
+                    const createSelectionPulse = () => {
+                        const ring = nodeGroup.insert('circle', ':first-child')
+                            .attr('class', 'selection-pulse')
+                            .attr('r', 25)
+                            .attr('fill', 'none')
+                            .attr('stroke', '#fbbf24')
+                            .attr('stroke-width', 3)
+                            .attr('opacity', 0.9);
+
+                        ring.transition()
+                            .duration(800)
+                            .ease(d3.easeQuadOut)
+                            .attr('r', 50)
+                            .attr('stroke-width', 1)
+                            .attr('opacity', 0)
+                            .remove();
+                    };
+
+                    // Create 3 pulses for visual feedback
+                    createSelectionPulse();
+                    setTimeout(createSelectionPulse, 300);
+                    setTimeout(createSelectionPulse, 600);
                 } else if (firstSelectedNode.id !== d.id) {
                     setSecondSelectedNode(d);
                     setConnectionMode('selecting-type');
+
+                    // Create pulsing animation for second selection
+                    const nodeGroup = d3.select(event.currentTarget);
+                    const createSelectionPulse = () => {
+                        const ring = nodeGroup.insert('circle', ':first-child')
+                            .attr('class', 'selection-pulse')
+                            .attr('r', 25)
+                            .attr('fill', 'none')
+                            .attr('stroke', '#10b981')
+                            .attr('stroke-width', 3)
+                            .attr('opacity', 0.9);
+
+                        ring.transition()
+                            .duration(800)
+                            .ease(d3.easeQuadOut)
+                            .attr('r', 50)
+                            .attr('stroke-width', 1)
+                            .attr('opacity', 0)
+                            .remove();
+                    };
+
+                    // Create 3 pulses for visual feedback
+                    createSelectionPulse();
+                    setTimeout(createSelectionPulse, 300);
+                    setTimeout(createSelectionPulse, 600);
                 }
                 return;
             }
@@ -771,7 +867,7 @@ export const CommunityGraph: React.FC = () => {
                     setTooltip({
                         visible: true,
                         x: rect.left - containerRect.left + rect.width / 2,
-                        y: rect.top - containerRect.top - 10,
+                        y: rect.top - containerRect.top - 60, // More space above the circle
                         member: member
                     });
                 }
@@ -968,10 +1064,21 @@ export const CommunityGraph: React.FC = () => {
             .call(
                 zoomRef.current.transform,
                 d3.zoomIdentity.translate(x, y).scale(scale)
-            );
+            )
+            .on('end', () => {
+                // Start pulsing after zoom completes
+                startNodePulsing(nodeId);
+            });
+
+        // Hide tooltip during focus
+        setTooltip(prev => ({ ...prev, visible: false }));
+    };
+
+    // Helper function to start pulsing on a node
+    const startNodePulsing = (nodeId: number) => {
+        if (!svgRef.current) return;
 
         // Highlight the node with pulsing animation
-        // CRITICAL FIX: Select from within the graph-container group
         const svg = d3.select(svgRef.current);
         const graphContainer = svg.select('g.graph-container');
         const nodeGroup = graphContainer.select(`g.node[data-id="${nodeId}"]`);
@@ -985,14 +1092,11 @@ export const CommunityGraph: React.FC = () => {
         // Remove any existing pulse rings
         graphContainer.selectAll('.pulse-ring').remove();
 
-        // Hide tooltip during focus
-        setTooltip(prev => ({ ...prev, visible: false }));
-
         if (!nodeGroup.empty()) {
             const circle = nodeGroup.select('circle');
             const radius = 25;
 
-            // 1. Initial gentle flash (עדין יותר)
+            // 1. Initial gentle flash
             circle
                 .transition()
                 .duration(400)
@@ -1038,7 +1142,10 @@ export const CommunityGraph: React.FC = () => {
             // Start pulsing immediately and then every 600ms
             createPulseRing();
             pulsingIntervalRef.current = setInterval(createPulseRing, 600);
+        } else {
+            console.warn('[CommunityGraph] Node group not found for pulsing:', nodeId);
         }
+    };
     };
 
     // Stop pulsing on any interaction
@@ -1610,7 +1717,7 @@ export const CommunityGraph: React.FC = () => {
 
                         {/* Hint */}
                         <div className="mt-3 pt-3 border-t border-slate-700 text-xs text-slate-400 text-center">
-                            לחץ לעריכה • לחיצה ימנית למידע נוסף
+                            לחץ לעריכה
                         </div>
                     </div>
 
