@@ -608,45 +608,6 @@ export const CommunityGraph: React.FC = () => {
             });
         });
 
-        // Custom force to separate different family components
-        const componentSeparationForce = () => {
-            const alpha = simulation.alpha();
-            const strength = 300 * alpha; // Stronger at the beginning
-
-            nodes.forEach((nodeA, i) => {
-                if (nodeA.isJunction) return;
-
-                const componentA = nodeToComponent.get(nodeA.id);
-                if (!componentA) return;
-
-                for (let j = i + 1; j < nodes.length; j++) {
-                    const nodeB = nodes[j];
-                    if (nodeB.isJunction) continue;
-
-                    const componentB = nodeToComponent.get(nodeB.id);
-                    if (!componentB) continue;
-
-                    // Only apply force if nodes are in different components
-                    if (componentA !== componentB) {
-                        const dx = (nodeB.x || 0) - (nodeA.x || 0);
-                        const dy = (nodeB.y || 0) - (nodeA.y || 0);
-                        const distance = Math.sqrt(dx * dx + dy * dy);
-
-                        if (distance > 0 && distance < 500) { // Only repel if too close
-                            const force = strength / (distance * distance);
-                            const fx = (dx / distance) * force;
-                            const fy = (dy / distance) * force;
-
-                            nodeA.vx = (nodeA.vx || 0) - fx;
-                            nodeA.vy = (nodeA.vy || 0) - fy;
-                            nodeB.vx = (nodeB.vx || 0) + fx;
-                            nodeB.vy = (nodeB.vy || 0) + fy;
-                        }
-                    }
-                }
-            });
-        };
-
         // Create force simulation with birth-year based Y positioning
         const simulation = d3.forceSimulation<GraphNode>(nodes)
             .force('link', d3.forceLink<GraphNode, GraphEdge>(edges)
@@ -666,7 +627,43 @@ export const CommunityGraph: React.FC = () => {
             .force('x', d3.forceX(width / 2).strength(0.05))
             .force('y', d3.forceY<GraphNode>(d => yearToY(d.birthYear ?? ((minYear + maxYear) / 2))).strength(forceParams.yForceStrength))
             .force('collision', d3.forceCollide().radius(forceParams.collisionRadius))
-            .force('componentSeparation', componentSeparationForce) // Custom force for family separation
+            .force('componentSeparation', (alpha) => {
+                // Custom force to separate different family components
+                const strength = 300 * alpha; // Stronger at the beginning
+
+                nodes.forEach((nodeA, i) => {
+                    if (nodeA.isJunction) return;
+
+                    const componentA = nodeToComponent.get(nodeA.id);
+                    if (!componentA) return;
+
+                    for (let j = i + 1; j < nodes.length; j++) {
+                        const nodeB = nodes[j];
+                        if (nodeB.isJunction) continue;
+
+                        const componentB = nodeToComponent.get(nodeB.id);
+                        if (!componentB) continue;
+
+                        // Only apply force if nodes are in different components
+                        if (componentA !== componentB) {
+                            const dx = (nodeB.x || 0) - (nodeA.x || 0);
+                            const dy = (nodeB.y || 0) - (nodeA.y || 0);
+                            const distance = Math.sqrt(dx * dx + dy * dy);
+
+                            if (distance > 0 && distance < 500) { // Only repel if too close
+                                const force = strength / (distance * distance);
+                                const fx = (dx / distance) * force;
+                                const fy = (dy / distance) * force;
+
+                                nodeA.vx = (nodeA.vx || 0) - fx;
+                                nodeA.vy = (nodeA.vy || 0) - fy;
+                                nodeB.vx = (nodeB.vx || 0) + fx;
+                                nodeB.vy = (nodeB.vy || 0) + fy;
+                            }
+                        }
+                    }
+                });
+            })
             .alpha(1.0)  // Start with high energy for better initial layout
             .alphaDecay(0.008)  // Slower cooling = more time to settle
             .velocityDecay(0.4); // More friction = smoother convergence
@@ -1083,7 +1080,7 @@ export const CommunityGraph: React.FC = () => {
                     setTooltip({
                         visible: true,
                         x: rect.left - containerRect.left + rect.width / 2,
-                        y: rect.top - containerRect.top - 120, // Much more space above the circle
+                        y: rect.top - containerRect.top - 90, // Balanced space above the circle
                         member: member
                     });
                 }
