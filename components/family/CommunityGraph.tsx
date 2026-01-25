@@ -60,6 +60,9 @@ export const CommunityGraph: React.FC = () => {
     // Zoom ref for controls
     const zoomRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null);
 
+    // Pulsing animation control
+    const pulsingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+
     // Load data
     const loadData = useCallback(async () => {
         try {
@@ -161,6 +164,15 @@ export const CommunityGraph: React.FC = () => {
         loadData();
     }, [loadData]);
 
+    // Cleanup pulsing animation on unmount
+    useEffect(() => {
+        return () => {
+            if (pulsingIntervalRef.current) {
+                clearInterval(pulsingIntervalRef.current);
+            }
+        };
+    }, []);
+
     // Build the D3 visualization
     useEffect(() => {
         if (loading || nodes.length === 0 || !svgRef.current || !containerRef.current) return;
@@ -181,6 +193,7 @@ export const CommunityGraph: React.FC = () => {
             .scaleExtent([0.1, 4])
             .on('zoom', (event) => {
                 g.attr('transform', event.transform);
+                stopPulsing(); // Stop pulsing on zoom/pan
             });
 
         svg.call(zoom);
@@ -427,6 +440,7 @@ export const CommunityGraph: React.FC = () => {
         // Click handler - support connection mode
         node.on('click', (event, d) => {
             event.stopPropagation();
+            stopPulsing(); // Stop pulsing on node click
 
             // If in connecting mode, handle node selection for connection
             if (connectionMode === 'connecting') {
@@ -499,6 +513,7 @@ export const CommunityGraph: React.FC = () => {
 
         // Drag functions (only for force layout)
         function dragstarted(event: d3.D3DragEvent<SVGGElement, GraphNode, unknown>, d: GraphNode) {
+            stopPulsing(); // Stop pulsing on drag
             if (simulation && !event.active) simulation.alphaTarget(0.3).restart();
             d.fx = d.x;
             d.fy = d.y;
@@ -636,44 +651,77 @@ export const CommunityGraph: React.FC = () => {
         const graphContainer = svg.select('g.graph-container');
         const nodeGroup = graphContainer.select(`g.node[data-id="${nodeId}"]`);
 
+        // Clear any existing pulsing animation
+        if (pulsingIntervalRef.current) {
+            clearInterval(pulsingIntervalRef.current);
+            pulsingIntervalRef.current = null;
+        }
+
+        // Remove any existing pulse rings
+        graphContainer.selectAll('.pulse-ring').remove();
+
         if (!nodeGroup.empty()) {
-            // Add a temporary highlight circle
             const circle = nodeGroup.select('circle');
             const radius = 25;
 
-            // Create multiple pulsing rings for stronger effect
-            for (let i = 0; i < 3; i++) {
-                setTimeout(() => {
-                    const ring = nodeGroup.insert('circle', 'circle')
-                        .attr('r', radius)
-                        .attr('fill', 'none')
-                        .attr('stroke', '#f59e0b')
-                        .attr('stroke-width', 4)
-                        .attr('opacity', 1);
-
-                    // Pulse animation
-                    ring.transition()
-                        .duration(800)
-                        .attr('r', radius + 20)
-                        .attr('opacity', 0)
-                        .remove();
-                }, i * 250);
-            }
-
-            // Flash the node itself
+            // 1. Initial gentle flash (עדין יותר)
             circle
                 .transition()
-                .duration(200)
-                .attr('r', 30)
+                .duration(400)
+                .ease(d3.easeCubicInOut)
+                .attr('r', 32)
                 .transition()
-                .duration(200)
-                .attr('r', 25)
-                .transition()
-                .duration(200)
-                .attr('r', 30)
-                .transition()
-                .duration(200)
+                .duration(400)
+                .ease(d3.easeCubicInOut)
                 .attr('r', 25);
+
+            // 2. Create continuous pulsing effect for 5 seconds
+            let pulseCount = 0;
+            const maxPulses = 8; // ~5 seconds (8 pulses × 600ms)
+
+            const createPulseRing = () => {
+                if (pulseCount >= maxPulses) {
+                    if (pulsingIntervalRef.current) {
+                        clearInterval(pulsingIntervalRef.current);
+                        pulsingIntervalRef.current = null;
+                    }
+                    return;
+                }
+
+                const ring = nodeGroup.insert('circle', ':first-child')
+                    .attr('class', 'pulse-ring')
+                    .attr('r', radius)
+                    .attr('fill', 'none')
+                    .attr('stroke', '#f59e0b')
+                    .attr('stroke-width', 3)
+                    .attr('opacity', 0.8);
+
+                ring.transition()
+                    .duration(1200)
+                    .ease(d3.easeQuadOut)
+                    .attr('r', radius + 25)
+                    .attr('stroke-width', 1)
+                    .attr('opacity', 0)
+                    .remove();
+
+                pulseCount++;
+            };
+
+            // Start pulsing immediately and then every 600ms
+            createPulseRing();
+            pulsingIntervalRef.current = setInterval(createPulseRing, 600);
+        }
+    };
+
+    // Stop pulsing on any interaction
+    const stopPulsing = () => {
+        if (pulsingIntervalRef.current) {
+            clearInterval(pulsingIntervalRef.current);
+            pulsingIntervalRef.current = null;
+        }
+        // Remove all pulse rings
+        if (svgRef.current) {
+            d3.select(svgRef.current).selectAll('.pulse-ring').remove();
         }
     };
 
