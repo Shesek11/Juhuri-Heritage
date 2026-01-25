@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FamilyMember, familyService } from '../../services/familyService';
-import { User, X, Check, Loader2, Upload, Pencil, UserPlus, Users, Baby, Heart } from 'lucide-react';
+import { User, X, Check, Loader2, Upload, Pencil, UserPlus, Users, Baby, Heart, Trash2 } from 'lucide-react';
 
 interface EditMemberModalProps {
     isOpen: boolean;
@@ -129,6 +129,25 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
         } catch (error) {
             console.error(error);
             alert('שגיאה במחיקת קשר');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleDeleteMember = async () => {
+        if (!member?.id) return;
+
+        const confirmMessage = `האם אתה בטוח שברצונך למחוק את ${member.first_name} ${member.last_name}?\n\nפעולה זו תמחק את האדם וכל הקשרים שלו ולא ניתן לבטלה!`;
+        if (!confirm(confirmMessage)) return;
+
+        setLoading(true);
+        try {
+            await familyService.deleteMember(member.id);
+            onSuccess();
+            onClose();
+        } catch (error: any) {
+            console.error(error);
+            alert(error.message || 'שגיאה במחיקת בן משפחה');
         } finally {
             setLoading(false);
         }
@@ -633,18 +652,33 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                         </div>
                     )}
 
-                    <div className="flex justify-end gap-3">
-                        <button onClick={onClose} className="px-4 py-2 text-slate-500 hover:bg-slate-200 rounded-lg">סגור</button>
-                        {activeTab === 'details' && (
+                    <div className="flex justify-between gap-3">
+                        {/* Delete Button - Only for existing members */}
+                        {isEditing && member?.id && (
                             <button
-                                onClick={handleSubmit}
+                                onClick={handleDeleteMember}
                                 disabled={loading}
-                                className="bg-amber-600 text-white px-6 py-2 rounded-lg font-bold flex items-center gap-2 hover:bg-amber-700 disabled:opacity-50"
+                                className="px-4 py-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg flex items-center gap-2 disabled:opacity-50 transition-colors"
+                                title="מחק אדם זה"
                             >
-                                {loading ? <Loader2 className="animate-spin" /> : <Check size={18} />}
-                                {isEditing ? 'עדכן' : 'שמור'}
+                                <Trash2 size={16} />
+                                <span>מחק</span>
                             </button>
                         )}
+
+                        <div className="flex gap-3 mr-auto">
+                            <button onClick={onClose} className="px-4 py-2 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg">סגור</button>
+                            {activeTab === 'details' && (
+                                <button
+                                    onClick={handleSubmit}
+                                    disabled={loading}
+                                    className="bg-amber-600 text-white px-6 py-2 rounded-lg font-bold flex items-center gap-2 hover:bg-amber-700 disabled:opacity-50"
+                                >
+                                    {loading ? <Loader2 className="animate-spin" /> : <Check size={18} />}
+                                    {isEditing ? 'עדכן' : 'שמור'}
+                                </button>
+                            )}
+                        </div>
                     </div>
                 </div>
             </div>

@@ -8,7 +8,7 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import * as d3 from 'd3';
 import { familyService, FamilyMember } from '../../services/familyService';
 import { EditMemberModal } from './EditMemberModal';
-import { Loader2, ZoomIn, ZoomOut, Maximize2, UserPlus, Link2, X, Search } from 'lucide-react';
+import { Loader2, ZoomIn, ZoomOut, Maximize2, UserPlus, Link2, X, Search, Network, GitBranch, Circle } from 'lucide-react';
 
 interface GraphNode extends d3.SimulationNodeDatum {
     id: number;
@@ -28,6 +28,7 @@ interface GraphEdge {
 
 type ConnectionMode = 'none' | 'connecting' | 'selecting-type';
 type RelationshipType = 'parent-child' | 'spouse' | 'sibling';
+type LayoutMode = 'force' | 'hierarchical' | 'radial';
 
 export const CommunityGraph: React.FC = () => {
     const svgRef = useRef<SVGSVGElement>(null);
@@ -37,6 +38,7 @@ export const CommunityGraph: React.FC = () => {
     const [nodes, setNodes] = useState<GraphNode[]>([]);
     const [edges, setEdges] = useState<GraphEdge[]>([]);
     const [allMembers, setAllMembers] = useState<FamilyMember[]>([]);
+    const [layoutMode, setLayoutMode] = useState<LayoutMode>('force');
 
     // Edit modal state
     const [selectedMember, setSelectedMember] = useState<FamilyMember | null>(null);
@@ -177,24 +179,28 @@ export const CommunityGraph: React.FC = () => {
         svg.call(zoom);
         zoomRef.current = zoom;
 
-        // Calculate year range for timeline positioning
-        const years = nodes.map(n => n.birthYear).filter(y => y) as number[];
-        const minYear = years.length > 0 ? Math.min(...years) : 1940;
-        const maxYear = years.length > 0 ? Math.max(...years) : 2025;
-        const yearSpan = Math.max(maxYear - minYear, 50); // At least 50 years span
-        const padding = 80; // Top and bottom padding
-        const leftPadding = 60; // Left padding for year labels
+        // Store simulation reference (only used for force layout)
+        let simulation: d3.Simulation<GraphNode, undefined> | null = null;
 
-        // Helper to convert year to Y position
-        const yearToY = (year: number) => {
-            const normalized = (year - minYear) / yearSpan;
-            return padding + normalized * (height - 2 * padding);
-        };
+        // LAYOUT-SPECIFIC POSITIONING
+        if (layoutMode === 'force') {
+            // FORCE LAYOUT - Timeline-based positioning
+            const years = nodes.map(n => n.birthYear).filter(y => y) as number[];
+            const minYear = years.length > 0 ? Math.min(...years) : 1940;
+            const maxYear = years.length > 0 ? Math.max(...years) : 2025;
+            const yearSpan = Math.max(maxYear - minYear, 50);
+            const padding = 80;
+            const leftPadding = 60;
 
-        // Draw 25-year markers on the left side
-        const startYear = Math.floor(minYear / 25) * 25;
-        const endYear = Math.ceil(maxYear / 25) * 25;
-        for (let year = startYear; year <= endYear; year += 25) {
+            const yearToY = (year: number) => {
+                const normalized = (year - minYear) / yearSpan;
+                return padding + normalized * (height - 2 * padding);
+            };
+
+            // Draw 25-year markers on the left side
+            const startYear = Math.floor(minYear / 25) * 25;
+            const endYear = Math.ceil(maxYear / 25) * 25;
+            for (let year = startYear; year <= endYear; year += 25) {
             const yPos = yearToY(year);
 
             // Horizontal line across width
@@ -228,23 +234,74 @@ export const CommunityGraph: React.FC = () => {
                 .attr('text-anchor', 'middle')
                 .attr('pointer-events', 'none')
                 .text(year.toString());
-        }
+            }
 
-        // Create force simulation with birth-year based Y positioning
-        const simulation = d3.forceSimulation<GraphNode>(nodes)
-            .force('link', d3.forceLink<GraphNode, GraphEdge>(edges)
-                .id(d => d.id)
-                .distance(d => {
-                    if (d.type === 'spouse') return 80;  // בני זוג קרובים
-                    if (d.type === 'parent-child') return 120;  // הורה-ילד רחוק יותר
-                    return 100;
-                })
-                .strength(d => d.type === 'spouse' ? 0.8 : 0.5)
-            )
-            .force('charge', d3.forceManyBody().strength(-600))
-            .force('x', d3.forceX(width / 2).strength(0.1))
-            .force('y', d3.forceY<GraphNode>(d => yearToY(d.birthYear ?? ((minYear + maxYear) / 2))).strength(0.6))
-            .force('collision', d3.forceCollide().radius(50));
+            // Create force simulation with birth-year based Y positioning
+            simulation = d3.forceSimulation<GraphNode>(nodes)
+                .force('link', d3.forceLink<GraphNode, GraphEdge>(edges)
+                    .id(d => d.id)
+                    .distance(d => {
+                        if (d.type === 'spouse') return 80;
+                        if (d.type === 'parent-child') return 120;
+                        return 100;
+                    })
+                    .strength(d => d.type === 'spouse' ? 0.8 : 0.5)
+                )
+                .force('charge', d3.forceManyBody().strength(-600))
+                .force('x', d3.forceX(width / 2).strength(0.1))
+                .force('y', d3.forceY<GraphNode>(d => yearToY(d.birthYear ?? ((minYear + maxYear) / 2))).strength(0.6))
+                .force('collision', d3.forceCollide().radius(50));
+        } else if (layoutMode === 'hierarchical') {
+            // HIERARCHICAL TREE LAYOUT - Generations top to bottom
+            const maxGen = Math.max(...nodes.map(n => n.generation || 0));
+            const ySpacing = (height - 160) / Math.max(maxGen, 1);
+
+            // Group nodes by generation
+            const genGroups = new Map<number, GraphNode[]>();
+            nodes.forEach(n => {
+                const gen = n.generation || 0;
+                if (!genGroups.has(gen)) genGroups.set(gen, []);
+                genGroups.get(gen)!.push(n);
+            });
+
+            // Position each generation horizontally
+            genGroups.forEach((genNodes, gen) => {
+                const xSpacing = (width - 200) / Math.max(genNodes.length, 1);
+                genNodes.forEach((node, idx) => {
+                    node.x = 100 + idx * xSpacing + xSpacing / 2;
+                    node.y = 80 + gen * ySpacing;
+                    node.fx = node.x; // Fix position
+                    node.fy = node.y;
+                });
+            });
+        } else if (layoutMode === 'radial') {
+            // RADIAL TREE LAYOUT - Generations from center outward
+            const maxGen = Math.max(...nodes.map(n => n.generation || 0));
+            const radiusStep = Math.min(width, height) / 2 / Math.max(maxGen + 1, 2);
+            const centerX = width / 2;
+            const centerY = height / 2;
+
+            // Group nodes by generation
+            const genGroups = new Map<number, GraphNode[]>();
+            nodes.forEach(n => {
+                const gen = n.generation || 0;
+                if (!genGroups.has(gen)) genGroups.set(gen, []);
+                genGroups.get(gen)!.push(n);
+            });
+
+            // Position each generation in a circle
+            genGroups.forEach((genNodes, gen) => {
+                const radius = (gen + 1) * radiusStep;
+                const angleStep = (2 * Math.PI) / genNodes.length;
+                genNodes.forEach((node, idx) => {
+                    const angle = idx * angleStep;
+                    node.x = centerX + radius * Math.cos(angle);
+                    node.y = centerY + radius * Math.sin(angle);
+                    node.fx = node.x; // Fix position
+                    node.fy = node.y;
+                });
+            });
+        }
 
         // Edge colors and styles - improved visibility
         const getEdgeColor = (d: GraphEdge) => {
@@ -375,8 +432,8 @@ export const CommunityGraph: React.FC = () => {
                 .attr('r', 25);
         });
 
-        // Simulation tick - update path d attribute
-        simulation.on('tick', () => {
+        // Update positions function (shared)
+        const updatePositions = () => {
             link.attr('d', d => {
                 const source = d.source as GraphNode;
                 const target = d.target as GraphNode;
@@ -385,32 +442,30 @@ export const CommunityGraph: React.FC = () => {
                 const tx = target.x || 0;
                 const ty = target.y || 0;
 
-                // Orthogonal routing (Step-line)
-                // Move vertical, then horizontal, then vertical
-                const midY = (sy + ty) / 2;
-
-                // For parent-child, we want to go down from parent, then horizontal, then down to child
-                if (d.type === 'parent-child') {
-                    // Ensure parent is source (usually upper year/lower y value)
-                    // Actually, simulation doesn't guarantee source/target order by Y, but visually:
+                if (layoutMode === 'force') {
+                    // Orthogonal routing for force layout
+                    const midY = (sy + ty) / 2;
                     return `M ${sx} ${sy} L ${sx} ${midY} L ${tx} ${midY} L ${tx} ${ty}`;
+                } else {
+                    // Straight lines for hierarchical/radial
+                    return `M ${sx} ${sy} L ${tx} ${ty}`;
                 }
-
-                // For spouses (same generation approx), go horizontal first?
-                // Or just straight line for spouses looks okay with orthogonal too
-                // Let's try simple step: V -> H -> V
-                // If they are on same Y, midY is same, so it becomes just H line? No, sy=ty.
-                // If sy=ty, it draws straight line.
-                // If not, it steps.
-                return `M ${sx} ${sy} L ${sx} ${midY} L ${tx} ${midY} L ${tx} ${ty}`;
             });
 
             node.attr('transform', d => `translate(${d.x || 0},${d.y || 0})`);
-        });
+        };
 
-        // Drag functions
+        // Setup simulation tick or static update
+        if (simulation) {
+            simulation.on('tick', updatePositions);
+        } else {
+            // For static layouts, update once after nodes are positioned
+            updatePositions();
+        }
+
+        // Drag functions (only for force layout)
         function dragstarted(event: d3.D3DragEvent<SVGGElement, GraphNode, unknown>, d: GraphNode) {
-            if (!event.active) simulation.alphaTarget(0.3).restart();
+            if (simulation && !event.active) simulation.alphaTarget(0.3).restart();
             d.fx = d.x;
             d.fy = d.y;
         }
@@ -421,9 +476,15 @@ export const CommunityGraph: React.FC = () => {
         }
 
         function dragended(event: d3.D3DragEvent<SVGGElement, GraphNode, unknown>, d: GraphNode) {
-            if (!event.active) simulation.alphaTarget(0);
-            d.fx = null;
-            d.fy = null;
+            if (simulation && !event.active) simulation.alphaTarget(0);
+            // For hierarchical/radial, keep fixed positions
+            if (!simulation) {
+                d.fx = event.x;
+                d.fy = event.y;
+            } else {
+                d.fx = null;
+                d.fy = null;
+            }
         }
 
         // Initial zoom to fit - center on the graph
@@ -435,9 +496,9 @@ export const CommunityGraph: React.FC = () => {
         }, 800);
 
         return () => {
-            simulation.stop();
+            if (simulation) simulation.stop();
         };
-    }, [loading, nodes, edges, allMembers, connectionMode, firstSelectedNode]);
+    }, [loading, nodes, edges, allMembers, connectionMode, firstSelectedNode, layoutMode]);
 
     // Connection mode handlers
     const startConnectionMode = () => {
@@ -610,6 +671,48 @@ export const CommunityGraph: React.FC = () => {
                             <span>ביטול</span>
                         </button>
                     )}
+
+                    <div className="w-px h-6 bg-slate-600" />
+
+                    {/* Layout Mode Selector */}
+                    <div className="flex items-center gap-2 text-sm">
+                        <button
+                            onClick={() => setLayoutMode('force')}
+                            className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors ${
+                                layoutMode === 'force'
+                                    ? 'bg-amber-600 text-white'
+                                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                            }`}
+                            title="תצוגה מבוססת כוח עם ציר זמן"
+                        >
+                            <Network size={14} />
+                            <span>Force</span>
+                        </button>
+                        <button
+                            onClick={() => setLayoutMode('hierarchical')}
+                            className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors ${
+                                layoutMode === 'hierarchical'
+                                    ? 'bg-amber-600 text-white'
+                                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                            }`}
+                            title="עץ היררכי - דורות מלמעלה למטה"
+                        >
+                            <GitBranch size={14} />
+                            <span>Tree</span>
+                        </button>
+                        <button
+                            onClick={() => setLayoutMode('radial')}
+                            className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-colors ${
+                                layoutMode === 'radial'
+                                    ? 'bg-amber-600 text-white'
+                                    : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                            }`}
+                            title="עץ רדיאלי - דורות ממרכז החוצה"
+                        >
+                            <Circle size={14} />
+                            <span>Radial</span>
+                        </button>
+                    </div>
 
                     <div className="w-px h-6 bg-slate-600" />
 
