@@ -1,33 +1,21 @@
 /**
  * TraditionalFamilyTree.tsx
- * Traditional hierarchical family tree using family-chart library
+ * Traditional hierarchical family tree using D3 tree layout
  */
 
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import f3 from 'family-chart';
+import * as d3 from 'd3';
 import { familyService, FamilyMember } from '../../services/familyService';
 import { EditMemberModal } from './EditMemberModal';
-import { Loader2, UserPlus, Search, X, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
+import { Loader2, UserPlus, Search, ZoomIn, ZoomOut, Maximize2 } from 'lucide-react';
 
-interface F3Node {
-    id: string;
-    data: {
-        first_name: string;
-        last_name: string;
-        gender: 'M' | 'F';
-        birthday?: string;
-        avatar?: string;
-        [key: string]: any;
-    };
-    rels: {
-        spouses?: string[];
-        father?: string;
-        mother?: string;
-        children?: string[];
-    };
+interface TreeNode extends d3.HierarchyNode<FamilyMember> {
+    x?: number;
+    y?: number;
 }
 
 export const TraditionalFamilyTree: React.FC = () => {
+    const svgRef = useRef<SVGSVGElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
     const [members, setMembers] = useState<FamilyMember[]>([]);
     const [loading, setLoading] = useState(true);
@@ -35,7 +23,7 @@ export const TraditionalFamilyTree: React.FC = () => {
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<FamilyMember[]>([]);
-    const viewRef = useRef<any>(null);
+    const zoomRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null);
 
     // Load data from API
     const loadData = useCallback(async () => {
@@ -55,163 +43,163 @@ export const TraditionalFamilyTree: React.FC = () => {
         loadData();
     }, [loadData]);
 
-    // Transform data to family-chart format
-    const transformToTreeData = useCallback((): F3Node[] => {
-        if (members.length === 0) return [];
+    // Build hierarchical tree from flat data
+    const buildHierarchy = useCallback((): FamilyMember | null => {
+        if (members.length === 0) return null;
 
-        const memberMap = new Map(members.map(m => [m.id, m]));
-        const nodes: F3Node[] = [];
+        // Find root nodes (people without parents)
+        const roots = members.filter(m => !m.father_id && !m.mother_id);
 
-        // Build nodes
-        members.forEach(m => {
-            nodes.push({
-                id: String(m.id),
-                data: {
-                    first_name: m.first_name,
-                    last_name: m.last_name || '',
-                    gender: m.gender === 'female' ? 'F' : 'M',
-                    birthday: m.birth_date,
-                    avatar: m.photo_url,
-                    'birth-place': m.birth_place,
-                    'current-residence': m.current_residence,
-                    alive: m.is_alive
-                },
-                rels: {
-                    spouses: [],
-                    children: []
-                }
-            });
-        });
-
-        // Build relationships from API data
-        // Note: We'll use the legacy fields for now, but we should migrate to use
-        // the parentChild and partnerships from the API
-
-        members.forEach(m => {
-            const node = nodes.find(n => n.id === String(m.id));
-            if (!node) return;
-
-            // Father relationship
-            if (m.father_id) {
-                node.rels.father = String(m.father_id);
-            }
-
-            // Mother relationship
-            if (m.mother_id) {
-                node.rels.mother = String(m.mother_id);
-            }
-
-            // Spouse relationship (simplified for now)
-            if (m.spouse_id) {
-                const spouseId = String(m.spouse_id);
-                if (!node.rels.spouses?.includes(spouseId)) {
-                    node.rels.spouses?.push(spouseId);
-                }
-
-                // Add reciprocal relationship
-                const spouseNode = nodes.find(n => n.id === spouseId);
-                if (spouseNode && !spouseNode.rels.spouses?.includes(String(m.id))) {
-                    spouseNode.rels.spouses?.push(String(m.id));
-                }
-            }
-        });
-
-        // Build children relationships (reverse of parent)
-        nodes.forEach(node => {
-            if (node.rels.father) {
-                const fatherNode = nodes.find(n => n.id === node.rels.father);
-                if (fatherNode && !fatherNode.rels.children?.includes(node.id)) {
-                    fatherNode.rels.children?.push(node.id);
-                }
-            }
-            if (node.rels.mother) {
-                const motherNode = nodes.find(n => n.id === node.rels.mother);
-                if (motherNode && !motherNode.rels.children?.includes(node.id)) {
-                    motherNode.rels.children?.push(node.id);
-                }
-            }
-        });
-
-        console.log('[TraditionalFamilyTree] Transformed nodes:', nodes.length);
-        return nodes;
-    }, [members]);
-
-    // Initialize family-chart
-    useEffect(() => {
-        if (!containerRef.current || loading || members.length === 0) return;
-
-        const treeData = transformToTreeData();
-        if (treeData.length === 0) return;
-
-        console.log('[TraditionalFamilyTree] Initializing tree with', treeData.length, 'nodes');
-
-        try {
-            // Clear container
-            containerRef.current.innerHTML = '';
-
-            const store = f3.createStore({
-                data: treeData,
-                node_separation: 250,
-                level_separation: 150
-            });
-
-            const view = f3.d3AnimationView({
-                store: store,
-                cont: containerRef.current
-            });
-
-            viewRef.current = view;
-
-            // Custom card template for RTL and Hebrew
-            view.setCard((props: any) => {
-                const d = props.data;
-                return `
-                    <div class="f3-card" dir="rtl" style="
-                        background: ${d.gender === 'F' ? '#fce7f3' : '#dbeafe'};
-                        border: 3px solid ${d.gender === 'F' ? '#ec4899' : '#3b82f6'};
-                        border-radius: 12px;
-                        padding: 12px;
-                        min-width: 180px;
-                        text-align: right;
-                        font-family: 'Heebo', 'Rubik', sans-serif;
-                        cursor: pointer;
-                        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-                    ">
-                        ${d.avatar ? `<img src="${d.avatar}" style="width: 60px; height: 60px; border-radius: 50%; margin: 0 auto 8px; display: block; object-fit: cover;" />` : ''}
-                        <div style="font-weight: bold; font-size: 16px; color: #1e293b; margin-bottom: 4px;">
-                            ${d.first_name} ${d.last_name}
-                        </div>
-                        ${d.birthday ? `<div style="font-size: 12px; color: #64748b;">📅 ${new Date(d.birthday).getFullYear()}</div>` : ''}
-                        ${d['birth-place'] ? `<div style="font-size: 11px; color: #64748b;">🏙️ ${d['birth-place']}</div>` : ''}
-                        ${d.alive && d['current-residence'] ? `<div style="font-size: 11px; color: #64748b;">📍 ${d['current-residence']}</div>` : ''}
-                    </div>
-                `;
-            });
-
-            // Handle card clicks
-            view.setCardClickHandler((props: any) => {
-                const memberId = parseInt(props.data.id);
-                const member = members.find(m => m.id === memberId);
-                if (member) {
-                    setSelectedMember(member);
-                    setIsEditModalOpen(true);
-                }
-            });
-
-            view.update();
-
-            console.log('[TraditionalFamilyTree] Tree initialized successfully');
-        } catch (error) {
-            console.error('[TraditionalFamilyTree] Error initializing tree:', error);
+        if (roots.length === 0) {
+            // If no roots, just take first person
+            return members[0];
         }
 
-        return () => {
-            // Cleanup
-            if (viewRef.current) {
-                viewRef.current = null;
-            }
-        };
-    }, [members, loading, transformToTreeData]);
+        // For now, use the first root
+        // TODO: Support multiple root families
+        return roots[0];
+    }, [members]);
+
+    // Get children of a person
+    const getChildren = useCallback((parentId: number): FamilyMember[] => {
+        return members.filter(m => m.father_id === parentId || m.mother_id === parentId);
+    }, [members]);
+
+    // Initialize D3 tree
+    useEffect(() => {
+        if (!svgRef.current || !containerRef.current || loading || members.length === 0) return;
+
+        const svg = d3.select(svgRef.current);
+        const container = containerRef.current;
+        const width = container.clientWidth;
+        const height = container.clientHeight;
+
+        console.log('[TraditionalFamilyTree] Initializing tree with', members.length, 'members');
+
+        // Clear previous
+        svg.selectAll('*').remove();
+
+        // Create main group for zoom/pan
+        const g = svg.append('g').attr('class', 'tree-container');
+
+        // Setup zoom
+        const zoom = d3.zoom<SVGSVGElement, unknown>()
+            .scaleExtent([0.1, 4])
+            .on('zoom', (event) => {
+                g.attr('transform', event.transform);
+            });
+
+        svg.call(zoom);
+        zoomRef.current = zoom;
+
+        // Build hierarchy
+        const root = buildHierarchy();
+        if (!root) {
+            console.error('[TraditionalFamilyTree] No root found');
+            return;
+        }
+
+        // Create D3 hierarchy
+        const hierarchy = d3.hierarchy(root, (d: FamilyMember) => {
+            return getChildren(d.id);
+        });
+
+        // Create tree layout
+        const treeLayout = d3.tree<FamilyMember>()
+            .size([width - 200, height - 200])
+            .separation((a, b) => (a.parent === b.parent ? 1 : 2));
+
+        // Apply layout
+        const treeData = treeLayout(hierarchy);
+
+        // Draw links (lines between nodes)
+        g.selectAll('.link')
+            .data(treeData.links())
+            .enter()
+            .append('path')
+            .attr('class', 'link')
+            .attr('d', d3.linkVertical<any, TreeNode>()
+                .x(d => (d.x || 0) + 100)
+                .y(d => (d.y || 0) + 100)
+            )
+            .attr('fill', 'none')
+            .attr('stroke', '#64748b')
+            .attr('stroke-width', 2);
+
+        // Draw nodes
+        const node = g.selectAll('.node')
+            .data(treeData.descendants())
+            .enter()
+            .append('g')
+            .attr('class', 'node')
+            .attr('transform', d => `translate(${(d.x || 0) + 100},${(d.y || 0) + 100})`)
+            .style('cursor', 'pointer')
+            .on('click', (event, d) => {
+                event.stopPropagation();
+                setSelectedMember(d.data);
+                setIsEditModalOpen(true);
+            });
+
+        // Node background card
+        node.append('rect')
+            .attr('x', -80)
+            .attr('y', -40)
+            .attr('width', 160)
+            .attr('height', 80)
+            .attr('rx', 8)
+            .attr('fill', d => d.data.gender === 'female' ? '#fce7f3' : '#dbeafe')
+            .attr('stroke', d => d.data.gender === 'female' ? '#ec4899' : '#3b82f6')
+            .attr('stroke-width', 3);
+
+        // Node text - name
+        node.append('text')
+            .attr('dy', -10)
+            .attr('text-anchor', 'middle')
+            .attr('fill', '#1e293b')
+            .attr('font-weight', 'bold')
+            .attr('font-size', '14px')
+            .text(d => `${d.data.first_name} ${d.data.last_name || ''}`);
+
+        // Node text - birth year
+        node.append('text')
+            .attr('dy', 10)
+            .attr('text-anchor', 'middle')
+            .attr('fill', '#64748b')
+            .attr('font-size', '12px')
+            .text(d => d.data.birth_date ? `📅 ${new Date(d.data.birth_date).getFullYear()}` : '');
+
+        // Node text - location
+        node.append('text')
+            .attr('dy', 28)
+            .attr('text-anchor', 'middle')
+            .attr('fill', '#64748b')
+            .attr('font-size', '11px')
+            .text(d => {
+                if (d.data.is_alive && d.data.current_residence) {
+                    return `📍 ${d.data.current_residence}`;
+                } else if (d.data.birth_place) {
+                    return `🏙️ ${d.data.birth_place}`;
+                }
+                return '';
+            });
+
+        // Center the view
+        const bounds = g.node()?.getBBox();
+        if (bounds) {
+            const fullWidth = bounds.width;
+            const fullHeight = bounds.height;
+            const midX = bounds.x + fullWidth / 2;
+            const midY = bounds.y + fullHeight / 2;
+
+            const scale = Math.min(width / fullWidth, height / fullHeight) * 0.8;
+            const translateX = width / 2 - midX * scale;
+            const translateY = height / 2 - midY * scale;
+
+            svg.call(zoom.transform as any, d3.zoomIdentity.translate(translateX, translateY).scale(scale));
+        }
+
+        console.log('[TraditionalFamilyTree] Tree initialized successfully');
+    }, [members, loading, buildHierarchy, getChildren]);
 
     // Search functionality
     const handleSearch = (query: string) => {
@@ -228,7 +216,6 @@ export const TraditionalFamilyTree: React.FC = () => {
 
     // Focus on person
     const focusOnPerson = (memberId: number) => {
-        // TODO: Implement focus/zoom to specific person
         const member = members.find(m => m.id === memberId);
         if (member) {
             setSelectedMember(member);
@@ -236,6 +223,42 @@ export const TraditionalFamilyTree: React.FC = () => {
         }
         setSearchQuery('');
         setSearchResults([]);
+    };
+
+    // Zoom controls
+    const handleZoomIn = () => {
+        if (svgRef.current && zoomRef.current) {
+            d3.select(svgRef.current).transition().call(zoomRef.current.scaleBy, 1.3);
+        }
+    };
+
+    const handleZoomOut = () => {
+        if (svgRef.current && zoomRef.current) {
+            d3.select(svgRef.current).transition().call(zoomRef.current.scaleBy, 0.7);
+        }
+    };
+
+    const handleFitView = () => {
+        if (!svgRef.current || !zoomRef.current || !containerRef.current) return;
+
+        const svg = d3.select(svgRef.current);
+        const g = svg.select('.tree-container');
+        const bounds = (g.node() as SVGGElement)?.getBBox();
+
+        if (bounds) {
+            const width = containerRef.current.clientWidth;
+            const height = containerRef.current.clientHeight;
+            const fullWidth = bounds.width;
+            const fullHeight = bounds.height;
+            const midX = bounds.x + fullWidth / 2;
+            const midY = bounds.y + fullHeight / 2;
+
+            const scale = Math.min(width / fullWidth, height / fullHeight) * 0.8;
+            const translateX = width / 2 - midX * scale;
+            const translateY = height / 2 - midY * scale;
+
+            svg.transition().call(zoomRef.current.transform as any, d3.zoomIdentity.translate(translateX, translateY).scale(scale));
+        }
     };
 
     if (loading) {
@@ -311,11 +334,39 @@ export const TraditionalFamilyTree: React.FC = () => {
             </div>
 
             {/* Tree Container */}
-            <div
-                ref={containerRef}
-                className="flex-1 relative overflow-auto bg-slate-900"
-                style={{ direction: 'ltr' }}
-            />
+            <div ref={containerRef} className="flex-1 relative overflow-hidden bg-slate-900">
+                <svg
+                    ref={svgRef}
+                    width="100%"
+                    height="100%"
+                    style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', display: 'block' }}
+                />
+
+                {/* Zoom Controls */}
+                <div className="absolute bottom-4 right-4 flex flex-col gap-2 z-10">
+                    <button
+                        onClick={handleZoomIn}
+                        className="p-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-white transition-colors"
+                        title="הגדל"
+                    >
+                        <ZoomIn size={20} />
+                    </button>
+                    <button
+                        onClick={handleZoomOut}
+                        className="p-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-white transition-colors"
+                        title="הקטן"
+                    >
+                        <ZoomOut size={20} />
+                    </button>
+                    <button
+                        onClick={handleFitView}
+                        className="p-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-white transition-colors"
+                        title="התאם לתצוגה"
+                    >
+                        <Maximize2 size={20} />
+                    </button>
+                </div>
+            </div>
 
             {/* Edit Modal */}
             <EditMemberModal
