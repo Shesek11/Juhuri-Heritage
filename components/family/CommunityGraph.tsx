@@ -64,6 +64,14 @@ export const CommunityGraph: React.FC = () => {
     const [firstSelectedNode, setFirstSelectedNode] = useState<GraphNode | null>(null);
     const [secondSelectedNode, setSecondSelectedNode] = useState<GraphNode | null>(null);
 
+    // Tooltip state
+    const [tooltip, setTooltip] = useState<{
+        visible: boolean;
+        x: number;
+        y: number;
+        member: FamilyMember | null;
+    }>({ visible: false, x: 0, y: 0, member: null });
+
     // Search state
     const [searchQuery, setSearchQuery] = useState('');
     const [searchResults, setSearchResults] = useState<GraphNode[]>([]);
@@ -309,6 +317,55 @@ export const CommunityGraph: React.FC = () => {
         sim.alpha(0.5).restart();
     }, [forceParams]);
 
+    // Highlight selected nodes in connection mode
+    useEffect(() => {
+        if (!svgRef.current || (!firstSelectedNode && !secondSelectedNode)) {
+            // Clear all highlights if no node is selected
+            if (svgRef.current) {
+                d3.select(svgRef.current)
+                    .selectAll('g.node circle')
+                    .attr('stroke-width', 3)
+                    .attr('stroke', d => {
+                        const nodeData = d as GraphNode;
+                        return nodeData.gender === 'female' ? '#ec4899' : '#3b82f6';
+                    });
+            }
+            return;
+        }
+
+        // Highlight the selected nodes
+        const svg = d3.select(svgRef.current);
+        const graphContainer = svg.select('g.graph-container');
+
+        // Reset all nodes first
+        graphContainer.selectAll('g.node circle')
+            .attr('stroke-width', 3)
+            .attr('stroke', d => {
+                const nodeData = d as GraphNode;
+                return nodeData.gender === 'female' ? '#ec4899' : '#3b82f6';
+            });
+
+        // Highlight the first selected node
+        if (firstSelectedNode) {
+            const firstNodeGroup = graphContainer.select(`g.node[data-id="${firstSelectedNode.id}"]`);
+            if (!firstNodeGroup.empty()) {
+                firstNodeGroup.select('circle')
+                    .attr('stroke-width', 5)
+                    .attr('stroke', '#fbbf24'); // Amber highlight
+            }
+        }
+
+        // Highlight the second selected node
+        if (secondSelectedNode) {
+            const secondNodeGroup = graphContainer.select(`g.node[data-id="${secondSelectedNode.id}"]`);
+            if (!secondNodeGroup.empty()) {
+                secondNodeGroup.select('circle')
+                    .attr('stroke-width', 5)
+                    .attr('stroke', '#10b981'); // Green highlight for second node
+            }
+        }
+    }, [firstSelectedNode, secondSelectedNode]);
+
     // Build the D3 visualization
     useEffect(() => {
         if (loading || nodes.length === 0 || !svgRef.current || !containerRef.current) return;
@@ -473,16 +530,122 @@ export const CommunityGraph: React.FC = () => {
             .attr('stroke-dasharray', d => getEdgeDash(d))
             .attr('stroke-linecap', 'round')
             .style('filter', 'drop-shadow(0px 0px 2px rgba(0,0,0,0.3))')
-            .on('mouseenter', function() {
-                // Highlight on hover
+            .style('cursor', 'pointer')
+            .on('mouseenter', function(event, d: GraphEdge) {
+                // Highlight the edge
                 d3.select(this)
                     .attr('stroke-opacity', 1)
-                    .attr('stroke-width', d => getEdgeWidth(d) + 1);
+                    .attr('stroke-width', getEdgeWidth(d) + 1);
+
+                // Get connected nodes
+                const sourceId = typeof d.source === 'number' ? d.source : d.source.id;
+                const targetId = typeof d.target === 'number' ? d.target : d.target.id;
+
+                // Pulse both connected nodes (skip junction nodes)
+                [sourceId, targetId].forEach(nodeId => {
+                    const nodeData = nodes.find(n => n.id === nodeId);
+                    if (!nodeData || nodeData.isJunction) return;
+
+                    const nodeGroup = g.select(`g.node[data-id="${nodeId}"]`);
+                    if (!nodeGroup.empty()) {
+                        const circle = nodeGroup.select('circle');
+
+                        // Create pulsing ring
+                        const ring = nodeGroup.insert('circle', ':first-child')
+                            .attr('class', 'edge-hover-pulse')
+                            .attr('r', 25)
+                            .attr('fill', 'none')
+                            .attr('stroke', '#f59e0b')
+                            .attr('stroke-width', 3)
+                            .attr('opacity', 0.8);
+
+                        ring.transition()
+                            .duration(800)
+                            .ease(d3.easeQuadOut)
+                            .attr('r', 50)
+                            .attr('stroke-width', 1)
+                            .attr('opacity', 0)
+                            .remove();
+
+                        // Enlarge the node
+                        circle.transition()
+                            .duration(200)
+                            .attr('r', 30);
+                    }
+                });
             })
-            .on('mouseleave', function() {
+            .on('mouseleave', function(event, d: GraphEdge) {
+                // Restore edge
                 d3.select(this)
                     .attr('stroke-opacity', 0.85)
-                    .attr('stroke-width', d => getEdgeWidth(d));
+                    .attr('stroke-width', getEdgeWidth(d));
+
+                // Restore node sizes
+                const sourceId = typeof d.source === 'number' ? d.source : d.source.id;
+                const targetId = typeof d.target === 'number' ? d.target : d.target.id;
+
+                [sourceId, targetId].forEach(nodeId => {
+                    const nodeData = nodes.find(n => n.id === nodeId);
+                    if (!nodeData || nodeData.isJunction) return;
+
+                    const nodeGroup = g.select(`g.node[data-id="${nodeId}"]`);
+                    if (!nodeGroup.empty()) {
+                        nodeGroup.select('circle')
+                            .transition()
+                            .duration(200)
+                            .attr('r', 25);
+                    }
+                });
+            })
+            .on('click', function(event, d: GraphEdge) {
+                event.stopPropagation();
+
+                // Get connected nodes
+                const sourceId = typeof d.source === 'number' ? d.source : d.source.id;
+                const targetId = typeof d.target === 'number' ? d.target : d.target.id;
+
+                // Create continuous pulsing on both nodes for 3 seconds
+                [sourceId, targetId].forEach(nodeId => {
+                    const nodeData = nodes.find(n => n.id === nodeId);
+                    if (!nodeData || nodeData.isJunction) return;
+
+                    const nodeGroup = g.select(`g.node[data-id="${nodeId}"]`);
+                    if (!nodeGroup.empty()) {
+                        let pulseCount = 0;
+                        const maxPulses = 5; // 3 seconds
+
+                        const createPulse = () => {
+                            if (pulseCount >= maxPulses) return;
+
+                            const ring = nodeGroup.insert('circle', ':first-child')
+                                .attr('class', 'edge-click-pulse')
+                                .attr('r', 25)
+                                .attr('fill', 'none')
+                                .attr('stroke', '#f59e0b')
+                                .attr('stroke-width', 3)
+                                .attr('opacity', 0.8);
+
+                            ring.transition()
+                                .duration(1000)
+                                .ease(d3.easeQuadOut)
+                                .attr('r', 50)
+                                .attr('stroke-width', 1)
+                                .attr('opacity', 0)
+                                .remove();
+
+                            pulseCount++;
+                        };
+
+                        // Create pulses
+                        createPulse();
+                        const interval = setInterval(() => {
+                            createPulse();
+                            if (pulseCount >= maxPulses) {
+                                clearInterval(interval);
+                            }
+                        }, 600);
+                    }
+                });
             });
 
         // Draw nodes (excluding invisible junction nodes)
@@ -576,19 +739,40 @@ export const CommunityGraph: React.FC = () => {
             }
         });
 
-        // Hover effects
-        node.on('mouseenter', function () {
+        // Hover effects with tooltip
+        node.on('mouseenter', function (event, d: GraphNode) {
+            // Enlarge circle
             d3.select(this).select('circle')
                 .transition()
                 .duration(200)
                 .attr('r', 30);
+
+            // Show tooltip
+            const member = allMembers.find(m => m.id === d.id);
+            if (member) {
+                const rect = (event.target as Element).getBoundingClientRect();
+                const containerRect = containerRef.current?.getBoundingClientRect();
+
+                if (containerRect) {
+                    setTooltip({
+                        visible: true,
+                        x: rect.left - containerRect.left + rect.width / 2,
+                        y: rect.top - containerRect.top - 10,
+                        member: member
+                    });
+                }
+            }
         });
 
         node.on('mouseleave', function () {
+            // Restore circle size
             d3.select(this).select('circle')
                 .transition()
                 .duration(200)
                 .attr('r', 25);
+
+            // Hide tooltip
+            setTooltip(prev => ({ ...prev, visible: false }));
         });
 
         // Update positions function
@@ -747,7 +931,13 @@ export const CommunityGraph: React.FC = () => {
         if (!svgRef.current || !zoomRef.current || !containerRef.current) return;
 
         const node = nodes.find(n => n.id === nodeId);
-        if (!node || !node.x || !node.y) return;
+        if (!node) return;
+
+        // Wait a bit if positions aren't ready yet (simulation just started)
+        if (!node.x || !node.y) {
+            setTimeout(() => focusOnNode(nodeId), 100);
+            return;
+        }
 
         const width = containerRef.current.clientWidth;
         const height = containerRef.current.clientHeight;
@@ -780,6 +970,9 @@ export const CommunityGraph: React.FC = () => {
 
         // Remove any existing pulse rings
         graphContainer.selectAll('.pulse-ring').remove();
+
+        // Hide tooltip during focus
+        setTooltip(prev => ({ ...prev, visible: false }));
 
         if (!nodeGroup.empty()) {
             const circle = nodeGroup.select('circle');
@@ -1308,6 +1501,112 @@ export const CommunityGraph: React.FC = () => {
                     )}
                 </div>
             </div>
+
+            {/* Tooltip */}
+            {tooltip.visible && tooltip.member && (
+                <div
+                    className="absolute z-[200] pointer-events-none"
+                    style={{
+                        left: `${tooltip.x}px`,
+                        top: `${tooltip.y}px`,
+                        transform: 'translate(-50%, -100%)'
+                    }}
+                >
+                    <div className="bg-slate-800 border-2 border-slate-600 rounded-lg shadow-2xl p-4 min-w-[250px] max-w-[350px]" dir="rtl">
+                        {/* Header with photo */}
+                        <div className="flex items-center gap-3 mb-3 pb-3 border-b border-slate-600">
+                            {tooltip.member.photo_url ? (
+                                <img
+                                    src={tooltip.member.photo_url}
+                                    alt={tooltip.member.first_name}
+                                    className="w-16 h-16 rounded-full object-cover border-2 border-slate-500"
+                                />
+                            ) : (
+                                <div className="w-16 h-16 rounded-full bg-slate-700 flex items-center justify-center border-2 border-slate-500">
+                                    <User size={32} className="text-slate-400" />
+                                </div>
+                            )}
+                            <div className="flex-1">
+                                <h3 className="font-bold text-white text-lg">
+                                    {tooltip.member.title && `${tooltip.member.title} `}
+                                    {tooltip.member.first_name} {tooltip.member.last_name}
+                                </h3>
+                                {tooltip.member.nickname && (
+                                    <p className="text-sm text-slate-400">"{tooltip.member.nickname}"</p>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Details */}
+                        <div className="space-y-2 text-sm">
+                            {/* Birth info */}
+                            {(tooltip.member.birth_date || tooltip.member.birth_place) && (
+                                <div className="flex items-start gap-2">
+                                    <span className="text-emerald-400">📅</span>
+                                    <div className="flex-1 text-slate-200">
+                                        <span className="font-medium">נולד:</span>{' '}
+                                        {tooltip.member.birth_date && new Date(tooltip.member.birth_date).toLocaleDateString('he-IL')}
+                                        {tooltip.member.birth_place && ` ב${tooltip.member.birth_place}`}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Death info */}
+                            {!tooltip.member.is_alive && (
+                                <div className="flex items-start gap-2">
+                                    <span className="text-slate-400">🕊️</span>
+                                    <div className="flex-1 text-slate-200">
+                                        <span className="font-medium">נפטר:</span>{' '}
+                                        {tooltip.member.death_date && new Date(tooltip.member.death_date).toLocaleDateString('he-IL')}
+                                        {tooltip.member.death_place && ` ב${tooltip.member.death_place}`}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Current residence */}
+                            {tooltip.member.is_alive && tooltip.member.current_residence && (
+                                <div className="flex items-start gap-2">
+                                    <span className="text-blue-400">📍</span>
+                                    <div className="flex-1 text-slate-200">
+                                        <span className="font-medium">מתגורר:</span> {tooltip.member.current_residence}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Maiden name */}
+                            {tooltip.member.maiden_name && (
+                                <div className="flex items-start gap-2">
+                                    <span className="text-pink-400">💝</span>
+                                    <div className="flex-1 text-slate-200">
+                                        <span className="font-medium">שם נעורים:</span> {tooltip.member.maiden_name}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Biography snippet */}
+                            {tooltip.member.biography && (
+                                <div className="flex items-start gap-2 mt-3 pt-3 border-t border-slate-700">
+                                    <span className="text-amber-400">📖</span>
+                                    <div className="flex-1 text-slate-300 text-xs italic line-clamp-3">
+                                        {tooltip.member.biography}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Hint */}
+                        <div className="mt-3 pt-3 border-t border-slate-700 text-xs text-slate-400 text-center">
+                            לחץ לעריכה • לחיצה ימנית למידע נוסף
+                        </div>
+                    </div>
+
+                    {/* Arrow pointing down */}
+                    <div
+                        className="absolute left-1/2 -bottom-2 w-0 h-0 border-l-8 border-r-8 border-t-8 border-transparent border-t-slate-600"
+                        style={{ transform: 'translateX(-50%)' }}
+                    />
+                </div>
+            )}
 
             {/* Edit Modal */}
             <EditMemberModal

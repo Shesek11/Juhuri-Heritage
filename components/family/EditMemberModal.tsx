@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FamilyMember, familyService } from '../../services/familyService';
-import { User, X, Check, Loader2, Upload, Pencil, UserPlus, Users, Baby, Heart, Trash2 } from 'lucide-react';
+import { User, X, Check, Loader2, Upload, Pencil, UserPlus, Users, Baby, Heart, Trash2, AlertTriangle, Link } from 'lucide-react';
 
 interface EditMemberModalProps {
     isOpen: boolean;
@@ -16,6 +16,10 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
     const [activeTab, setActiveTab] = useState<'details' | 'connections'>('details');
     const isEditing = !!member?.id;
     const [formData, setFormData] = useState<Partial<FamilyMember>>({});
+
+    // Duplicate detection state
+    const [duplicates, setDuplicates] = useState<FamilyMember[]>([]);
+    const [showDuplicateWarning, setShowDuplicateWarning] = useState(false);
 
     // Connection state
     const [parents, setParents] = useState<any[]>([]);
@@ -61,6 +65,43 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
             setPartnerships([]);
         }
     }, [member, isOpen]);
+
+    // Detect duplicate names in real-time (only for new members)
+    useEffect(() => {
+        if (isEditing || !formData.first_name || !formData.last_name) {
+            setDuplicates([]);
+            setShowDuplicateWarning(false);
+            return;
+        }
+
+        const firstName = formData.first_name.trim().toLowerCase();
+        const lastName = formData.last_name.trim().toLowerCase();
+
+        if (firstName.length < 2 || lastName.length < 2) {
+            setDuplicates([]);
+            setShowDuplicateWarning(false);
+            return;
+        }
+
+        // Find similar names
+        const similarMembers = potentialRelations.filter(m => {
+            const mFirstName = (m.first_name || '').trim().toLowerCase();
+            const mLastName = (m.last_name || '').trim().toLowerCase();
+
+            // Exact match or very similar
+            const firstNameMatch = mFirstName === firstName ||
+                                   mFirstName.includes(firstName) ||
+                                   firstName.includes(mFirstName);
+            const lastNameMatch = mLastName === lastName ||
+                                  mLastName.includes(lastName) ||
+                                  lastName.includes(mLastName);
+
+            return firstNameMatch && lastNameMatch;
+        });
+
+        setDuplicates(similarMembers);
+        setShowDuplicateWarning(similarMembers.length > 0);
+    }, [formData.first_name, formData.last_name, isEditing, potentialRelations]);
 
     const fetchRelationships = async () => {
         if (!member?.id) return;
@@ -286,6 +327,69 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                                     />
                                 </div>
                             </div>
+
+                            {/* Duplicate Detection Warning */}
+                            {showDuplicateWarning && duplicates.length > 0 && (
+                                <div className="bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-400 rounded-lg p-4 space-y-3">
+                                    <div className="flex items-start gap-3">
+                                        <AlertTriangle className="text-amber-600 flex-shrink-0 mt-0.5" size={20} />
+                                        <div className="flex-1">
+                                            <h4 className="font-bold text-amber-800 dark:text-amber-200 mb-1">
+                                                נמצאו {duplicates.length} {duplicates.length === 1 ? 'אדם דומה' : 'אנשים דומים'}
+                                            </h4>
+                                            <p className="text-sm text-amber-700 dark:text-amber-300 mb-3">
+                                                האם התכוונת לאחד מהאנשים הבאים? אפשר להתחבר אליהם במקום ליצור רשומה חדשה.
+                                            </p>
+                                            <div className="space-y-2 max-h-40 overflow-y-auto">
+                                                {duplicates.map(dup => (
+                                                    <div key={dup.id} className="bg-white dark:bg-slate-800 rounded-lg p-3 flex items-center justify-between border border-amber-200 dark:border-amber-700">
+                                                        <div className="flex items-center gap-3">
+                                                            {dup.photo_url ? (
+                                                                <img src={dup.photo_url} alt="" className="w-10 h-10 rounded-full object-cover" />
+                                                            ) : (
+                                                                <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center">
+                                                                    <User size={20} className="text-slate-400" />
+                                                                </div>
+                                                            )}
+                                                            <div>
+                                                                <div className="font-medium text-slate-800 dark:text-slate-200">
+                                                                    {dup.first_name} {dup.last_name}
+                                                                </div>
+                                                                <div className="text-xs text-slate-500">
+                                                                    {dup.birth_date ? `נולד ${new Date(dup.birth_date).getFullYear()}` : 'אין תאריך לידה'}
+                                                                    {dup.birth_place && ` • ${dup.birth_place}`}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                // Switch to existing member edit mode
+                                                                onClose();
+                                                                // Let parent component handle opening this member
+                                                                onSuccess();
+                                                            }}
+                                                            className="flex items-center gap-1 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-sm transition-colors"
+                                                        >
+                                                            <Link size={14} />
+                                                            <span>עבור לאדם זה</span>
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <div className="mt-3 pt-3 border-t border-amber-200 dark:border-amber-700">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowDuplicateWarning(false)}
+                                                    className="text-sm text-amber-700 dark:text-amber-300 hover:underline"
+                                                >
+                                                    המשך בכל זאת ליצור רשומה חדשה
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
 
                             {/* Maiden Name & Nickname */}
                             <div className="grid grid-cols-2 gap-4">
