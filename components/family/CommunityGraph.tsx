@@ -1947,7 +1947,7 @@ export const CommunityGraph: React.FC = () => {
                     style={{
                         left: `${tooltip.x}px`,
                         top: `${tooltip.y}px`,
-                        transform: 'translate(-50%, calc(-100% - 50px - 8px))'
+                        transform: 'translate(-50%, -58px)'
                     }}
                 >
                     <div className="bg-slate-800 border-2 border-slate-600 rounded-lg shadow-2xl p-4 min-w-[250px] max-w-[350px]" dir="rtl">
