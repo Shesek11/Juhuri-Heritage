@@ -1146,7 +1146,6 @@ export const CommunityGraph: React.FC = () => {
             console.warn('[CommunityGraph] Node group not found for pulsing:', nodeId);
         }
     };
-    };
 
     // Stop pulsing on any interaction
     const stopPulsing = () => {
