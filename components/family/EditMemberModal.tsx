@@ -422,7 +422,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                             </div>
                             {parents.map(p => (
                                 <div key={p.id} className="flex justify-between items-center bg-slate-50 dark:bg-slate-800 p-2 rounded border dark:border-slate-700">
-                                    <span>{p.parent?.first_name} {p.parent?.last_name}</span>
+                                    <span>{p.parent?.first_name || p.first_name} {p.parent?.last_name || p.last_name}</span>
                                     <button onClick={() => handleRemoveRelationship('parent', p.id)} className="text-red-500 hover:bg-red-50 p-1 rounded"><X size={14} /></button>
                                 </div>
                             ))}
@@ -442,7 +442,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                                     {editingPartnership?.id === p.id ? (
                                         <div className="space-y-2">
                                             <div className="flex justify-between items-center mb-2">
-                                                <span className="font-medium">{p.partner?.first_name} {p.partner?.last_name}</span>
+                                                <span className="font-medium">{p.partner?.first_name || p.partner_first_name} {p.partner?.last_name || p.partner_last_name}</span>
                                                 <button onClick={() => setEditingPartnership(null)} className="text-xs text-slate-500">ביטול</button>
                                             </div>
                                             <select
@@ -479,7 +479,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                                     ) : (
                                         <div className="flex justify-between items-center">
                                             <div className="flex flex-col flex-1">
-                                                <span>{p.partner?.first_name} {p.partner?.last_name}</span>
+                                                <span>{p.partner?.first_name || p.partner_first_name} {p.partner?.last_name || p.partner_last_name}</span>
                                                 <span className="text-xs text-slate-400">
                                                     {p.status === 'married' ? '💍 נשואים' :
                                                      p.status === 'divorced' ? '💔 גרושים' :
@@ -518,7 +518,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                             </div>
                             {children.map(c => (
                                 <div key={c.id} className="flex justify-between items-center bg-slate-50 dark:bg-slate-800 p-2 rounded border dark:border-slate-700">
-                                    <span>{c.child?.first_name} {c.child?.last_name}</span>
+                                    <span>{c.child?.first_name || c.first_name} {c.child?.last_name || c.last_name}</span>
                                     <button onClick={() => handleRemoveRelationship('child', c.id)} className="text-red-500 hover:bg-red-50 p-1 rounded"><X size={14} /></button>
                                 </div>
                             ))}
