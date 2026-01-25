@@ -8,7 +8,7 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import * as d3 from 'd3';
 import { familyService, FamilyMember } from '../../services/familyService';
 import { EditMemberModal } from './EditMemberModal';
-import { Loader2, ZoomIn, ZoomOut, Maximize2, UserPlus, Link2, X } from 'lucide-react';
+import { Loader2, ZoomIn, ZoomOut, Maximize2, UserPlus, Link2, X, Search } from 'lucide-react';
 
 interface GraphNode extends d3.SimulationNodeDatum {
     id: number;
@@ -46,6 +46,10 @@ export const CommunityGraph: React.FC = () => {
     const [connectionMode, setConnectionMode] = useState<ConnectionMode>('none');
     const [firstSelectedNode, setFirstSelectedNode] = useState<GraphNode | null>(null);
     const [secondSelectedNode, setSecondSelectedNode] = useState<GraphNode | null>(null);
+
+    // Search state
+    const [searchQuery, setSearchQuery] = useState('');
+    const [searchResults, setSearchResults] = useState<GraphNode[]>([]);
 
     // Zoom ref for controls
     const zoomRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null);
@@ -527,6 +531,55 @@ export const CommunityGraph: React.FC = () => {
                 </div>
 
                 <div className="flex items-center gap-3">
+                    {/* Search Bar */}
+                    <div className="relative">
+                        <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" size={16} />
+                        <input
+                            type="text"
+                            placeholder="חפש אדם..."
+                            value={searchQuery}
+                            onChange={(e) => {
+                                const query = e.target.value;
+                                setSearchQuery(query);
+                                if (query.length >= 2) {
+                                    const results = nodes.filter(n =>
+                                        n.name.toLowerCase().includes(query.toLowerCase())
+                                    );
+                                    setSearchResults(results);
+                                } else {
+                                    setSearchResults([]);
+                                }
+                            }}
+                            className="pr-9 pl-3 py-1.5 bg-slate-700 border border-slate-600 rounded-lg text-white text-sm placeholder-slate-400 focus:outline-none focus:border-amber-500 w-48"
+                        />
+                        {searchResults.length > 0 && (
+                            <div className="absolute top-full mt-1 w-64 bg-slate-800 border border-slate-600 rounded-lg shadow-xl max-h-64 overflow-y-auto z-50">
+                                {searchResults.map(result => (
+                                    <button
+                                        key={result.id}
+                                        onClick={() => {
+                                            const member = allMembers.find(m => m.id === result.id);
+                                            if (member) {
+                                                setSelectedMember(member);
+                                                setIsEditModalOpen(true);
+                                                setSearchQuery('');
+                                                setSearchResults([]);
+                                            }
+                                        }}
+                                        className="w-full text-right px-4 py-2 hover:bg-slate-700 transition-colors text-sm"
+                                    >
+                                        <div className="font-medium text-white">{result.name}</div>
+                                        {result.birthYear && (
+                                            <div className="text-xs text-slate-400">נולד/ה: {result.birthYear}</div>
+                                        )}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="w-px h-6 bg-slate-600" />
+
                     {/* Add Person Button */}
                     <button
                         onClick={() => {

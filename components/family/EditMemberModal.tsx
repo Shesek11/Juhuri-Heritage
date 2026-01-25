@@ -28,6 +28,9 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
     const [editingPartnership, setEditingPartnership] = useState<any | null>(null);
 
     useEffect(() => {
+        // Always reset to details tab when modal opens
+        setActiveTab('details');
+
         if (member) {
             setFormData({
                 first_name: member.first_name || '',
