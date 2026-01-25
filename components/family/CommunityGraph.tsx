@@ -15,6 +15,9 @@ interface GraphNode extends d3.SimulationNodeDatum {
     name: string;
     gender: 'male' | 'female' | 'other';
     birthYear?: number;
+    birthPlace?: string;
+    currentResidence?: string;
+    isAlive?: boolean;
     family?: string;
     generation?: number;  // 0 = oldest ancestor, higher = younger generation
 }
@@ -75,6 +78,9 @@ export const CommunityGraph: React.FC = () => {
                 name: `${m.first_name} ${m.last_name || ''}`.trim(),
                 gender: m.gender || 'other',
                 birthYear: m.birth_date ? new Date(m.birth_date).getFullYear() : undefined,
+                birthPlace: m.birth_place,
+                currentResidence: m.current_residence,
+                isAlive: m.is_alive,
                 family: m.last_name || 'Unknown'
             }));
 
@@ -713,7 +719,7 @@ export const CommunityGraph: React.FC = () => {
                             className="pr-9 pl-3 py-1.5 bg-slate-700 border border-slate-600 rounded-lg text-white text-sm placeholder-slate-400 focus:outline-none focus:border-amber-500 w-48 relative z-10"
                         />
                         {searchResults.length > 0 && (
-                            <div className="absolute top-full mt-1 right-0 w-64 bg-slate-800 border border-slate-600 rounded-lg shadow-2xl max-h-64 overflow-y-auto">
+                            <div className="absolute top-full mt-1 right-0 w-80 bg-slate-800 border border-slate-600 rounded-lg shadow-2xl max-h-80 overflow-y-auto">
                                 {searchResults.map(result => (
                                     <button
                                         key={result.id}
@@ -723,12 +729,20 @@ export const CommunityGraph: React.FC = () => {
                                             setSearchQuery('');
                                             setSearchResults([]);
                                         }}
-                                        className="w-full text-right px-4 py-2 hover:bg-slate-700 transition-colors text-sm border-b border-slate-700 last:border-b-0"
+                                        className="w-full text-right px-4 py-2.5 hover:bg-slate-700 transition-colors text-sm border-b border-slate-700 last:border-b-0"
                                     >
-                                        <div className="font-medium text-white">{result.name}</div>
-                                        {result.birthYear && (
-                                            <div className="text-xs text-slate-400">נולד/ה: {result.birthYear}</div>
-                                        )}
+                                        <div className="font-medium text-white mb-1">{result.name}</div>
+                                        <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-slate-400">
+                                            {result.birthYear && (
+                                                <span>📅 {result.birthYear}</span>
+                                            )}
+                                            {result.birthPlace && (
+                                                <span>🏙️ {result.birthPlace}</span>
+                                            )}
+                                            {result.isAlive && result.currentResidence && (
+                                                <span>📍 {result.currentResidence}</span>
+                                            )}
+                                        </div>
                                     </button>
                                 ))}
                             </div>

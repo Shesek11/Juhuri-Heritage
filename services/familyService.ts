@@ -23,6 +23,7 @@ export interface FamilyMember {
     death_date?: string;
     birth_place?: string;
     death_place?: string;
+    current_residence?: string;
 
     biography?: string;
     photo_url?: string;

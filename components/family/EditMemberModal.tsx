@@ -45,6 +45,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                 death_date: member.death_date?.split('T')[0] || '',
                 birth_place: member.birth_place || '',
                 death_place: member.death_place || '',
+                current_residence: member.current_residence || '',
                 biography: member.biography || '',
                 photo_url: member.photo_url || '',
             });
@@ -400,6 +401,19 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                                     </div>
                                 )}
                             </div>
+
+                            {/* Current Residence (for living people) */}
+                            {formData.is_alive && (
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">מקום מגורים נוכחי</label>
+                                    <input
+                                        value={formData.current_residence}
+                                        onChange={e => setFormData({ ...formData, current_residence: e.target.value })}
+                                        placeholder="עיר, מדינה"
+                                        className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
+                                    />
+                                </div>
+                            )}
 
                             {/* Biography */}
                             <div>
