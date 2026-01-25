@@ -2,8 +2,8 @@
 -- This script creates a realistic family tree with all relationship types
 
 -- First, clear existing data (optional - comment out if you want to keep existing data)
--- DELETE FROM parent_child_relationships;
--- DELETE FROM partnerships;
+-- DELETE FROM family_parent_child;
+-- DELETE FROM family_partnerships;
 -- DELETE FROM family_members WHERE id > 1000; -- Only delete mock data
 
 -- ===== GENERATION 0: Great-Grandparents (1920s-1940s) =====
@@ -119,11 +119,11 @@ VALUES
 (4009, 'דניאלה', 'כהן', 'female', '2018-08-22', true, 'ירושלים, ישראל', 'בתו של אלי', 3);
 
 -- ==========================================
--- PARTNERSHIPS (MARRIAGES/RELATIONSHIPS)
+-- PARTNERSHIPS (MARRIAGES/RELATIONSHIPS) - family_partnerships table
 -- ==========================================
 
 -- Generation 0 partnerships
-INSERT INTO partnerships (person1_id, person2_id, status, start_date, marriage_place, notes)
+INSERT INTO family_partnerships (person1_id, person2_id, status, start_date, marriage_place, notes)
 VALUES
 -- David & Sarah (married, both deceased)
 (1001, 1002, 'widowed', '1948-06-10', 'דרבנט, דגסטן', 'נישאו 57 שנה עד למות דוד'),
@@ -132,7 +132,7 @@ VALUES
 (1003, 1004, 'divorced', '1952-03-20', 'באקו, אזרבייג''ן', 'התגרשו ב-1990 לאחר 38 שנות נישואין');
 
 -- Generation 1 partnerships
-INSERT INTO partnerships (person1_id, person2_id, status, start_date, marriage_place, notes)
+INSERT INTO family_partnerships (person1_id, person2_id, status, start_date, marriage_place, notes)
 VALUES
 -- Abraham & Miriam (married)
 (2001, 2002, 'married', '1974-08-15', 'ירושלים, ישראל', 'נישאו כמעט 50 שנה'),
@@ -147,7 +147,7 @@ VALUES
 (2006, 2007, 'married', '1980-07-04', 'תל אביב, ישראל', 'נישאו מעל 40 שנה');
 
 -- Generation 2 partnerships
-INSERT INTO partnerships (person1_id, person2_id, status, start_date, marriage_place, notes)
+INSERT INTO family_partnerships (person1_id, person2_id, status, start_date, marriage_place, notes)
 VALUES
 -- Shmuel & Tamar (married)
 (3001, 3004, 'married', '2003-06-25', 'ירושלים, ישראל', 'נישאו כ-21 שנים'),
@@ -159,11 +159,11 @@ VALUES
 (3012, 3007, 'married', '2008-05-18', 'חיפה, ישראל', 'נישאו כ-16 שנים');
 
 -- ==========================================
--- PARENT-CHILD RELATIONSHIPS
+-- PARENT-CHILD RELATIONSHIPS - family_parent_child table
 -- ==========================================
 
 -- Generation 0 → Generation 1
-INSERT INTO parent_child_relationships (parent_id, child_id, relationship_type, notes)
+INSERT INTO family_parent_child (parent_id, child_id, relationship_type, notes)
 VALUES
 -- David & Sarah's children
 (1001, 2001, 'biological', 'דוד הוא אביו הביולוגי של אברהם'),
@@ -178,7 +178,7 @@ VALUES
 (1004, 2006, 'biological', 'רבקה היא אמו הביולוגית של דניאל');
 
 -- Generation 1 → Generation 2
-INSERT INTO parent_child_relationships (parent_id, child_id, relationship_type, notes)
+INSERT INTO family_parent_child (parent_id, child_id, relationship_type, notes)
 VALUES
 -- Abraham & Miriam's children (all biological)
 (2001, 3001, 'biological', 'אברהם הוא אביו הביולוגי של שמואל'),
@@ -207,7 +207,7 @@ VALUES
 (2007, 3011, 'adopted', 'חנה היא אמו המאמצת של רוני - אומץ ב-1990');
 
 -- Generation 2 → Generation 3
-INSERT INTO parent_child_relationships (parent_id, child_id, relationship_type, notes)
+INSERT INTO family_parent_child (parent_id, child_id, relationship_type, notes)
 VALUES
 -- Shmuel & Tamar's children
 (3001, 4001, 'biological', 'שמואל הוא אביו הביולוגי של יונתן'),
