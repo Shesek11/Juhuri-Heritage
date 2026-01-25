@@ -1080,7 +1080,7 @@ export const CommunityGraph: React.FC = () => {
                     setTooltip({
                         visible: true,
                         x: rect.left - containerRect.left + rect.width / 2,
-                        y: rect.top - containerRect.top - 90, // Balanced space above the circle
+                        y: rect.top - containerRect.top, // No spacing - directly at circle top
                         member: member
                     });
                 }
