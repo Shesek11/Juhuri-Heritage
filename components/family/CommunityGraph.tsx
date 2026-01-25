@@ -553,7 +553,7 @@ export const CommunityGraph: React.FC = () => {
                             className="pr-9 pl-3 py-1.5 bg-slate-700 border border-slate-600 rounded-lg text-white text-sm placeholder-slate-400 focus:outline-none focus:border-amber-500 w-48"
                         />
                         {searchResults.length > 0 && (
-                            <div className="absolute top-full mt-1 w-64 bg-slate-800 border border-slate-600 rounded-lg shadow-xl max-h-64 overflow-y-auto z-50">
+                            <div className="absolute top-full mt-1 w-64 bg-slate-800 border border-slate-600 rounded-lg shadow-xl max-h-64 overflow-y-auto z-[200]">
                                 {searchResults.map(result => (
                                     <button
                                         key={result.id}
