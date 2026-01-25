@@ -280,18 +280,24 @@ export const CommunityGraph: React.FC = () => {
                 .force('link', d3.forceLink<GraphNode, GraphEdge>(edges)
                     .id(d => d.id)
                     .distance(d => {
-                        if (d.type === 'spouse') return 80;
-                        if (d.type === 'parent-child') return 120;
-                        return 100;
+                        // Increased distances for better spacing
+                        if (d.type === 'spouse') return 100;
+                        if (d.type === 'parent-child') return 150;
+                        return 120;
                     })
-                    .strength(d => d.type === 'spouse' ? 0.8 : 0.5)
+                    .strength(d => {
+                        // Stronger spouse connections, weaker parent-child for flexibility
+                        if (d.type === 'spouse') return 0.9;
+                        if (d.type === 'parent-child') return 0.4;
+                        return 0.5;
+                    })
                 )
-                .force('charge', d3.forceManyBody().strength(-600))
-                .force('x', d3.forceX(width / 2).strength(0.1))
-                .force('y', d3.forceY<GraphNode>(d => yearToY(d.birthYear ?? ((minYear + maxYear) / 2))).strength(0.6))
-                .force('collision', d3.forceCollide().radius(50))
+                .force('charge', d3.forceManyBody().strength(-800)) // Stronger repulsion
+                .force('x', d3.forceX(width / 2).strength(0.08)) // Weaker horizontal centering
+                .force('y', d3.forceY<GraphNode>(d => yearToY(d.birthYear ?? ((minYear + maxYear) / 2))).strength(0.7)) // Stronger birth year alignment
+                .force('collision', d3.forceCollide().radius(60)) // Larger collision radius
                 .alpha(0.3) // Lower initial heat for more stable convergence
-                .alphaDecay(0.02); // Slower cooling for better convergence
+                .alphaDecay(0.015); // Even slower cooling for better final layout
         } else if (layoutMode === 'hierarchical') {
             // HIERARCHICAL TREE LAYOUT - Generations top to bottom
             const maxGen = Math.max(...nodes.map(n => n.generation || 0));
@@ -344,22 +350,22 @@ export const CommunityGraph: React.FC = () => {
             });
         }
 
-        // Edge colors and styles - improved visibility
+        // Edge colors and styles - vibrant and clear
         const getEdgeColor = (d: GraphEdge) => {
             if (d.type === 'spouse') {
-                if (d.status === 'divorced') return '#f87171'; // Bright red for divorced
-                if (d.status === 'widowed') return '#94a3b8'; // Slate for widowed
-                return '#f472b6'; // Bright pink for married
+                if (d.status === 'divorced') return '#ef4444'; // Vibrant red for divorced
+                if (d.status === 'widowed') return '#9ca3af'; // Gray for widowed
+                return '#ec4899'; // Vibrant pink for married
             }
-            if (d.type === 'parent-child') return '#38bdf8'; // Bright sky blue
-            if (d.type === 'sibling') return '#a78bfa'; // Purple for siblings
+            if (d.type === 'parent-child') return '#3b82f6'; // Vibrant blue
+            if (d.type === 'sibling') return '#a855f7'; // Vibrant purple
             return '#94a3b8';
         };
 
         const getEdgeDash = (d: GraphEdge) => {
             if (d.type === 'spouse') {
-                if (d.status === 'divorced') return '5,5'; // Dashed for divorced
-                if (d.status === 'widowed') return '2,4'; // Dotted for widowed
+                if (d.status === 'divorced') return '8,4'; // Clear dashes for divorced
+                if (d.status === 'widowed') return '4,4'; // Dotted for widowed
                 return 'none'; // Solid for married
             }
             if (d.type === 'sibling') return '8,4'; // Long dash for siblings
@@ -367,9 +373,9 @@ export const CommunityGraph: React.FC = () => {
         };
 
         const getEdgeWidth = (d: GraphEdge) => {
-            if (d.type === 'spouse') return 3;
-            if (d.type === 'parent-child') return 2.5;
-            if (d.type === 'sibling') return 2;
+            if (d.type === 'spouse') return 3.5; // Thicker for emphasis
+            if (d.type === 'parent-child') return 3;
+            if (d.type === 'sibling') return 2.5;
             return 2;
         };
 
@@ -378,7 +384,7 @@ export const CommunityGraph: React.FC = () => {
             ? edges // Show all relationships in force layout
             : edges.filter(e => e.type === 'parent-child'); // Only parent-child in tree/radial
 
-        // Draw edges as paths (Orthogonal routing)
+        // Draw edges as paths with glow effect for better visibility
         const link = g.append('g')
             .attr('class', 'links')
             .selectAll('path')
@@ -387,10 +393,22 @@ export const CommunityGraph: React.FC = () => {
             .append('path')
             .attr('stroke', d => getEdgeColor(d))
             .attr('stroke-width', d => getEdgeWidth(d))
-            .attr('stroke-opacity', 0.7)
+            .attr('stroke-opacity', 0.85) // Higher opacity for clearer lines
             .attr('fill', 'none')
             .attr('stroke-dasharray', d => getEdgeDash(d))
-            .attr('stroke-linecap', 'round');
+            .attr('stroke-linecap', 'round')
+            .style('filter', 'drop-shadow(0px 0px 2px rgba(0,0,0,0.3))')
+            .on('mouseenter', function() {
+                // Highlight on hover
+                d3.select(this)
+                    .attr('stroke-opacity', 1)
+                    .attr('stroke-width', d => getEdgeWidth(d) + 1);
+            })
+            .on('mouseleave', function() {
+                d3.select(this)
+                    .attr('stroke-opacity', 0.85)
+                    .attr('stroke-width', d => getEdgeWidth(d));
+            });
 
         // Draw nodes
         const node = g.append('g')
@@ -491,11 +509,37 @@ export const CommunityGraph: React.FC = () => {
                 const ty = target.y || 0;
 
                 if (layoutMode === 'force') {
-                    // Orthogonal routing for force layout
-                    const midY = (sy + ty) / 2;
-                    return `M ${sx} ${sy} L ${sx} ${midY} L ${tx} ${midY} L ${tx} ${ty}`;
+                    // Smooth curved lines for better aesthetics and fewer visual crossings
+                    const dx = tx - sx;
+                    const dy = ty - sy;
+
+                    if (d.type === 'spouse') {
+                        // Horizontal curve for spouses (they're usually close in Y)
+                        const curvature = 0.3;
+                        const cx1 = sx + dx * curvature;
+                        const cy1 = sy - Math.abs(dx) * 0.2; // Curve upward
+                        const cx2 = sx + dx * (1 - curvature);
+                        const cy2 = ty - Math.abs(dx) * 0.2;
+                        return `M ${sx} ${sy} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${tx} ${ty}`;
+                    } else if (d.type === 'parent-child') {
+                        // Smooth S-curve for parent-child (vertical relationships)
+                        const curvature = 0.6;
+                        const cx1 = sx;
+                        const cy1 = sy + dy * curvature;
+                        const cx2 = tx;
+                        const cy2 = sy + dy * curvature;
+                        return `M ${sx} ${sy} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${tx} ${ty}`;
+                    } else {
+                        // Gentle curve for siblings
+                        const curvature = 0.4;
+                        const cx1 = sx + dx * curvature;
+                        const cy1 = sy + dy * curvature;
+                        const cx2 = sx + dx * (1 - curvature);
+                        const cy2 = sy + dy * (1 - curvature);
+                        return `M ${sx} ${sy} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${tx} ${ty}`;
+                    }
                 } else {
-                    // Straight lines for hierarchical/radial
+                    // Straight lines for hierarchical/radial layouts
                     return `M ${sx} ${sy} L ${tx} ${ty}`;
                 }
             });
