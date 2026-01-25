@@ -584,7 +584,7 @@ export const CommunityGraph: React.FC = () => {
     return (
         <div className="flex flex-col bg-slate-900" style={{ height: 'calc(100vh - 60px)', minHeight: '600px' }}>
             {/* Header */}
-            <div className="bg-slate-800/80 backdrop-blur px-4 py-3 flex items-center justify-between border-b border-slate-700">
+            <div className="bg-slate-800/80 backdrop-blur px-4 py-3 flex items-center justify-between border-b border-slate-700 relative z-[100]">
                 <div className="flex items-center gap-3">
                     <h1 className="text-xl font-bold text-white">🌐 רשת קהילתית</h1>
                     <span className="text-sm text-slate-400">
@@ -800,7 +800,7 @@ export const CommunityGraph: React.FC = () => {
             )}
 
             {/* Graph Container */}
-            <div ref={containerRef} className="flex-1 relative overflow-hidden" style={{ minHeight: '500px' }}>
+            <div ref={containerRef} className="flex-1 relative overflow-hidden z-0" style={{ minHeight: '500px' }}>
                 <svg
                     ref={svgRef}
                     width="100%"
