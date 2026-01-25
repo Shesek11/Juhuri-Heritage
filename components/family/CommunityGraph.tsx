@@ -8,7 +8,7 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import * as d3 from 'd3';
 import { familyService, FamilyMember } from '../../services/familyService';
 import { EditMemberModal } from './EditMemberModal';
-import { Loader2, ZoomIn, ZoomOut, Maximize2, UserPlus, Link2, X, Search, Network, GitBranch, Circle, Info, Eye } from 'lucide-react';
+import { Loader2, ZoomIn, ZoomOut, Maximize2, UserPlus, Link2, X, Search, Network, Info, Eye } from 'lucide-react';
 
 interface GraphNode extends d3.SimulationNodeDatum {
     id: number;
@@ -20,6 +20,7 @@ interface GraphNode extends d3.SimulationNodeDatum {
     isAlive?: boolean;
     family?: string;
     generation?: number;  // 0 = oldest ancestor, higher = younger generation
+    isJunction?: boolean;  // Virtual junction node for connecting parent pairs to children
 }
 
 interface GraphEdge {
@@ -31,7 +32,6 @@ interface GraphEdge {
 
 type ConnectionMode = 'none' | 'connecting' | 'selecting-type';
 type RelationshipType = 'parent-child' | 'spouse' | 'sibling';
-type LayoutMode = 'force' | 'hierarchical' | 'radial';
 
 export const CommunityGraph: React.FC = () => {
     const svgRef = useRef<SVGSVGElement>(null);
@@ -41,7 +41,6 @@ export const CommunityGraph: React.FC = () => {
     const [nodes, setNodes] = useState<GraphNode[]>([]);
     const [edges, setEdges] = useState<GraphEdge[]>([]);
     const [allMembers, setAllMembers] = useState<FamilyMember[]>([]);
-    const [layoutMode, setLayoutMode] = useState<LayoutMode>('force');
     const [showLegend, setShowLegend] = useState(false);
 
     // Edit modal state
@@ -87,16 +86,62 @@ export const CommunityGraph: React.FC = () => {
                 family: m.last_name || 'Unknown'
             }));
 
-            // Convert to graph edges
+            // Convert to graph edges WITH JUNCTION NODES
             const graphEdges: GraphEdge[] = [];
+            const junctionNodes: GraphNode[] = [];
+            let nextJunctionId = 1000000; // Start junction IDs from a high number
 
-            // Parent-child relationships
+            // Build map of children to their parents
+            const childToParentsMap = new Map<number, number[]>();
             parentChild.forEach((pc: any) => {
-                graphEdges.push({
-                    source: pc.parent_id,
-                    target: pc.child_id,
-                    type: 'parent-child'
-                });
+                if (!childToParentsMap.has(pc.child_id)) {
+                    childToParentsMap.set(pc.child_id, []);
+                }
+                childToParentsMap.get(pc.child_id)!.push(pc.parent_id);
+            });
+
+            // Create edges with junction nodes for children with 2 parents
+            childToParentsMap.forEach((parents, childId) => {
+                if (parents.length === 2) {
+                    // Create invisible junction node for this parent pair + child
+                    const junctionId = nextJunctionId++;
+                    const child = members.find(m => m.id === childId);
+                    junctionNodes.push({
+                        id: junctionId,
+                        name: '',
+                        gender: 'other',
+                        birthYear: child?.birth_date ? new Date(child.birth_date).getFullYear() : undefined,
+                        isJunction: true
+                    });
+
+                    // Connect both parents to junction
+                    graphEdges.push({
+                        source: parents[0],
+                        target: junctionId,
+                        type: 'parent-child'
+                    });
+                    graphEdges.push({
+                        source: parents[1],
+                        target: junctionId,
+                        type: 'parent-child'
+                    });
+
+                    // Connect junction to child
+                    graphEdges.push({
+                        source: junctionId,
+                        target: childId,
+                        type: 'parent-child'
+                    });
+                } else {
+                    // Single parent or 3+ parents - direct connections
+                    parents.forEach(parentId => {
+                        graphEdges.push({
+                            source: parentId,
+                            target: childId,
+                            type: 'parent-child'
+                        });
+                    });
+                }
             });
 
             // Partnerships (spouse relationships)
@@ -109,7 +154,10 @@ export const CommunityGraph: React.FC = () => {
                 });
             });
 
-            setNodes(graphNodes);
+            // Merge real nodes with junction nodes
+            const allNodes = [...graphNodes, ...junctionNodes];
+
+            setNodes(allNodes);
             setEdges(graphEdges);
 
             // Calculate generations based on parent-child relationships
@@ -199,18 +247,11 @@ export const CommunityGraph: React.FC = () => {
         svg.call(zoom);
         zoomRef.current = zoom;
 
-        // Store simulation reference (only used for force layout)
-        let simulation: d3.Simulation<GraphNode, undefined> | null = null;
-
-        // LAYOUT-SPECIFIC POSITIONING
-        if (layoutMode === 'force') {
-            // FORCE LAYOUT - Timeline-based positioning
-
-            // CRITICAL FIX: Clear all fixed positions from previous layouts
-            nodes.forEach(n => {
-                n.fx = null;
-                n.fy = null;
-            });
+        // Clear all fixed positions
+        nodes.forEach(n => {
+            n.fx = null;
+            n.fy = null;
+        });
 
             const years = nodes.map(n => n.birthYear).filter(y => y) as number[];
             const minYear = years.length > 0 ? Math.min(...years) : 1940;
@@ -219,15 +260,15 @@ export const CommunityGraph: React.FC = () => {
             const padding = 80;
             const leftPadding = 60;
 
-            const yearToY = (year: number) => {
-                const normalized = (year - minYear) / yearSpan;
-                return padding + normalized * (height - 2 * padding);
-            };
+        const yearToY = (year: number) => {
+            const normalized = (year - minYear) / yearSpan;
+            return padding + normalized * (height - 2 * padding);
+        };
 
-            // Draw 25-year markers on the left side
-            const startYear = Math.floor(minYear / 25) * 25;
-            const endYear = Math.ceil(maxYear / 25) * 25;
-            for (let year = startYear; year <= endYear; year += 25) {
+        // Draw 25-year markers on the left side
+        const startYear = Math.floor(minYear / 25) * 25;
+        const endYear = Math.ceil(maxYear / 25) * 25;
+        for (let year = startYear; year <= endYear; year += 25) {
             const yPos = yearToY(year);
 
             // Horizontal line across width
@@ -261,94 +302,43 @@ export const CommunityGraph: React.FC = () => {
                 .attr('text-anchor', 'middle')
                 .attr('pointer-events', 'none')
                 .text(year.toString());
-            }
-
-            // Initialize node positions for consistent layout (not random)
-            nodes.forEach((n, i) => {
-                if (!n.x || !n.y) {
-                    // Start nodes in a grid pattern based on their index
-                    const cols = Math.ceil(Math.sqrt(nodes.length));
-                    const row = Math.floor(i / cols);
-                    const col = i % cols;
-                    n.x = (col + 0.5) * (width / cols);
-                    n.y = (row + 0.5) * (height / Math.ceil(nodes.length / cols));
-                }
-            });
-
-            // Create force simulation with birth-year based Y positioning
-            simulation = d3.forceSimulation<GraphNode>(nodes)
-                .force('link', d3.forceLink<GraphNode, GraphEdge>(edges)
-                    .id(d => d.id)
-                    .distance(d => {
-                        // Increased distances for better spacing
-                        if (d.type === 'spouse') return 100;
-                        if (d.type === 'parent-child') return 150;
-                        return 120;
-                    })
-                    .strength(d => {
-                        // Stronger spouse connections, weaker parent-child for flexibility
-                        if (d.type === 'spouse') return 0.9;
-                        if (d.type === 'parent-child') return 0.4;
-                        return 0.5;
-                    })
-                )
-                .force('charge', d3.forceManyBody().strength(-800)) // Stronger repulsion
-                .force('x', d3.forceX(width / 2).strength(0.08)) // Weaker horizontal centering
-                .force('y', d3.forceY<GraphNode>(d => yearToY(d.birthYear ?? ((minYear + maxYear) / 2))).strength(0.7)) // Stronger birth year alignment
-                .force('collision', d3.forceCollide().radius(60)) // Larger collision radius
-                .alpha(0.3) // Lower initial heat for more stable convergence
-                .alphaDecay(0.015); // Even slower cooling for better final layout
-        } else if (layoutMode === 'hierarchical') {
-            // HIERARCHICAL TREE LAYOUT - Generations top to bottom
-            const maxGen = Math.max(...nodes.map(n => n.generation || 0));
-            const ySpacing = (height - 160) / Math.max(maxGen, 1);
-
-            // Group nodes by generation
-            const genGroups = new Map<number, GraphNode[]>();
-            nodes.forEach(n => {
-                const gen = n.generation || 0;
-                if (!genGroups.has(gen)) genGroups.set(gen, []);
-                genGroups.get(gen)!.push(n);
-            });
-
-            // Position each generation horizontally
-            genGroups.forEach((genNodes, gen) => {
-                const xSpacing = (width - 200) / Math.max(genNodes.length, 1);
-                genNodes.forEach((node, idx) => {
-                    node.x = 100 + idx * xSpacing + xSpacing / 2;
-                    node.y = 80 + gen * ySpacing;
-                    node.fx = node.x; // Fix position
-                    node.fy = node.y;
-                });
-            });
-        } else if (layoutMode === 'radial') {
-            // RADIAL TREE LAYOUT - Generations from center outward
-            const maxGen = Math.max(...nodes.map(n => n.generation || 0));
-            const radiusStep = Math.min(width, height) / 2 / Math.max(maxGen + 1, 2);
-            const centerX = width / 2;
-            const centerY = height / 2;
-
-            // Group nodes by generation
-            const genGroups = new Map<number, GraphNode[]>();
-            nodes.forEach(n => {
-                const gen = n.generation || 0;
-                if (!genGroups.has(gen)) genGroups.set(gen, []);
-                genGroups.get(gen)!.push(n);
-            });
-
-            // Position each generation in a circle
-            genGroups.forEach((genNodes, gen) => {
-                const radius = (gen + 1) * radiusStep;
-                const angleStep = (2 * Math.PI) / genNodes.length;
-                genNodes.forEach((node, idx) => {
-                    const angle = idx * angleStep;
-                    node.x = centerX + radius * Math.cos(angle);
-                    node.y = centerY + radius * Math.sin(angle);
-                    node.fx = node.x; // Fix position
-                    node.fy = node.y;
-                });
-            });
         }
+
+        // Initialize node positions for consistent layout (not random)
+        nodes.forEach((n, i) => {
+            if (!n.x || !n.y) {
+                // Start nodes in a grid pattern based on their index
+                const cols = Math.ceil(Math.sqrt(nodes.length));
+                const row = Math.floor(i / cols);
+                const col = i % cols;
+                n.x = (col + 0.5) * (width / cols);
+                n.y = (row + 0.5) * (height / Math.ceil(nodes.length / cols));
+            }
+        });
+
+        // Create force simulation with birth-year based Y positioning
+        const simulation = d3.forceSimulation<GraphNode>(nodes)
+            .force('link', d3.forceLink<GraphNode, GraphEdge>(edges)
+                .id(d => d.id)
+                .distance(d => {
+                    // Shorter distances for tighter family grouping
+                    if (d.type === 'spouse') return 80;
+                    if (d.type === 'parent-child') return 100;
+                    return 100;
+                })
+                .strength(d => {
+                    // MUCH stronger parent-child connections to keep families together
+                    if (d.type === 'spouse') return 0.9;
+                    if (d.type === 'parent-child') return 0.85;
+                    return 0.5;
+                })
+            )
+            .force('charge', d3.forceManyBody().strength(-300)) // Weaker repulsion for tighter grouping
+            .force('x', d3.forceX(width / 2).strength(0.05))
+            .force('y', d3.forceY<GraphNode>(d => yearToY(d.birthYear ?? ((minYear + maxYear) / 2))).strength(0.6))
+            .force('collision', d3.forceCollide().radius(40)) // Smaller collision radius
+            .alpha(0.3)
+            .alphaDecay(0.015);
 
         // Edge colors and styles - vibrant and clear
         const getEdgeColor = (d: GraphEdge) => {
@@ -379,16 +369,11 @@ export const CommunityGraph: React.FC = () => {
             return 2;
         };
 
-        // Filter edges based on layout mode
-        const filteredEdges = layoutMode === 'force'
-            ? edges // Show all relationships in force layout
-            : edges.filter(e => e.type === 'parent-child'); // Only parent-child in hierarchical/radial
-
         // Draw edges as paths with glow effect for better visibility
         const link = g.append('g')
             .attr('class', 'links')
             .selectAll('path')
-            .data(filteredEdges)
+            .data(edges)
             .enter()
             .append('path')
             .attr('stroke', d => getEdgeColor(d))
@@ -410,11 +395,12 @@ export const CommunityGraph: React.FC = () => {
                     .attr('stroke-width', d => getEdgeWidth(d));
             });
 
-        // Draw nodes
+        // Draw nodes (excluding invisible junction nodes)
+        const visibleNodes = nodes.filter(n => !n.isJunction);
         const node = g.append('g')
             .attr('class', 'nodes')
             .selectAll('g')
-            .data(nodes)
+            .data(visibleNodes)
             .enter()
             .append('g')
             .attr('class', 'node')
@@ -515,7 +501,7 @@ export const CommunityGraph: React.FC = () => {
                 .attr('r', 25);
         });
 
-        // Update positions function (shared)
+        // Update positions function
         const updatePositions = () => {
             link.attr('d', d => {
                 const source = d.source as GraphNode;
@@ -525,57 +511,47 @@ export const CommunityGraph: React.FC = () => {
                 const tx = target.x || 0;
                 const ty = target.y || 0;
 
-                if (layoutMode === 'force') {
-                    // Smooth curved lines for better aesthetics and fewer visual crossings
-                    const dx = tx - sx;
-                    const dy = ty - sy;
+                // Smooth curved lines for better aesthetics and fewer visual crossings
+                const dx = tx - sx;
+                const dy = ty - sy;
 
-                    if (d.type === 'spouse') {
-                        // Horizontal curve for spouses (they're usually close in Y)
-                        const curvature = 0.3;
-                        const cx1 = sx + dx * curvature;
-                        const cy1 = sy - Math.abs(dx) * 0.2; // Curve upward
-                        const cx2 = sx + dx * (1 - curvature);
-                        const cy2 = ty - Math.abs(dx) * 0.2;
-                        return `M ${sx} ${sy} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${tx} ${ty}`;
-                    } else if (d.type === 'parent-child') {
-                        // Smooth S-curve for parent-child (vertical relationships)
-                        const curvature = 0.6;
-                        const cx1 = sx;
-                        const cy1 = sy + dy * curvature;
-                        const cx2 = tx;
-                        const cy2 = sy + dy * curvature;
-                        return `M ${sx} ${sy} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${tx} ${ty}`;
-                    } else {
-                        // Gentle curve for siblings
-                        const curvature = 0.4;
-                        const cx1 = sx + dx * curvature;
-                        const cy1 = sy + dy * curvature;
-                        const cx2 = sx + dx * (1 - curvature);
-                        const cy2 = sy + dy * (1 - curvature);
-                        return `M ${sx} ${sy} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${tx} ${ty}`;
-                    }
+                if (d.type === 'spouse') {
+                    // Horizontal curve for spouses (they're usually close in Y)
+                    const curvature = 0.3;
+                    const cx1 = sx + dx * curvature;
+                    const cy1 = sy - Math.abs(dx) * 0.2; // Curve upward
+                    const cx2 = sx + dx * (1 - curvature);
+                    const cy2 = ty - Math.abs(dx) * 0.2;
+                    return `M ${sx} ${sy} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${tx} ${ty}`;
+                } else if (d.type === 'parent-child') {
+                    // Smooth S-curve for parent-child (vertical relationships)
+                    const curvature = 0.6;
+                    const cx1 = sx;
+                    const cy1 = sy + dy * curvature;
+                    const cx2 = tx;
+                    const cy2 = sy + dy * curvature;
+                    return `M ${sx} ${sy} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${tx} ${ty}`;
                 } else {
-                    // Straight lines for hierarchical/radial layouts
-                    return `M ${sx} ${sy} L ${tx} ${ty}`;
+                    // Gentle curve for siblings
+                    const curvature = 0.4;
+                    const cx1 = sx + dx * curvature;
+                    const cy1 = sy + dy * curvature;
+                    const cx2 = sx + dx * (1 - curvature);
+                    const cy2 = sy + dy * (1 - curvature);
+                    return `M ${sx} ${sy} C ${cx1} ${cy1}, ${cx2} ${cy2}, ${tx} ${ty}`;
                 }
             });
 
             node.attr('transform', d => `translate(${d.x || 0},${d.y || 0})`);
         };
 
-        // Setup simulation tick or static update
-        if (simulation) {
-            simulation.on('tick', updatePositions);
-        } else {
-            // For static layouts, update once after nodes are positioned
-            updatePositions();
-        }
+        // Setup simulation tick
+        simulation.on('tick', updatePositions);
 
-        // Drag functions (only for force layout)
+        // Drag functions
         function dragstarted(event: d3.D3DragEvent<SVGGElement, GraphNode, unknown>, d: GraphNode) {
             stopPulsing(); // Stop pulsing on drag
-            if (simulation && !event.active) simulation.alphaTarget(0.3).restart();
+            if (!event.active) simulation.alphaTarget(0.3).restart();
             d.fx = d.x;
             d.fy = d.y;
         }
@@ -586,15 +562,9 @@ export const CommunityGraph: React.FC = () => {
         }
 
         function dragended(event: d3.D3DragEvent<SVGGElement, GraphNode, unknown>, d: GraphNode) {
-            if (simulation && !event.active) simulation.alphaTarget(0);
-            // For hierarchical/radial, keep fixed positions
-            if (!simulation) {
-                d.fx = event.x;
-                d.fy = event.y;
-            } else {
-                d.fx = null;
-                d.fy = null;
-            }
+            if (!event.active) simulation.alphaTarget(0);
+            d.fx = null;
+            d.fy = null;
         }
 
         // Initial zoom to fit - center on the graph
@@ -606,9 +576,9 @@ export const CommunityGraph: React.FC = () => {
         }, 800);
 
         return () => {
-            if (simulation) simulation.stop();
+            simulation.stop();
         };
-    }, [loading, nodes, edges, allMembers, connectionMode, firstSelectedNode, layoutMode]);
+    }, [loading, nodes, edges, allMembers, connectionMode, firstSelectedNode]);
 
     // Connection mode handlers
     const startConnectionMode = () => {
@@ -891,50 +861,6 @@ export const CommunityGraph: React.FC = () => {
                         </button>
                     )}
 
-                    <div className="w-px h-6 bg-slate-600" />
-
-                    {/* View Mode Selector - Grouped with label */}
-                    <div className="flex items-center gap-2 bg-slate-700/50 px-3 py-1 rounded-lg">
-                        <Eye size={14} className="text-slate-400" />
-                        <span className="text-xs text-slate-400">תצוגה:</span>
-                        <div className="flex gap-1">
-                            <button
-                                onClick={() => setLayoutMode('force')}
-                                className={`px-2 py-1 rounded text-xs transition-colors ${
-                                    layoutMode === 'force'
-                                        ? 'bg-amber-600 text-white'
-                                        : 'text-slate-300 hover:bg-slate-600'
-                                }`}
-                                title="תצוגה מבוססת כוח עם ציר זמן"
-                            >
-                                <Network size={12} className="inline" />
-                            </button>
-                            <button
-                                onClick={() => setLayoutMode('hierarchical')}
-                                className={`px-2 py-1 rounded text-xs transition-colors ${
-                                    layoutMode === 'hierarchical'
-                                        ? 'bg-amber-600 text-white'
-                                        : 'text-slate-300 hover:bg-slate-600'
-                                }`}
-                                title="עץ היררכי - דורות מלמעלה למטה"
-                            >
-                                <GitBranch size={12} className="inline" />
-                            </button>
-                            <button
-                                onClick={() => setLayoutMode('radial')}
-                                className={`px-2 py-1 rounded text-xs transition-colors ${
-                                    layoutMode === 'radial'
-                                        ? 'bg-amber-600 text-white'
-                                        : 'text-slate-300 hover:bg-slate-600'
-                                }`}
-                                title="עץ רדיאלי - דורות ממרכז החוצה"
-                            >
-                                <Circle size={12} className="inline" />
-                            </button>
-                        </div>
-                    </div>
-
-                    <div className="w-px h-6 bg-slate-600" />
 
                     {/* Legend - as popup button */}
                     <div className="relative">
