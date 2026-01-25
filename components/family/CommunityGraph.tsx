@@ -8,7 +8,7 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import * as d3 from 'd3';
 import { familyService, FamilyMember } from '../../services/familyService';
 import { EditMemberModal } from './EditMemberModal';
-import { Loader2, ZoomIn, ZoomOut, Maximize2, UserPlus, Link2, X, Search, Network, Info, Eye, Sliders } from 'lucide-react';
+import { Loader2, ZoomIn, ZoomOut, Maximize2, UserPlus, Link2, X, Search, Network, Info, Eye, Sliders, User } from 'lucide-react';
 
 interface GraphNode extends d3.SimulationNodeDatum {
     id: number;
@@ -375,22 +375,36 @@ export const CommunityGraph: React.FC = () => {
         const width = container.clientWidth;
         const height = container.clientHeight;
 
+        // Wait for container to have valid dimensions
+        if (width === 0 || height === 0) {
+            console.warn('[CommunityGraph] Container dimensions not ready, retrying...');
+            setTimeout(() => {
+                // Trigger re-render by updating a state (the nodes array hasn't changed, so we need to force it)
+                setNodes([...nodes]);
+            }, 100);
+            return;
+        }
+
         // Clear previous
         svg.selectAll('*').remove();
 
         // Create main group for zoom/pan
         const g = svg.append('g').attr('class', 'graph-container');
 
-        // Setup zoom
-        const zoom = d3.zoom<SVGSVGElement, unknown>()
-            .scaleExtent([0.1, 4])
-            .on('zoom', (event) => {
-                g.attr('transform', event.transform);
-                stopPulsing(); // Stop pulsing on zoom/pan
-            });
+        // Setup zoom with error handling
+        try {
+            const zoom = d3.zoom<SVGSVGElement, unknown>()
+                .scaleExtent([0.1, 4])
+                .on('zoom', (event) => {
+                    g.attr('transform', event.transform);
+                    stopPulsing(); // Stop pulsing on zoom/pan
+                });
 
-        svg.call(zoom);
-        zoomRef.current = zoom;
+            svg.call(zoom);
+            zoomRef.current = zoom;
+        } catch (error) {
+            console.error('[CommunityGraph] Error initializing zoom:', error);
+        }
 
         // Clear all fixed positions
         nodes.forEach(n => {
