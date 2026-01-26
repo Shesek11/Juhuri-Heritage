@@ -61,6 +61,24 @@ router.get('/', async (req, res) => {
 
         const [recipes] = await pool.query(query, params);
 
+        // Parse JSON fields for all recipes
+        recipes.forEach(recipe => {
+            if (typeof recipe.ingredients === 'string') {
+                try {
+                    recipe.ingredients = JSON.parse(recipe.ingredients);
+                } catch (e) {
+                    recipe.ingredients = [];
+                }
+            }
+            if (typeof recipe.instructions === 'string') {
+                try {
+                    recipe.instructions = JSON.parse(recipe.instructions);
+                } catch (e) {
+                    recipe.instructions = [];
+                }
+            }
+        });
+
         // Get total count for pagination
         const [countResult] = await pool.query(
             'SELECT COUNT(*) as total FROM recipes WHERE is_approved = 1'
@@ -107,6 +125,22 @@ router.get('/:id', async (req, res) => {
 
         const recipe = recipes[0];
 
+        // Parse JSON fields
+        if (typeof recipe.ingredients === 'string') {
+            try {
+                recipe.ingredients = JSON.parse(recipe.ingredients);
+            } catch (e) {
+                recipe.ingredients = [];
+            }
+        }
+        if (typeof recipe.instructions === 'string') {
+            try {
+                recipe.instructions = JSON.parse(recipe.instructions);
+            } catch (e) {
+                recipe.instructions = [];
+            }
+        }
+
         // Get photos
         const [photos] = await pool.query(
             'SELECT * FROM recipe_photos WHERE recipe_id = ? ORDER BY is_main DESC',
@@ -122,7 +156,7 @@ router.get('/:id', async (req, res) => {
 
         // Get like count and check if current user liked
         const [likeData] = await pool.query(`
-            SELECT 
+            SELECT
                 COUNT(*) as count,
                 SUM(CASE WHEN user_id = ? THEN 1 ELSE 0 END) as user_liked
             FROM recipe_likes WHERE recipe_id = ?
