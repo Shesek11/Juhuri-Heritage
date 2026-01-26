@@ -9,6 +9,7 @@ export interface RecipeTag {
     name_hebrew: string;
     icon: string;
     color: string;
+    category?: string;
 }
 
 export interface RecipePhoto {
@@ -89,6 +90,7 @@ export interface RecipeInput {
 export const getRecipes = async (params?: {
     region?: number;
     tag?: number;
+    tags?: number[]; // Multi-select tags support
     search?: string;
     sort?: 'newest' | 'popular' | 'likes' | 'oldest';
     page?: number;
@@ -97,6 +99,9 @@ export const getRecipes = async (params?: {
     const queryParams = new URLSearchParams();
     if (params?.region) queryParams.set('region', params.region.toString());
     if (params?.tag) queryParams.set('tag', params.tag.toString());
+    if (params?.tags && params.tags.length > 0) {
+        queryParams.set('tags', params.tags.join(','));
+    }
     if (params?.search) queryParams.set('search', params.search);
     if (params?.sort) queryParams.set('sort', params.sort);
     if (params?.page) queryParams.set('page', params.page.toString());

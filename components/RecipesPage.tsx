@@ -7,6 +7,7 @@ import { recipesService, Recipe, RecipeTag, RecipesResponse } from '../services/
 import { RecipeCard } from './recipes/RecipeCard';
 import { RecipeWizard } from './recipes/RecipeWizard';
 import { RecipeDetailPage } from './recipes/RecipeDetailPage';
+import { CategorizedTagFilter } from './recipes/CategorizedTagFilter';
 import { useFeatureFlag } from '../hooks/useFeatureFlag';
 
 type SortOption = 'newest' | 'popular' | 'likes' | 'oldest';
@@ -19,7 +20,7 @@ export const RecipesPage: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [search, setSearch] = useState('');
-    const [selectedTag, setSelectedTag] = useState<number | null>(null);
+    const [selectedTags, setSelectedTags] = useState<number[]>([]);
     const [sort, setSort] = useState<SortOption>('newest');
     const [viewMode, setViewMode] = useState<ViewMode>('grid');
     const [pagination, setPagination] = useState({ page: 1, pages: 1, total: 0 });
@@ -35,7 +36,7 @@ export const RecipesPage: React.FC = () => {
 
             const response: RecipesResponse = await recipesService.getRecipes({
                 search: search || undefined,
-                tag: selectedTag || undefined,
+                tags: selectedTags.length > 0 ? selectedTags : undefined,
                 sort,
                 page,
                 limit: 12
@@ -66,7 +67,7 @@ export const RecipesPage: React.FC = () => {
 
     useEffect(() => {
         loadRecipes(1);
-    }, [selectedTag, sort]);
+    }, [selectedTags, sort]);
 
     const handleSearch = (e: React.FormEvent) => {
         e.preventDefault();
@@ -75,6 +76,20 @@ export const RecipesPage: React.FC = () => {
 
     const handleRecipeClick = (recipe: Recipe) => {
         setSelectedRecipeId(recipe.id);
+    };
+
+    const handleTagToggle = (tagId: number) => {
+        setSelectedTags(prev => {
+            if (prev.includes(tagId)) {
+                return prev.filter(id => id !== tagId);
+            } else {
+                return [...prev, tagId];
+            }
+        });
+    };
+
+    const handleClearAllTags = () => {
+        setSelectedTags([]);
     };
 
     // Conditional returns after all hooks
@@ -187,29 +202,12 @@ export const RecipesPage: React.FC = () => {
                 {/* Tag Filters */}
                 {showFilters && tags.length > 0 && (
                     <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
-                        <div className="flex flex-wrap gap-2">
-                            <button
-                                onClick={() => setSelectedTag(null)}
-                                className={`px-3 py-1.5 rounded-full text-sm transition-colors ${selectedTag === null
-                                    ? 'bg-amber-500 text-white'
-                                    : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600'
-                                    }`}
-                            >
-                                הכל
-                            </button>
-                            {tags.map(tag => (
-                                <button
-                                    key={tag.id}
-                                    onClick={() => setSelectedTag(tag.id)}
-                                    className={`px-3 py-1.5 rounded-full text-sm transition-colors ${selectedTag === tag.id
-                                        ? 'bg-amber-500 text-white'
-                                        : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600'
-                                        }`}
-                                >
-                                    {tag.name_hebrew || tag.name}
-                                </button>
-                            ))}
-                        </div>
+                        <CategorizedTagFilter
+                            tags={tags}
+                            selectedTags={selectedTags}
+                            onTagToggle={handleTagToggle}
+                            onClearAll={handleClearAllTags}
+                        />
                     </div>
                 )}
             </div>
@@ -260,6 +258,7 @@ export const RecipesPage: React.FC = () => {
                                 key={recipe.id}
                                 recipe={recipe}
                                 onClick={() => handleRecipeClick(recipe)}
+                                viewMode={viewMode}
                             />
                         ))}
                     </div>

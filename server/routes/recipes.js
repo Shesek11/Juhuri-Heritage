@@ -6,11 +6,11 @@ const { authenticate, requireRole } = require('../middleware/auth');
 // Get all approved recipes (public)
 router.get('/', async (req, res) => {
     try {
-        const { region, tag, search, sort = 'newest', page = 1, limit = 12 } = req.query;
+        const { region, tag, tags, search, sort = 'newest', page = 1, limit = 12 } = req.query;
         const offset = (page - 1) * limit;
 
         let query = `
-            SELECT r.*, 
+            SELECT r.*,
                    u.name as author_name,
                    u.avatar as author_avatar,
                    d.name as region_name,
@@ -36,7 +36,21 @@ router.get('/', async (req, res) => {
             params.push(searchPattern, searchPattern, searchPattern);
         }
 
-        if (tag) {
+        // Multi-tag filtering (recipes must have ALL selected tags)
+        if (tags) {
+            const tagIds = tags.split(',').map(id => parseInt(id)).filter(id => !isNaN(id));
+            if (tagIds.length > 0) {
+                query += ` AND r.id IN (
+                    SELECT recipe_id
+                    FROM recipe_tag_map
+                    WHERE tag_id IN (${tagIds.map(() => '?').join(',')})
+                    GROUP BY recipe_id
+                    HAVING COUNT(DISTINCT tag_id) = ?
+                )`;
+                params.push(...tagIds, tagIds.length);
+            }
+        } else if (tag) {
+            // Backward compatibility: single tag filter
             query += ` AND r.id IN (SELECT recipe_id FROM recipe_tag_map WHERE tag_id = ?)`;
             params.push(tag);
         }
@@ -79,10 +93,39 @@ router.get('/', async (req, res) => {
             }
         });
 
-        // Get total count for pagination
-        const [countResult] = await pool.query(
-            'SELECT COUNT(*) as total FROM recipes WHERE is_approved = 1'
-        );
+        // Get total count for pagination with same filters
+        let countQuery = 'SELECT COUNT(*) as total FROM recipes r WHERE r.is_approved = 1';
+        const countParams = [];
+
+        if (region) {
+            countQuery += ' AND r.region_id = ?';
+            countParams.push(region);
+        }
+
+        if (search) {
+            countQuery += ' AND (r.title LIKE ? OR r.description LIKE ? OR r.title_juhuri LIKE ?)';
+            const searchPattern = `%${search}%`;
+            countParams.push(searchPattern, searchPattern, searchPattern);
+        }
+
+        if (tags) {
+            const tagIds = tags.split(',').map(id => parseInt(id)).filter(id => !isNaN(id));
+            if (tagIds.length > 0) {
+                countQuery += ` AND r.id IN (
+                    SELECT recipe_id
+                    FROM recipe_tag_map
+                    WHERE tag_id IN (${tagIds.map(() => '?').join(',')})
+                    GROUP BY recipe_id
+                    HAVING COUNT(DISTINCT tag_id) = ?
+                )`;
+                countParams.push(...tagIds, tagIds.length);
+            }
+        } else if (tag) {
+            countQuery += ` AND r.id IN (SELECT recipe_id FROM recipe_tag_map WHERE tag_id = ?)`;
+            countParams.push(tag);
+        }
+
+        const [countResult] = await pool.query(countQuery, countParams);
 
         res.json({
             recipes,
