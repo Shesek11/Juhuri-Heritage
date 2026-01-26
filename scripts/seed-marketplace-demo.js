@@ -244,7 +244,7 @@ async function createDemoReviews(connection, vendorIds) {
     try {
         // Check if there are any users in the system
         const [users] = await connection.query(
-            'SELECT id FROM users WHERE is_active = TRUE LIMIT 5'
+            'SELECT id FROM users LIMIT 5'
         );
 
         if (users.length === 0) {
