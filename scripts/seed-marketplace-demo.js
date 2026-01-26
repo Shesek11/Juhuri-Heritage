@@ -178,9 +178,9 @@ async function createVendor(connection, vendorData) {
         const [vendorResult] = await connection.query(
             `INSERT INTO marketplace_vendors (
                 name, slug, about_text, phone, email, address, city,
-                latitude, longitude, logo_url, about_image_url, owner_name,
+                latitude, longitude, logo_url, about_image_url,
                 is_active, status
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, TRUE, 'active')`,
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, TRUE, 'active')`,
             [
                 vendorData.name,
                 vendorData.slug,
@@ -192,8 +192,7 @@ async function createVendor(connection, vendorData) {
                 vendorData.latitude,
                 vendorData.longitude,
                 vendorData.logo_url || null,
-                vendorData.about_image_url || null,
-                vendorData.owner_name
+                vendorData.about_image_url || null
             ]
         );
 
@@ -239,65 +238,80 @@ async function createVendor(connection, vendorData) {
 }
 
 async function createDemoReviews(connection, vendorIds) {
-    const demoReviews = [
-        { rating: 5, comment: 'אוכל מדהים! בדיוק כמו אצל סבתא. טעמים אותנטיים ומנות עשירות.' },
-        { rating: 5, comment: 'השירות מעולה והאוכל טרי ומעולה. ממליץ בחום!' },
-        { rating: 4, comment: 'מנות טעימות מאוד, רק זמן ההמתנה קצת ארוך.' },
-        { rating: 5, comment: 'גילוי מדהים! אוכל ביתי אמיתי, מומלץ בחום!' },
-        { rating: 4, comment: 'טעים מאוד, מחכים לעוד מנות חדשות בתפריט' },
-    ];
+    // Note: Reviews require user_id (FOREIGN KEY to users table)
+    // We'll skip creating reviews in demo data unless users exist
 
-    const reviewerNames = ['דני לוי', 'רחל כהן', 'משה אברהם', 'שרה דוד', 'יוסי מלכה'];
+    try {
+        // Check if there are any users in the system
+        const [users] = await connection.query(
+            'SELECT id FROM users WHERE is_active = TRUE LIMIT 5'
+        );
 
-    let reviewCount = 0;
-    for (const vendorId of vendorIds) {
-        // Add 2-3 random reviews per vendor
-        const numReviews = Math.floor(Math.random() * 2) + 2;
+        if (users.length === 0) {
+            log(colors.yellow, '  ⚠ No users found - skipping reviews (reviews require registered users)');
+            return;
+        }
 
-        for (let i = 0; i < numReviews; i++) {
-            const review = demoReviews[Math.floor(Math.random() * demoReviews.length)];
-            const reviewerName = reviewerNames[Math.floor(Math.random() * reviewerNames.length)];
+        const demoReviews = [
+            { rating: 5, comment: 'אוכל מדהים! בדיוק כמו אצל סבתא. טעמים אותנטיים ומנות עשירות.' },
+            { rating: 5, comment: 'השירות מעולה והאוכל טרי ומעולה. ממליץ בחום!' },
+            { rating: 4, comment: 'מנות טעימות מאוד, רק זמן ההמתנה קצת ארוך.' },
+            { rating: 5, comment: 'גילוי מדהים! אוכל ביתי אמיתי, מומלץ בחום!' },
+            { rating: 4, comment: 'טעים מאוד, מחכים לעוד מנות חדשות בתפריט' },
+        ];
 
-            try {
-                await connection.query(
-                    `INSERT INTO marketplace_reviews (
-                        vendor_id, rating, comment, user_name, is_verified
-                    ) VALUES (?, ?, ?, ?, FALSE)`,
-                    [vendorId, review.rating, review.comment, reviewerName]
-                );
-                reviewCount++;
-            } catch (error) {
-                // Skip duplicate reviews
+        let reviewCount = 0;
+        for (const vendorId of vendorIds) {
+            // Add 1-2 random reviews per vendor
+            const numReviews = Math.min(users.length, Math.floor(Math.random() * 2) + 1);
+
+            for (let i = 0; i < numReviews; i++) {
+                const review = demoReviews[Math.floor(Math.random() * demoReviews.length)];
+                const userId = users[i % users.length].id;
+
+                try {
+                    await connection.query(
+                        `INSERT INTO marketplace_reviews (
+                            vendor_id, user_id, rating, comment, is_verified
+                        ) VALUES (?, ?, ?, ?, FALSE)`,
+                        [vendorId, userId, review.rating, review.comment]
+                    );
+                    reviewCount++;
+                } catch (error) {
+                    // Skip duplicate reviews (user can only review vendor once)
+                }
             }
         }
-    }
 
-    log(colors.blue, `  ✓ Added ${reviewCount} demo reviews`);
+        log(colors.blue, `  ✓ Added ${reviewCount} demo reviews`);
+    } catch (error) {
+        log(colors.yellow, `  ⚠ Could not create reviews: ${error.message}`);
+    }
 }
 
-async function updateVendorStats(connection) {
-    // Update avg_rating and review_count for all vendors
-    await connection.query(`
-        UPDATE marketplace_vendors v
-        SET
-            avg_rating = (
-                SELECT AVG(rating)
-                FROM marketplace_reviews
-                WHERE vendor_id = v.id
-            ),
-            review_count = (
-                SELECT COUNT(*)
-                FROM marketplace_reviews
-                WHERE vendor_id = v.id
-            )
-        WHERE EXISTS (
-            SELECT 1
-            FROM marketplace_reviews
-            WHERE vendor_id = v.id
-        )
-    `);
+async function updateVendorStats(connection, vendorIds) {
+    // Update marketplace_vendor_stats table
+    for (const vendorId of vendorIds) {
+        await connection.query(`
+            INSERT INTO marketplace_vendor_stats (vendor_id, total_reviews, average_rating, total_menu_items)
+            SELECT
+                v.id,
+                COALESCE(COUNT(DISTINCT r.id), 0) as total_reviews,
+                COALESCE(AVG(r.rating), 0.00) as average_rating,
+                COALESCE(COUNT(DISTINCT m.id), 0) as total_menu_items
+            FROM marketplace_vendors v
+            LEFT JOIN marketplace_reviews r ON r.vendor_id = v.id
+            LEFT JOIN marketplace_menu_items m ON m.vendor_id = v.id
+            WHERE v.id = ?
+            GROUP BY v.id
+            ON DUPLICATE KEY UPDATE
+                total_reviews = VALUES(total_reviews),
+                average_rating = VALUES(average_rating),
+                total_menu_items = VALUES(total_menu_items)
+        `, [vendorId]);
+    }
 
-    log(colors.blue, `  ✓ Updated vendor statistics`);
+    log(colors.blue, `  ✓ Updated vendor statistics for ${vendorIds.length} vendors`);
 }
 
 async function main() {
@@ -338,7 +352,7 @@ async function main() {
 
         // Update statistics
         log(colors.blue, 'Updating vendor statistics...');
-        await updateVendorStats(connection);
+        await updateVendorStats(connection, vendorIds);
         console.log('');
 
         // Success summary
