@@ -49,14 +49,21 @@ const FitBounds = ({ vendors }: { vendors: Vendor[] }) => {
     useEffect(() => {
         if (vendors.length === 0) return;
 
-        const bounds = L.latLngBounds(
-            vendors.map(v => [v.latitude!, v.longitude!] as [number, number])
-        );
+        // Small delay to ensure map is fully loaded
+        const timer = setTimeout(() => {
+            const bounds = L.latLngBounds(
+                vendors.map(v => [v.latitude!, v.longitude!] as [number, number])
+            );
 
-        map.fitBounds(bounds, {
-            padding: [50, 50],
-            maxZoom: 13
-        });
+            map.fitBounds(bounds, {
+                padding: [80, 80],
+                maxZoom: 13,
+                animate: true,
+                duration: 0.5
+            });
+        }, 100);
+
+        return () => clearTimeout(timer);
     }, [vendors, map]);
 
     return null;
