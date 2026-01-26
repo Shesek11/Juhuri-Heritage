@@ -6,10 +6,11 @@ import { useParams, useNavigate } from 'react-router-dom';
 import {
     ChevronRight, Clock, Users, ChefHat, Heart, Share2, Printer,
     Eye, Calendar, Tag, MessageCircle, Edit, Trash2, Check, Loader2,
-    X, ChevronDown, ChevronUp, BookOpen, Sparkles
+    X, ChevronDown, ChevronUp, BookOpen, Sparkles, Play
 } from 'lucide-react';
 import { recipesService, Recipe, RecipeComment } from '../../services/recipesService';
 import { useAuth0 } from '@auth0/auth0-react';
+import { CookingMode } from './CookingMode';
 
 const DIFFICULTY_LABELS = {
     easy: { label: 'קל', color: 'text-green-600 bg-green-100 dark:bg-green-900/30' },
@@ -32,6 +33,9 @@ export const RecipeDetailPage: React.FC = () => {
     const [showComments, setShowComments] = useState(false);
     const [newComment, setNewComment] = useState('');
     const [submittingComment, setSubmittingComment] = useState(false);
+    const [cookingMode, setCookingMode] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [deleting, setDeleting] = useState(false);
 
     // Load recipe data
     useEffect(() => {
@@ -129,6 +133,28 @@ export const RecipeDetailPage: React.FC = () => {
     const handlePrint = () => {
         window.print();
     };
+
+    // Handle delete
+    const handleDelete = async () => {
+        if (!recipe) return;
+
+        try {
+            setDeleting(true);
+            await recipesService.deleteRecipe(recipe.id);
+            navigate('/recipes');
+        } catch (err) {
+            console.error('Error deleting recipe:', err);
+            alert('שגיאה במחיקת המתכון');
+        } finally {
+            setDeleting(false);
+        }
+    };
+
+    // Check if user can edit/delete
+    const canEdit = user && recipe && (
+        user.email === recipe.author_name ||
+        user['https://juhuri-heritage.com/roles']?.includes('admin')
+    );
 
     // Calculate scaled ingredient amounts (basic implementation)
     const scaleIngredient = (ingredient: string, scale: number): string => {
@@ -391,6 +417,35 @@ export const RecipeDetailPage: React.FC = () => {
                     <div className="space-y-6">
                         {/* Action Buttons */}
                         <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-md border border-slate-200 dark:border-slate-700 print:hidden sticky top-4">
+                            {/* Cooking Mode Button */}
+                            <button
+                                onClick={() => setCookingMode(true)}
+                                className="w-full mb-4 px-4 py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-bold rounded-lg transition-all flex items-center justify-center gap-2 shadow-lg shadow-amber-500/30"
+                            >
+                                <Play className="w-5 h-5" />
+                                מצב בישול
+                            </button>
+
+                            {/* Edit & Delete Buttons (for owner/admin) */}
+                            {canEdit && (
+                                <div className="grid grid-cols-2 gap-2 mb-4">
+                                    <button
+                                        onClick={() => navigate(`/recipes/${recipe.id}/edit`)}
+                                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+                                    >
+                                        <Edit className="w-4 h-4" />
+                                        ערוך
+                                    </button>
+                                    <button
+                                        onClick={() => setShowDeleteConfirm(true)}
+                                        className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                        מחק
+                                    </button>
+                                </div>
+                            )}
+
                             <div className="grid grid-cols-3 gap-2 mb-4">
                                 <button
                                     onClick={handleLike}
@@ -516,6 +571,68 @@ export const RecipeDetailPage: React.FC = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Cooking Mode */}
+            {cookingMode && recipe && (
+                <CookingMode
+                    recipe={recipe}
+                    servings={servings}
+                    onClose={() => setCookingMode(false)}
+                />
+            )}
+
+            {/* Delete Confirmation Modal */}
+            {showDeleteConfirm && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+                    <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full p-6">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center">
+                                <Trash2 className="w-6 h-6 text-red-600 dark:text-red-400" />
+                            </div>
+                            <div>
+                                <h2 className="text-xl font-bold text-slate-800 dark:text-white">
+                                    מחיקת מתכון
+                                </h2>
+                                <p className="text-sm text-slate-500 dark:text-slate-400">
+                                    פעולה זו אינה ניתנת לביטול
+                                </p>
+                            </div>
+                        </div>
+
+                        <p className="text-slate-700 dark:text-slate-300 mb-6">
+                            האם אתה בטוח שברצונך למחוק את המתכון <strong>"{recipe?.title}"</strong>?
+                            כל התמונות, התגובות והלייקים יימחקו לצמיתות.
+                        </p>
+
+                        <div className="flex gap-3">
+                            <button
+                                onClick={() => setShowDeleteConfirm(false)}
+                                disabled={deleting}
+                                className="flex-1 px-4 py-3 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors disabled:opacity-50"
+                            >
+                                ביטול
+                            </button>
+                            <button
+                                onClick={handleDelete}
+                                disabled={deleting}
+                                className="flex-1 px-4 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                            >
+                                {deleting ? (
+                                    <>
+                                        <Loader2 className="w-5 h-5 animate-spin" />
+                                        מוחק...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Trash2 className="w-5 h-5" />
+                                        מחק לצמיתות
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
