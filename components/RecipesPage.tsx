@@ -2,18 +2,18 @@
 // Main page for browsing recipes
 
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Search, ChefHat, Plus, Filter, Grid, List, Loader2, RefreshCw } from 'lucide-react';
 import { recipesService, Recipe, RecipeTag, RecipesResponse } from '../services/recipesService';
 import { RecipeCard } from './recipes/RecipeCard';
 import { RecipeWizard } from './recipes/RecipeWizard';
+import { RecipeDetailPage } from './recipes/RecipeDetailPage';
 import { useFeatureFlag } from '../hooks/useFeatureFlag';
 
 type SortOption = 'newest' | 'popular' | 'likes' | 'oldest';
 type ViewMode = 'grid' | 'list';
 
 export const RecipesPage: React.FC = () => {
-    const navigate = useNavigate();
+    const [selectedRecipeId, setSelectedRecipeId] = useState<number | null>(null);
     const [recipes, setRecipes] = useState<Recipe[]>([]);
     const [tags, setTags] = useState<RecipeTag[]>([]);
     const [loading, setLoading] = useState(true);
@@ -27,6 +27,16 @@ export const RecipesPage: React.FC = () => {
     const [isWizardOpen, setIsWizardOpen] = useState(false);
 
     const { isEnabled: recipesEnabled } = useFeatureFlag('recipes_module');
+
+    // If a recipe is selected, show the detail page
+    if (selectedRecipeId) {
+        return (
+            <RecipeDetailPage
+                recipeId={selectedRecipeId}
+                onClose={() => setSelectedRecipeId(null)}
+            />
+        );
+    }
 
     const loadRecipes = async (page = 1) => {
         try {
@@ -74,7 +84,7 @@ export const RecipesPage: React.FC = () => {
     };
 
     const handleRecipeClick = (recipe: Recipe) => {
-        navigate(`/${recipe.id}`);
+        setSelectedRecipeId(recipe.id);
     };
 
     if (!recipesEnabled) {

@@ -2,7 +2,6 @@
 // Full recipe detail view with all information
 
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
 import {
     ChevronRight, Clock, Users, ChefHat, Heart, Share2, Printer,
     Eye, Calendar, Tag, MessageCircle, Edit, Trash2, Check, Loader2,
@@ -18,9 +17,12 @@ const DIFFICULTY_LABELS = {
     hard: { label: 'מאתגר', color: 'text-red-600 bg-red-100 dark:bg-red-900/30' }
 };
 
-export const RecipeDetailPage: React.FC = () => {
-    const { id } = useParams<{ id: string }>();
-    const navigate = useNavigate();
+interface RecipeDetailPageProps {
+    recipeId: number;
+    onClose: () => void;
+}
+
+export const RecipeDetailPage: React.FC<RecipeDetailPageProps> = ({ recipeId, onClose }) => {
     const { user } = useAuth0();
 
     const [recipe, setRecipe] = useState<Recipe | null>(null);
@@ -40,12 +42,12 @@ export const RecipeDetailPage: React.FC = () => {
     // Load recipe data
     useEffect(() => {
         const loadRecipe = async () => {
-            if (!id) return;
+            if (!recipeId) return;
 
             try {
                 setLoading(true);
                 setError(null);
-                const data = await recipesService.getRecipe(parseInt(id));
+                const data = await recipesService.getRecipe(recipeId);
                 setRecipe(data);
                 setServings(data.servings || 4);
                 setLiked(data.likes?.userLiked || false);
@@ -59,7 +61,7 @@ export const RecipeDetailPage: React.FC = () => {
         };
 
         loadRecipe();
-    }, [id]);
+    }, [recipeId]);
 
     // Toggle ingredient checkbox
     const toggleIngredient = (index: number) => {
@@ -141,7 +143,7 @@ export const RecipeDetailPage: React.FC = () => {
         try {
             setDeleting(true);
             await recipesService.deleteRecipe(recipe.id);
-            navigate('/recipes');
+            onClose();
         } catch (err) {
             console.error('Error deleting recipe:', err);
             alert('שגיאה במחיקת המתכון');
@@ -188,7 +190,7 @@ export const RecipeDetailPage: React.FC = () => {
                 </h2>
                 <p className="text-slate-500 mb-6">{error || 'המתכון המבוקש אינו קיים'}</p>
                 <button
-                    onClick={() => navigate('/recipes')}
+                    onClick={() => onClose()}
                     className="px-6 py-3 bg-amber-500 text-white rounded-lg hover:bg-amber-600"
                 >
                     חזרה למתכונים
@@ -207,7 +209,7 @@ export const RecipeDetailPage: React.FC = () => {
                 <div className="max-w-7xl mx-auto px-4 py-3">
                     <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
                         <button
-                            onClick={() => navigate('/recipes')}
+                            onClick={() => onClose()}
                             className="hover:text-amber-600 dark:hover:text-amber-400"
                         >
                             מתכונים
@@ -430,7 +432,7 @@ export const RecipeDetailPage: React.FC = () => {
                             {canEdit && (
                                 <div className="grid grid-cols-2 gap-2 mb-4">
                                     <button
-                                        onClick={() => navigate(`/recipes/${recipe.id}/edit`)}
+                                        onClick={() => alert('עריכת מתכון תהיה זמינה בקרוב')}
                                         className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
                                     >
                                         <Edit className="w-4 h-4" />

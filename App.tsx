@@ -25,7 +25,7 @@ import MissingDialects from './components/widgets/MissingDialects';
 import PendingApprovals from './components/widgets/PendingApprovals';
 import TranslationModal from './components/TranslationModal';
 import XPDisplay from './components/gamification/XPDisplay';
-import { RecipesRouter } from './components/RecipesRouter';
+import RecipesPage from './components/RecipesPage';
 import { MarketplacePage } from './components/MarketplacePage';
 import { CommunityGraph } from './components/family/CommunityGraph';
 import { Mic, Search, Scroll, Sun, Moon, Plus, Loader2, HeartHandshake, BookOpen, GraduationCap, Info, User as UserIcon, LogOut, Settings, LayoutDashboard, Menu, LogIn, ChevronDown, ChefHat, Store, TreeDeciduous, BarChart, Clock } from 'lucide-react';
@@ -721,7 +721,7 @@ function App() {
           /* --- RECIPES MODE --- */
           <div className="w-full animate-in slide-in-from-right duration-300">
             {canAccessFeatureContent('recipes_module') ? (
-              <RecipesRouter />
+              <RecipesPage />
             ) : (
               <div className="min-h-[60vh] flex flex-col items-center justify-center text-center p-8">
                 <div className="w-24 h-24 bg-gradient-to-br from-amber-400 to-orange-600 rounded-full flex items-center justify-center mb-6 shadow-lg shadow-amber-500/30 animate-pulse">
