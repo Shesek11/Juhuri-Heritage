@@ -9,7 +9,11 @@
       "Bash(npm install:*)",
       "Bash(git restore:*)",
       "Bash(git stash:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(git merge:*)",
+      "Bash(ssh juhuri@apps:*)",
+      "Bash(gh api:*)",
+      "Bash(ssh:*)"
     ]
   }
 }

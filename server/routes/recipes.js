@@ -387,6 +387,55 @@ router.post('/:id/comments', authenticate, async (req, res) => {
     }
 });
 
+// Add photo to recipe (owner or admin)
+router.post('/:id/photos', authenticate, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { url, is_main = false, alt_text = null } = req.body;
+
+        if (!url) {
+            return res.status(400).json({ error: 'כתובת התמונה חסרה' });
+        }
+
+        // Check ownership
+        const [existing] = await pool.query(
+            'SELECT user_id FROM recipes WHERE id = ?',
+            [id]
+        );
+
+        if (!existing.length) {
+            return res.status(404).json({ error: 'מתכון לא נמצא' });
+        }
+
+        if (existing[0].user_id !== req.user.id && req.user.role !== 'admin') {
+            return res.status(403).json({ error: 'אין הרשאה להוסיף תמונות למתכון זה' });
+        }
+
+        // If this is main photo, unset other main photos
+        if (is_main) {
+            await pool.query(
+                'UPDATE recipe_photos SET is_main = 0 WHERE recipe_id = ?',
+                [id]
+            );
+        }
+
+        // Insert photo
+        const [result] = await pool.query(
+            'INSERT INTO recipe_photos (recipe_id, url, is_main, alt_text) VALUES (?, ?, ?, ?)',
+            [id, url, is_main ? 1 : 0, alt_text]
+        );
+
+        res.status(201).json({
+            success: true,
+            photo_id: result.insertId,
+            message: 'התמונה נוספה בהצלחה'
+        });
+    } catch (err) {
+        console.error('Error adding photo:', err);
+        res.status(500).json({ error: 'שגיאה בהוספת תמונה' });
+    }
+});
+
 // Get all tags
 router.get('/meta/tags', async (req, res) => {
     try {

@@ -1,9 +1,10 @@
 // RecipeWizard Component
 // Multi-step modal for adding a new recipe
 
-import React, { useState } from 'react';
-import { X, ChefHat, Upload, Camera, Sparkles, ChevronLeft, ChevronRight, Check } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { X, ChefHat, Upload, Camera, Sparkles, ChevronLeft, ChevronRight, Check, Trash2, Image as ImageIcon } from 'lucide-react';
 import { RecipeInput, recipesService, RecipeTag } from '../../services/recipesService';
+import { uploadService } from '../../services/uploadService';
 import { useAuth0 } from '@auth0/auth0-react';
 
 interface RecipeWizardProps {
@@ -17,10 +18,13 @@ type Step = 'basics' | 'ingredients' | 'instructions' | 'photos' | 'review';
 
 export const RecipeWizard: React.FC<RecipeWizardProps> = ({ isOpen, onClose, onSuccess, availableTags }) => {
     const { user } = useAuth0();
+    const fileInputRef = useRef<HTMLInputElement>(null);
     const [currentStep, setCurrentStep] = useState<Step>('basics');
     const [loading, setLoading] = useState(false);
     const [aiLoading, setAiLoading] = useState(false);
+    const [uploadingPhotos, setUploadingPhotos] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [photos, setPhotos] = useState<{ file: File; preview: string }[]>([]);
 
     // Form State
     const [formData, setFormData] = useState<RecipeInput>({
@@ -78,7 +82,26 @@ export const RecipeWizard: React.FC<RecipeWizardProps> = ({ isOpen, onClose, onS
                 throw new Error('יש להזין לפחות מרכיב אחד והוראה אחת');
             }
 
-            await recipesService.createRecipe(cleanData);
+            // Create recipe
+            const result = await recipesService.createRecipe(cleanData);
+            const recipeId = result.recipe_id;
+
+            // Upload photos if any
+            if (photos.length > 0) {
+                setUploadingPhotos(true);
+                for (let i = 0; i < photos.length; i++) {
+                    try {
+                        // Upload file
+                        const uploadResult = await uploadService.uploadFile(photos[i].file);
+                        // Add photo to recipe (first photo is main)
+                        await uploadService.addRecipePhoto(recipeId, uploadResult.url, i === 0);
+                    } catch (photoErr) {
+                        console.error('Error uploading photo:', photoErr);
+                        // Continue with other photos even if one fails
+                    }
+                }
+            }
+
             onSuccess();
             onClose();
         } catch (err: any) {
@@ -86,6 +109,7 @@ export const RecipeWizard: React.FC<RecipeWizardProps> = ({ isOpen, onClose, onS
             setError(err.message || 'שגיאה בשמירת המתכון');
         } finally {
             setLoading(false);
+            setUploadingPhotos(false);
         }
     };
 
@@ -117,6 +141,41 @@ export const RecipeWizard: React.FC<RecipeWizardProps> = ({ isOpen, onClose, onS
             } else {
                 return { ...prev, tags: [...currentTags, tagId] };
             }
+        });
+    };
+
+    const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = e.target.files;
+        if (!files) return;
+
+        const newPhotos: { file: File; preview: string }[] = [];
+        Array.from(files).forEach(file => {
+            // Validate file type
+            if (!file.type.startsWith('image/')) {
+                setError('ניתן להעלות קבצי תמונה בלבד');
+                return;
+            }
+
+            // Validate file size (max 15MB)
+            if (file.size > 15 * 1024 * 1024) {
+                setError('גודל הקובץ חייב להיות פחות מ-15MB');
+                return;
+            }
+
+            // Create preview
+            const preview = URL.createObjectURL(file);
+            newPhotos.push({ file, preview });
+        });
+
+        setPhotos(prev => [...prev, ...newPhotos]);
+        setError(null);
+    };
+
+    const removePhoto = (index: number) => {
+        setPhotos(prev => {
+            // Revoke object URL to free memory
+            URL.revokeObjectURL(prev[index].preview);
+            return prev.filter((_, i) => i !== index);
         });
     };
 
@@ -274,17 +333,79 @@ export const RecipeWizard: React.FC<RecipeWizardProps> = ({ isOpen, onClose, onS
 
             case 'photos':
                 return (
-                    <div className="flex flex-col items-center justify-center py-12 text-center animate-in slide-in-from-right">
-                        <div className="w-20 h-20 bg-slate-100 dark:bg-slate-700 rounded-full flex items-center justify-center mb-4">
-                            <Camera size={40} className="text-slate-400" />
+                    <div className="space-y-4 animate-in slide-in-from-right">
+                        <div className="text-center mb-4">
+                            <h3 className="text-lg font-medium mb-2">העלאת תמונות</h3>
+                            <p className="text-sm text-slate-500 dark:text-slate-400">
+                                הוסף תמונות יפות של המנה שלך (עד 15MB לתמונה)
+                            </p>
                         </div>
-                        <h3 className="text-lg font-medium mb-2">העלאת תמונות</h3>
-                        <p className="text-slate-500 mb-6 max-w-xs">
-                            גרסה זו תומכת בהעלאת תמונות בסיסית. (בשלב הבא נוסיף העלאת קבצים מלאה)
-                        </p>
-                        <button className="px-6 py-2 bg-slate-200 dark:bg-slate-700 rounded-lg text-slate-600 dark:text-slate-300 font-medium cursor-not-allowed opacity-70">
-                            בחירת תמונות (בקרוב)
-                        </button>
+
+                        {/* Upload Area */}
+                        <div
+                            onClick={() => fileInputRef.current?.click()}
+                            className="border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl p-8 text-center cursor-pointer hover:border-amber-500 hover:bg-amber-50 dark:hover:bg-amber-900/10 transition-all"
+                        >
+                            <div className="flex flex-col items-center gap-3">
+                                <div className="w-16 h-16 bg-amber-100 dark:bg-amber-900/30 rounded-full flex items-center justify-center">
+                                    <Upload className="w-8 h-8 text-amber-600 dark:text-amber-400" />
+                                </div>
+                                <div>
+                                    <p className="text-slate-700 dark:text-slate-300 font-medium mb-1">
+                                        לחץ לבחירת תמונות
+                                    </p>
+                                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                                        או גרור קבצים לכאן
+                                    </p>
+                                </div>
+                                <p className="text-xs text-slate-400">
+                                    PNG, JPG, WEBP עד 15MB
+                                </p>
+                            </div>
+                        </div>
+
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept="image/*"
+                            multiple
+                            onChange={handlePhotoSelect}
+                            className="hidden"
+                        />
+
+                        {/* Photo Previews */}
+                        {photos.length > 0 && (
+                            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 mt-4">
+                                {photos.map((photo, index) => (
+                                    <div key={index} className="relative group">
+                                        <img
+                                            src={photo.preview}
+                                            alt={`תצוגה מקדימה ${index + 1}`}
+                                            className="w-full h-32 object-cover rounded-lg border-2 border-slate-200 dark:border-slate-700"
+                                        />
+                                        {index === 0 && (
+                                            <div className="absolute top-2 left-2 px-2 py-1 bg-amber-500 text-white text-xs font-bold rounded">
+                                                ראשית
+                                            </div>
+                                        )}
+                                        <button
+                                            onClick={() => removePhoto(index)}
+                                            className="absolute top-2 right-2 w-8 h-8 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        {photos.length === 0 && (
+                            <div className="text-center py-8 text-slate-400 dark:text-slate-500">
+                                <ImageIcon className="w-12 h-12 mx-auto mb-2 opacity-30" />
+                                <p className="text-sm">לא נבחרו תמונות עדיין</p>
+                                <p className="text-xs mt-1">ניתן להוסיף תמונות מאוחר יותר</p>
+                            </div>
+                        )}
                     </div>
                 );
 
@@ -397,11 +518,11 @@ export const RecipeWizard: React.FC<RecipeWizardProps> = ({ isOpen, onClose, onS
                     {currentStep === 'review' ? (
                         <button
                             onClick={handleSubmit}
-                            disabled={loading}
-                            className="bg-green-600 hover:bg-green-700 text-white px-8 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-green-600/20 transition-all"
+                            disabled={loading || uploadingPhotos}
+                            className="bg-green-600 hover:bg-green-700 text-white px-8 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-green-600/20 transition-all disabled:opacity-70"
                         >
-                            {loading ? <Check className="animate-spin" /> : <Check size={18} />}
-                            פרסם מתכון
+                            {loading || uploadingPhotos ? <Check className="animate-spin" /> : <Check size={18} />}
+                            {uploadingPhotos ? 'מעלה תמונות...' : loading ? 'שומר...' : 'פרסם מתכון'}
                         </button>
                     ) : (
                         <button

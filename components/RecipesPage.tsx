@@ -2,6 +2,7 @@
 // Main page for browsing recipes
 
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Search, ChefHat, Plus, Filter, Grid, List, Loader2, RefreshCw } from 'lucide-react';
 import { recipesService, Recipe, RecipeTag, RecipesResponse } from '../services/recipesService';
 import { RecipeCard } from './recipes/RecipeCard';
@@ -12,6 +13,7 @@ type SortOption = 'newest' | 'popular' | 'likes' | 'oldest';
 type ViewMode = 'grid' | 'list';
 
 export const RecipesPage: React.FC = () => {
+    const navigate = useNavigate();
     const [recipes, setRecipes] = useState<Recipe[]>([]);
     const [tags, setTags] = useState<RecipeTag[]>([]);
     const [loading, setLoading] = useState(true);
@@ -72,8 +74,7 @@ export const RecipesPage: React.FC = () => {
     };
 
     const handleRecipeClick = (recipe: Recipe) => {
-        // TODO: Navigate to recipe detail page
-        console.log('Open recipe:', recipe.id);
+        navigate(`/${recipe.id}`);
     };
 
     if (!recipesEnabled) {
