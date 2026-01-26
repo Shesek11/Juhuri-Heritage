@@ -145,10 +145,10 @@ export const VendorDetailsModal: React.FC<VendorDetailsModalProps> = ({ vendor: 
                                     מאומת
                                 </span>
                             )}
-                            {vendor.avg_rating !== undefined && vendor.avg_rating > 0 && (
+                            {vendor.avg_rating && Number(vendor.avg_rating) > 0 && (
                                 <div className="flex items-center gap-1 text-amber-500 text-sm font-bold">
                                     <Star size={14} fill="currentColor" />
-                                    {vendor.avg_rating.toFixed(1)} ({vendor.review_count || 0})
+                                    {Number(vendor.avg_rating).toFixed(1)} ({vendor.review_count || 0})
                                 </div>
                             )}
                         </div>

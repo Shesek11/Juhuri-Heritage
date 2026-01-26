@@ -93,10 +93,10 @@ export const VendorMap: React.FC<VendorMapProps> = ({ vendors, userLocation, onV
                                 </div>
                                 <p className="text-sm text-gray-600 mb-2">{vendor.about_text}</p>
                                 <div className="flex items-center gap-2">
-                                    {vendor.avg_rating !== undefined && vendor.avg_rating > 0 && (
+                                    {vendor.avg_rating && Number(vendor.avg_rating) > 0 && (
                                         <div className="flex items-center gap-1 text-amber-600 text-xs">
                                             <Star size={12} fill="currentColor" />
-                                            {vendor.avg_rating.toFixed(1)}
+                                            {Number(vendor.avg_rating).toFixed(1)}
                                         </div>
                                     )}
                                     <button

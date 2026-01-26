@@ -64,10 +64,10 @@ export const VendorCard: React.FC<VendorCardProps> = ({ vendor, onClick }) => {
                             {vendor.address}
                         </p>
                     </div>
-                    {vendor.avg_rating !== undefined && vendor.avg_rating > 0 && (
+                    {vendor.avg_rating && Number(vendor.avg_rating) > 0 && (
                         <div className="flex items-center gap-1 bg-amber-50 dark:bg-amber-900/30 px-2 py-1 rounded text-amber-600 dark:text-amber-400 text-xs font-bold">
                             <Star size={12} fill="currentColor" />
-                            {vendor.avg_rating.toFixed(1)}
+                            {Number(vendor.avg_rating).toFixed(1)}
                         </div>
                     )}
                 </div>
