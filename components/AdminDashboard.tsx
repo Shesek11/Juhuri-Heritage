@@ -3,6 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Database, Save, Trash2, FileSpreadsheet, Search, CheckCircle, XCircle, Sparkles, Loader2, Download, AlertCircle, Plus, Eraser, MapPin, Globe, LogOut, Users as UsersIcon, ShieldAlert, KeyRound, Activity, UserCheck, ToggleLeft, Pencil, X, Play, Pause, Volume2, Edit3, Tag, ChevronDown, ChevronUp, BookOpen, ShoppingCart, GitBranch, Settings } from 'lucide-react';
 import FeatureFlagsPanel from './admin/FeatureFlagsPanel';
 import AdminTagsPanel from './admin/AdminTagsPanel';
+import AdminFamilyPanel from './admin/AdminFamilyPanel';
 import { getCustomEntries, addCustomEntry, deleteCustomEntry, approveEntry, downloadTemplate, getDialects, addDialect, deleteDialect, getSystemLogs } from '../services/storageService';
 import { generateBatchEntries } from '../services/geminiService';
 import { getAllUsers, updateUserRole, deleteUser, updateUser } from '../services/authService';
@@ -194,7 +195,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
             label: 'אילן יוחסין',
             icon: <GitBranch size={20} />,
             children: [
-                { id: 'family_coming', label: 'בקרוב...' }
+                { id: 'family_suggestions', label: 'הצעות ובקשות' }
             ]
         },
         {
@@ -1047,6 +1048,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                             </div>
                         )}
 
+                        {/* Family: Suggestions and Requests */}
+                        {activeSection === 'family_suggestions' && (
+                            <div className="flex-1 flex flex-col w-full">
+                                <AdminFamilyPanel />
+                            </div>
+                        )}
+
                         {/* General: Users Management */}
                         {activeSection === 'gen_users' && isAdmin && (
                             <div className="flex-1 flex flex-col">
@@ -1188,7 +1196,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                         )}
 
                         {/* Coming Soon sections */}
-                        {(activeSection === 'market_coming' || activeSection === 'family_coming') && (
+                        {activeSection === 'market_coming' && (
                             <div className="flex-1 flex items-center justify-center">
                                 <div className="text-center">
                                     <div className="text-6xl mb-4">🚧</div>
