@@ -4,6 +4,7 @@ import { Database, Save, Trash2, FileSpreadsheet, Search, CheckCircle, XCircle, 
 import FeatureFlagsPanel from './admin/FeatureFlagsPanel';
 import AdminTagsPanel from './admin/AdminTagsPanel';
 import AdminFamilyPanel from './admin/AdminFamilyPanel';
+import AdminMarketplacePanel from './admin/AdminMarketplacePanel';
 import { getCustomEntries, addCustomEntry, deleteCustomEntry, approveEntry, downloadTemplate, getDialects, addDialect, deleteDialect, getSystemLogs } from '../services/storageService';
 import { generateBatchEntries } from '../services/geminiService';
 import { getAllUsers, updateUserRole, deleteUser, updateUser } from '../services/authService';
@@ -187,7 +188,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
             label: 'שוק',
             icon: <ShoppingCart size={20} />,
             children: [
-                { id: 'market_coming', label: 'בקרוב...' }
+                { id: 'market_vendors', label: 'ניהול חנויות' }
             ]
         },
         {
@@ -1195,15 +1196,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                             </div>
                         )}
 
-                        {/* Coming Soon sections */}
-                        {activeSection === 'market_coming' && (
-                            <div className="flex-1 flex items-center justify-center">
-                                <div className="text-center">
-                                    <div className="text-6xl mb-4">🚧</div>
-                                    <h3 className="text-2xl font-bold text-slate-700 dark:text-slate-300 mb-2">בקרוב...</h3>
-                                    <p className="text-slate-500">אזור זה נמצא בפיתוח</p>
-                                </div>
-                            </div>
+                        {/* Marketplace: Vendors Management */}
+                        {activeSection === 'market_vendors' && isAdmin && (
+                            <AdminMarketplacePanel />
                         )}
 
                     </div>

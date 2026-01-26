@@ -1,9 +1,10 @@
 import React from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { Vendor } from '../../services/marketplaceService';
-import { ExternalLink, ShoppingBag } from 'lucide-react';
+import { ExternalLink, ShoppingBag, Star } from 'lucide-react';
+import { getVendorStatus } from '../../utils/marketplaceHelpers';
 
 // Fix Leaflet icon issue
 import icon from 'leaflet/dist/images/marker-icon.png';
@@ -44,6 +45,12 @@ const LocationMarker = ({ position }: { position: { lat: number; lng: number } }
 export const VendorMap: React.FC<VendorMapProps> = ({ vendors, userLocation, onVendorClick }) => {
     const center = userLocation || { lat: 31.0461, lng: 34.8516 }; // Israel center default
 
+    // Filter vendors that have valid coordinates
+    const vendorsWithLocation = vendors.filter(v =>
+        v.latitude != null && v.longitude != null &&
+        !isNaN(v.latitude) && !isNaN(v.longitude)
+    );
+
     return (
         <MapContainer
             center={[center.lat, center.lng]}
@@ -58,43 +65,52 @@ export const VendorMap: React.FC<VendorMapProps> = ({ vendors, userLocation, onV
 
             {userLocation && <LocationMarker position={userLocation} />}
 
-            {vendors.map(vendor => (
-                <Marker
-                    key={vendor.id}
-                    position={[vendor.latitude, vendor.longitude]}
-                    eventHandlers={{
-                        click: () => onVendorClick(vendor),
-                    }}
-                    icon={
-                        new L.Icon({
-                            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-green.png',
-                            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-                            iconSize: [25, 41],
-                            iconAnchor: [12, 41],
-                            popupAnchor: [1, -34],
-                            shadowSize: [41, 41]
-                        })
-                    }
-                >
-                    <Popup>
-                        <div className="text-right" dir="rtl">
-                            <h3 className="font-bold text-lg">{vendor.business_name}</h3>
-                            <p className="text-sm text-gray-600 mb-2">{vendor.description}</p>
-                            <div className="flex items-center gap-2">
-                                <span className={`px-2 py-0.5 rounded text-xs text-white ${vendor.is_open ? 'bg-green-500' : 'bg-red-500'}`}>
-                                    {vendor.is_open ? 'פתוח' : 'סגור'}
-                                </span>
-                                <button
-                                    onClick={() => onVendorClick(vendor)}
-                                    className="text-amber-600 text-xs font-bold underline"
-                                >
-                                    לפרטים
-                                </button>
+            {vendorsWithLocation.map(vendor => {
+                const status = getVendorStatus(vendor);
+                return (
+                    <Marker
+                        key={vendor.id}
+                        position={[vendor.latitude!, vendor.longitude!]}
+                        eventHandlers={{
+                            click: () => onVendorClick(vendor),
+                        }}
+                        icon={
+                            new L.Icon({
+                                iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-${status.isOpen ? 'green' : 'red'}.png`,
+                                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                                iconSize: [25, 41],
+                                iconAnchor: [12, 41],
+                                popupAnchor: [1, -34],
+                                shadowSize: [41, 41]
+                            })
+                        }
+                    >
+                        <Popup>
+                            <div className="text-right" dir="rtl">
+                                <h3 className="font-bold text-lg">{vendor.name}</h3>
+                                <div className={`text-xs font-bold mb-2 ${status.isOpen ? 'text-green-600' : 'text-red-600'}`}>
+                                    {status.message}
+                                </div>
+                                <p className="text-sm text-gray-600 mb-2">{vendor.about_text}</p>
+                                <div className="flex items-center gap-2">
+                                    {vendor.avg_rating !== undefined && vendor.avg_rating > 0 && (
+                                        <div className="flex items-center gap-1 text-amber-600 text-xs">
+                                            <Star size={12} fill="currentColor" />
+                                            {vendor.avg_rating.toFixed(1)}
+                                        </div>
+                                    )}
+                                    <button
+                                        onClick={() => onVendorClick(vendor)}
+                                        className="text-amber-600 text-xs font-bold underline"
+                                    >
+                                        לפרטים
+                                    </button>
+                                </div>
                             </div>
-                        </div>
-                    </Popup>
-                </Marker>
-            ))}
+                        </Popup>
+                    </Marker>
+                );
+            })}
         </MapContainer>
     );
 };

@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
-import { useAuth0 } from '@auth0/auth0-react';
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../contexts/AuthContext';
 import { CreateVendorInput, marketplaceService } from '../../services/marketplaceService';
-import { Store, MapPin, Image, Check, ChevronRight, ChevronLeft, X, Loader2 } from 'lucide-react';
+import { Store, MapPin, Image, Check, ChevronRight, ChevronLeft, X, Loader2, Navigation } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
+import { ImageUpload } from './ImageUpload';
+import { geocodeAddress } from '../../utils/geocoding';
 
 interface BecomeVendorWizardProps {
     isOpen: boolean;
@@ -31,38 +33,103 @@ const LocationPicker = ({ position, setPosition }: { position: { lat: number; ln
 };
 
 export const BecomeVendorWizard: React.FC<BecomeVendorWizardProps> = ({ isOpen, onClose, onSuccess }) => {
-    const { user } = useAuth0();
+    const { user } = useAuth();
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [geocoding, setGeocoding] = useState(false);
 
     const [formData, setFormData] = useState<CreateVendorInput>({
-        business_name: '',
-        description: '',
+        name: '',
+        slug: '',
+        about_text: '',
         phone: '',
         address: '',
-        latitude: 31.0461, // Default center
-        longitude: 34.8516,
-        cover_image: ''
+        city: '',
+        latitude: undefined,
+        longitude: undefined,
+        logo_url: '',
+        about_image_url: '',
+        email: '',
+        website: ''
     });
 
     const [locationPicked, setLocationPicked] = useState<{ lat: number; lng: number } | null>(null);
+
+    // Auto-geocode when address changes
+    useEffect(() => {
+        if (!formData.address || !formData.city) return;
+
+        const timeoutId = setTimeout(async () => {
+            setGeocoding(true);
+            const result = await geocodeAddress(formData.address, formData.city);
+            if (result) {
+                setLocationPicked({ lat: result.lat, lng: result.lng });
+                setFormData(prev => ({
+                    ...prev,
+                    latitude: result.lat,
+                    longitude: result.lng
+                }));
+            }
+            setGeocoding(false);
+        }, 1500); // Wait 1.5s after user stops typing
+
+        return () => clearTimeout(timeoutId);
+    }, [formData.address, formData.city]);
+
+    const handleGeocodeManually = async () => {
+        if (!formData.address) {
+            alert('נא למלא כתובת תחילה');
+            return;
+        }
+
+        setGeocoding(true);
+        const result = await geocodeAddress(formData.address, formData.city);
+        if (result) {
+            setLocationPicked({ lat: result.lat, lng: result.lng });
+            setFormData(prev => ({
+                ...prev,
+                latitude: result.lat,
+                longitude: result.lng
+            }));
+            alert('✅ המיקום נמצא בהצלחה!');
+        } else {
+            alert('לא הצלחנו למצוא את הכתובת. אנא בחר מיקום על המפה.');
+        }
+        setGeocoding(false);
+    };
 
     if (!isOpen) return null;
 
     const handleNext = () => setStep(step + 1);
     const handleBack = () => setStep(step - 1);
 
+    // Generate slug from name
+    const generateSlug = (name: string): string => {
+        return name
+            .toLowerCase()
+            .replace(/[א-ת]/g, '') // Remove Hebrew chars
+            .replace(/\s+/g, '-')
+            .replace(/[^\w\-]+/g, '')
+            .replace(/\-\-+/g, '-')
+            .replace(/^-+/, '')
+            .replace(/-+$/, '')
+            || `vendor-${Date.now()}`;
+    };
+
     const handleSubmit = async () => {
         try {
             setLoading(true);
             setError(null);
 
-            const dataToSubmit = {
+            // Generate slug if not set
+            const slug = formData.slug || generateSlug(formData.name);
+
+            const dataToSubmit: CreateVendorInput = {
                 ...formData,
+                slug,
                 latitude: locationPicked ? locationPicked.lat : formData.latitude,
                 longitude: locationPicked ? locationPicked.lng : formData.longitude,
-                cover_image: formData.cover_image || 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?auto=format&fit=crop&q=80&w=1000' // Default placeholder
             };
 
             await marketplaceService.createVendor(dataToSubmit);
@@ -70,7 +137,7 @@ export const BecomeVendorWizard: React.FC<BecomeVendorWizardProps> = ({ isOpen, 
             onClose();
         } catch (err: any) {
             console.error(err);
-            setError(err.message || 'שגיאה ביצירת העסק');
+            setError(err.message || 'שגיאה ביצירת החנות');
         } finally {
             setLoading(false);
         }
@@ -86,7 +153,7 @@ export const BecomeVendorWizard: React.FC<BecomeVendorWizardProps> = ({ isOpen, 
                         <div className="bg-orange-100 dark:bg-orange-900/40 p-2 rounded-lg">
                             <Store className="text-orange-600 dark:text-orange-400" size={20} />
                         </div>
-                        <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">הצטרפות כשף למרקטפלייס</h2>
+                        <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">הצטרפות לשוק הקהילתי</h2>
                     </div>
                     <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
                         <X size={24} />
@@ -114,11 +181,11 @@ export const BecomeVendorWizard: React.FC<BecomeVendorWizardProps> = ({ isOpen, 
                             <h3 className="text-lg font-bold text-slate-700 dark:text-slate-200">פרטים בסיסיים</h3>
 
                             <div>
-                                <label className="block text-sm font-medium mb-1">שם העסק / המטבח</label>
+                                <label className="block text-sm font-medium mb-1">שם החנות / המטבח</label>
                                 <input
                                     type="text"
-                                    value={formData.business_name}
-                                    onChange={e => setFormData({ ...formData, business_name: e.target.value })}
+                                    value={formData.name}
+                                    onChange={e => setFormData({ ...formData, name: e.target.value })}
                                     className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 focus:ring-2 focus:ring-orange-500 outline-none"
                                     placeholder="המטבח של סבתא שושנה"
                                     autoFocus
@@ -128,8 +195,8 @@ export const BecomeVendorWizard: React.FC<BecomeVendorWizardProps> = ({ isOpen, 
                             <div>
                                 <label className="block text-sm font-medium mb-1">תיאור קצר</label>
                                 <textarea
-                                    value={formData.description}
-                                    onChange={e => setFormData({ ...formData, description: e.target.value })}
+                                    value={formData.about_text}
+                                    onChange={e => setFormData({ ...formData, about_text: e.target.value })}
                                     className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 focus:ring-2 focus:ring-orange-500 outline-none"
                                     rows={3}
                                     placeholder="מה מיוחד במטבח שלך? איזה סוג אוכל אתה מכין?"
@@ -146,6 +213,17 @@ export const BecomeVendorWizard: React.FC<BecomeVendorWizardProps> = ({ isOpen, 
                                     placeholder="050-1234567"
                                 />
                             </div>
+
+                            <div>
+                                <label className="block text-sm font-medium mb-1">אימייל (אופציונלי)</label>
+                                <input
+                                    type="email"
+                                    value={formData.email}
+                                    onChange={e => setFormData({ ...formData, email: e.target.value })}
+                                    className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 focus:ring-2 focus:ring-orange-500 outline-none"
+                                    placeholder="vendor@example.com"
+                                />
+                            </div>
                         </div>
                     )}
 
@@ -154,14 +232,50 @@ export const BecomeVendorWizard: React.FC<BecomeVendorWizardProps> = ({ isOpen, 
                             <h3 className="text-lg font-bold text-slate-700 dark:text-slate-200">מיקום וכתובת</h3>
 
                             <div>
-                                <label className="block text-sm font-medium mb-1">כתובת טקסטואלית</label>
+                                <label className="block text-sm font-medium mb-1">עיר</label>
                                 <input
                                     type="text"
-                                    value={formData.address}
-                                    onChange={e => setFormData({ ...formData, address: e.target.value })}
+                                    value={formData.city}
+                                    onChange={e => setFormData({ ...formData, city: e.target.value })}
                                     className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 focus:ring-2 focus:ring-orange-500 outline-none"
-                                    placeholder="רחוב הרצל 1, תל אביב"
+                                    placeholder="תל אביב, ירושלים, חיפה..."
                                 />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium mb-1">כתובת מלאה</label>
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        value={formData.address}
+                                        onChange={e => setFormData({ ...formData, address: e.target.value })}
+                                        className="flex-1 p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 focus:ring-2 focus:ring-orange-500 outline-none"
+                                        placeholder="רחוב הרצל 1"
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={handleGeocodeManually}
+                                        disabled={geocoding || !formData.address}
+                                        className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                                        title="מצא מיקום"
+                                    >
+                                        {geocoding ? (
+                                            <Loader2 size={18} className="animate-spin" />
+                                        ) : (
+                                            <Navigation size={18} />
+                                        )}
+                                    </button>
+                                </div>
+                                {geocoding && (
+                                    <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
+                                        מחפש מיקום...
+                                    </p>
+                                )}
+                                {locationPicked && (
+                                    <p className="text-xs text-green-600 dark:text-green-400 mt-1">
+                                        ✓ מיקום נמצא: {locationPicked.lat.toFixed(4)}, {locationPicked.lng.toFixed(4)}
+                                    </p>
+                                )}
                             </div>
 
                             <div className="flex-1 min-h-[300px] rounded-xl overflow-hidden border border-slate-200 dark:border-slate-600 relative">
@@ -188,31 +302,28 @@ export const BecomeVendorWizard: React.FC<BecomeVendorWizardProps> = ({ isOpen, 
 
                     {step === 3 && (
                         <div className="space-y-6 animate-in slide-in-from-right">
-                            <h3 className="text-lg font-bold text-slate-700 dark:text-slate-200">תמונת נושא וסיכום</h3>
+                            <h3 className="text-lg font-bold text-slate-700 dark:text-slate-200">תמונות וסיכום</h3>
 
-                            <div className="flex flex-col items-center justify-center p-8 border-2 border-dashed border-slate-300 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-800/50">
-                                <Image size={48} className="text-slate-400 mb-2" />
-                                <p className="text-sm text-slate-500 text-center mb-4">
-                                    הכנס קישור לתמונה שתופיע בכרטיס העסק שלך
-                                </p>
-                                <input
-                                    type="url"
-                                    value={formData.cover_image}
-                                    onChange={e => setFormData({ ...formData, cover_image: e.target.value })}
-                                    className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 text-sm mb-2"
-                                    placeholder="https://example.com/image.jpg"
+                            <div className="space-y-4">
+                                <ImageUpload
+                                    currentImage={formData.logo_url}
+                                    onImageChange={(url) => setFormData({ ...formData, logo_url: url })}
+                                    label="לוגו (אופציונלי)"
+                                    aspectRatio="1/1"
                                 />
-                                {formData.cover_image && (
-                                    <div className="mt-4 w-full h-32 rounded-lg overflow-hidden relative shadow-sm">
-                                        <img src={formData.cover_image} alt="Preview" className="w-full h-full object-cover" />
-                                    </div>
-                                )}
+
+                                <ImageUpload
+                                    currentImage={formData.about_image_url}
+                                    onImageChange={(url) => setFormData({ ...formData, about_image_url: url })}
+                                    label="תמונת אודות (אופציונלי)"
+                                    aspectRatio="16/9"
+                                />
                             </div>
 
                             <div className="bg-orange-50 dark:bg-orange-900/20 p-4 rounded-xl border border-orange-100 dark:border-orange-900/40">
                                 <h4 className="font-bold text-orange-900 dark:text-orange-200">מוכן לפרסום?</h4>
                                 <p className="text-sm text-orange-800 dark:text-orange-300 mt-1">
-                                    לאחר האישור, העסק שלך יופיע במפת ג'והורי ויוכלו ליצור איתך קשר.
+                                    לאחר השליחה, החנות שלך תיבדק ותאושר על ידי המנהלים.
                                 </p>
                             </div>
                         </div>
@@ -235,20 +346,20 @@ export const BecomeVendorWizard: React.FC<BecomeVendorWizardProps> = ({ isOpen, 
                     {step === 3 ? (
                         <button
                             onClick={handleSubmit}
-                            disabled={loading}
-                            className="bg-green-600 hover:bg-green-700 text-white px-8 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-green-600/20 transition-all"
+                            disabled={loading || !formData.name || !formData.address}
+                            className="bg-green-600 hover:bg-green-700 text-white px-8 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-green-600/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {loading ? <Loader2 className="animate-spin" /> : <Check size={18} />}
-                            פתח עסק
+                            שלח לאישור
                         </button>
                     ) : (
                         <button
                             onClick={handleNext}
                             disabled={
-                                (step === 1 && !formData.business_name) ||
-                                (step === 2 && !locationPicked) // Require map click? make optional later
+                                (step === 1 && !formData.name) ||
+                                (step === 2 && !formData.address)
                             }
-                            className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-orange-600/20 transition-all disabled:opacity-50 disabled:shadow-none"
+                            className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-orange-600/20 transition-all disabled:opacity-50 disabled:shadow-none disabled:cursor-not-allowed"
                         >
                             המשך <ChevronLeft size={18} />
                         </button>

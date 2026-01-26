@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { marketplaceService, Vendor } from '../services/marketplaceService';
 import { VendorMap } from './marketplace/VendorMap';
 import { VendorCard } from './marketplace/VendorCard';
-import { Search, MapPin, Plus, Store, Filter, ChefHat } from 'lucide-react';
+import { ShoppingCart } from './marketplace/ShoppingCart';
+import { Search, MapPin, Plus, Store, Filter, ChefHat, ShoppingCart as CartIcon } from 'lucide-react';
 import { useFeatureFlag } from '../hooks/useFeatureFlag';
 import { BecomeVendorWizard } from './marketplace/BecomeVendorWizard';
 import { VendorDetailsModal } from './marketplace/VendorDetailsModal';
+import { NotificationBell } from './marketplace/NotificationBell';
 
 export const MarketplacePage: React.FC = () => {
     const [vendors, setVendors] = useState<Vendor[]>([]);
@@ -15,11 +17,14 @@ export const MarketplacePage: React.FC = () => {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
     const [isWizardOpen, setIsWizardOpen] = useState(false);
+    const [isCartOpen, setIsCartOpen] = useState(false);
+    const [cartCount, setCartCount] = useState(0);
 
     const { isEnabled } = useFeatureFlag('marketplace_module');
 
     useEffect(() => {
         loadVendors();
+        loadCartCount();
         // Try to get location
         navigator.geolocation.getCurrentPosition(
             (pos) => {
@@ -44,6 +49,16 @@ export const MarketplacePage: React.FC = () => {
             console.error(err);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const loadCartCount = async () => {
+        try {
+            const cart = await marketplaceService.getCart();
+            setCartCount(cart.length);
+        } catch (err) {
+            // User not logged in or cart is empty
+            setCartCount(0);
         }
     };
 
@@ -76,12 +91,31 @@ export const MarketplacePage: React.FC = () => {
                     <p className="text-sm text-slate-500 font-medium">שוק האוכל הג'והורי</p>
                 </div>
 
-                <button
-                    onClick={() => setIsWizardOpen(true)}
-                    className="bg-slate-900 dark:bg-slate-700 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 shadow-lg shadow-slate-900/20 hover:scale-105 transition-transform"
-                >
-                    <Plus size={16} /> מכור אוכל
-                </button>
+                <div className="flex items-center gap-2">
+                    {/* Notifications */}
+                    <NotificationBell />
+
+                    {/* Shopping Cart Button */}
+                    <button
+                        onClick={() => setIsCartOpen(true)}
+                        className="relative bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 p-2 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-600 transition"
+                    >
+                        <CartIcon size={20} />
+                        {cartCount > 0 && (
+                            <span className="absolute -top-1 -right-1 bg-orange-600 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-bold">
+                                {cartCount}
+                            </span>
+                        )}
+                    </button>
+
+                    {/* Become Vendor Button */}
+                    <button
+                        onClick={() => setIsWizardOpen(true)}
+                        className="bg-slate-900 dark:bg-slate-700 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 shadow-lg shadow-slate-900/20 hover:scale-105 transition-transform"
+                    >
+                        <Plus size={16} /> מכור אוכל
+                    </button>
+                </div>
             </div>
 
             {/* Search Bar */}
@@ -101,7 +135,7 @@ export const MarketplacePage: React.FC = () => {
             <div className="flex-1 flex flex-col md:flex-row overflow-hidden relative">
                 {/* List View (Mobile: Conditional, Desktop: Side Panel) */}
                 <div className={`
-                    bg-slate-50 dark:bg-slate-900/50 
+                    bg-slate-50 dark:bg-slate-900/50
                     md:w-[400px] md:border-l border-slate-200 dark:border-slate-700
                     flex flex-col
                     ${viewMode === 'map' ? 'hidden md:flex' : 'flex-1'}
@@ -123,7 +157,7 @@ export const MarketplacePage: React.FC = () => {
                                 <VendorCard
                                     key={vendor.id}
                                     vendor={vendor}
-                                    onClick={() => setSelectedVendor(vendor)} // TODO: Open Details Modal
+                                    onClick={() => setSelectedVendor(vendor)}
                                 />
                             ))
                         )}
@@ -135,10 +169,7 @@ export const MarketplacePage: React.FC = () => {
                     <VendorMap
                         vendors={vendors}
                         userLocation={userLocation}
-                        onVendorClick={(v) => {
-                            setSelectedVendor(v);
-                            // On mobile, maybe switch to list or show bottom sheet?
-                        }}
+                        onVendorClick={(v) => setSelectedVendor(v)}
                     />
 
                     {/* View Toggle (Mobile Only) */}
@@ -155,16 +186,25 @@ export const MarketplacePage: React.FC = () => {
                 </div>
             </div>
 
-            {/* TODO: Vendor Details Modal */}
             {/* Vendor Details Modal */}
             {selectedVendor && (
                 <VendorDetailsModal
                     vendor={selectedVendor}
                     onClose={() => setSelectedVendor(null)}
+                    onCartUpdated={loadCartCount}
                 />
             )}
 
+            {/* Shopping Cart */}
+            <ShoppingCart
+                isOpen={isCartOpen}
+                onClose={() => {
+                    setIsCartOpen(false);
+                    loadCartCount();
+                }}
+            />
 
+            {/* Become Vendor Wizard */}
             <BecomeVendorWizard
                 isOpen={isWizardOpen}
                 onClose={() => setIsWizardOpen(false)}
