@@ -15,24 +15,42 @@ async function migrateAndSeedTags() {
 
         // Step 1: Apply migration
         console.log('📋 שלב 1: מוסיף עמודת category לטבלת recipe_tags...');
-        const migrationPath = path.join(__dirname, 'migrations', '003_add_tag_categories.sql');
-        const migrationSQL = fs.readFileSync(migrationPath, 'utf8');
 
-        const migrationStatements = migrationSQL
-            .split(';')
-            .map(s => s.trim())
-            .filter(s => s.length > 0 && !s.startsWith('--'));
+        // First, check if category column exists
+        const [columns] = await connection.query(
+            "SHOW COLUMNS FROM recipe_tags LIKE 'category'"
+        );
 
-        for (const statement of migrationStatements) {
+        if (columns.length === 0) {
+            // Add the category column
+            await connection.query(
+                "ALTER TABLE recipe_tags ADD COLUMN category VARCHAR(50) DEFAULT 'general'"
+            );
+            console.log('   ✓ עמודת category נוספה');
+
+            // Add index
             try {
-                await connection.query(statement);
+                await connection.query(
+                    'CREATE INDEX idx_recipe_tags_category ON recipe_tags(category)'
+                );
+                console.log('   ✓ אינדקס נוסף');
             } catch (err) {
-                // Ignore "duplicate column" errors
-                if (!err.message.includes('Duplicate column') && !err.message.includes('duplicate key')) {
-                    throw err;
+                if (!err.message.includes('Duplicate key')) {
+                    console.error('   ⚠️  שגיאה ביצירת אינדקס:', err.message);
                 }
             }
+        } else {
+            console.log('   ✓ עמודת category כבר קיימת');
         }
+
+        // Update existing tags with categories
+        console.log('   📝 מעדכן תגיות קיימות...');
+        await connection.query("UPDATE recipe_tags SET category = 'ingredient_type' WHERE name IN ('meat', 'dairy', 'pareve')");
+        await connection.query("UPDATE recipe_tags SET category = 'occasion' WHERE name IN ('holiday', 'shabbat', 'passover', 'rosh-hashana')");
+        await connection.query("UPDATE recipe_tags SET category = 'food_type' WHERE name IN ('appetizer', 'main-dish', 'dessert', 'soup', 'bread')");
+        await connection.query("UPDATE recipe_tags SET category = 'origin' WHERE name = 'traditional'");
+        await connection.query("UPDATE recipe_tags SET category = 'difficulty' WHERE name = 'quick'");
+
         console.log('✅ Migration הושלם בהצלחה!');
         console.log('');
 
