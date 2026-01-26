@@ -27,8 +27,8 @@ router.get('/vendors', async (req, res) => {
 
         let query = `
             SELECT v.*,
-                   (SELECT AVG(rating) FROM marketplace_reviews WHERE vendor_id = v.id) as avg_rating,
-                   (SELECT COUNT(*) FROM marketplace_reviews WHERE vendor_id = v.id) as review_count
+                   COALESCE((SELECT AVG(rating) FROM marketplace_reviews WHERE vendor_id = v.id), 0) as avg_rating,
+                   COALESCE((SELECT COUNT(*) FROM marketplace_reviews WHERE vendor_id = v.id), 0) as review_count
             FROM marketplace_vendors v
             WHERE v.is_active = 1 AND v.status = ?
         `;
@@ -69,8 +69,8 @@ router.get('/vendors/:slug', async (req, res) => {
         const [vendors] = await pool.query(`
             SELECT v.*,
                    u.name as owner_name,
-                   (SELECT AVG(rating) FROM marketplace_reviews WHERE vendor_id = v.id) as avg_rating,
-                   (SELECT COUNT(*) FROM marketplace_reviews WHERE vendor_id = v.id) as review_count
+                   COALESCE((SELECT AVG(rating) FROM marketplace_reviews WHERE vendor_id = v.id), 0) as avg_rating,
+                   COALESCE((SELECT COUNT(*) FROM marketplace_reviews WHERE vendor_id = v.id), 0) as review_count
             FROM marketplace_vendors v
             LEFT JOIN users u ON v.user_id = u.id
             WHERE v.slug = ? AND v.is_active = 1
