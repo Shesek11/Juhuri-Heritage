@@ -1,7 +1,8 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Database, Save, Trash2, FileSpreadsheet, Search, CheckCircle, XCircle, Sparkles, Loader2, Download, AlertCircle, Plus, Eraser, MapPin, Globe, LogOut, Users as UsersIcon, ShieldAlert, KeyRound, Activity, UserCheck, ToggleLeft, Pencil, X, Play, Pause, Volume2, Edit3 } from 'lucide-react';
+import { Database, Save, Trash2, FileSpreadsheet, Search, CheckCircle, XCircle, Sparkles, Loader2, Download, AlertCircle, Plus, Eraser, MapPin, Globe, LogOut, Users as UsersIcon, ShieldAlert, KeyRound, Activity, UserCheck, ToggleLeft, Pencil, X, Play, Pause, Volume2, Edit3, Tag } from 'lucide-react';
 import FeatureFlagsPanel from './admin/FeatureFlagsPanel';
+import AdminTagsPanel from './admin/AdminTagsPanel';
 import { getCustomEntries, addCustomEntry, deleteCustomEntry, approveEntry, downloadTemplate, getDialects, addDialect, deleteDialect, getSystemLogs } from '../services/storageService';
 import { generateBatchEntries } from '../services/geminiService';
 import { getAllUsers, updateUserRole, deleteUser, updateUser } from '../services/authService';
@@ -36,7 +37,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
     const isAdmin = user.role === 'admin';
 
     const [entries, setEntries] = useState<DictionaryEntry[]>([]);
-    const [activeTab, setActiveTab] = useState<'table' | 'pending' | 'dialects' | 'users' | 'logs' | 'features'>('table');
+    const [activeTab, setActiveTab] = useState<'table' | 'pending' | 'dialects' | 'users' | 'logs' | 'features' | 'recipe_tags'>('table');
     const [searchFilter, setSearchFilter] = useState('');
 
     // Dialect Management State
@@ -513,6 +514,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                     {isAdmin && (
                         <button onClick={() => setActiveTab('features')} className={`flex items-center gap-2 px-4 py-2 font-medium transition-colors whitespace-nowrap ${activeTab === 'features' ? 'text-purple-600 border-b-2 border-purple-600' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}>
                             <ToggleLeft size={18} /> ניהול פיצ'רים
+                        </button>
+                    )}
+                    {isAdmin && (
+                        <button onClick={() => setActiveTab('recipe_tags')} className={`flex items-center gap-2 px-4 py-2 font-medium transition-colors whitespace-nowrap ${activeTab === 'recipe_tags' ? 'text-amber-600 border-b-2 border-amber-600' : 'text-slate-500 hover:text-slate-700 dark:text-slate-400'}`}>
+                            <Tag size={18} /> תגיות מתכונים
                         </button>
                     )}
                 </div>
@@ -1017,6 +1023,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                         <div className="bg-white dark:bg-slate-800 rounded-lg shadow border border-slate-200 dark:border-slate-700 p-6">
                             <FeatureFlagsPanel />
                         </div>
+                    </div>
+                )}
+
+                {/* Tab: Recipe Tags (Admin Only) */}
+                {activeTab === 'recipe_tags' && isAdmin && (
+                    <div className="flex-1 flex flex-col w-full">
+                        <AdminTagsPanel />
                     </div>
                 )}
 

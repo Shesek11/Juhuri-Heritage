@@ -516,11 +516,98 @@ router.post('/:id/photos', authenticate, async (req, res) => {
 // Get all tags
 router.get('/meta/tags', async (req, res) => {
     try {
-        const [tags] = await pool.query('SELECT * FROM recipe_tags ORDER BY name_hebrew');
+        const [tags] = await pool.query('SELECT * FROM recipe_tags ORDER BY category, name_hebrew');
         res.json(tags);
     } catch (err) {
         console.error('Error fetching tags:', err);
         res.status(500).json({ error: 'שגיאה בטעינת התגיות' });
+    }
+});
+
+// Admin: Create new tag
+router.post('/admin/tags', authenticate, requireRole(['admin']), async (req, res) => {
+    try {
+        const { name, name_hebrew, icon, color, category } = req.body;
+
+        if (!name || !name_hebrew) {
+            return res.status(400).json({ error: 'שם ושם בעברית הם שדות חובה' });
+        }
+
+        const [result] = await pool.query(
+            'INSERT INTO recipe_tags (name, name_hebrew, icon, color, category) VALUES (?, ?, ?, ?, ?)',
+            [name, name_hebrew, icon || '', color || '#F59E0B', category || 'general']
+        );
+
+        res.json({
+            success: true,
+            tag_id: result.insertId,
+            message: 'התגית נוצרה בהצלחה'
+        });
+    } catch (err) {
+        console.error('Error creating tag:', err);
+        if (err.code === 'ER_DUP_ENTRY') {
+            res.status(400).json({ error: 'תגית עם שם זה כבר קיימת' });
+        } else {
+            res.status(500).json({ error: 'שגיאה ביצירת התגית' });
+        }
+    }
+});
+
+// Admin: Update tag
+router.put('/admin/tags/:id', authenticate, requireRole(['admin']), async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { name, name_hebrew, icon, color, category } = req.body;
+
+        if (!name || !name_hebrew) {
+            return res.status(400).json({ error: 'שם ושם בעברית הם שדות חובה' });
+        }
+
+        await pool.query(
+            'UPDATE recipe_tags SET name = ?, name_hebrew = ?, icon = ?, color = ?, category = ? WHERE id = ?',
+            [name, name_hebrew, icon || '', color || '#F59E0B', category || 'general', id]
+        );
+
+        res.json({
+            success: true,
+            message: 'התגית עודכנה בהצלחה'
+        });
+    } catch (err) {
+        console.error('Error updating tag:', err);
+        if (err.code === 'ER_DUP_ENTRY') {
+            res.status(400).json({ error: 'תגית עם שם זה כבר קיימת' });
+        } else {
+            res.status(500).json({ error: 'שגיאה בעדכון התגית' });
+        }
+    }
+});
+
+// Admin: Delete tag
+router.delete('/admin/tags/:id', authenticate, requireRole(['admin']), async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Check if tag is in use
+        const [usage] = await pool.query(
+            'SELECT COUNT(*) as count FROM recipe_tag_map WHERE tag_id = ?',
+            [id]
+        );
+
+        if (usage[0].count > 0) {
+            return res.status(400).json({
+                error: `לא ניתן למחוק תגית זו - היא בשימוש ב-${usage[0].count} מתכונים`
+            });
+        }
+
+        await pool.query('DELETE FROM recipe_tags WHERE id = ?', [id]);
+
+        res.json({
+            success: true,
+            message: 'התגית נמחקה בהצלחה'
+        });
+    } catch (err) {
+        console.error('Error deleting tag:', err);
+        res.status(500).json({ error: 'שגיאה במחיקת התגית' });
     }
 });
 
