@@ -2,6 +2,7 @@
 // Fullscreen cooking mode with step-by-step navigation
 
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, ChevronRight, ChevronLeft, Check, Clock, Users, ChefHat, Timer } from 'lucide-react';
 import { Recipe } from '../../services/recipesService';
 
@@ -108,8 +109,8 @@ export const CookingMode: React.FC<CookingModeProps> = ({ recipe, servings, onCl
 
     const progress = ((currentStep + 1) / totalSteps) * 100;
 
-    return (
-        <div className="fixed inset-0 z-[100] bg-slate-900 text-white flex flex-col">
+    return createPortal(
+        <div className="fixed top-0 left-0 right-0 bottom-0 z-[200] bg-slate-900 text-white flex flex-col">
             {/* Header */}
             <div className="bg-slate-800 border-b border-slate-700 p-3 md:p-4 flex-shrink-0">
                 <div className="max-w-7xl mx-auto flex items-center justify-between gap-2">
@@ -357,7 +358,8 @@ export const CookingMode: React.FC<CookingModeProps> = ({ recipe, servings, onCl
                     )}
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 };
 
