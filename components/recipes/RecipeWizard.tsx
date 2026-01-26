@@ -6,6 +6,7 @@ import { X, ChefHat, Upload, Camera, Sparkles, ChevronLeft, ChevronRight, Check,
 import { RecipeInput, recipesService, RecipeTag } from '../../services/recipesService';
 import { uploadService } from '../../services/uploadService';
 import { useAuth0 } from '@auth0/auth0-react';
+import { CategorizedTagFilter } from './CategorizedTagFilter';
 
 interface RecipeWizardProps {
     isOpen: boolean;
@@ -262,20 +263,13 @@ export const RecipeWizard: React.FC<RecipeWizardProps> = ({ isOpen, onClose, onS
 
                         <div>
                             <label className="block text-sm font-medium mb-2">תגיות</label>
-                            <div className="flex flex-wrap gap-2">
-                                {availableTags.map(tag => (
-                                    <button
-                                        key={tag.id}
-                                        type="button"
-                                        onClick={() => toggleTag(tag.id)}
-                                        className={`px-3 py-1 rounded-full text-xs transition-colors ${formData.tags?.includes(tag.id)
-                                                ? 'bg-amber-500 text-white'
-                                                : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400'
-                                            }`}
-                                    >
-                                        {tag.name_hebrew}
-                                    </button>
-                                ))}
+                            <div className="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-3 border border-slate-200 dark:border-slate-700">
+                                <CategorizedTagFilter
+                                    tags={availableTags}
+                                    selectedTags={formData.tags || []}
+                                    onTagToggle={toggleTag}
+                                    onClearAll={() => setFormData(prev => ({ ...prev, tags: [] }))}
+                                />
                             </div>
                         </div>
                     </div>

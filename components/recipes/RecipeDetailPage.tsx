@@ -10,6 +10,7 @@ import {
 import { recipesService, Recipe, RecipeComment } from '../../services/recipesService';
 import { useAuth0 } from '@auth0/auth0-react';
 import { CookingMode } from './CookingMode';
+import { CategorizedTagsDisplay } from './CategorizedTagsDisplay';
 
 const DIFFICULTY_LABELS = {
     easy: { label: 'קל', color: 'text-green-600 bg-green-100 dark:bg-green-900/30' },
@@ -554,20 +555,11 @@ export const RecipeDetailPage: React.FC<RecipeDetailPageProps> = ({ recipeId, on
                         {/* Tags */}
                         {recipe.tags && recipe.tags.length > 0 && (
                             <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-md border border-slate-200 dark:border-slate-700">
-                                <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-3 flex items-center gap-2">
+                                <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
                                     <Tag className="w-5 h-5 text-amber-600" />
                                     תגיות
                                 </h3>
-                                <div className="flex flex-wrap gap-2">
-                                    {recipe.tags.map((tag) => (
-                                        <span
-                                            key={tag.id}
-                                            className="px-3 py-1 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 text-sm rounded-full"
-                                        >
-                                            {tag.name_hebrew || tag.name}
-                                        </span>
-                                    ))}
-                                </div>
+                                <CategorizedTagsDisplay tags={recipe.tags} />
                             </div>
                         )}
                     </div>
