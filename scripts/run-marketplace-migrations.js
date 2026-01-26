@@ -66,7 +66,14 @@ async function runMigration(connection, migrationFile, migrationName) {
         log(colors.yellow, `\n[Running] ${migrationName}...`);
 
         const sqlPath = path.join(__dirname, '..', migrationFile);
-        const sql = await fs.readFile(sqlPath, 'utf8');
+        let sql = await fs.readFile(sqlPath, 'utf8');
+
+        // Remove DELIMITER commands (MySQL CLI specific, not needed in mysql2)
+        // This handles stored procedures properly
+        sql = sql.replace(/DELIMITER\s+\/\/\s*/gi, '');
+        sql = sql.replace(/DELIMITER\s+;\s*/gi, '');
+        // Replace 'END //' with 'END;' for stored procedures
+        sql = sql.replace(/END\s+\/\//gi, 'END;');
 
         await connection.query(sql);
 
