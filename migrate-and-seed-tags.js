@@ -59,27 +59,30 @@ async function migrateAndSeedTags() {
         const seedPath = path.join(__dirname, 'seed-enhanced-tags.sql');
         const seedSQL = fs.readFileSync(seedPath, 'utf8');
 
-        const seedStatements = seedSQL
-            .split(';')
-            .map(s => s.trim())
-            .filter(s => s.length > 0 && !s.startsWith('--'));
+        // Split properly by detecting INSERT statements
+        const insertRegex = /INSERT INTO recipe_tags[^;]+;/gi;
+        const insertStatements = seedSQL.match(insertRegex) || [];
 
         let addedCount = 0;
-        for (const statement of seedStatements) {
+        let updatedCount = 0;
+
+        for (const statement of insertStatements) {
             try {
-                await connection.query(statement);
-                if (statement.toUpperCase().includes('INSERT')) {
-                    addedCount++;
+                const result = await connection.query(statement);
+                // Check if rows were inserted or updated
+                if (result[0].affectedRows > 0) {
+                    if (result[0].insertId > 0) {
+                        addedCount++;
+                    } else {
+                        updatedCount++;
+                    }
                 }
             } catch (err) {
-                // Ignore duplicate key errors (tags already exist)
-                if (!err.message.includes('Duplicate entry') && !err.message.includes('duplicate key')) {
-                    console.error('⚠️  שגיאה בהוספת תגית:', err.message);
-                }
+                console.error('⚠️  שגיאה:', err.message);
             }
         }
 
-        console.log(`✅ ${addedCount} קבוצות תגיות נוספו בהצלחה!`);
+        console.log(`✅ ${insertStatements.length} קבוצות תגיות עובדו (${addedCount} חדשות, ${updatedCount} עודכנו)`);
         console.log('');
 
         // Step 3: Show summary
