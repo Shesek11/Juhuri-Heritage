@@ -18,7 +18,7 @@ INSERT INTO recipe_tags (name, name_hebrew, category, icon, color) VALUES
 ('jam', 'ריבה', 'food_type', '🍓', '#EC4899'),
 ('pickle', 'כבוש', 'food_type', '🥒', '#22C55E'),
 ('compote', 'קומפוט', 'food_type', '🍑', '#F472B6')
-ON DUPLICATE KEY UPDATE name=name;
+ON DUPLICATE KEY UPDATE name_hebrew=VALUES(name_hebrew), icon=VALUES(icon), color=VALUES(color), category=VALUES(category);
 
 -- Category: meal_type (סוג ארוחה)
 INSERT INTO recipe_tags (name, name_hebrew, category, icon, color) VALUES
@@ -29,7 +29,7 @@ INSERT INTO recipe_tags (name, name_hebrew, category, icon, color) VALUES
 ('friday_night', 'ליל שבת', 'meal_type', '🕯️', '#7C3AED'),
 ('shabbat_lunch', 'צהריים שבת', 'meal_type', '📖', '#8B5CF6'),
 ('seuda_shlishit', 'סעודה שלישית', 'meal_type', '🌅', '#A855F7')
-ON DUPLICATE KEY UPDATE name=name;
+ON DUPLICATE KEY UPDATE name_hebrew=VALUES(name_hebrew), icon=VALUES(icon), color=VALUES(color), category=VALUES(category);
 
 -- Category: ingredient_type (מרכיב עיקרי)
 INSERT INTO recipe_tags (name, name_hebrew, category, icon, color) VALUES
@@ -65,7 +65,7 @@ INSERT INTO recipe_tags (name, name_hebrew, category, icon, color) VALUES
 ('honey', 'דבש', 'ingredient_type', '🍯', '#F59E0B'),
 ('pomegranate', 'רימון', 'ingredient_type', '💎', '#DC2626'),
 ('dates', 'תמרים', 'ingredient_type', '🌴', '#92400E')
-ON DUPLICATE KEY UPDATE name=name;
+ON DUPLICATE KEY UPDATE name_hebrew=VALUES(name_hebrew), icon=VALUES(icon), color=VALUES(color), category=VALUES(category);
 
 -- Category: occasion (אירועים וחגים)
 INSERT INTO recipe_tags (name, name_hebrew, category, icon, color) VALUES
@@ -98,7 +98,7 @@ INSERT INTO recipe_tags (name, name_hebrew, category, icon, color) VALUES
 ('everyday', 'יומיומי', 'occasion', '🏠', '#64748B'),
 ('guests', 'אירוח', 'occasion', '👥', '#3B82F6'),
 ('potluck', 'ארוחה משותפת', 'occasion', '🤝', '#10B981')
-ON DUPLICATE KEY UPDATE name=name;
+ON DUPLICATE KEY UPDATE name_hebrew=VALUES(name_hebrew), icon=VALUES(icon), color=VALUES(color), category=VALUES(category);
 
 -- Category: difficulty (רמת קושי)
 INSERT INTO recipe_tags (name, name_hebrew, category, icon, color) VALUES
@@ -107,7 +107,7 @@ INSERT INTO recipe_tags (name, name_hebrew, category, icon, color) VALUES
 ('medium', 'בינוני', 'difficulty', '⚖️', '#F59E0B'),
 ('hard', 'מאתגר', 'difficulty', '🔥', '#DC2626'),
 ('expert', 'מומחה', 'difficulty', '👨‍🍳', '#991B1B')
-ON DUPLICATE KEY UPDATE name=name;
+ON DUPLICATE KEY UPDATE name_hebrew=VALUES(name_hebrew), icon=VALUES(icon), color=VALUES(color), category=VALUES(category);
 
 -- Category: origin (מקור)
 INSERT INTO recipe_tags (name, name_hebrew, category, icon, color) VALUES
@@ -130,7 +130,7 @@ INSERT INTO recipe_tags (name, name_hebrew, category, icon, color) VALUES
 ('traditional', 'מסורתי', 'origin', '👴', '#92400E'),
 ('modern', 'מודרני', 'origin', '✨', '#8B5CF6'),
 ('fusion', 'פיוז׳ן', 'origin', '🌈', '#EC4899')
-ON DUPLICATE KEY UPDATE name=name;
+ON DUPLICATE KEY UPDATE name_hebrew=VALUES(name_hebrew), icon=VALUES(icon), color=VALUES(color), category=VALUES(category);
 
 -- Category: cooking_method (שיטת בישול)
 INSERT INTO recipe_tags (name, name_hebrew, category, icon, color) VALUES
@@ -153,7 +153,7 @@ INSERT INTO recipe_tags (name, name_hebrew, category, icon, color) VALUES
 ('roasted', 'קלוי', 'cooking_method', '🔥', '#EA580C'),
 ('smoked', 'מעושן', 'cooking_method', '💨', '#64748B'),
 ('fermented', 'מותסס', 'cooking_method', '🫙', '#059669')
-ON DUPLICATE KEY UPDATE name=name;
+ON DUPLICATE KEY UPDATE name_hebrew=VALUES(name_hebrew), icon=VALUES(icon), color=VALUES(color), category=VALUES(category);
 
 -- Category: dietary (תזונה מיוחדת)
 INSERT INTO recipe_tags (name, name_hebrew, category, icon, color) VALUES
@@ -178,7 +178,7 @@ INSERT INTO recipe_tags (name, name_hebrew, category, icon, color) VALUES
 ('healthy', 'בריא', 'dietary', '💪', '#22C55E'),
 ('whole30', 'Whole30', 'dietary', '🥗', '#16A34A'),
 ('mediterranean', 'ים תיכוני', 'dietary', '🫒', '#0891B2')
-ON DUPLICATE KEY UPDATE name=name;
+ON DUPLICATE KEY UPDATE name_hebrew=VALUES(name_hebrew), icon=VALUES(icon), color=VALUES(color), category=VALUES(category);
 
 -- Category: season (עונה)
 INSERT INTO recipe_tags (name, name_hebrew, category, icon, color) VALUES
@@ -190,7 +190,7 @@ INSERT INTO recipe_tags (name, name_hebrew, category, icon, color) VALUES
 ('year_round', 'כל השנה', 'season', '🌍', '#64748B'),
 ('hot_weather', 'מזג אוויר חם', 'season', '🌡️', '#DC2626'),
 ('cold_weather', 'מזג אוויר קר', 'season', '🧊', '#0891B2')
-ON DUPLICATE KEY UPDATE name=name;
+ON DUPLICATE KEY UPDATE name_hebrew=VALUES(name_hebrew), icon=VALUES(icon), color=VALUES(color), category=VALUES(category);
 
 -- Category: general (כללי)
 INSERT INTO recipe_tags (name, name_hebrew, category, icon, color) VALUES
@@ -211,4 +211,4 @@ INSERT INTO recipe_tags (name, name_hebrew, category, icon, color) VALUES
 ('beginner', 'למתחילים', 'general', '📚', '#22C55E'),
 ('family_recipe', 'מתכון משפחתי', 'general', '👨‍👩‍👧‍👦', '#DC2626'),
 ('grandmas_recipe', 'מתכון של סבתא', 'general', '👵', '#92400E')
-ON DUPLICATE KEY UPDATE name=name;
+ON DUPLICATE KEY UPDATE name_hebrew=VALUES(name_hebrew), icon=VALUES(icon), color=VALUES(color), category=VALUES(category);
