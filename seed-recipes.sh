@@ -25,7 +25,11 @@ if [ ! -f "seed-recipes.sql" ]; then
 fi
 
 # Run the SQL file
-mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" -p"$DB_PASSWORD" "$DB_NAME" < seed-recipes.sql
+if [ -n "$DB_PASSWORD" ]; then
+    mysql -h "$DB_HOST" -u "$DB_USER" -p"$DB_PASSWORD" "$DB_NAME" < seed-recipes.sql
+else
+    mysql -h "$DB_HOST" -u "$DB_USER" -p "$DB_NAME" < seed-recipes.sql
+fi
 
 if [ $? -eq 0 ]; then
     echo ""
