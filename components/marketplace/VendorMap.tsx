@@ -49,8 +49,11 @@ const FitBounds = ({ vendors }: { vendors: Vendor[] }) => {
     useEffect(() => {
         if (vendors.length === 0) return;
 
-        // Small delay to ensure map is fully loaded
+        // Small delay to ensure map container has correct size
         const timer = setTimeout(() => {
+            // Fix for gray tiles on initial load
+            map.invalidateSize();
+
             const bounds = L.latLngBounds(
                 vendors.map(v => [v.latitude!, v.longitude!] as [number, number])
             );
