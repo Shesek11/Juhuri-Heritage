@@ -208,14 +208,22 @@ export const AdminTagsPanel: React.FC = () => {
                             </div>
                             <div>
                                 <label className="block text-sm font-medium mb-1">אייקון (אמוג'י)</label>
-                                <input
-                                    type="text"
-                                    value={formData.icon}
-                                    onChange={e => setFormData({ ...formData, icon: e.target.value })}
-                                    className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
-                                    required
-                                    placeholder="🍗"
-                                />
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        value={formData.icon}
+                                        onChange={e => setFormData({ ...formData, icon: e.target.value })}
+                                        className="flex-1 p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
+                                        required
+                                        placeholder="🍗"
+                                    />
+                                    {formData.icon && (
+                                        <div className="flex items-center justify-center w-12 h-10 text-3xl bg-slate-100 dark:bg-slate-700 rounded-lg border dark:border-slate-600">
+                                            {formData.icon}
+                                        </div>
+                                    )}
+                                </div>
+                                <p className="text-xs text-slate-500 mt-1">הדבק אמוג'י (emoji) או העתק מ-<a href="https://emojipedia.org" target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:underline">Emojipedia</a></p>
                             </div>
                             <div>
                                 <label className="block text-sm font-medium mb-1">צבע</label>
