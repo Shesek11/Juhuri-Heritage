@@ -14,31 +14,47 @@
 
 ## 🗄️ שלב 1: עדכון מסד הנתונים
 
-### הרצת מיגרציות
+### הכן את קובץ .env
 
 ```bash
-# התחבר לשרת
-ssh user@your-server.com
-
 # עבור לתיקיית הפרויקט
-cd /path/to/juhuri-heritage
+cd /var/www/juhuri.shesek.xyz
 
-# משוך את הענף החדש
-git fetch origin
-git checkout feature/marketplace-advanced-features
-git pull origin feature/marketplace-advanced-features
+# ודא שקובץ .env קיים ומכיל את פרטי ההתחברות ל-DB
+nano .env
 
-# הרץ מיגרציות (בסדר הזה!)
-mysql -u username -p database_name < migrations/012_marketplace_system.sql
-mysql -u username -p database_name < migrations/013_marketplace_orders.sql
+# ודא שיש לך שורות אלו:
+DB_HOST=localhost
+DB_USERNAME=your_username
+DB_PASSWORD=your_password
+DB_DATABASE=juhuri_heritage
+```
+
+### הרצת מיגרציות
+
+**אופציה A: סקריפט JavaScript (מומלץ - קורא מ-.env)**
+```bash
+# הרץ את הסקריפט
+node scripts/run-marketplace-migrations.js
+
+# הסקריפט יקרא אוטומטית את הפרטים מ-.env
+# ויריץ את שתי המיגרציות בסדר הנכון
+```
+
+**אופציה B: ידנית עם MySQL CLI**
+```bash
+mysql -u your_username -p juhuri_heritage < migrations/012_marketplace_system.sql
+mysql -u your_username -p juhuri_heritage < migrations/013_marketplace_orders.sql
 ```
 
 ### בדיקה
-```bash
-# ודא שהטבלאות נוצרו
-mysql -u username -p database_name -e "SHOW TABLES LIKE 'marketplace_%';"
+הסקריפט JavaScript יבדוק אוטומטית שכל הטבלאות נוצרו.
+אם הרצת ידנית, תוכל לבדוק עם:
 
-# צריך להציג:
+```bash
+mysql -u your_username -p juhuri_heritage -e "SHOW TABLES LIKE 'marketplace_%';"
+
+# צריך להציג 12 טבלאות:
 # - marketplace_vendors
 # - marketplace_menu_items
 # - marketplace_hours
