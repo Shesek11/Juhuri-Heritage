@@ -1,5 +1,5 @@
-import React from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import React, { useEffect } from 'react';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { Vendor } from '../../services/marketplaceService';
@@ -42,6 +42,26 @@ const LocationMarker = ({ position }: { position: { lat: number; lng: number } }
     );
 }
 
+// Component to fit map bounds to vendors
+const FitBounds = ({ vendors }: { vendors: Vendor[] }) => {
+    const map = useMap();
+
+    useEffect(() => {
+        if (vendors.length === 0) return;
+
+        const bounds = L.latLngBounds(
+            vendors.map(v => [v.latitude!, v.longitude!] as [number, number])
+        );
+
+        map.fitBounds(bounds, {
+            padding: [50, 50],
+            maxZoom: 13
+        });
+    }, [vendors, map]);
+
+    return null;
+}
+
 export const VendorMap: React.FC<VendorMapProps> = ({ vendors, userLocation, onVendorClick }) => {
     const center = userLocation || { lat: 31.0461, lng: 34.8516 }; // Israel center default
 
@@ -62,6 +82,9 @@ export const VendorMap: React.FC<VendorMapProps> = ({ vendors, userLocation, onV
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
             />
+
+            {/* Auto-fit bounds to show all vendors */}
+            {vendorsWithLocation.length > 0 && <FitBounds vendors={vendorsWithLocation} />}
 
             {userLocation && <LocationMarker position={userLocation} />}
 
