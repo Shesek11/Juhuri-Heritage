@@ -28,16 +28,6 @@ export const RecipesPage: React.FC = () => {
 
     const { isEnabled: recipesEnabled } = useFeatureFlag('recipes_module');
 
-    // If a recipe is selected, show the detail page
-    if (selectedRecipeId) {
-        return (
-            <RecipeDetailPage
-                recipeId={selectedRecipeId}
-                onClose={() => setSelectedRecipeId(null)}
-            />
-        );
-    }
-
     const loadRecipes = async (page = 1) => {
         try {
             setLoading(true);
@@ -87,6 +77,7 @@ export const RecipesPage: React.FC = () => {
         setSelectedRecipeId(recipe.id);
     };
 
+    // Conditional returns after all hooks
     if (!recipesEnabled) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-8">
@@ -98,6 +89,16 @@ export const RecipesPage: React.FC = () => {
                     המודול יהיה זמין בקרוב. הישארו מעודכנים!
                 </p>
             </div>
+        );
+    }
+
+    // If a recipe is selected, show the detail page
+    if (selectedRecipeId) {
+        return (
+            <RecipeDetailPage
+                recipeId={selectedRecipeId}
+                onClose={() => setSelectedRecipeId(null)}
+            />
         );
     }
 
