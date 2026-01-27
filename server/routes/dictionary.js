@@ -79,6 +79,109 @@ router.get('/search', async (req, res) => {
     }
 });
 
+// GET /api/dictionary/word-of-day - Get deterministic word of the day
+router.get('/word-of-day', async (req, res) => {
+    try {
+        // Get total count of active entries with Hebrew translation
+        const [[{ total }]] = await db.query(
+            `SELECT COUNT(*) as total FROM dictionary_entries de
+             JOIN translations t ON de.id = t.entry_id
+             WHERE de.status = 'active' AND t.hebrew IS NOT NULL AND t.hebrew != ''`
+        );
+
+        if (total === 0) {
+            return res.json({ word: null });
+        }
+
+        // Calculate deterministic offset based on date
+        const now = new Date();
+        const startOfYear = new Date(now.getFullYear(), 0, 0);
+        const dayOfYear = Math.floor((now - startOfYear) / 86400000);
+        const offset = (dayOfYear + now.getFullYear()) % total;
+
+        // Get the word at that offset
+        const [entries] = await db.query(
+            `SELECT de.id, de.term, de.detected_language, de.pronunciation_guide,
+                    t.hebrew, t.latin, t.cyrillic, d.name as dialect
+             FROM dictionary_entries de
+             JOIN translations t ON de.id = t.entry_id
+             JOIN dialects d ON t.dialect_id = d.id
+             WHERE de.status = 'active' AND t.hebrew IS NOT NULL AND t.hebrew != ''
+             ORDER BY de.id
+             LIMIT 1 OFFSET ?`,
+            [offset]
+        );
+
+        if (entries.length === 0) {
+            return res.json({ word: null });
+        }
+
+        const entry = entries[0];
+        res.json({
+            word: {
+                id: entry.id,
+                term: entry.term,
+                detectedLanguage: entry.detected_language,
+                pronunciationGuide: entry.pronunciation_guide,
+                translations: [{
+                    dialect: entry.dialect,
+                    hebrew: entry.hebrew,
+                    latin: entry.latin,
+                    cyrillic: entry.cyrillic
+                }]
+            }
+        });
+    } catch (err) {
+        console.error('Word of day error:', err);
+        res.status(500).json({ error: 'שגיאה בטעינת מילה יומית' });
+    }
+});
+
+// GET /api/dictionary/recent - Get recently added entries
+router.get('/recent', async (req, res) => {
+    try {
+        const limit = parseInt(req.query.limit) || 10;
+
+        const [entries] = await db.query(
+            `SELECT de.id, de.term, de.detected_language, de.created_at,
+                    t.hebrew, t.latin
+             FROM dictionary_entries de
+             LEFT JOIN translations t ON de.id = t.entry_id
+             WHERE de.status = 'active'
+             GROUP BY de.id
+             ORDER BY de.created_at DESC
+             LIMIT ?`,
+            [limit]
+        );
+
+        res.json({ entries });
+    } catch (err) {
+        console.error('Recent entries error:', err);
+        res.status(500).json({ error: 'שגיאה בטעינת מילים אחרונות' });
+    }
+});
+
+// GET /api/dictionary/community-activity - Get recent community activity from system_logs
+router.get('/community-activity', async (req, res) => {
+    try {
+        const limit = parseInt(req.query.limit) || 20;
+
+        const [activities] = await db.query(
+            `SELECT sl.event_type, sl.description, sl.user_name, sl.created_at, sl.metadata
+             FROM system_logs sl
+             WHERE sl.event_type IN ('ENTRY_ADDED', 'ENTRY_APPROVED', 'USER_REGISTER')
+             ORDER BY sl.created_at DESC
+             LIMIT ?`,
+            [limit]
+        );
+
+        res.json({ activities });
+    } catch (err) {
+        console.error('Community activity error:', err);
+        res.status(500).json({ error: 'שגיאה בטעינת פעילות קהילתית' });
+    }
+});
+
 // GET /api/dictionary/entries - Get all entries (admin)
 router.get('/entries', authenticate, requireApprover, async (req, res) => {
     try {
@@ -637,13 +740,16 @@ router.get('/needs-translation', async (req, res) => {
 // GET /api/dictionary/missing-dialects - Words with partial translations (for widget)
 router.get('/missing-dialects', async (req, res) => {
     try {
+        const limit = parseInt(req.query.limit) || 5;
+        const offset = parseInt(req.query.offset) || 0;
+
         // Get all dialects
         const [allDialects] = await db.query('SELECT id, name FROM dialects');
         const dialectIds = allDialects.map(d => d.id);
 
         // Find entries that don't have all dialects
         const [entries] = await db.query(
-            `SELECT de.id, de.term, de.detected_language, 
+            `SELECT de.id, de.term, de.detected_language,
                     GROUP_CONCAT(DISTINCT d.name) as existing_dialects,
                     COUNT(DISTINCT t.dialect_id) as dialect_count
              FROM dictionary_entries de
@@ -652,7 +758,20 @@ router.get('/missing-dialects', async (req, res) => {
              WHERE de.status = 'active'
              GROUP BY de.id
              HAVING dialect_count < ?
-             LIMIT 5`,
+             LIMIT ? OFFSET ?`,
+            [dialectIds.length, limit, offset]
+        );
+
+        // Get total count
+        const [[{ total }]] = await db.query(
+            `SELECT COUNT(*) as total FROM (
+                SELECT de.id, COUNT(DISTINCT t.dialect_id) as dialect_count
+                FROM dictionary_entries de
+                JOIN translations t ON de.id = t.entry_id
+                WHERE de.status = 'active'
+                GROUP BY de.id
+                HAVING dialect_count < ?
+            ) sub`,
             [dialectIds.length]
         );
 
@@ -669,9 +788,175 @@ router.get('/missing-dialects', async (req, res) => {
             };
         });
 
-        res.json({ entries: result });
+        res.json({ entries: result, total });
     } catch (err) {
         console.error('Missing dialects error:', err);
+        res.status(500).json({ error: 'שגיאה בטעינת מילים' });
+    }
+});
+
+// GET /api/dictionary/stats - Get counts for all categories (for dashboard widgets)
+router.get('/stats', async (req, res) => {
+    try {
+        // Hebrew-only: has Hebrew translation but missing Latin/Juhuri transliteration
+        const [[hebrewOnly]] = await db.query(`
+            SELECT COUNT(DISTINCT de.id) as count FROM dictionary_entries de
+            JOIN translations t ON de.id = t.entry_id
+            WHERE de.status = 'active'
+            AND t.hebrew IS NOT NULL AND t.hebrew != ''
+            AND (t.latin IS NULL OR t.latin = '')
+        `);
+
+        // Juhuri-only: detected as Juhuri but missing Hebrew translation
+        const [[juhuriOnly]] = await db.query(`
+            SELECT COUNT(DISTINCT de.id) as count FROM dictionary_entries de
+            JOIN translations t ON de.id = t.entry_id
+            WHERE de.status = 'active'
+            AND de.detected_language = 'Juhuri'
+            AND (t.hebrew IS NULL OR t.hebrew = '')
+        `);
+
+        // Missing dialects: has some translations but not all dialects
+        const [[{ dialectCount }]] = await db.query('SELECT COUNT(*) as dialectCount FROM dialects');
+        const [[missingDialects]] = await db.query(`
+            SELECT COUNT(*) as count FROM (
+                SELECT de.id, COUNT(DISTINCT t.dialect_id) as dialect_count
+                FROM dictionary_entries de
+                JOIN translations t ON de.id = t.entry_id
+                WHERE de.status = 'active'
+                GROUP BY de.id
+                HAVING dialect_count < ?
+            ) sub
+        `, [dialectCount]);
+
+        // Total active entries
+        const [[totalActive]] = await db.query(`
+            SELECT COUNT(*) as count FROM dictionary_entries WHERE status = 'active'
+        `);
+
+        // Recent entries (last 7 days)
+        const [[recentEntries]] = await db.query(`
+            SELECT COUNT(*) as count FROM dictionary_entries
+            WHERE status = 'active' AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+        `);
+
+        // Pending suggestions
+        let pendingCount = 0;
+        try {
+            const [[pending]] = await db.query(`
+                SELECT COUNT(*) as count FROM translation_suggestions WHERE status = 'pending'
+            `);
+            pendingCount = pending.count;
+        } catch (err) {
+            // Table might not exist
+        }
+
+        res.json({
+            hebrewOnlyCount: hebrewOnly.count,
+            juhuriOnlyCount: juhuriOnly.count,
+            missingDialectsCount: missingDialects.count,
+            missingAudioCount: totalActive.count, // For now, assume all are missing audio until audio_recordings table exists
+            totalActiveCount: totalActive.count,
+            recentCount: recentEntries.count,
+            pendingCount
+        });
+    } catch (err) {
+        console.error('Stats error:', err);
+        res.status(500).json({ error: 'שגיאה בטעינת סטטיסטיקות' });
+    }
+});
+
+// GET /api/dictionary/hebrew-only - Words with Hebrew but missing Juhuri/Latin
+router.get('/hebrew-only', async (req, res) => {
+    try {
+        const limit = parseInt(req.query.limit) || 20;
+        const offset = parseInt(req.query.offset) || 0;
+
+        const [entries] = await db.query(`
+            SELECT de.id, de.term, de.detected_language, t.hebrew
+            FROM dictionary_entries de
+            JOIN translations t ON de.id = t.entry_id
+            WHERE de.status = 'active'
+            AND t.hebrew IS NOT NULL AND t.hebrew != ''
+            AND (t.latin IS NULL OR t.latin = '')
+            GROUP BY de.id
+            ORDER BY de.created_at DESC
+            LIMIT ? OFFSET ?
+        `, [limit, offset]);
+
+        const [[{ total }]] = await db.query(`
+            SELECT COUNT(DISTINCT de.id) as total FROM dictionary_entries de
+            JOIN translations t ON de.id = t.entry_id
+            WHERE de.status = 'active'
+            AND t.hebrew IS NOT NULL AND t.hebrew != ''
+            AND (t.latin IS NULL OR t.latin = '')
+        `);
+
+        res.json({ entries, total });
+    } catch (err) {
+        console.error('Hebrew-only error:', err);
+        res.status(500).json({ error: 'שגיאה בטעינת מילים' });
+    }
+});
+
+// GET /api/dictionary/juhuri-only - Words with Juhuri but missing Hebrew
+router.get('/juhuri-only', async (req, res) => {
+    try {
+        const limit = parseInt(req.query.limit) || 20;
+        const offset = parseInt(req.query.offset) || 0;
+
+        const [entries] = await db.query(`
+            SELECT de.id, de.term, de.detected_language, t.latin, t.cyrillic
+            FROM dictionary_entries de
+            JOIN translations t ON de.id = t.entry_id
+            WHERE de.status = 'active'
+            AND de.detected_language = 'Juhuri'
+            AND (t.hebrew IS NULL OR t.hebrew = '')
+            GROUP BY de.id
+            ORDER BY de.created_at DESC
+            LIMIT ? OFFSET ?
+        `, [limit, offset]);
+
+        const [[{ total }]] = await db.query(`
+            SELECT COUNT(DISTINCT de.id) as total FROM dictionary_entries de
+            JOIN translations t ON de.id = t.entry_id
+            WHERE de.status = 'active'
+            AND de.detected_language = 'Juhuri'
+            AND (t.hebrew IS NULL OR t.hebrew = '')
+        `);
+
+        res.json({ entries, total });
+    } catch (err) {
+        console.error('Juhuri-only error:', err);
+        res.status(500).json({ error: 'שגיאה בטעינת מילים' });
+    }
+});
+
+// GET /api/dictionary/missing-audio - Words without audio recordings
+router.get('/missing-audio', async (req, res) => {
+    try {
+        const limit = parseInt(req.query.limit) || 20;
+        const offset = parseInt(req.query.offset) || 0;
+
+        // For now, return all active entries since audio_recordings table might not exist
+        // When the table is added, this query can be updated to exclude entries with recordings
+        const [entries] = await db.query(`
+            SELECT de.id, de.term, de.detected_language, t.hebrew, t.latin
+            FROM dictionary_entries de
+            LEFT JOIN translations t ON de.id = t.entry_id
+            WHERE de.status = 'active'
+            GROUP BY de.id
+            ORDER BY de.created_at DESC
+            LIMIT ? OFFSET ?
+        `, [limit, offset]);
+
+        const [[{ total }]] = await db.query(`
+            SELECT COUNT(*) as total FROM dictionary_entries WHERE status = 'active'
+        `);
+
+        res.json({ entries, total });
+    } catch (err) {
+        console.error('Missing audio error:', err);
         res.status(500).json({ error: 'שגיאה בטעינת מילים' });
     }
 });

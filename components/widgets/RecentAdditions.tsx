@@ -12,15 +12,15 @@ const RecentAdditions: React.FC<RecentAdditionsProps> = ({ onSelectWord }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        // Fetch recent terms - mocking with specific chars for now as 'recent' endpoint might not exist
         const fetchRecent = async () => {
             try {
-                const res = await apiService.get<{ results: DictionaryEntry[] }>('/dictionary/search?q=a');
-                if (res.results) {
-                    setTerms(res.results.slice(0, 5));
+                // Use dedicated /recent endpoint sorted by created_at DESC
+                const res = await apiService.get<{ entries: DictionaryEntry[] }>('/dictionary/recent?limit=5');
+                if (res.entries) {
+                    setTerms(res.entries);
                 }
             } catch (err) {
-                console.error(err);
+                console.error("Failed to fetch recent entries", err);
             } finally {
                 setLoading(false);
             }

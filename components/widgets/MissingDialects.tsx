@@ -14,18 +14,21 @@ interface PartialEntry {
 interface MissingDialectsProps {
     onAddDialect: (entryId: number, term: string, missingDialects: string[]) => void;
     onOpenAuthModal: (reason?: string) => void;
+    onViewAll: (total: number) => void;
 }
 
-const MissingDialects: React.FC<MissingDialectsProps> = ({ onAddDialect, onOpenAuthModal }) => {
+const MissingDialects: React.FC<MissingDialectsProps> = ({ onAddDialect, onOpenAuthModal, onViewAll }) => {
     const { isAuthenticated } = useAuth();
     const [entries, setEntries] = useState<PartialEntry[]>([]);
     const [loading, setLoading] = useState(true);
+    const [total, setTotal] = useState(0);
 
     useEffect(() => {
         const fetchEntries = async () => {
             try {
-                const res = await apiService.get<{ entries: PartialEntry[] }>('/dictionary/missing-dialects');
+                const res = await apiService.get<{ entries: PartialEntry[], total: number }>('/dictionary/missing-dialects?limit=5');
                 setEntries(res.entries || []);
+                setTotal(res.total || 0);
             } catch (err) {
                 console.error('Failed to fetch partial entries:', err);
             } finally {
@@ -106,11 +109,14 @@ const MissingDialects: React.FC<MissingDialectsProps> = ({ onAddDialect, onOpenA
                 </div>
             </div>
 
-            <div className="p-3 border-t border-slate-100 dark:border-slate-700 text-center">
-                <span className="text-xs text-slate-400">
-                    {entries.length} מילים עם ניבים חסרים
+            <button
+                onClick={() => onViewAll(total)}
+                className="p-3 border-t border-slate-100 dark:border-slate-700 text-center hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+            >
+                <span className="text-xs text-slate-500 hover:text-blue-600 dark:hover:text-blue-400">
+                    צפייה בכל {total.toLocaleString()} המילים
                 </span>
-            </div>
+            </button>
         </div>
     );
 };

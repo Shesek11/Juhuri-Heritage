@@ -17,16 +17,11 @@ const WordOfTheDay: React.FC<WordOfTheDayProps> = ({ onSelectWord }) => {
     useEffect(() => {
         const fetchWord = async () => {
             try {
-                // Fetch a list of words to pick from. We use 'a' to get a decent pool of results.
-                const res = await apiService.get<{ results: DictionaryEntry[] }>('/dictionary/search?q=a');
+                // Fetch word of the day from dedicated endpoint (deterministic per date)
+                const res = await apiService.get<{ word: DictionaryEntry | null }>('/dictionary/word-of-day');
 
-                if (res.results && res.results.length > 0) {
-                    // Seeded random based on date
-                    const today = new Date();
-                    const seed = today.getFullYear() * 10000 + (today.getMonth() + 1) * 100 + today.getDate();
-                    const index = seed % res.results.length;
-
-                    setWord(res.results[index]);
+                if (res.word) {
+                    setWord(res.word);
                 }
             } catch (err) {
                 console.error("Failed to fetch word of the day", err);

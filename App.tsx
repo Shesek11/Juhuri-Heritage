@@ -20,10 +20,12 @@ import HeroSection from './components/HeroSection';
 import WordOfTheDay from './components/widgets/WordOfTheDay';
 import CommunityTicker from './components/widgets/CommunityTicker';
 import RecentAdditions from './components/widgets/RecentAdditions';
-import NeedsTranslation from './components/widgets/NeedsTranslation';
 import MissingDialects from './components/widgets/MissingDialects';
-import PendingApprovals from './components/widgets/PendingApprovals';
+import HebrewOnlyWidget from './components/widgets/HebrewOnlyWidget';
+import JuhuriOnlyWidget from './components/widgets/JuhuriOnlyWidget';
+import MissingAudioWidget from './components/widgets/MissingAudioWidget';
 import TranslationModal from './components/TranslationModal';
+import WordListModal from './components/WordListModal';
 import XPDisplay from './components/gamification/XPDisplay';
 import RecipesPage from './components/RecipesPage';
 import { MarketplacePage } from './components/MarketplacePage';
@@ -114,6 +116,18 @@ function App() {
     term: string;
     existingTranslation?: { id?: number; dialect: string; hebrew: string; latin: string; cyrillic: string }
   } | null>(null);
+
+  // Word List Modal State
+  const [wordListModal, setWordListModal] = useState<{
+    isOpen: boolean;
+    category: 'hebrew-only' | 'juhuri-only' | 'missing-dialects' | 'missing-audio';
+    title: string;
+    totalCount: number;
+  }>({ isOpen: false, category: 'hebrew-only', title: '', totalCount: 0 });
+
+  const openWordListModal = (category: typeof wordListModal.category, title: string, totalCount: number) => {
+    setWordListModal({ isOpen: true, category, title, totalCount });
+  };
 
   // Dictionary State
   const [query, setQuery] = useState('');
@@ -652,32 +666,47 @@ function App() {
               {/* Widgets Grid - Only show if not searching (result is null) and not loading */}
               {!result && !loading && (
                 <>
-                  {/* Community Contribution Widgets - New Row */}
+                  {/* Row 1: Translation Gaps */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in slide-in-from-bottom-8 duration-700 mb-6">
                     <div className="h-56 md:h-64">
-                      <NeedsTranslation
-                        onTranslate={(entryId, term) => setTranslationModalEntry({ id: entryId, term })}
+                      <HebrewOnlyWidget
+                        onAddTranslation={(entryId, term) => setTranslationModalEntry({ id: entryId, term })}
                         onOpenAuthModal={openAuthModal}
+                        onViewAll={(total) => openWordListModal('hebrew-only', 'מילים עם עברית בלבד', total)}
+                      />
+                    </div>
+                    <div className="h-56 md:h-64">
+                      <JuhuriOnlyWidget
+                        onAddTranslation={(entryId, term) => setTranslationModalEntry({ id: entryId, term })}
+                        onOpenAuthModal={openAuthModal}
+                        onViewAll={(total) => openWordListModal('juhuri-only', 'מילים עם ג\'והורי בלבד', total)}
                       />
                     </div>
                     <div className="h-56 md:h-64">
                       <MissingDialects
                         onAddDialect={(entryId, term, missing) => setTranslationModalEntry({ id: entryId, term })}
                         onOpenAuthModal={openAuthModal}
-                      />
-                    </div>
-                    <div className="h-56 md:h-64">
-                      <PendingApprovals
-                        onViewDetails={(suggestionId) => { console.log('View suggestion:', suggestionId); /* TODO: Open suggestion modal */ }}
+                        onViewAll={(total) => openWordListModal('missing-dialects', 'מילים חסרות ניבים', total)}
                       />
                     </div>
                   </div>
 
-                  {/* Original Widgets Row */}
+                  {/* Row 2: Audio + Content */}
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in slide-in-from-bottom-8 duration-700 delay-200">
+                    <div className="h-64 md:h-80">
+                      <MissingAudioWidget
+                        onAddAudio={(entryId, term) => setTranslationModalEntry({ id: entryId, term })}
+                        onOpenAuthModal={openAuthModal}
+                        onViewAll={(total) => openWordListModal('missing-audio', 'מילים חסרות הקלטה', total)}
+                      />
+                    </div>
                     <div className="h-64 md:h-80"><WordOfTheDay onSelectWord={(term) => { setQuery(term); handleSearch(undefined, term); }} /></div>
-                    <div className="h-64 md:h-80"><CommunityTicker /></div>
                     <div className="h-64 md:h-80"><RecentAdditions onSelectWord={setQuery} /></div>
+                  </div>
+
+                  {/* Community Ticker - Full Width */}
+                  <div className="mt-6 animate-in slide-in-from-bottom-8 duration-700 delay-300">
+                    <div className="h-64 md:h-72"><CommunityTicker /></div>
                   </div>
                 </>
               )}
@@ -827,6 +856,19 @@ function App() {
           />
         )
       }
+
+      {/* Word List Modal */}
+      <WordListModal
+        isOpen={wordListModal.isOpen}
+        onClose={() => setWordListModal(prev => ({ ...prev, isOpen: false }))}
+        title={wordListModal.title}
+        category={wordListModal.category}
+        totalCount={wordListModal.totalCount}
+        onSelectWord={(entryId, term) => {
+          setWordListModal(prev => ({ ...prev, isOpen: false }));
+          setTranslationModalEntry({ id: entryId, term });
+        }}
+      />
 
     </div >
   );
