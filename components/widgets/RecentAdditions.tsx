@@ -54,7 +54,7 @@ const RecentAdditions: React.FC<RecentAdditionsProps> = ({ onSelectWord }) => {
                                         {term.term}
                                     </div>
                                     <div className="text-xs text-slate-500">
-                                        {term.translations[0]?.hebrew || 'תרגום..'}
+                                        {(term as any).hebrew || term.translations?.[0]?.hebrew || 'תרגום..'}
                                     </div>
                                 </div>
                                 <ArrowRight size={16} className="text-slate-300 group-hover:text-emerald-500 opacity-0 group-hover:opacity-100 transition-all transform -translate-x-2 group-hover:translate-x-0" />
