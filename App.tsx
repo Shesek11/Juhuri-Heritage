@@ -334,7 +334,7 @@ function App() {
             <div className="w-9 h-9 bg-gradient-to-br from-amber-400 to-orange-600 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/20">
               <Scroll size={18} className="text-white" />
             </div>
-            <span className="text-lg font-bold text-white hidden sm:block">Juhuri Heritage</span>
+            <span className="text-lg font-bold text-white hidden sm:block">מורשת ג'והורי</span>
           </div>
 
           {/* Center: Navigation Tabs (Desktop) */}
