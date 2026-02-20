@@ -37,12 +37,13 @@ async function run() {
   const entries = data.entries;
   console.log(`📊 Total entries to import: ${entries.length}`);
 
-  // Connect to database
+  // Connect to database (match env var names from server/config/db.js)
   const pool = await mysql.createPool({
     host: process.env.DB_HOST || 'localhost',
-    user: process.env.DB_USER,
+    port: parseInt(process.env.DB_PORT) || 3306,
+    user: process.env.DB_USERNAME || process.env.DB_USER || 'root',
     password: process.env.DB_PASSWORD,
-    database: process.env.DB_NAME,
+    database: process.env.DB_DATABASE || process.env.DB_NAME,
     waitForConnections: true,
     connectionLimit: 5,
     charset: 'utf8mb4',
