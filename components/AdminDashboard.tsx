@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Database, Save, Trash2, FileSpreadsheet, Search, CheckCircle, XCircle, Sparkles, Loader2, Download, AlertCircle, Plus, Eraser, MapPin, Globe, LogOut, Users as UsersIcon, ShieldAlert, KeyRound, Activity, UserCheck, ToggleLeft, Pencil, X, Play, Pause, Volume2, Edit3, Tag, ChevronDown, ChevronUp, BookOpen, ShoppingCart, GitBranch, Settings } from 'lucide-react';
 import FeatureFlagsPanel from './admin/FeatureFlagsPanel';
+import ApiSettingsPanel from './admin/ApiSettingsPanel';
 import AdminTagsPanel from './admin/AdminTagsPanel';
 import AdminFamilyPanel from './admin/AdminFamilyPanel';
 import AdminMarketplacePanel from './admin/AdminMarketplacePanel';
@@ -206,7 +207,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
             children: [
                 { id: 'gen_users', label: 'משתמשים' },
                 { id: 'gen_logs', label: 'יומן אירועים' },
-                { id: 'gen_features', label: 'ניהול פיצ\'רים' }
+                { id: 'gen_features', label: 'ניהול פיצ\'רים' },
+                { id: 'gen_settings', label: 'מפתחות API' }
             ]
         }
     ];
@@ -1192,6 +1194,20 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
 
                                 <div className="bg-white dark:bg-slate-800 rounded-lg shadow border border-slate-200 dark:border-slate-700 p-6">
                                     <FeatureFlagsPanel />
+                                </div>
+                            </div>
+                        )}
+
+                        {/* General: API Settings */}
+                        {activeSection === 'gen_settings' && isAdmin && (
+                            <div className="flex-1 flex flex-col max-w-4xl">
+                                <h2 className="text-2xl font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
+                                    <KeyRound size={24} className="text-purple-500" />
+                                    מפתחות API
+                                </h2>
+
+                                <div className="bg-white dark:bg-slate-800 rounded-lg shadow border border-slate-200 dark:border-slate-700 p-6">
+                                    <ApiSettingsPanel />
                                 </div>
                             </div>
                         )}

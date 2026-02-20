@@ -3,9 +3,9 @@ const crypto = require('crypto');
 const router = express.Router();
 const db = require('../config/db');
 
+const { decrypt } = require('../utils/encryption');
+
 // --- Configuration ---
-// Fallback to hardcoded key if .env fails (Temporary fix for dev)
-const API_KEY = process.env.GEMINI_API_KEY || 'AIzaSyDM8O-LwfYIh46R-ZgeCy-a3GxV4uX4Rqw';
 const CACHE_DURATION = 7 * 24 * 60 * 60; // 7 days
 
 // Models to try in order of preference (User requested 2.5 Flash)
@@ -15,7 +15,48 @@ const MODELS = [
     "gemini-1.5-flash"        // Reliable fallback
 ];
 
-console.log('🔑 Gemini Route Init. Key Length:', API_KEY ? API_KEY.length : 0);
+// --- API Key resolution: DB (encrypted) → .env ---
+let cachedApiKey = null;
+let cacheExpiry = 0;
+const KEY_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+async function getApiKey() {
+    if (cachedApiKey && Date.now() < cacheExpiry) {
+        return cachedApiKey;
+    }
+
+    // Try DB first
+    try {
+        const [rows] = await db.query(
+            `SELECT encrypted_value, iv, auth_tag FROM system_settings WHERE setting_key = 'gemini_api_key'`
+        );
+        if (rows.length > 0) {
+            const key = decrypt(rows[0].encrypted_value, rows[0].iv, rows[0].auth_tag);
+            if (key) {
+                cachedApiKey = key;
+                cacheExpiry = Date.now() + KEY_CACHE_TTL;
+                return key;
+            }
+        }
+    } catch (err) {
+        // Table might not exist yet or decryption failed — fall through to .env
+    }
+
+    // Fallback to .env
+    const envKey = process.env.GEMINI_API_KEY;
+    if (envKey) {
+        cachedApiKey = envKey;
+        cacheExpiry = Date.now() + KEY_CACHE_TTL;
+    }
+    return envKey || null;
+}
+
+function invalidateApiKeyCache() {
+    cachedApiKey = null;
+    cacheExpiry = 0;
+}
+
+console.log('🔑 Gemini Route initialized (key resolved at runtime)');
 console.log('🤖 Active Models:', MODELS);
 
 // --- Schemas & Instructions ---
@@ -126,14 +167,15 @@ const saveToCache = async (queryHash, queryText, response) => {
  * Optimized with timeout, temperature, and token limits.
  */
 async function callGemini(contentsParts, systemInstruction, responseSchema) {
-    if (!API_KEY) throw new Error("GEMINI_API_KEY is missing");
+    const apiKey = await getApiKey();
+    if (!apiKey) throw new Error("GEMINI_API_KEY is missing (neither DB nor .env)");
 
     let lastError = null;
     const TIMEOUT_MS = 15000; // 15s timeout per model
 
     for (const model of MODELS) {
         try {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${API_KEY}`;
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
 
             const body = {
                 contents: Array.isArray(contentsParts) ? contentsParts : [{ parts: [{ text: contentsParts }] }],
@@ -333,3 +375,4 @@ router.post('/tts', async (req, res) => {
 });
 
 module.exports = router;
+module.exports.invalidateApiKeyCache = invalidateApiKeyCache;

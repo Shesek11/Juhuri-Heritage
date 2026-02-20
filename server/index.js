@@ -39,6 +39,7 @@ app.use('/api/comments', require('./routes/comments'));
 app.use('/api/recordings', require('./routes/recordings'));
 app.use('/api/gamification', require('./routes/gamification'));
 app.use('/api/admin/features', require('./routes/features'));
+app.use('/api/admin/settings', require('./routes/settings'));
 app.use('/api/recipes', require('./routes/recipes'));
 app.use('/api/marketplace', require('./routes/marketplace'));
 app.use('/api/family', require('./routes/familyTree'));
