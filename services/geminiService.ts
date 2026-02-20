@@ -9,8 +9,8 @@ export const searchDictionary = async (query: string): Promise<DictionaryEntry> 
   try {
     const localResult = await dictionaryApi.search(query);
     if (localResult.found && localResult.entry) {
-      // Mark as community-sourced
-      return { ...localResult.entry, source: 'Manual' };
+      // Return DB entry with its source and fieldSources
+      return { ...localResult.entry, source: localResult.entry.source || 'Manual' };
     }
   } catch (err) {
     console.log('Local search failed, trying AI:', err);
@@ -18,8 +18,16 @@ export const searchDictionary = async (query: string): Promise<DictionaryEntry> 
 
   // Fall back to AI search
   const response = await geminiApi.search(query);
-  // Mark as AI-generated
-  return { ...response.entry, source: 'AI' };
+  // Mark all fields as AI-generated
+  const aiFieldSources: Record<string, string> = {};
+  const aiEntry = response.entry;
+  if (aiEntry.term) aiFieldSources.term = 'ai';
+  if (aiEntry.translations?.length) aiFieldSources.hebrew = 'ai';
+  if (aiEntry.definitions?.length) aiFieldSources.definition = 'ai';
+  if (aiEntry.pronunciationGuide) aiFieldSources.pronunciationGuide = 'ai';
+  if (aiEntry.examples?.length) aiFieldSources.examples = 'ai';
+
+  return { ...aiEntry, source: 'AI', fieldSources: aiFieldSources };
 };
 
 export const searchByAudio = async (base64Audio: string, mimeType: string): Promise<DictionaryEntry> => {

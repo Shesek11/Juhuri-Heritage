@@ -13,18 +13,27 @@ router.get('/search', async (req, res) => {
 
         const term = q.trim();
 
-        // Search in active entries
+        // Search in active entries: by term (Juhuri) OR by hebrew translation (reverse search)
         const [entries] = await db.query(
             `SELECT de.*, u.name as contributor_name, a.name as approver_name
              FROM dictionary_entries de
              LEFT JOIN users u ON de.contributor_id = u.id
              LEFT JOIN users a ON de.approved_by = a.id
-             WHERE de.term LIKE ? AND de.status = 'active'
-             ORDER BY 
-                CASE WHEN de.term = ? THEN 0 ELSE 1 END,
+             LEFT JOIN translations t ON de.id = t.entry_id
+             WHERE de.status = 'active'
+               AND (de.term LIKE ? OR t.hebrew LIKE ? OR de.russian LIKE ?)
+             GROUP BY de.id
+             ORDER BY
+                CASE
+                  WHEN de.term = ? THEN 0
+                  WHEN t.hebrew = ? THEN 1
+                  WHEN de.term LIKE ? THEN 2
+                  WHEN t.hebrew LIKE ? THEN 3
+                  ELSE 4
+                END,
                 de.created_at DESC
-             LIMIT 5`,
-            [`%${term}%`, term]
+             LIMIT 10`,
+            [`%${term}%`, `%${term}%`, `%${term}%`, term, term, `${term}%`, `${term}%`]
         );
 
         if (entries.length === 0) {
@@ -34,11 +43,11 @@ router.get('/search', async (req, res) => {
         // Get the best match (exact or first)
         const entry = entries[0];
 
-        // Get translations
+        // Get translations (support NULL dialect_id)
         const [translations] = await db.query(
-            `SELECT t.*, d.name as dialect 
+            `SELECT t.*, COALESCE(d.name, 'לא ידוע') as dialect
              FROM translations t
-             JOIN dialects d ON t.dialect_id = d.id
+             LEFT JOIN dialects d ON t.dialect_id = d.id
              WHERE t.entry_id = ?`,
             [entry.id]
         );
@@ -55,24 +64,75 @@ router.get('/search', async (req, res) => {
             [entry.id]
         );
 
+        // Get field sources
+        const [fieldSourceRows] = await db.query(
+            'SELECT field_name, source_type FROM field_sources WHERE entry_id = ?',
+            [entry.id]
+        );
+        const fieldSources = {};
+        for (const row of fieldSourceRows) {
+            fieldSources[row.field_name] = row.source_type;
+        }
+
         const result = {
+            id: String(entry.id),
             term: entry.term,
             detectedLanguage: entry.detected_language,
             translations: translations.map(t => ({
+                id: t.id,
                 dialect: t.dialect,
                 hebrew: t.hebrew,
                 latin: t.latin,
-                cyrillic: t.cyrillic
+                cyrillic: t.cyrillic,
+                upvotes: t.upvotes || 0,
+                downvotes: t.downvotes || 0,
             })),
             definitions: definitions.map(d => d.definition),
             examples,
             pronunciationGuide: entry.pronunciation_guide,
+            partOfSpeech: entry.part_of_speech,
+            russian: entry.russian,
             isCustom: true,
             source: entry.source,
-            status: entry.status
+            status: entry.status,
+            fieldSources,
         };
 
-        res.json({ found: true, entry: result });
+        // Also return additional matches for multi-result display
+        const allResults = [result];
+        if (entries.length > 1) {
+            for (let i = 1; i < Math.min(entries.length, 5); i++) {
+                const e = entries[i];
+                const [trans] = await db.query(
+                    `SELECT t.*, COALESCE(d.name, 'לא ידוע') as dialect
+                     FROM translations t LEFT JOIN dialects d ON t.dialect_id = d.id
+                     WHERE t.entry_id = ?`, [e.id]
+                );
+                const [defs] = await db.query(
+                    'SELECT definition FROM definitions WHERE entry_id = ?', [e.id]
+                );
+                allResults.push({
+                    id: String(e.id),
+                    term: e.term,
+                    detectedLanguage: e.detected_language,
+                    translations: trans.map(t => ({
+                        id: t.id, dialect: t.dialect, hebrew: t.hebrew,
+                        latin: t.latin, cyrillic: t.cyrillic,
+                        upvotes: t.upvotes || 0, downvotes: t.downvotes || 0,
+                    })),
+                    definitions: defs.map(d => d.definition),
+                    examples: [],
+                    pronunciationGuide: e.pronunciation_guide,
+                    partOfSpeech: e.part_of_speech,
+                    russian: e.russian,
+                    isCustom: true,
+                    source: e.source,
+                    status: e.status,
+                });
+            }
+        }
+
+        res.json({ found: true, entry: result, results: allResults });
     } catch (err) {
         console.error('Search error:', err);
         res.status(500).json({ error: 'שגיאה בחיפוש' });
@@ -86,7 +146,7 @@ router.get('/word-of-day', async (req, res) => {
         const [[{ total }]] = await db.query(
             `SELECT COUNT(*) as total FROM dictionary_entries de
              JOIN translations t ON de.id = t.entry_id
-             WHERE de.status = 'active' AND t.hebrew IS NOT NULL AND t.hebrew != ''`
+             WHERE de.status = 'active' AND t.hebrew IS NOT NULL AND TRIM(t.hebrew) != ''`
         );
 
         if (total === 0) {
@@ -102,10 +162,10 @@ router.get('/word-of-day', async (req, res) => {
         // Get the word at that offset
         const [entries] = await db.query(
             `SELECT de.id, de.term, de.detected_language, de.pronunciation_guide,
-                    t.hebrew, t.latin, t.cyrillic, d.name as dialect
+                    t.hebrew, t.latin, t.cyrillic, COALESCE(d.name, 'לא ידוע') as dialect
              FROM dictionary_entries de
              JOIN translations t ON de.id = t.entry_id
-             JOIN dialects d ON t.dialect_id = d.id
+             LEFT JOIN dialects d ON t.dialect_id = d.id
              WHERE de.status = 'active' AND t.hebrew IS NOT NULL AND t.hebrew != ''
              ORDER BY de.id
              LIMIT 1 OFFSET ?`,
@@ -206,9 +266,9 @@ router.get('/entries', authenticate, requireApprover, async (req, res) => {
         // Get translations for all entries
         for (const entry of entries) {
             const [translations] = await db.query(
-                `SELECT t.*, d.name as dialect 
+                `SELECT t.*, COALESCE(d.name, 'לא ידוע') as dialect
                  FROM translations t
-                 JOIN dialects d ON t.dialect_id = d.id
+                 LEFT JOIN dialects d ON t.dialect_id = d.id
                  WHERE t.entry_id = ?`,
                 [entry.id]
             );

@@ -1,11 +1,31 @@
 import React, { useState } from 'react';
 import { DictionaryEntry, Comment, Translation } from '../types';
-import { Volume2, Copy, Check, Settings2, Heart, MessageCircle, Send, Loader2, ThumbsUp, ThumbsDown, Edit3 } from 'lucide-react';
+import { Volume2, Copy, Check, Settings2, Heart, MessageCircle, Send, Loader2, ThumbsUp, ThumbsDown, Edit3, Bot, Users } from 'lucide-react';
 import { generateSpeech } from '../services/geminiService';
 import { playBase64Audio } from '../utils/audioUtils';
 import apiService from '../services/apiService';
 import { useAuth0 } from '@auth0/auth0-react';
 import VoiceRecorder from './audio/VoiceRecorder';
+
+/** Small badge showing the source of a field value */
+const FieldSourceBadge: React.FC<{ source?: string }> = ({ source }) => {
+  if (!source || source === 'import' || source === 'manual') return null;
+  if (source === 'ai') {
+    return (
+      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 mr-1" title="תוכן שנוצר על ידי AI">
+        <Bot size={10} /> AI
+      </span>
+    );
+  }
+  if (source === 'community') {
+    return (
+      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 mr-1" title="תרומה קהילתית">
+        <Users size={10} /> קהילה
+      </span>
+    );
+  }
+  return null;
+};
 
 interface ResultCardProps {
   entry: DictionaryEntry;
@@ -194,11 +214,21 @@ const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal, onSugge
               {/* Source Indicator Badge */}
               {entry.source === 'AI' ? (
                 <span className="inline-flex items-center gap-1 px-2 py-1 bg-amber-500/80 rounded-md text-xs font-medium backdrop-blur-sm">
-                  🤖 תרגום AI
+                  <Bot size={12} /> תרגום AI
+                </span>
+              ) : entry.source === 'Community' ? (
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-500/80 rounded-md text-xs font-medium backdrop-blur-sm">
+                  <Users size={12} /> תרומה קהילתית
                 </span>
               ) : (
                 <span className="inline-flex items-center gap-1 px-2 py-1 bg-emerald-500/80 rounded-md text-xs font-medium backdrop-blur-sm">
                   ✓ מאגר קהילתי
+                </span>
+              )}
+              {/* Part of Speech */}
+              {entry.partOfSpeech && (
+                <span className="inline-flex items-center px-2 py-1 bg-white/20 rounded-md text-xs font-medium backdrop-blur-sm">
+                  {entry.partOfSpeech}
                 </span>
               )}
             </div>
@@ -237,7 +267,17 @@ const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal, onSugge
         {/* Definitions */}
         {entry.definitions.length > 0 && (
           <div className="text-slate-700 dark:text-slate-200 text-lg leading-relaxed border-b border-slate-100 dark:border-slate-700 pb-4 font-medium">
+            <FieldSourceBadge source={entry.fieldSources?.definition} />
             {entry.definitions.join('; ')}
+          </div>
+        )}
+
+        {/* Russian translation */}
+        {entry.russian && (
+          <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300 border-b border-slate-100 dark:border-slate-700 pb-3">
+            <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">רוסית</span>
+            <FieldSourceBadge source={entry.fieldSources?.russian} />
+            <span className="font-serif text-lg" dir="ltr">{entry.russian}</span>
           </div>
         )}
 
@@ -260,12 +300,27 @@ const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal, onSugge
                   </div>
 
                   <div className="flex flex-col gap-1 pr-2">
-                    <div className="text-2xl font-bold text-slate-800 dark:text-slate-100 font-rubik">{t.hebrew}</div>
-                    <div className="flex items-center gap-2 text-sm">
-                      <span className="text-indigo-600 dark:text-indigo-400 font-bold bg-indigo-50 dark:bg-indigo-900/30 px-1.5 py-0.5 rounded text-xs">{t.dialect}</span>
-                      <span className="text-slate-600 dark:text-slate-300 font-mono tracking-wide">{t.latin}</span>
+                    <div className="text-2xl font-bold text-slate-800 dark:text-slate-100 font-rubik">
+                      <FieldSourceBadge source={entry.fieldSources?.hebrew} />
+                      {t.hebrew}
                     </div>
-                    <div className="text-lg text-slate-500 dark:text-slate-400 font-serif">{t.cyrillic}</div>
+                    <div className="flex items-center gap-2 text-sm">
+                      {t.dialect && t.dialect !== 'לא ידוע' && (
+                        <span className="text-indigo-600 dark:text-indigo-400 font-bold bg-indigo-50 dark:bg-indigo-900/30 px-1.5 py-0.5 rounded text-xs">{t.dialect}</span>
+                      )}
+                      {t.latin && (
+                        <span className="text-slate-600 dark:text-slate-300 font-mono tracking-wide">
+                          <FieldSourceBadge source={entry.fieldSources?.latin} />
+                          {t.latin}
+                        </span>
+                      )}
+                    </div>
+                    {t.cyrillic && (
+                      <div className="text-lg text-slate-500 dark:text-slate-400 font-serif">
+                        <FieldSourceBadge source={entry.fieldSources?.cyrillic} />
+                        {t.cyrillic}
+                      </div>
+                    )}
 
                     {/* Voting and Correction Row */}
                     <div className="flex items-center gap-3 mt-2 pt-2 border-t border-slate-200 dark:border-slate-600">

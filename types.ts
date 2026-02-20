@@ -16,6 +16,10 @@ export interface Example {
   transliteration?: string;
 }
 
+export interface FieldSources {
+  [fieldName: string]: 'import' | 'ai' | 'community' | 'manual';
+}
+
 export interface DictionaryEntry {
   term: string;
   detectedLanguage: 'Hebrew' | 'Juhuri' | 'English';
@@ -23,12 +27,14 @@ export interface DictionaryEntry {
   definitions: string[];
   examples: Example[];
   pronunciationGuide?: string;
+  partOfSpeech?: string;
+  russian?: string;
   isCustom?: boolean; // Flag to indicate if this came from the manual DB
-  source?: 'AI' | 'Manual' | 'User'; // Origin of the entry
+  source?: 'AI' | 'Manual' | 'User' | 'Community'; // Origin of the entry
   status?: 'active' | 'pending'; // Moderation status
   contributorId?: string; // ID of the user who contributed this
+  fieldSources?: FieldSources; // Per-field source tracking (import/ai/community)
 
-  // Audit fields
   // Audit fields
   approvedBy?: string; // Name/ID of the admin who approved
   approvedAt?: number; // Timestamp of approval
