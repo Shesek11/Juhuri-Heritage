@@ -64,8 +64,15 @@ export const dictionaryApi = {
     search: (term: string) =>
         request(`/dictionary/search?q=${encodeURIComponent(term)}`),
 
-    getEntries: (status?: string) =>
-        request(`/dictionary/entries${status ? `?status=${status}` : ''}`),
+    getEntries: (params?: { status?: string; page?: number; limit?: number; search?: string }) => {
+        const qs = new URLSearchParams();
+        if (params?.status) qs.set('status', params.status);
+        if (params?.page) qs.set('page', String(params.page));
+        if (params?.limit) qs.set('limit', String(params.limit));
+        if (params?.search) qs.set('search', params.search);
+        const query = qs.toString();
+        return request(`/dictionary/entries${query ? `?${query}` : ''}`);
+    },
 
     addEntry: (data: { term: string; translation: string; dialect?: string; notes?: string }) =>
         request('/dictionary/entries', {

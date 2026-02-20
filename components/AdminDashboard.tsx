@@ -56,6 +56,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
     const [entries, setEntries] = useState<DictionaryEntry[]>([]);
     const [activeSection, setActiveSection] = useState<string>('dict_active');
     const [searchFilter, setSearchFilter] = useState('');
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalEntries, setTotalEntries] = useState(0);
+    const [entriesLoading, setEntriesLoading] = useState(false);
+    const entriesPerPage = 50;
     const [expandedMenus, setExpandedMenus] = useState<Set<string>>(new Set(['dictionary', 'general']));
 
     // Dialect Management State
@@ -126,13 +131,27 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
         }
     }, [activeSection, isAdmin]);
 
+    const loadEntries = async (page = 1, search = '') => {
+        setEntriesLoading(true);
+        try {
+            const result = await getCustomEntries({ page, limit: entriesPerPage, search: search || undefined });
+            setEntries(result.entries);
+            setTotalPages(result.totalPages);
+            setTotalEntries(result.total);
+            setCurrentPage(result.page);
+        } catch (err) {
+            console.error('Error loading entries:', err);
+        } finally {
+            setEntriesLoading(false);
+        }
+    };
+
     const refreshData = async () => {
         try {
-            const [entriesData, dialectsData] = await Promise.all([
-                getCustomEntries(),
+            const [, dialectsData] = await Promise.all([
+                loadEntries(1, searchFilter),
                 getDialects()
             ]);
-            setEntries(entriesData || []);
             setDialects(dialectsData || []);
 
             if (isAdmin) {
@@ -147,6 +166,16 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
             console.error('Error refreshing data:', err);
         }
     };
+
+    // Debounced search
+    useEffect(() => {
+        const timeout = setTimeout(() => {
+            if (activeSection === 'dict_active') {
+                loadEntries(1, searchFilter);
+            }
+        }, 300);
+        return () => clearTimeout(timeout);
+    }, [searchFilter]);
 
     if (!isAuthorized) {
         return (
@@ -540,10 +569,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
         }
     };
 
-    const filteredActive = activeEntries.filter(e =>
-        e.term.includes(searchFilter) ||
-        e.translations.some(t => t.hebrew.includes(searchFilter) || t.latin.includes(searchFilter))
-    );
+    // Server-side search + pagination - entries are already filtered
+    const filteredActive = entries;
 
     return (
         <div className="fixed inset-0 z-50 bg-slate-50 dark:bg-slate-900 overflow-hidden font-rubik flex flex-col">
@@ -770,9 +797,31 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                                             </tr>
                                                         );
                                                     })}
-                                                    {filteredActive.length === 0 && (<tr><td colSpan={7} className="p-8 text-center text-slate-400">אין נתונים להצגה</td></tr>)}
+                                                    {entriesLoading && (<tr><td colSpan={7} className="p-8 text-center text-slate-400"><Loader2 className="inline animate-spin ml-2" size={18} /> טוען...</td></tr>)}
+                                                    {!entriesLoading && filteredActive.length === 0 && (<tr><td colSpan={7} className="p-8 text-center text-slate-400">אין נתונים להצגה</td></tr>)}
                                                 </tbody>
                                             </table>
+                                        </div>
+                                        {/* Pagination */}
+                                        <div className="p-3 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between text-sm text-slate-600 dark:text-slate-400">
+                                            <span>{totalEntries.toLocaleString()} מילים סה"כ</span>
+                                            <div className="flex items-center gap-2">
+                                                <button
+                                                    onClick={() => loadEntries(currentPage - 1, searchFilter)}
+                                                    disabled={currentPage <= 1 || entriesLoading}
+                                                    className="px-3 py-1 rounded border border-slate-300 dark:border-slate-600 disabled:opacity-30 hover:bg-slate-100 dark:hover:bg-slate-700"
+                                                >
+                                                    הקודם
+                                                </button>
+                                                <span className="font-medium">{currentPage} / {totalPages}</span>
+                                                <button
+                                                    onClick={() => loadEntries(currentPage + 1, searchFilter)}
+                                                    disabled={currentPage >= totalPages || entriesLoading}
+                                                    className="px-3 py-1 rounded border border-slate-300 dark:border-slate-600 disabled:opacity-30 hover:bg-slate-100 dark:hover:bg-slate-700"
+                                                >
+                                                    הבא
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 )}

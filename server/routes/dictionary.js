@@ -242,46 +242,82 @@ router.get('/community-activity', async (req, res) => {
     }
 });
 
-// GET /api/dictionary/entries - Get all entries (admin)
+// GET /api/dictionary/entries - Get entries with pagination (admin)
 router.get('/entries', authenticate, requireApprover, async (req, res) => {
     try {
-        const { status } = req.query;
+        const { status, search } = req.query;
+        const page = Math.max(1, parseInt(req.query.page) || 1);
+        const limit = Math.min(100, Math.max(1, parseInt(req.query.limit) || 50));
+        const offset = (page - 1) * limit;
 
-        let query = `
-            SELECT de.*, u.name as contributor_name
-            FROM dictionary_entries de
-            LEFT JOIN users u ON de.contributor_id = u.id
-        `;
+        // Build WHERE clause
+        const conditions = [];
         const params = [];
 
         if (status) {
-            query += ' WHERE de.status = ?';
+            conditions.push('de.status = ?');
             params.push(status);
         }
 
-        query += ' ORDER BY de.created_at DESC';
-
-        const [entries] = await db.query(query, params);
-
-        // Get translations for all entries
-        for (const entry of entries) {
-            const [translations] = await db.query(
-                `SELECT t.*, COALESCE(d.name, 'לא ידוע') as dialect
-                 FROM translations t
-                 LEFT JOIN dialects d ON t.dialect_id = d.id
-                 WHERE t.entry_id = ?`,
-                [entry.id]
-            );
-            entry.translations = translations;
-
-            const [definitions] = await db.query(
-                'SELECT definition FROM definitions WHERE entry_id = ?',
-                [entry.id]
-            );
-            entry.definitions = definitions.map(d => d.definition);
+        if (search && search.trim()) {
+            conditions.push('(de.term LIKE ? OR t_search.hebrew LIKE ?)');
+            params.push(`%${search.trim()}%`, `%${search.trim()}%`);
         }
 
-        res.json({ entries });
+        const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
+
+        // Count total
+        const [[{ total }]] = await db.query(
+            `SELECT COUNT(DISTINCT de.id) as total
+             FROM dictionary_entries de
+             LEFT JOIN translations t_search ON de.id = t_search.entry_id
+             ${whereClause}`,
+            params
+        );
+
+        // Get page of entries with their first translation (single JOIN instead of N+1)
+        const [entries] = await db.query(
+            `SELECT de.id, de.term, de.detected_language, de.pronunciation_guide,
+                    de.part_of_speech, de.russian, de.source, de.status, de.created_at,
+                    u.name as contributor_name,
+                    t.id as trans_id, t.hebrew, t.latin, t.cyrillic,
+                    COALESCE(d.name, 'לא ידוע') as dialect,
+                    def.definition
+             FROM dictionary_entries de
+             LEFT JOIN users u ON de.contributor_id = u.id
+             LEFT JOIN translations t ON de.id = t.entry_id
+             LEFT JOIN translations t_search ON de.id = t_search.entry_id
+             LEFT JOIN dialects d ON t.dialect_id = d.id
+             LEFT JOIN definitions def ON de.id = def.entry_id
+             ${whereClause}
+             GROUP BY de.id
+             ORDER BY de.created_at DESC
+             LIMIT ? OFFSET ?`,
+            [...params, limit, offset]
+        );
+
+        // Map to response format
+        const result = entries.map(e => ({
+            id: String(e.id),
+            term: e.term,
+            detectedLanguage: e.detected_language,
+            pronunciationGuide: e.pronunciation_guide,
+            partOfSpeech: e.part_of_speech,
+            russian: e.russian,
+            source: e.source,
+            status: e.status,
+            contributorName: e.contributor_name,
+            translations: [{
+                id: e.trans_id,
+                dialect: e.dialect,
+                hebrew: e.hebrew || '',
+                latin: e.latin || '',
+                cyrillic: e.cyrillic || '',
+            }],
+            definitions: e.definition ? [e.definition] : [],
+        }));
+
+        res.json({ entries: result, total, page, limit, totalPages: Math.ceil(total / limit) });
     } catch (err) {
         console.error('Get entries error:', err);
         res.status(500).json({ error: 'שגיאה בטעינת מילים' });
