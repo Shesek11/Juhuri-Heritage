@@ -221,8 +221,8 @@ export const RecipeDetailPage: React.FC<RecipeDetailPageProps> = ({ recipeId, on
                     servings: recipe.servings,
                     ingredients: recipe.ingredients?.map((i: any) => i.name || i),
                     instructions: recipe.instructions,
-                    avg_rating: recipe.likes?.count ? 5 : undefined,
-                    review_count: recipe.likes?.count,
+                    avg_rating: recipe.avg_rating || undefined,
+                    review_count: recipe.review_count || recipe.likes?.count,
                     tags: recipe.tags?.map((t: any) => t.name || t),
                 })}
             />

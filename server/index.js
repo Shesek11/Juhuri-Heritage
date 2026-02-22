@@ -141,17 +141,18 @@ app.get('/sitemap.xml', async (req, res) => {
         res.header('Cache-Control', 'public, max-age=3600'); // 1 hour cache
 
         // Static pages
+        const today = new Date().toISOString().split('T')[0];
         const staticUrls = [
-            { loc: '/', priority: '1.0', changefreq: 'daily' },
-            { loc: '/tutor', priority: '0.8', changefreq: 'weekly' },
-            { loc: '/recipes', priority: '0.8', changefreq: 'weekly' },
-            { loc: '/marketplace', priority: '0.7', changefreq: 'weekly' },
-            { loc: '/family', priority: '0.6', changefreq: 'monthly' },
+            { loc: '/', priority: '1.0', changefreq: 'daily', lastmod: today },
+            { loc: '/tutor', priority: '0.8', changefreq: 'weekly', lastmod: today },
+            { loc: '/recipes', priority: '0.8', changefreq: 'weekly', lastmod: today },
+            { loc: '/marketplace', priority: '0.7', changefreq: 'weekly', lastmod: today },
+            { loc: '/family', priority: '0.6', changefreq: 'monthly', lastmod: today },
         ];
 
         // Dynamic: dictionary entries
         const [entries] = await db.query(
-            `SELECT term, updated_at FROM dictionary_entries WHERE status = 'active' ORDER BY updated_at DESC LIMIT 1000`
+            `SELECT term, updated_at FROM dictionary_entries WHERE status = 'active' ORDER BY updated_at DESC`
         );
 
         // Dynamic: approved recipes
@@ -167,7 +168,7 @@ app.get('/sitemap.xml', async (req, res) => {
         const toDate = (d) => d ? new Date(d).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
 
         const urls = [
-            ...staticUrls.map(u => `  <url>\n    <loc>${SITE_URL}${u.loc}</loc>\n    <priority>${u.priority}</priority>\n    <changefreq>${u.changefreq}</changefreq>\n  </url>`),
+            ...staticUrls.map(u => `  <url>\n    <loc>${SITE_URL}${u.loc}</loc>\n    <lastmod>${u.lastmod}</lastmod>\n    <priority>${u.priority}</priority>\n    <changefreq>${u.changefreq}</changefreq>\n  </url>`),
             ...entries.map(e => `  <url>\n    <loc>${SITE_URL}/word/${encodeURIComponent(e.term)}</loc>\n    <lastmod>${toDate(e.updated_at)}</lastmod>\n    <changefreq>monthly</changefreq>\n    <priority>0.5</priority>\n  </url>`),
             ...recipes.map(r => `  <url>\n    <loc>${SITE_URL}/recipes/${r.id}</loc>\n    <lastmod>${toDate(r.updated_at)}</lastmod>\n    <changefreq>monthly</changefreq>\n    <priority>0.6</priority>\n  </url>`),
             ...vendors.map(v => `  <url>\n    <loc>${SITE_URL}/marketplace/${v.slug}</loc>\n    <lastmod>${toDate(v.updated_at)}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.5</priority>\n  </url>`),
@@ -181,7 +182,7 @@ app.get('/sitemap.xml', async (req, res) => {
 });
 
 // --- Crawler Meta Injection (for social sharing previews) ---
-const CRAWLER_UA = /facebookexternalhit|twitterbot|telegrambot|linkedinbot|slackbot|whatsapp|pinterest|discordbot/i;
+const CRAWLER_UA = /googlebot|bingbot|yandex|facebookexternalhit|twitterbot|telegrambot|linkedinbot|slackbot|whatsapp|pinterest|discordbot/i;
 
 const injectMetaTags = async (req, res, indexHtml) => {
     let title = 'מורשת ג\'והורי | המילון לשימור השפה';
@@ -258,6 +259,28 @@ app.use(async (req, res, next) => {
         // Table might not exist yet, ignore
     }
     next();
+});
+
+// --- Serve robots.txt (DB-first, then file fallback) ---
+app.get('/robots.txt', async (req, res) => {
+    try {
+        const [rows] = await db.query(
+            `SELECT setting_value FROM seo_settings WHERE setting_key = 'robots_txt'`
+        );
+        if (rows.length > 0) {
+            res.type('text/plain').send(rows[0].setting_value);
+            return;
+        }
+    } catch (err) {
+        // Table might not exist yet, fall through
+    }
+    // Fallback to static file
+    const robotsPath = path.join(__dirname, '../public/robots.txt');
+    if (fs.existsSync(robotsPath)) {
+        res.type('text/plain').sendFile(robotsPath);
+    } else {
+        res.type('text/plain').send('User-agent: *\nAllow: /\nDisallow: /api/\n');
+    }
 });
 
 // --- Serve static files in production ---
