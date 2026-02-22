@@ -15,6 +15,7 @@ const SECTION_DESCRIPTIONS: Record<string, string> = {
     recipe_tags: 'ניהול תגיות לסינון מתכונים (סוג מנה, מרכיבים, אזור).',
     market_vendors: 'ניהול חנויות בשוק: אישור, חסימה, תלונות.',
     family_suggestions: 'בקשות מיזוג ושיוך באילן היוחסין.',
+    seo_management: 'ניהול SEO: תבניות meta, robots.txt, הפניות, סקירת מצב.',
 };
 
 /** Small info bar showing section description */
@@ -33,6 +34,7 @@ import ApiSettingsPanel from './admin/ApiSettingsPanel';
 import AdminTagsPanel from './admin/AdminTagsPanel';
 import AdminFamilyPanel from './admin/AdminFamilyPanel';
 import AdminMarketplacePanel from './admin/AdminMarketplacePanel';
+import AdminSEOPanel from './admin/AdminSEOPanel';
 import { getCustomEntries, addCustomEntry, deleteCustomEntry, approveEntry, downloadTemplate, getDialects, addDialect, deleteDialect, getSystemLogs } from '../services/storageService';
 import { generateBatchEntries } from '../services/geminiService';
 import { getAllUsers, updateUserRole, deleteUser, updateUser } from '../services/authService';
@@ -325,6 +327,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
             icon: <GitBranch size={20} />,
             children: [
                 { id: 'family_suggestions', label: 'הצעות ובקשות' }
+            ]
+        },
+        {
+            id: 'seo',
+            label: 'SEO',
+            icon: <Globe size={20} />,
+            children: [
+                { id: 'seo_management', label: 'ניהול SEO' }
             ]
         },
         {
@@ -1462,6 +1472,17 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                         )}
 
                         {/* General: Feature Flags */}
+                        {activeSection === 'seo_management' && isAdmin && (
+                            <div className="flex-1 flex flex-col w-full">
+                                <h2 className="text-2xl font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
+                                    <Globe size={24} className="text-green-500" />
+                                    ניהול SEO
+                                </h2>
+                                <SectionInfoBar sectionId="seo_management" />
+                                <AdminSEOPanel />
+                            </div>
+                        )}
+
                         {activeSection === 'gen_features' && isAdmin && (
                             <div className="flex-1 flex flex-col max-w-4xl">
                                 <h2 className="text-2xl font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2">

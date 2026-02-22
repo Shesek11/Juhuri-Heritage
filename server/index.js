@@ -100,6 +100,7 @@ app.use('/api/recordings', uploadLimiter, require('./routes/recordings'));
 app.use('/api/gamification', require('./routes/gamification'));
 app.use('/api/admin/features', require('./routes/features'));
 app.use('/api/admin/settings', require('./routes/settings'));
+app.use('/api/admin/seo', require('./routes/seo'));
 app.use('/api/recipes', require('./routes/recipes'));
 app.use('/api/marketplace', require('./routes/marketplace'));
 app.use('/api/family', require('./routes/familyTree'));
@@ -239,6 +240,25 @@ const injectMetaTags = async (req, res, indexHtml) => {
         .replace(/<meta name="twitter:title"[^>]*>/, `<meta name="twitter:title" content="${esc(title)}">`)
         .replace(/<meta name="twitter:description"[^>]*>/, `<meta name="twitter:description" content="${esc(description)}">`);
 };
+
+// --- SEO Redirects Middleware ---
+app.use(async (req, res, next) => {
+    if (req.path.startsWith('/api')) return next();
+    try {
+        const [redirects] = await db.query(
+            'SELECT to_path, status_code FROM seo_redirects WHERE from_path = ? AND is_active = TRUE LIMIT 1',
+            [req.path]
+        );
+        if (redirects.length > 0) {
+            // Increment hit counter (fire and forget)
+            db.query('UPDATE seo_redirects SET hits = hits + 1 WHERE from_path = ?', [req.path]).catch(() => {});
+            return res.redirect(redirects[0].status_code, redirects[0].to_path);
+        }
+    } catch (err) {
+        // Table might not exist yet, ignore
+    }
+    next();
+});
 
 // --- Serve static files in production ---
 if (process.env.NODE_ENV === 'production') {
