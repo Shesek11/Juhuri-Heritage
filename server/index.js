@@ -283,6 +283,27 @@ app.get('/robots.txt', async (req, res) => {
     }
 });
 
+// --- Serve llms.txt (DB-first, then file fallback) ---
+app.get('/llms.txt', async (req, res) => {
+    try {
+        const [rows] = await db.query(
+            `SELECT setting_value FROM seo_settings WHERE setting_key = 'llms_txt'`
+        );
+        if (rows.length > 0) {
+            res.type('text/plain').send(rows[0].setting_value);
+            return;
+        }
+    } catch (err) {
+        // Table might not exist yet, fall through
+    }
+    const llmsPath = path.join(__dirname, '../public/llms.txt');
+    if (fs.existsSync(llmsPath)) {
+        res.type('text/plain').sendFile(llmsPath);
+    } else {
+        res.status(404).send('Not found');
+    }
+});
+
 // --- Serve static files in production ---
 if (process.env.NODE_ENV === 'production') {
     app.use(express.static(path.join(__dirname, '../dist'), {

@@ -2,8 +2,35 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../config/db');
 const { authenticate, requireAdmin } = require('../middleware/auth');
+const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
+
+// Multer config for SEO asset uploads (OG image, logo, favicon)
+const assetStorage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        const dir = path.join(__dirname, '../../public/images');
+        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+        cb(null, dir);
+    },
+    filename: (req, file, cb) => {
+        const assetType = req.params.type; // og-image, logo, favicon
+        const ext = path.extname(file.originalname).toLowerCase();
+        cb(null, `${assetType}${ext}`);
+    }
+});
+
+const assetUpload = multer({
+    storage: assetStorage,
+    limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
+    fileFilter: (req, file, cb) => {
+        const allowed = /jpeg|jpg|png|webp|svg\+xml|svg|x-icon|ico/;
+        if (allowed.test(file.mimetype) || allowed.test(path.extname(file.originalname).toLowerCase().replace('.', ''))) {
+            return cb(null, true);
+        }
+        cb(new Error('סוג קובץ לא נתמך'));
+    }
+});
 
 // ============================================
 // SEO SETTINGS (key-value store)
@@ -335,6 +362,149 @@ router.put('/meta-defaults', authenticate, requireAdmin, async (req, res) => {
         console.error('Meta defaults update error:', err);
         res.status(500).json({ error: 'שגיאה בעדכון תבניות meta' });
     }
+});
+
+// ============================================
+// LLMS.TXT MANAGEMENT
+// ============================================
+
+// GET /api/admin/seo/llms - Get llms.txt content
+router.get('/llms', authenticate, requireAdmin, async (req, res) => {
+    try {
+        const [rows] = await pool.query(
+            `SELECT setting_value FROM seo_settings WHERE setting_key = 'llms_txt'`
+        );
+        if (rows.length > 0) {
+            return res.json({ content: rows[0].setting_value, source: 'database' });
+        }
+
+        // Fallback to file
+        const filePath = path.join(__dirname, '../../public/llms.txt');
+        if (fs.existsSync(filePath)) {
+            return res.json({ content: fs.readFileSync(filePath, 'utf8'), source: 'file' });
+        }
+
+        res.json({ content: '', source: 'none' });
+    } catch (err) {
+        console.error('llms.txt read error:', err);
+        res.status(500).json({ error: 'שגיאה בקריאת llms.txt' });
+    }
+});
+
+// PUT /api/admin/seo/llms - Update llms.txt
+router.put('/llms', authenticate, requireAdmin, async (req, res) => {
+    try {
+        const { content } = req.body;
+        if (typeof content !== 'string') {
+            return res.status(400).json({ error: 'נדרש תוכן' });
+        }
+
+        // Save to DB
+        await pool.query(
+            `INSERT INTO seo_settings (setting_key, setting_value, updated_by)
+             VALUES ('llms_txt', ?, ?)
+             ON DUPLICATE KEY UPDATE
+                setting_value = VALUES(setting_value),
+                updated_by = VALUES(updated_by),
+                updated_at = CURRENT_TIMESTAMP`,
+            [content, req.user.id]
+        );
+
+        // Write to public for static serving
+        const publicPath = path.join(__dirname, '../../public/llms.txt');
+        fs.writeFileSync(publicPath, content, 'utf8');
+
+        // Write to dist too if it exists
+        const distPath = path.join(__dirname, '../../dist/llms.txt');
+        if (fs.existsSync(path.dirname(distPath))) {
+            fs.writeFileSync(distPath, content, 'utf8');
+        }
+
+        await pool.query(
+            `INSERT INTO system_logs (event_type, description, user_id, user_name, metadata)
+             VALUES ('SEO_LLMS_CHANGED', ?, ?, ?, ?)`,
+            ['llms.txt עודכן', req.user.id, req.user.name, JSON.stringify({ length: content.length })]
+        );
+
+        res.json({ success: true });
+    } catch (err) {
+        console.error('llms.txt write error:', err);
+        res.status(500).json({ error: 'שגיאה בעדכון llms.txt' });
+    }
+});
+
+// ============================================
+// BRANDING ASSETS (OG image, logo, favicon)
+// ============================================
+
+// GET /api/admin/seo/assets - Get current asset paths
+router.get('/assets', authenticate, requireAdmin, async (req, res) => {
+    try {
+        const [rows] = await pool.query(
+            `SELECT setting_key, setting_value FROM seo_settings WHERE setting_key IN ('og_image', 'site_logo', 'favicon')`
+        );
+        const assets = {};
+        for (const r of rows) {
+            assets[r.setting_key] = r.setting_value;
+        }
+        res.json(assets);
+    } catch (err) {
+        if (err.code === 'ER_NO_SUCH_TABLE') return res.json({});
+        console.error('Assets error:', err);
+        res.status(500).json({ error: 'שגיאה בטעינת נכסים' });
+    }
+});
+
+// POST /api/admin/seo/assets/:type - Upload an asset (og-image, logo, favicon)
+router.post('/assets/:type', authenticate, requireAdmin, (req, res) => {
+    const validTypes = ['og-image', 'logo', 'favicon'];
+    if (!validTypes.includes(req.params.type)) {
+        return res.status(400).json({ error: 'סוג נכס לא תקין' });
+    }
+
+    assetUpload.single('file')(req, res, async (err) => {
+        if (err) {
+            return res.status(400).json({ error: err.message || 'שגיאה בהעלאת קובץ' });
+        }
+        if (!req.file) {
+            return res.status(400).json({ error: 'לא נבחר קובץ' });
+        }
+
+        const assetUrl = `/images/${req.file.filename}`;
+        const settingKey = req.params.type === 'og-image' ? 'og_image'
+            : req.params.type === 'logo' ? 'site_logo'
+            : 'favicon';
+
+        try {
+            await pool.query(
+                `INSERT INTO seo_settings (setting_key, setting_value, updated_by)
+                 VALUES (?, ?, ?)
+                 ON DUPLICATE KEY UPDATE
+                    setting_value = VALUES(setting_value),
+                    updated_by = VALUES(updated_by),
+                    updated_at = CURRENT_TIMESTAMP`,
+                [settingKey, assetUrl, req.user.id]
+            );
+
+            // Also copy to dist if it exists
+            const distDir = path.join(__dirname, '../../dist/images');
+            if (fs.existsSync(path.dirname(distDir))) {
+                if (!fs.existsSync(distDir)) fs.mkdirSync(distDir, { recursive: true });
+                fs.copyFileSync(req.file.path, path.join(distDir, req.file.filename));
+            }
+
+            await pool.query(
+                `INSERT INTO system_logs (event_type, description, user_id, user_name, metadata)
+                 VALUES ('SEO_ASSET_CHANGED', ?, ?, ?, ?)`,
+                [`נכס ${req.params.type} עודכן`, req.user.id, req.user.name, JSON.stringify({ url: assetUrl })]
+            );
+
+            res.json({ success: true, url: assetUrl });
+        } catch (dbErr) {
+            console.error('Asset DB save error:', dbErr);
+            res.status(500).json({ error: 'שגיאה בשמירת נכס' });
+        }
+    });
 });
 
 module.exports = router;

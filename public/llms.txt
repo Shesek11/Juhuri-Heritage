@@ -1,0 +1,40 @@
+# Juhuri Heritage - מורשת ג'והורי
+
+> Interactive Juhuri-Hebrew dictionary and cultural preservation platform for the Mountain Jewish (Juhuri) language.
+
+## About
+
+Juhuri Heritage is an open community platform dedicated to preserving the Juhuri language (also known as Judeo-Tat, ISO 639-3: jdt), spoken by Mountain Jews (Gorskie Yevrei) from the Caucasus region. The platform provides digital tools for language learning, cultural preservation, and community connection.
+
+## Main Features
+
+- **Dictionary**: 26,000+ Juhuri-Hebrew entries with translations, transliterations, phonetics, and example sentences. Search by Juhuri, Hebrew, or Russian.
+- **AI Tutor**: Interactive AI-powered language tutor for learning Juhuri, with conversation practice and grammar explanations.
+- **Recipes**: Traditional Caucasian Jewish recipes with ingredients, instructions, and cultural context.
+- **Marketplace**: Community marketplace for Caucasian food vendors and home cooks.
+- **Community Graph**: Interactive visualization of community connections and family relationships.
+
+## Languages
+
+- Primary interface: Hebrew (he)
+- Content languages: Juhuri (jdt), Hebrew (he), Russian (ru)
+- The Juhuri language uses both Hebrew and Latin scripts
+
+## Key URLs
+
+- Homepage: https://juhuri.shesek.xyz/
+- Dictionary search: https://juhuri.shesek.xyz/word/{term}
+- Recipes: https://juhuri.shesek.xyz/recipes
+- Marketplace: https://juhuri.shesek.xyz/marketplace
+- AI Tutor: https://juhuri.shesek.xyz/tutor
+- Sitemap: https://juhuri.shesek.xyz/sitemap.xml
+
+## API
+
+- Dictionary search: GET /api/dictionary/search?q={query}&lang={he|juhuri|ru}
+- Dictionary entry: GET /api/dictionary/entry/{term}
+
+## Contact
+
+This project is maintained by the Juhuri Heritage community.
+Website: https://juhuri.shesek.xyz

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
     Globe, FileText, ArrowRightLeft, BarChart3, Search, RefreshCw, Loader2,
     Save, Plus, Trash2, CheckCircle, XCircle, ExternalLink, Copy, Eye,
-    AlertTriangle, Bot, Map
+    AlertTriangle, Bot, Map, Upload, Image, Palette, Cpu
 } from 'lucide-react';
 import apiService from '../../services/apiService';
 
@@ -35,7 +35,7 @@ interface Redirect {
     created_at: string;
 }
 
-type SEOTab = 'overview' | 'meta' | 'robots' | 'redirects' | 'preview';
+type SEOTab = 'overview' | 'meta' | 'robots' | 'llms' | 'branding' | 'redirects' | 'preview';
 
 const PAGE_TYPE_LABELS: Record<string, string> = {
     home: 'דף הבית',
@@ -77,13 +77,23 @@ export const AdminSEOPanel: React.FC = () => {
     const [newTo, setNewTo] = useState('');
     const [newCode, setNewCode] = useState(301);
 
+    // llms.txt
+    const [llmsTxt, setLlmsTxt] = useState('');
+    const [llmsSource, setLlmsSource] = useState('');
+
+    // Branding assets
+    const [assets, setAssets] = useState<Record<string, string>>({});
+    const [uploading, setUploading] = useState<string | null>(null);
+
     // Preview
     const [previewUrl, setPreviewUrl] = useState('');
 
     const tabs: { id: SEOTab; label: string; icon: React.ReactNode }[] = [
         { id: 'overview', label: 'סקירה', icon: <BarChart3 size={16} /> },
+        { id: 'branding', label: 'מיתוג', icon: <Palette size={16} /> },
         { id: 'meta', label: 'Meta תבניות', icon: <FileText size={16} /> },
         { id: 'robots', label: 'robots.txt', icon: <Bot size={16} /> },
+        { id: 'llms', label: 'llms.txt', icon: <Cpu size={16} /> },
         { id: 'redirects', label: 'הפניות (301)', icon: <ArrowRightLeft size={16} /> },
         { id: 'preview', label: 'תצוגה מקדימה', icon: <Eye size={16} /> },
     ];
@@ -98,9 +108,11 @@ export const AdminSEOPanel: React.FC = () => {
 
     // Load data on tab change
     useEffect(() => {
-        if (activeTab === 'overview') loadStats();
+        if (activeTab === 'overview') { loadStats(); loadAssets(); loadLlms(); }
         if (activeTab === 'meta') loadMeta();
         if (activeTab === 'robots') loadRobots();
+        if (activeTab === 'llms') loadLlms();
+        if (activeTab === 'branding') loadAssets();
         if (activeTab === 'redirects') loadRedirects();
     }, [activeTab]);
 
@@ -224,6 +236,76 @@ export const AdminSEOPanel: React.FC = () => {
     };
 
     // ============================================
+    // LLMS.TXT API
+    // ============================================
+
+    const loadLlms = async () => {
+        try {
+            setLoading(true);
+            const data = await apiService.get('/admin/seo/llms');
+            setLlmsTxt(data.content || '');
+            setLlmsSource(data.source || 'none');
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const saveLlms = async () => {
+        try {
+            setSaving(true);
+            await apiService.put('/admin/seo/llms', { content: llmsTxt });
+            setLlmsSource('database');
+            setSuccess('llms.txt עודכן בהצלחה');
+        } catch (err) {
+            setError('שגיאה בעדכון llms.txt');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    // ============================================
+    // BRANDING ASSETS API
+    // ============================================
+
+    const loadAssets = async () => {
+        try {
+            setLoading(true);
+            const data = await apiService.get('/admin/seo/assets');
+            setAssets(data);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const uploadAsset = async (type: string, file: File) => {
+        try {
+            setUploading(type);
+            const formData = new FormData();
+            formData.append('file', file);
+            const resp = await fetch(`/api/admin/seo/assets/${type}`, {
+                method: 'POST',
+                body: formData,
+                credentials: 'include',
+            });
+            const data = await resp.json();
+            if (!resp.ok) throw new Error(data.error);
+            setAssets(prev => ({
+                ...prev,
+                [type === 'og-image' ? 'og_image' : type === 'logo' ? 'site_logo' : 'favicon']: data.url
+            }));
+            setSuccess(`${type} עודכן בהצלחה`);
+        } catch (err: any) {
+            setError(err.message || `שגיאה בהעלאת ${type}`);
+        } finally {
+            setUploading(null);
+        }
+    };
+
+    // ============================================
     // RENDER HELPERS
     // ============================================
 
@@ -274,9 +356,9 @@ export const AdminSEOPanel: React.FC = () => {
                         { label: 'robots.txt עם AI crawlers', done: true },
                         { label: 'Crawler meta injection (שיתוף חברתי)', done: true },
                         { label: 'Canonical URLs', done: true },
-                        { label: 'תמונת OG ממותגת (1200x630)', done: false, note: 'צריך להחליף את og-default.png' },
+                        { label: 'תמונת OG ממותגת (1200x630)', done: !!assets.og_image, note: assets.og_image ? undefined : 'העלה בטאב "מיתוג"' },
                         { label: 'hreflang (עברית/אנגלית)', done: false, note: 'אופציונלי - אם יתווסף תוכן באנגלית' },
-                        { label: 'llms.txt', done: false, note: 'קובץ מידע למנועי AI' },
+                        { label: 'llms.txt', done: llmsSource === 'database' || llmsSource === 'file', note: llmsSource === 'none' || !llmsSource ? 'ערוך בטאב "llms.txt"' : undefined },
                     ].map((item, i) => (
                         <div key={i} className="flex items-start gap-2 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50">
                             {item.done
@@ -553,6 +635,143 @@ export const AdminSEOPanel: React.FC = () => {
         </div>
     );
 
+    const renderLlms = () => (
+        <div className="space-y-4">
+            <div className="flex items-center justify-between">
+                <div>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                        קובץ <code className="bg-slate-100 dark:bg-slate-700 px-1 rounded">llms.txt</code> מספק מידע מובנה למנועי AI (ChatGPT, Claude, Perplexity).
+                    </p>
+                    {llmsSource && (
+                        <span className="text-xs text-slate-400">
+                            מקור: {llmsSource === 'database' ? 'מסד נתונים' : llmsSource === 'file' ? 'קובץ' : 'לא קיים'}
+                        </span>
+                    )}
+                </div>
+                <button
+                    onClick={saveLlms}
+                    disabled={saving}
+                    className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 text-sm font-medium"
+                >
+                    {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                    שמור
+                </button>
+            </div>
+
+            <textarea
+                value={llmsTxt}
+                onChange={(e) => setLlmsTxt(e.target.value)}
+                rows={20}
+                placeholder={`# Juhuri Heritage\n> Interactive Juhuri-Hebrew dictionary for preserving the Mountain Jewish language.\n\n## About\nJuhuri Heritage is a community-driven platform...\n\n## Main Features\n- Dictionary: ...\n- AI Tutor: ...\n- Recipes: ...\n- Marketplace: ...\n\n## API\n- /api/dictionary/search?q={query}\n- /sitemap.xml`}
+                className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-mono text-sm leading-relaxed resize-none"
+                dir="ltr"
+                spellCheck={false}
+            />
+
+            <div className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg text-sm text-purple-700 dark:text-purple-300">
+                <strong>מה זה llms.txt?</strong> קובץ שמסביר למנועי AI מה האתר שלך, מה הוא מציע, ואיך להשתמש בו. זה עוזר ל-AI להציג את האתר שלך בתשובות.
+                <a href="https://llmstxt.org" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 mr-2 underline">
+                    מידע נוסף <ExternalLink size={12} />
+                </a>
+            </div>
+        </div>
+    );
+
+    const AssetUploadCard: React.FC<{
+        type: string;
+        label: string;
+        desc: string;
+        currentUrl?: string;
+        accept: string;
+        recommended?: string;
+    }> = ({ type, label, desc, currentUrl, accept, recommended }) => {
+        const fileInputRef = React.useRef<HTMLInputElement>(null);
+        const siteUrl = 'https://juhuri.shesek.xyz';
+
+        return (
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5">
+                <div className="flex items-start gap-4">
+                    {/* Preview */}
+                    <div className="w-24 h-24 rounded-lg border-2 border-dashed border-slate-300 dark:border-slate-600 flex items-center justify-center bg-slate-50 dark:bg-slate-900/50 overflow-hidden shrink-0">
+                        {currentUrl ? (
+                            <img src={`${siteUrl}${currentUrl}`} alt={label} className="w-full h-full object-contain" />
+                        ) : (
+                            <Image size={32} className="text-slate-300 dark:text-slate-600" />
+                        )}
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                        <h4 className="font-semibold text-slate-800 dark:text-slate-200 text-sm">{label}</h4>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{desc}</p>
+                        {recommended && (
+                            <p className="text-xs text-blue-500 dark:text-blue-400 mt-1">מומלץ: {recommended}</p>
+                        )}
+                        {currentUrl && (
+                            <p className="text-xs text-green-600 dark:text-green-400 mt-1 font-mono truncate">{currentUrl}</p>
+                        )}
+
+                        <div className="mt-3">
+                            <input
+                                ref={fileInputRef}
+                                type="file"
+                                accept={accept}
+                                className="hidden"
+                                onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) uploadAsset(type, file);
+                                    e.target.value = '';
+                                }}
+                            />
+                            <button
+                                onClick={() => fileInputRef.current?.click()}
+                                disabled={uploading === type}
+                                className="flex items-center gap-2 px-3 py-1.5 bg-amber-600 text-white rounded-lg hover:bg-amber-700 disabled:opacity-50 text-sm"
+                            >
+                                {uploading === type ? <Loader2 size={14} className="animate-spin" /> : <Upload size={14} />}
+                                {currentUrl ? 'החלף' : 'העלה'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+    const renderBranding = () => (
+        <div className="space-y-4">
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+                העלה תמונות מיתוג עבור מנועי חיפוש ורשתות חברתיות.
+            </p>
+
+            <AssetUploadCard
+                type="og-image"
+                label="תמונת OG (שיתוף חברתי)"
+                desc="תמונה שמופיעה כששומים לינק לאתר בפייסבוק, ווצאפ, טלגרם ועוד."
+                currentUrl={assets.og_image}
+                accept="image/png,image/jpeg,image/webp"
+                recommended="1200x630 פיקסלים, PNG או JPG"
+            />
+
+            <AssetUploadCard
+                type="logo"
+                label="לוגו האתר"
+                desc="לוגו שמופיע ב-Schema.org (Google Knowledge Panel) ובתוצאות חיפוש."
+                currentUrl={assets.site_logo}
+                accept="image/png,image/jpeg,image/svg+xml,image/webp"
+                recommended="512x512 פיקסלים, PNG או SVG"
+            />
+
+            <AssetUploadCard
+                type="favicon"
+                label="Favicon (אייקון הטאב)"
+                desc="אייקון קטן שמופיע בטאב של הדפדפן."
+                currentUrl={assets.favicon}
+                accept="image/png,image/svg+xml,image/x-icon"
+                recommended="32x32 או 64x64 פיקסלים, PNG, SVG או ICO"
+            />
+        </div>
+    );
+
     const renderPreview = () => {
         const siteUrl = 'https://juhuri.shesek.xyz';
         const testUrls = [
@@ -701,8 +920,10 @@ export const AdminSEOPanel: React.FC = () => {
 
             {/* Tab Content */}
             {activeTab === 'overview' && renderOverview()}
+            {activeTab === 'branding' && renderBranding()}
             {activeTab === 'meta' && renderMeta()}
             {activeTab === 'robots' && renderRobots()}
+            {activeTab === 'llms' && renderLlms()}
             {activeTab === 'redirects' && renderRedirects()}
             {activeTab === 'preview' && renderPreview()}
         </div>
