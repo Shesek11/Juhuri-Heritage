@@ -3,6 +3,7 @@ import { Vendor, MenuItem, Review, VendorUpdate, marketplaceService } from '../.
 import { X, MapPin, Phone, Star, Clock, ShoppingBag, Loader2, Utensils, Mail, Globe, CheckCircle, Plus, MessageCircle, Bell } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { getVendorStatus } from '../../utils/marketplaceHelpers';
+import { SEOHead, buildLocalBusinessJsonLd } from '../seo/SEOHead';
 
 interface VendorDetailsModalProps {
     vendor: Vendor;
@@ -101,6 +102,23 @@ export const VendorDetailsModal: React.FC<VendorDetailsModalProps> = ({ vendor: 
 
     return (
         <div className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 animate-in fade-in duration-200" onClick={onClose}>
+            <SEOHead
+                title={`${vendor.name} - שוק`}
+                description={vendor.about_text || `${vendor.name} בשוק הקהילתי הג'והורי`}
+                canonicalPath={`/marketplace/${vendor.slug}`}
+                jsonLd={buildLocalBusinessJsonLd({
+                    name: vendor.name,
+                    about_text: vendor.about_text,
+                    address: vendor.address,
+                    city: vendor.city,
+                    latitude: vendor.latitude,
+                    longitude: vendor.longitude,
+                    phone: vendor.phone,
+                    website: vendor.website,
+                    avg_rating: vendor.avg_rating,
+                    review_count: vendor.review_count,
+                })}
+            />
             <div className="bg-white dark:bg-slate-900 w-full max-w-5xl h-[90vh] rounded-2xl shadow-2xl flex overflow-hidden lg:flex-row flex-col" onClick={e => e.stopPropagation()}>
 
                 {/* Left Side: Cover & Info */}
@@ -139,7 +157,7 @@ export const VendorDetailsModal: React.FC<VendorDetailsModalProps> = ({ vendor: 
                                     </span>
                                 );
                             })()}
-                            {vendor.is_verified && (
+                            {!!vendor.is_verified && (
                                 <span className="px-2 py-0.5 rounded text-xs bg-blue-500 text-white flex items-center gap-1">
                                     <CheckCircle size={12} />
                                     מאומת

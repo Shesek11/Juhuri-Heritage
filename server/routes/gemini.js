@@ -175,7 +175,7 @@ async function callGemini(contentsParts, systemInstruction, responseSchema) {
 
     for (const model of MODELS) {
         try {
-            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`;
+            const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent`;
 
             const body = {
                 contents: Array.isArray(contentsParts) ? contentsParts : [{ parts: [{ text: contentsParts }] }],
@@ -198,7 +198,7 @@ async function callGemini(contentsParts, systemInstruction, responseSchema) {
             try {
                 const response = await fetch(url, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
                     body: JSON.stringify(body),
                     signal: controller.signal
                 });
@@ -256,6 +256,66 @@ router.post('/search', async (req, res) => {
     } catch (err) {
         console.error('Gemini search error:', err);
         res.status(500).json({ error: 'שגיאה בחיפוש AI', details: err.message });
+    }
+});
+
+// POST /api/gemini/enrich - Fill missing fields for an existing DB entry
+router.post('/enrich', async (req, res) => {
+    try {
+        const { term, hebrew, missingFields } = req.body;
+        if (!term || !missingFields || missingFields.length === 0) {
+            return res.status(400).json({ error: 'נדרש מונח ושדות חסרים' });
+        }
+
+        // Build a targeted prompt asking only for missing fields
+        const fieldsList = missingFields.join(', ');
+        const prompt = `For the Juhuri word "${term}" (Hebrew: "${hebrew || ''}"), provide ONLY the following missing fields: ${fieldsList}.
+Do NOT repeat information I already have. Only fill in what's missing.
+If the field is "latin" - provide Latin transliteration of the Juhuri word.
+If the field is "cyrillic" - provide Cyrillic script of the Juhuri word.
+If the field is "examples" - provide 2-3 usage examples.
+If the field is "pronunciationGuide" - provide pronunciation guide.
+If the field is "definition" - expand the definition in Hebrew.`;
+
+        // Schema for enrichment - only include requested fields
+        const enrichSchema = {
+            type: "OBJECT",
+            properties: {},
+            required: []
+        };
+
+        if (missingFields.includes('latin')) {
+            enrichSchema.properties.latin = { type: "STRING", description: "תעתיק לטיני של המילה הג'והורית" };
+        }
+        if (missingFields.includes('cyrillic')) {
+            enrichSchema.properties.cyrillic = { type: "STRING", description: "המילה בכתב קירילי" };
+        }
+        if (missingFields.includes('examples')) {
+            enrichSchema.properties.examples = {
+                type: "ARRAY",
+                items: {
+                    type: "OBJECT",
+                    properties: {
+                        origin: { type: "STRING", description: "משפט בעברית" },
+                        translated: { type: "STRING", description: "תרגום לג'והורית" },
+                        transliteration: { type: "STRING", description: "תעתיק לטיני" },
+                    },
+                },
+            };
+        }
+        if (missingFields.includes('pronunciationGuide')) {
+            enrichSchema.properties.pronunciationGuide = { type: "STRING", description: "מדריך הגייה" };
+        }
+        if (missingFields.includes('definition')) {
+            enrichSchema.properties.definition = { type: "STRING", description: "הגדרה מורחבת בעברית" };
+        }
+
+        const result = await callGemini(prompt, DICTIONARY_SYSTEM_INSTRUCTION, enrichSchema);
+        res.json({ enrichment: result, missingFields });
+
+    } catch (err) {
+        console.error('Gemini enrich error:', err);
+        res.status(500).json({ error: 'שגיאה בהעשרת AI', details: err.message });
     }
 });
 

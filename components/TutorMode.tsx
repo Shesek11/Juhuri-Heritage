@@ -8,6 +8,7 @@ import { CURRICULUM_UNITS } from '../services/curriculumService';
 import { playBase64Audio } from '../utils/audioUtils';
 import LessonView from './LessonView';
 import { Send, Volume2, Sparkles, GraduationCap, Settings2, Hand, Users, Utensils, Clock, Coffee, Scroll, Lock, CheckCircle, MessageCircle, Play } from 'lucide-react';
+import { SEOHead } from './seo/SEOHead';
 
 const TutorMode: React.FC = () => {
     const [config, setConfig] = useState<TutorConfig | null>(null);
@@ -113,6 +114,11 @@ const TutorMode: React.FC = () => {
     if (!config) {
         return (
             <div className="w-full max-w-2xl mx-auto mt-8 bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8 border border-slate-200 dark:border-slate-700 font-rubik">
+                <SEOHead
+                    title="מורה פרטי AI - לימוד ג'והורי"
+                    description="למד ג'והורי עם מורה פרטי AI אינטראקטיבי. בחר ניב, רמה, והתחל את המסע במפת הלימוד."
+                    canonicalPath="/tutor"
+                />
                 <div className="text-center mb-8">
                     <div className="inline-block p-4 bg-indigo-100 dark:bg-indigo-900/30 rounded-full mb-4 text-indigo-600 dark:text-indigo-400">
                         <GraduationCap size={48} />

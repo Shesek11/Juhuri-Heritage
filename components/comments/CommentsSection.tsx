@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { MessageCircle, Send, Trash2, Heart, Clock, User } from 'lucide-react';
-import { useAuth0 } from '@auth0/auth0-react';
+import { useAuth } from '../../contexts/AuthContext';
 import apiService from '../../services/apiService';
 
 interface Comment {
@@ -19,7 +19,7 @@ interface CommentsSectionProps {
 }
 
 const CommentsSection: React.FC<CommentsSectionProps> = ({ entryId }) => {
-    const { user, isAuthenticated } = useAuth0();
+    const { user, isAuthenticated } = useAuth();
     const [comments, setComments] = useState<Comment[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [content, setContent] = useState('');
@@ -55,7 +55,7 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({ entryId }) => {
                 entryId,
                 content: content.trim(),
                 guestName: isAuthenticated ? undefined : guestName.trim(),
-                userId: isAuthenticated ? user?.sub : undefined
+                userId: isAuthenticated ? String(user?.id) : undefined
             });
 
             if (res.success) {
@@ -81,7 +81,7 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({ entryId }) => {
 
         try {
             await apiService.delete(`/comments/${commentId}`, {
-                userId: user?.sub,
+                userId: String(user?.id),
                 isAdmin: false // TODO: Implement admin check
             });
             fetchComments();
@@ -95,7 +95,7 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({ entryId }) => {
 
         try {
             await apiService.post(`/comments/${commentId}/like`, {
-                userId: user?.sub
+                userId: String(user?.id)
             });
             fetchComments();
         } catch (err) {
@@ -223,7 +223,7 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({ entryId }) => {
                                         {comment.likes_count > 0 && comment.likes_count}
                                     </button>
 
-                                    {isAuthenticated && user?.sub === String(comment.user_id) && (
+                                    {isAuthenticated && String(user?.id) === String(comment.user_id) && (
                                         <button
                                             onClick={() => handleDelete(comment.id)}
                                             className="flex items-center gap-1 text-xs text-slate-500 hover:text-red-500 transition-colors"

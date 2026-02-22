@@ -5,7 +5,7 @@ import React, { useState, useRef } from 'react';
 import { X, ChefHat, Upload, Camera, Sparkles, ChevronLeft, ChevronRight, Check, Trash2, Image as ImageIcon } from 'lucide-react';
 import { RecipeInput, recipesService, RecipeTag } from '../../services/recipesService';
 import { uploadService } from '../../services/uploadService';
-import { useAuth0 } from '@auth0/auth0-react';
+import { useAuth } from '../../contexts/AuthContext';
 import { CategorizedTagFilter } from './CategorizedTagFilter';
 
 interface RecipeWizardProps {
@@ -18,7 +18,7 @@ interface RecipeWizardProps {
 type Step = 'basics' | 'ingredients' | 'instructions' | 'photos' | 'review';
 
 export const RecipeWizard: React.FC<RecipeWizardProps> = ({ isOpen, onClose, onSuccess, availableTags }) => {
-    const { user } = useAuth0();
+    const { user } = useAuth();
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [currentStep, setCurrentStep] = useState<Step>('basics');
     const [loading, setLoading] = useState(false);

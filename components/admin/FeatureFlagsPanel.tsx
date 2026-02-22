@@ -7,6 +7,7 @@ import { featureFlagService, FeatureFlag, FeatureFlagStatus } from '../../servic
 
 interface StatusConfig {
     label: string;
+    tooltip: string;
     icon: React.ReactNode;
     color: string;
     bgColor: string;
@@ -15,24 +16,28 @@ interface StatusConfig {
 const STATUS_CONFIG: Record<FeatureFlagStatus, StatusConfig> = {
     active: {
         label: 'פעיל לכולם',
+        tooltip: 'פעיל לכולם – כל המשתמשים יכולים להשתמש בפיצ\'ר',
         icon: <Users className="w-4 h-4" />,
         color: 'text-green-600 dark:text-green-400',
         bgColor: 'bg-green-100 dark:bg-green-900/30'
     },
     admin_only: {
         label: 'מנהלים בלבד',
+        tooltip: 'מנהלים בלבד – רק מנהלי מערכת רואים את הפיצ\'ר',
         icon: <Shield className="w-4 h-4" />,
         color: 'text-amber-600 dark:text-amber-400',
         bgColor: 'bg-amber-100 dark:bg-amber-900/30'
     },
     coming_soon: {
         label: 'בקרוב',
+        tooltip: 'בקרוב – הפיצ\'ר מוסתר ומסומן כ"בקרוב" באתר',
         icon: <Clock className="w-4 h-4" />,
         color: 'text-blue-600 dark:text-blue-400',
         bgColor: 'bg-blue-100 dark:bg-blue-900/30'
     },
     disabled: {
         label: 'כבוי',
+        tooltip: 'כבוי – הפיצ\'ר לא זמין לאף אחד',
         icon: <Ban className="w-4 h-4" />,
         color: 'text-slate-500 dark:text-slate-400',
         bgColor: 'bg-slate-100 dark:bg-slate-800'
@@ -163,20 +168,22 @@ export const FeatureFlagsPanel: React.FC = () => {
 
                                         return (
                                             <button
+                                                type="button"
                                                 key={status}
                                                 onClick={() => handleStatusChange(flag, status)}
                                                 disabled={isUpdating}
-                                                className={`p-2 rounded-lg transition-all text-sm ${isActive
+                                                className={`flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg transition-all text-sm ${isActive
                                                     ? `${config.bgColor} ${config.color} ring-2 ring-offset-1 ring-current`
                                                     : 'hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400'
                                                     } ${isUpdating ? 'opacity-50 cursor-wait' : ''}`}
-                                                title={config.label}
+                                                title={config.tooltip}
                                             >
                                                 {isUpdating && isActive ? (
                                                     <Loader2 className="w-4 h-4 animate-spin" />
                                                 ) : (
                                                     config.icon
                                                 )}
+                                                <span className="text-[9px] leading-tight whitespace-nowrap">{config.label}</span>
                                             </button>
                                         );
                                     })}

@@ -1,0 +1,14 @@
+node_modules
+dist
+.git
+.claude
+.env
+*.log
+data/raw
+data/intermediate
+data/processed
+scripts
+nul
+debug-*.js
+audit-screenshots
+docs

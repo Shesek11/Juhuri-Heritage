@@ -27,12 +27,18 @@ router.get('/vendors', async (req, res) => {
 
         let query = `
             SELECT v.*,
-                   COALESCE((SELECT AVG(rating) FROM marketplace_reviews WHERE vendor_id = v.id), 0) as avg_rating,
-                   COALESCE((SELECT COUNT(*) FROM marketplace_reviews WHERE vendor_id = v.id), 0) as review_count
+                   COALESCE(vs.average_rating, 0) as avg_rating,
+                   COALESCE(vs.total_reviews, 0) as review_count
             FROM marketplace_vendors v
-            WHERE v.is_active = 1 AND v.status = ?
+            LEFT JOIN marketplace_vendor_stats vs ON v.id = vs.vendor_id
+            WHERE v.is_active = 1
         `;
-        const params = [status];
+        const params = [];
+
+        if (status !== 'all') {
+            query += ' AND v.status = ?';
+            params.push(status);
+        }
 
         if (search) {
             query += ' AND (v.name LIKE ? OR v.about_text LIKE ? OR v.city LIKE ?)';
@@ -199,21 +205,39 @@ router.put('/vendors/:id', authenticate, async (req, res) => {
         const {
             name, logo_url, about_text, about_image_url,
             phone, email, website,
-            address, city, latitude, longitude, is_active
+            address, city, latitude, longitude, is_active,
+            status, is_verified
         } = req.body;
 
-        await pool.query(`
-            UPDATE marketplace_vendors SET
-            name = ?, logo_url = ?, about_text = ?, about_image_url = ?,
-            phone = ?, email = ?, website = ?,
-            address = ?, city = ?, latitude = ?, longitude = ?, is_active = ?
-            WHERE id = ?
-        `, [
-            name, logo_url, about_text, about_image_url,
-            phone, email, website,
-            address, city, latitude, longitude, is_active ? 1 : 0,
-            id
-        ]);
+        // Build dynamic update - only update fields that are provided
+        const updates = [];
+        const params = [];
+
+        if (name !== undefined) { updates.push('name = ?'); params.push(name); }
+        if (logo_url !== undefined) { updates.push('logo_url = ?'); params.push(logo_url); }
+        if (about_text !== undefined) { updates.push('about_text = ?'); params.push(about_text); }
+        if (about_image_url !== undefined) { updates.push('about_image_url = ?'); params.push(about_image_url); }
+        if (phone !== undefined) { updates.push('phone = ?'); params.push(phone); }
+        if (email !== undefined) { updates.push('email = ?'); params.push(email); }
+        if (website !== undefined) { updates.push('website = ?'); params.push(website); }
+        if (address !== undefined) { updates.push('address = ?'); params.push(address); }
+        if (city !== undefined) { updates.push('city = ?'); params.push(city); }
+        if (latitude !== undefined) { updates.push('latitude = ?'); params.push(latitude); }
+        if (longitude !== undefined) { updates.push('longitude = ?'); params.push(longitude); }
+        if (is_active !== undefined) { updates.push('is_active = ?'); params.push(is_active ? 1 : 0); }
+
+        // Admin-only fields
+        if (req.user.role === 'admin') {
+            if (status !== undefined) { updates.push('status = ?'); params.push(status); }
+            if (is_verified !== undefined) { updates.push('is_verified = ?'); params.push(is_verified ? 1 : 0); }
+        }
+
+        if (updates.length === 0) {
+            return res.json({ success: true });
+        }
+
+        params.push(id);
+        await pool.query(`UPDATE marketplace_vendors SET ${updates.join(', ')} WHERE id = ?`, params);
 
         res.json({ success: true });
     } catch (err) {

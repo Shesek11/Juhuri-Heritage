@@ -34,7 +34,7 @@ const AdminMarketplacePanel: React.FC = () => {
                 const reportData = await marketplaceService.getReports('pending');
                 setReports(reportData);
             } else {
-                const vendors = await marketplaceService.getVendors({});
+                const vendors = await marketplaceService.getVendors({ status: 'all' as any });
                 setAllVendors(vendors);
             }
         } catch (err) {
@@ -291,7 +291,7 @@ const AdminMarketplacePanel: React.FC = () => {
                                                 <div>
                                                     <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
                                                         {vendor.name}
-                                                        {vendor.is_verified && (
+                                                        {!!vendor.is_verified && (
                                                             <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">
                                                                 מאומת
                                                             </span>

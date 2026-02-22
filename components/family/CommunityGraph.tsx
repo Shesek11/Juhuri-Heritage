@@ -5,12 +5,21 @@
  */
 
 import React, { useRef, useEffect, useState, useCallback } from 'react';
-import * as d3 from 'd3';
+import { forceSimulation, forceLink, forceManyBody, forceX, forceY, forceCollide } from 'd3-force';
+import type { Simulation, SimulationNodeDatum, ForceLink, ForceY } from 'd3-force';
+import { zoom, zoomIdentity } from 'd3-zoom';
+import type { ZoomBehavior } from 'd3-zoom';
+import { select } from 'd3-selection';
+import { drag } from 'd3-drag';
+import type { D3DragEvent } from 'd3-drag';
+import { easeQuadOut, easeCubicInOut } from 'd3-ease';
+import { SEOHead } from '../seo/SEOHead';
+import 'd3-transition';
 import { familyService, FamilyMember } from '../../services/familyService';
 import { EditMemberModal } from './EditMemberModal';
 import { Loader2, ZoomIn, ZoomOut, Maximize2, UserPlus, Link2, X, Search, Network, Info, Eye, Sliders, User } from 'lucide-react';
 
-interface GraphNode extends d3.SimulationNodeDatum {
+interface GraphNode extends SimulationNodeDatum {
     id: number;
     name: string;
     gender: 'male' | 'female' | 'other';
@@ -77,7 +86,7 @@ export const CommunityGraph: React.FC = () => {
     const [searchResults, setSearchResults] = useState<GraphNode[]>([]);
 
     // Zoom ref for controls
-    const zoomRef = useRef<d3.ZoomBehavior<SVGSVGElement, unknown> | null>(null);
+    const zoomRef = useRef<ZoomBehavior<SVGSVGElement, unknown> | null>(null);
 
     // Pulsing animation control
     const pulsingIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -89,7 +98,7 @@ export const CommunityGraph: React.FC = () => {
     const nodeHoverIntervalsRef = useRef<NodeJS.Timeout[]>([]);
 
     // Simulation ref for real-time parameter updates
-    const simulationRef = useRef<d3.Simulation<GraphNode, undefined> | null>(null);
+    const simulationRef = useRef<Simulation<GraphNode, undefined> | null>(null);
 
     // Load data
     const loadData = useCallback(async () => {
@@ -264,7 +273,6 @@ export const CommunityGraph: React.FC = () => {
                 n.generation = generationMap.get(n.id) ?? 0;
             });
 
-            console.log('[CommunityGraph] Loaded:', graphNodes.length, 'nodes,', graphEdges.length, 'edges');
         } catch (error) {
             console.error('[CommunityGraph] Error loading data:', error);
         } finally {
@@ -292,7 +300,7 @@ export const CommunityGraph: React.FC = () => {
         const sim = simulationRef.current;
 
         // Update link force
-        const linkForce = sim.force('link') as d3.ForceLink<GraphNode, GraphEdge>;
+        const linkForce = sim.force('link') as ForceLink<GraphNode, GraphEdge>;
         if (linkForce) {
             linkForce
                 .distance(d => {
@@ -308,16 +316,16 @@ export const CommunityGraph: React.FC = () => {
         }
 
         // Update charge force
-        sim.force('charge', d3.forceManyBody().strength(forceParams.charge));
+        sim.force('charge', forceManyBody().strength(forceParams.charge));
 
         // Update y-force
-        const yForce = sim.force('y') as d3.ForceY<GraphNode>;
+        const yForce = sim.force('y') as ForceY<GraphNode>;
         if (yForce) {
             yForce.strength(forceParams.yForceStrength);
         }
 
         // Update collision force
-        sim.force('collision', d3.forceCollide().radius(forceParams.collisionRadius));
+        sim.force('collision', forceCollide().radius(forceParams.collisionRadius));
 
         // Restart simulation with new parameters (higher alpha for better convergence)
         sim.alpha(0.5).restart();
@@ -328,7 +336,7 @@ export const CommunityGraph: React.FC = () => {
         if (!svgRef.current || (!firstSelectedNode && !secondSelectedNode)) {
             // Clear all highlights if no node is selected
             if (svgRef.current) {
-                d3.select(svgRef.current)
+                select(svgRef.current)
                     .selectAll('g.node circle')
                     .attr('stroke-width', 3)
                     .attr('stroke', d => {
@@ -340,7 +348,7 @@ export const CommunityGraph: React.FC = () => {
         }
 
         // Highlight the selected nodes
-        const svg = d3.select(svgRef.current);
+        const svg = select(svgRef.current);
         const graphContainer = svg.select('g.graph-container');
 
         // Reset all nodes first
@@ -376,7 +384,7 @@ export const CommunityGraph: React.FC = () => {
     useEffect(() => {
         if (loading || nodes.length === 0 || !svgRef.current || !containerRef.current) return;
 
-        const svg = d3.select(svgRef.current);
+        const svg = select(svgRef.current);
         const container = containerRef.current;
         const width = container.clientWidth;
         const height = container.clientHeight;
@@ -399,7 +407,7 @@ export const CommunityGraph: React.FC = () => {
 
         // Setup zoom with error handling
         try {
-            const zoom = d3.zoom<SVGSVGElement, unknown>()
+            const zoom = zoom<SVGSVGElement, unknown>()
                 .scaleExtent([0.1, 4])
                 .on('zoom', (event) => {
                     g.attr('transform', event.transform);
@@ -548,7 +556,6 @@ export const CommunityGraph: React.FC = () => {
         });
 
         const numComponents = componentGroups.size;
-        console.log('[CommunityGraph] Detected', numComponents, 'family components');
 
         // Initialize node positions - separate components horizontally
         let componentIndex = 0;
@@ -609,8 +616,8 @@ export const CommunityGraph: React.FC = () => {
         });
 
         // Create force simulation with birth-year based Y positioning
-        const simulation = d3.forceSimulation<GraphNode>(nodes)
-            .force('link', d3.forceLink<GraphNode, GraphEdge>(edges)
+        const simulation = forceSimulation<GraphNode>(nodes)
+            .force('link', forceLink<GraphNode, GraphEdge>(edges)
                 .id(d => d.id)
                 .distance(d => {
                     if (d.type === 'spouse') return forceParams.spouseDistance;
@@ -623,10 +630,10 @@ export const CommunityGraph: React.FC = () => {
                     return 0.5;
                 })
             )
-            .force('charge', d3.forceManyBody().strength(forceParams.charge))
-            .force('x', d3.forceX(width / 2).strength(0.05))
-            .force('y', d3.forceY<GraphNode>(d => yearToY(d.birthYear ?? ((minYear + maxYear) / 2))).strength(forceParams.yForceStrength))
-            .force('collision', d3.forceCollide().radius(forceParams.collisionRadius))
+            .force('charge', forceManyBody().strength(forceParams.charge))
+            .force('x', forceX(width / 2).strength(0.05))
+            .force('y', forceY<GraphNode>(d => yearToY(d.birthYear ?? ((minYear + maxYear) / 2))).strength(forceParams.yForceStrength))
+            .force('collision', forceCollide().radius(forceParams.collisionRadius))
             .force('componentSeparation', (alpha) => {
                 // Custom force to separate different family components
                 const strength = 300 * alpha; // Stronger at the beginning
@@ -717,7 +724,7 @@ export const CommunityGraph: React.FC = () => {
             .style('cursor', 'pointer')
             .on('mouseenter', function(event, d: GraphEdge) {
                 // Highlight the edge
-                d3.select(this)
+                select(this)
                     .attr('stroke-opacity', 1)
                     .attr('stroke-width', getEdgeWidth(d) + 1);
 
@@ -793,7 +800,7 @@ export const CommunityGraph: React.FC = () => {
 
                             ring.transition()
                                 .duration(1000)
-                                .ease(d3.easeQuadOut)
+                                .ease(easeQuadOut)
                                 .attr('r', 50)
                                 .attr('stroke-width', 1)
                                 .attr('opacity', 0)
@@ -818,7 +825,7 @@ export const CommunityGraph: React.FC = () => {
                 g.selectAll('.edge-hover-pulse').remove();
 
                 // Restore edge
-                d3.select(this)
+                select(this)
                     .attr('stroke-opacity', 0.85)
                     .attr('stroke-width', getEdgeWidth(d));
 
@@ -900,7 +907,7 @@ export const CommunityGraph: React.FC = () => {
 
                             ring.transition()
                                 .duration(1000)
-                                .ease(d3.easeQuadOut)
+                                .ease(easeQuadOut)
                                 .attr('r', 50)
                                 .attr('stroke-width', 1)
                                 .attr('opacity', 0)
@@ -932,7 +939,7 @@ export const CommunityGraph: React.FC = () => {
             .attr('class', 'node')
             .attr('data-id', d => d.id) // Add data-id for focusOnNode
             .style('cursor', 'pointer')
-            .call(d3.drag<SVGGElement, GraphNode>()
+            .call(drag<SVGGElement, GraphNode>()
                 .on('start', dragstarted)
                 .on('drag', dragged)
                 .on('end', dragended)
@@ -1008,7 +1015,7 @@ export const CommunityGraph: React.FC = () => {
 
                             ring.transition()
                                 .duration(800)
-                                .ease(d3.easeQuadOut)
+                                .ease(easeQuadOut)
                                 .attr('r', 55)
                                 .attr('stroke-width', 1)
                                 .attr('opacity', 0)
@@ -1038,7 +1045,7 @@ export const CommunityGraph: React.FC = () => {
 
                             ring.transition()
                                 .duration(800)
-                                .ease(d3.easeQuadOut)
+                                .ease(easeQuadOut)
                                 .attr('r', 55)
                                 .attr('stroke-width', 1)
                                 .attr('opacity', 0)
@@ -1065,7 +1072,7 @@ export const CommunityGraph: React.FC = () => {
         // Hover effects with tooltip
         node.on('mouseenter', function (event, d: GraphNode) {
             // Enlarge circle
-            d3.select(this).select('circle')
+            select(this).select('circle')
                 .transition()
                 .duration(200)
                 .attr('r', 30);
@@ -1166,7 +1173,7 @@ export const CommunityGraph: React.FC = () => {
 
                         ring.transition()
                             .duration(1000)
-                            .ease(d3.easeQuadOut)
+                            .ease(easeQuadOut)
                             .attr('r', 45)
                             .attr('stroke-width', 1)
                             .attr('opacity', 0)
@@ -1249,19 +1256,19 @@ export const CommunityGraph: React.FC = () => {
         simulation.on('tick', updatePositions);
 
         // Drag functions
-        function dragstarted(event: d3.D3DragEvent<SVGGElement, GraphNode, unknown>, d: GraphNode) {
+        function dragstarted(event: D3DragEvent<SVGGElement, GraphNode, unknown>, d: GraphNode) {
             stopPulsing(); // Stop pulsing on drag
             if (!event.active) simulation.alphaTarget(0.5).restart();
             d.fx = d.x;
             d.fy = d.y;
         }
 
-        function dragged(event: d3.D3DragEvent<SVGGElement, GraphNode, unknown>, d: GraphNode) {
+        function dragged(event: D3DragEvent<SVGGElement, GraphNode, unknown>, d: GraphNode) {
             d.fx = event.x;
             d.fy = event.y;
         }
 
-        function dragended(event: d3.D3DragEvent<SVGGElement, GraphNode, unknown>, d: GraphNode) {
+        function dragended(event: D3DragEvent<SVGGElement, GraphNode, unknown>, d: GraphNode) {
             if (!event.active) simulation.alphaTarget(0);
             d.fx = null;
             d.fy = null;
@@ -1272,7 +1279,7 @@ export const CommunityGraph: React.FC = () => {
             if (zoomRef.current) {
                 svg.transition().duration(750).call(
                     zoomRef.current.transform as any,
-                    d3.zoomIdentity.translate(0, 0).scale(1)
+                    zoomIdentity.translate(0, 0).scale(1)
                 );
             }
         }, 800);
@@ -1333,13 +1340,13 @@ export const CommunityGraph: React.FC = () => {
     // Zoom controls
     const handleZoomIn = () => {
         if (svgRef.current && zoomRef.current) {
-            d3.select(svgRef.current).transition().call(zoomRef.current.scaleBy, 1.3);
+            select(svgRef.current).transition().call(zoomRef.current.scaleBy, 1.3);
         }
     };
 
     const handleZoomOut = () => {
         if (svgRef.current && zoomRef.current) {
-            d3.select(svgRef.current).transition().call(zoomRef.current.scaleBy, 0.7);
+            select(svgRef.current).transition().call(zoomRef.current.scaleBy, 0.7);
         }
     };
 
@@ -1347,9 +1354,9 @@ export const CommunityGraph: React.FC = () => {
         if (svgRef.current && zoomRef.current && containerRef.current) {
             const width = containerRef.current.clientWidth;
             const height = containerRef.current.clientHeight;
-            d3.select(svgRef.current).transition().call(
+            select(svgRef.current).transition().call(
                 zoomRef.current.transform,
-                d3.zoomIdentity.translate(width / 2, height / 2).scale(0.6)
+                zoomIdentity.translate(width / 2, height / 2).scale(0.6)
             );
         }
     };
@@ -1376,12 +1383,12 @@ export const CommunityGraph: React.FC = () => {
         const y = height / 2 - scale * node.y;
 
         // Zoom to node
-        d3.select(svgRef.current)
+        select(svgRef.current)
             .transition()
             .duration(750)
             .call(
                 zoomRef.current.transform,
-                d3.zoomIdentity.translate(x, y).scale(scale)
+                zoomIdentity.translate(x, y).scale(scale)
             )
             .on('end', () => {
                 // Start pulsing after zoom completes
@@ -1397,7 +1404,7 @@ export const CommunityGraph: React.FC = () => {
         if (!svgRef.current) return;
 
         // Highlight the node with pulsing animation
-        const svg = d3.select(svgRef.current);
+        const svg = select(svgRef.current);
         const graphContainer = svg.select('g.graph-container');
         const nodeGroup = graphContainer.select(`g.node[data-id="${nodeId}"]`);
 
@@ -1418,11 +1425,11 @@ export const CommunityGraph: React.FC = () => {
             circle
                 .transition()
                 .duration(400)
-                .ease(d3.easeCubicInOut)
+                .ease(easeCubicInOut)
                 .attr('r', 32)
                 .transition()
                 .duration(400)
-                .ease(d3.easeCubicInOut)
+                .ease(easeCubicInOut)
                 .attr('r', 25);
 
             // 2. Create continuous pulsing effect for 5 seconds
@@ -1448,7 +1455,7 @@ export const CommunityGraph: React.FC = () => {
 
                 ring.transition()
                     .duration(1200)
-                    .ease(d3.easeQuadOut)
+                    .ease(easeQuadOut)
                     .attr('r', radius + 25)
                     .attr('stroke-width', 1)
                     .attr('opacity', 0)
@@ -1473,7 +1480,7 @@ export const CommunityGraph: React.FC = () => {
         }
         // Remove all pulse rings
         if (svgRef.current) {
-            d3.select(svgRef.current).selectAll('.pulse-ring').remove();
+            select(svgRef.current).selectAll('.pulse-ring').remove();
         }
     };
 
@@ -1487,6 +1494,11 @@ export const CommunityGraph: React.FC = () => {
 
     return (
         <div className="flex flex-col bg-slate-900" style={{ height: 'calc(100vh - 60px)', minHeight: '600px' }}>
+            <SEOHead
+                title="שורשים - רשת קהילתית"
+                description="חקרו את עץ המשפחה והרשת הקהילתית של יהודי ההרים. גלו קשרים משפחתיים ושורשים."
+                canonicalPath="/family"
+            />
             {/* Header */}
             <div className="bg-slate-800/80 backdrop-blur px-4 py-3 flex items-center justify-between border-b border-slate-700 relative z-[100]">
                 <div className="flex items-center gap-3">

@@ -2,16 +2,25 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
 const { authenticate, requireApprover, optionalAuth } = require('../middleware/auth');
+const { body, query: queryParam, param, validationResult } = require('express-validator');
+
+// Validation middleware helper
+const validate = (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ error: errors.array()[0].msg });
+    }
+    next();
+};
 
 // GET /api/dictionary/search?q=term
-router.get('/search', async (req, res) => {
+router.get('/search', [
+    queryParam('q').trim().notEmpty().withMessage('נדרש מונח לחיפוש')
+        .isLength({ max: 200 }).withMessage('מונח החיפוש ארוך מדי'),
+    validate
+], async (req, res) => {
     try {
-        const { q } = req.query;
-        if (!q) {
-            return res.status(400).json({ error: 'נדרש מונח לחיפוש' });
-        }
-
-        const term = q.trim();
+        const term = req.query.q.trim();
 
         // Search in active entries: by term (Juhuri) OR by hebrew translation (reverse search)
         const [entries] = await db.query(
@@ -43,32 +52,33 @@ router.get('/search', async (req, res) => {
         // Get the best match (exact or first)
         const entry = entries[0];
 
-        // Get translations (support NULL dialect_id)
-        const [translations] = await db.query(
-            `SELECT t.*, COALESCE(d.name, 'לא ידוע') as dialect
-             FROM translations t
-             LEFT JOIN dialects d ON t.dialect_id = d.id
-             WHERE t.entry_id = ?`,
-            [entry.id]
-        );
-
-        // Get definitions
-        const [definitions] = await db.query(
-            'SELECT definition FROM definitions WHERE entry_id = ?',
-            [entry.id]
-        );
-
-        // Get examples
-        const [examples] = await db.query(
-            'SELECT origin, translated, transliteration FROM examples WHERE entry_id = ?',
-            [entry.id]
-        );
-
-        // Get field sources
-        const [fieldSourceRows] = await db.query(
-            'SELECT field_name, source_type FROM field_sources WHERE entry_id = ?',
-            [entry.id]
-        );
+        // Fetch all related data in parallel (4 queries at once instead of sequential)
+        const [
+            [translations],
+            [definitions],
+            [examples],
+            [fieldSourceRows]
+        ] = await Promise.all([
+            db.query(
+                `SELECT t.*, COALESCE(d.name, 'לא ידוע') as dialect
+                 FROM translations t
+                 LEFT JOIN dialects d ON t.dialect_id = d.id
+                 WHERE t.entry_id = ?`,
+                [entry.id]
+            ),
+            db.query(
+                'SELECT definition FROM definitions WHERE entry_id = ?',
+                [entry.id]
+            ),
+            db.query(
+                'SELECT origin, translated, transliteration FROM examples WHERE entry_id = ?',
+                [entry.id]
+            ),
+            db.query(
+                'SELECT field_name, source_type FROM field_sources WHERE entry_id = ?',
+                [entry.id]
+            )
+        ]);
         const fieldSources = {};
         for (const row of fieldSourceRows) {
             fieldSources[row.field_name] = row.source_type;
@@ -98,19 +108,36 @@ router.get('/search', async (req, res) => {
             fieldSources,
         };
 
-        // Also return additional matches for multi-result display
+        // Also return additional matches for multi-result display (batched queries)
         const allResults = [result];
-        if (entries.length > 1) {
-            for (let i = 1; i < Math.min(entries.length, 5); i++) {
-                const e = entries[i];
-                const [trans] = await db.query(
-                    `SELECT t.*, COALESCE(d.name, 'לא ידוע') as dialect
-                     FROM translations t LEFT JOIN dialects d ON t.dialect_id = d.id
-                     WHERE t.entry_id = ?`, [e.id]
-                );
-                const [defs] = await db.query(
-                    'SELECT definition FROM definitions WHERE entry_id = ?', [e.id]
-                );
+        const additionalEntries = entries.slice(1, 5);
+        if (additionalEntries.length > 0) {
+            const additionalIds = additionalEntries.map(e => e.id);
+            const placeholders = additionalIds.map(() => '?').join(',');
+
+            // Batch: get all translations and definitions in 2 queries instead of 2*N
+            const [allTrans] = await db.query(
+                `SELECT t.*, COALESCE(d.name, 'לא ידוע') as dialect
+                 FROM translations t LEFT JOIN dialects d ON t.dialect_id = d.id
+                 WHERE t.entry_id IN (${placeholders})`, additionalIds
+            );
+            const [allDefs] = await db.query(
+                `SELECT entry_id, definition FROM definitions WHERE entry_id IN (${placeholders})`, additionalIds
+            );
+
+            // Group by entry_id
+            const transMap = {};
+            const defsMap = {};
+            for (const t of allTrans) {
+                (transMap[t.entry_id] ||= []).push(t);
+            }
+            for (const d of allDefs) {
+                (defsMap[d.entry_id] ||= []).push(d.definition);
+            }
+
+            for (const e of additionalEntries) {
+                const trans = transMap[e.id] || [];
+                const defs = defsMap[e.id] || [];
                 allResults.push({
                     id: String(e.id),
                     term: e.term,
@@ -120,7 +147,7 @@ router.get('/search', async (req, res) => {
                         latin: t.latin, cyrillic: t.cyrillic,
                         upvotes: t.upvotes || 0, downvotes: t.downvotes || 0,
                     })),
-                    definitions: defs.map(d => d.definition),
+                    definitions: defs,
                     examples: [],
                     pronunciationGuide: e.pronunciation_guide,
                     partOfSpeech: e.part_of_speech,
@@ -136,6 +163,81 @@ router.get('/search', async (req, res) => {
     } catch (err) {
         console.error('Search error:', err);
         res.status(500).json({ error: 'שגיאה בחיפוש' });
+    }
+});
+
+// GET /api/dictionary/entry/:term - Get exact entry by term (for direct URL access)
+router.get('/entry/:term', async (req, res) => {
+    try {
+        const term = decodeURIComponent(req.params.term).trim();
+        if (!term) return res.status(400).json({ error: 'נדרש מונח' });
+
+        const [entries] = await db.query(
+            `SELECT de.*, u.name as contributor_name
+             FROM dictionary_entries de
+             LEFT JOIN users u ON de.contributor_id = u.id
+             WHERE de.status = 'active' AND de.term = ?
+             LIMIT 1`,
+            [term]
+        );
+
+        if (entries.length === 0) {
+            return res.json({ found: false, entry: null });
+        }
+
+        const entry = entries[0];
+
+        const [
+            [translations],
+            [definitions],
+            [examples],
+            [fieldSourceRows]
+        ] = await Promise.all([
+            db.query(
+                `SELECT t.*, COALESCE(d.name, 'לא ידוע') as dialect
+                 FROM translations t
+                 LEFT JOIN dialects d ON t.dialect_id = d.id
+                 WHERE t.entry_id = ?`,
+                [entry.id]
+            ),
+            db.query('SELECT definition FROM definitions WHERE entry_id = ?', [entry.id]),
+            db.query('SELECT origin, translated, transliteration FROM examples WHERE entry_id = ?', [entry.id]),
+            db.query('SELECT field_name, source_type FROM field_sources WHERE entry_id = ?', [entry.id])
+        ]);
+
+        const fieldSources = {};
+        for (const row of fieldSourceRows) {
+            fieldSources[row.field_name] = row.source_type;
+        }
+
+        res.json({
+            found: true,
+            entry: {
+                id: String(entry.id),
+                term: entry.term,
+                detectedLanguage: entry.detected_language,
+                translations: translations.map(t => ({
+                    id: t.id,
+                    dialect: t.dialect,
+                    hebrew: t.hebrew,
+                    latin: t.latin,
+                    cyrillic: t.cyrillic,
+                    upvotes: t.upvotes || 0,
+                    downvotes: t.downvotes || 0,
+                })),
+                definitions: definitions.map(d => d.definition),
+                examples,
+                pronunciationGuide: entry.pronunciation_guide,
+                partOfSpeech: entry.part_of_speech,
+                russian: entry.russian,
+                isCustom: true,
+                source: entry.source,
+                fieldSources,
+            }
+        });
+    } catch (err) {
+        console.error('Entry lookup error:', err);
+        res.status(500).json({ error: 'שגיאה בטעינת הערך' });
     }
 });
 
@@ -325,13 +427,17 @@ router.get('/entries', authenticate, requireApprover, async (req, res) => {
 });
 
 // POST /api/dictionary/entries - Add new entry
-router.post('/entries', optionalAuth, async (req, res) => {
+router.post('/entries', optionalAuth, [
+    body('term').trim().notEmpty().withMessage('נדרש מונח')
+        .isLength({ max: 200 }).withMessage('המונח ארוך מדי'),
+    body('translation').trim().notEmpty().withMessage('נדרש תרגום')
+        .isLength({ max: 500 }).withMessage('התרגום ארוך מדי'),
+    body('notes').optional().trim().isLength({ max: 1000 }),
+    body('dialect').optional().trim().isLength({ max: 50 }),
+    validate
+], async (req, res) => {
     try {
         const { term, translation, dialect, notes, detectedLanguage } = req.body;
-
-        if (!term || !translation) {
-            return res.status(400).json({ error: 'נדרשים מונח ותרגום' });
-        }
 
         // Status based on user role
         const status = req.user?.role === 'admin' || req.user?.role === 'approver' ? 'active' : 'pending';
@@ -569,14 +675,15 @@ router.get('/entries/:id/comments', async (req, res) => {
 });
 
 // POST /api/dictionary/entries/:id/comments - Add comment
-router.post('/entries/:id/comments', authenticate, async (req, res) => {
+router.post('/entries/:id/comments', authenticate, [
+    param('id').isInt().withMessage('מזהה לא חוקי'),
+    body('content').trim().notEmpty().withMessage('Comment cannot be empty')
+        .isLength({ max: 2000 }).withMessage('Comment too long'),
+    validate
+], async (req, res) => {
     try {
         const { id } = req.params;
         const { content } = req.body;
-
-        if (!content || !content.trim()) {
-            return res.status(400).json({ error: 'Comment cannot be empty' });
-        }
 
         await db.query(
             'INSERT INTO comments (entry_id, user_id, content, created_at) VALUES (?, ?, ?, NOW())',
@@ -749,6 +856,112 @@ router.post('/translations/:id/vote', authenticate, async (req, res) => {
     }
 });
 
+// POST /api/dictionary/entries/:id/confirm-ai-field - Confirm an AI-generated field value into DB
+router.post('/entries/:id/confirm-ai-field', optionalAuth, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { fieldName, value } = req.body;
+
+        if (!fieldName || !value?.trim()) {
+            return res.status(400).json({ error: 'נדרש שם שדה וערך' });
+        }
+
+        const allowedFields = ['hebrew', 'latin', 'cyrillic', 'russian', 'definition', 'pronunciationGuide', 'examples'];
+        if (!allowedFields.includes(fieldName)) {
+            return res.status(400).json({ error: 'שדה לא חוקי' });
+        }
+
+        // Verify entry exists
+        const [entryRows] = await db.query('SELECT id FROM dictionary_entries WHERE id = ?', [id]);
+        if (entryRows.length === 0) return res.status(404).json({ error: 'ערך לא נמצא' });
+
+        // Save the AI value to the appropriate table
+        if (['hebrew', 'latin', 'cyrillic'].includes(fieldName)) {
+            await db.query(
+                `UPDATE translations SET ${fieldName} = ? WHERE entry_id = ? LIMIT 1`,
+                [value.trim(), id]
+            );
+        } else if (fieldName === 'russian') {
+            await db.query('UPDATE dictionary_entries SET russian = ? WHERE id = ?', [value.trim(), id]);
+        } else if (fieldName === 'definition') {
+            const [existingDefs] = await db.query('SELECT id FROM definitions WHERE entry_id = ? LIMIT 1', [id]);
+            if (existingDefs.length > 0) {
+                await db.query('UPDATE definitions SET definition = ? WHERE id = ?', [value.trim(), existingDefs[0].id]);
+            } else {
+                await db.query('INSERT INTO definitions (entry_id, definition) VALUES (?, ?)', [id, value.trim()]);
+            }
+        } else if (fieldName === 'pronunciationGuide') {
+            await db.query('UPDATE dictionary_entries SET pronunciation_guide = ? WHERE id = ?', [value.trim(), id]);
+        }
+        // For examples - they're complex objects, skip DB save for now (they remain AI-only in response)
+
+        // Update field_sources to 'community' (confirmed by user)
+        await db.query(
+            `INSERT INTO field_sources (entry_id, field_name, source_type) VALUES (?, ?, 'community')
+             ON DUPLICATE KEY UPDATE source_type = 'community'`,
+            [id, fieldName]
+        );
+
+        // Award XP
+        if (req.user?.id) {
+            await db.query('UPDATE users SET xp = xp + 10 WHERE id = ?', [req.user.id]);
+        }
+
+        res.json({ success: true, message: 'השדה אושר ונשמר. תודה!' });
+    } catch (err) {
+        console.error('Confirm AI field error:', err);
+        res.status(500).json({ error: 'שגיאה באישור שדה' });
+    }
+});
+
+// POST /api/dictionary/entries/:id/suggest-field - Submit per-field suggestion
+router.post('/entries/:id/suggest-field', optionalAuth, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { fieldName, currentValue, suggestedValue, reason } = req.body;
+
+        if (!fieldName || !suggestedValue?.trim()) {
+            return res.status(400).json({ error: 'נדרש שם שדה וערך מוצע' });
+        }
+
+        const allowedFields = ['hebrew', 'latin', 'cyrillic', 'russian', 'definition', 'pronunciationGuide', 'partOfSpeech', 'dialect'];
+        if (!allowedFields.includes(fieldName)) {
+            return res.status(400).json({ error: 'שדה לא חוקי' });
+        }
+
+        // Get dialect for the suggestion record
+        const [entryRows] = await db.query('SELECT term FROM dictionary_entries WHERE id = ?', [id]);
+        if (entryRows.length === 0) return res.status(404).json({ error: 'ערך לא נמצא' });
+
+        await db.query(
+            `INSERT INTO translation_suggestions
+             (entry_id, user_id, user_name, dialect, field_name, suggested_hebrew, suggested_latin, suggested_cyrillic, suggested_russian, reason, status)
+             VALUES (?, ?, ?, 'General', ?, ?, ?, ?, ?, ?, 'pending')`,
+            [
+                id,
+                req.user?.id || null,
+                req.user?.name || 'אורח',
+                fieldName,
+                fieldName === 'hebrew' ? suggestedValue.trim() : (currentValue || ''),
+                fieldName === 'latin' ? suggestedValue.trim() : '',
+                fieldName === 'cyrillic' ? suggestedValue.trim() : '',
+                fieldName === 'russian' ? suggestedValue.trim() : '',
+                reason || `תיקון שדה ${fieldName}: "${currentValue || ''}" → "${suggestedValue.trim()}"`,
+            ]
+        );
+
+        // Award XP
+        if (req.user?.id) {
+            await db.query('UPDATE users SET xp = xp + 15 WHERE id = ?', [req.user.id]);
+        }
+
+        res.json({ success: true, message: 'ההצעה נשלחה לאישור. תודה!' });
+    } catch (err) {
+        console.error('Suggest field error:', err);
+        res.status(500).json({ error: 'שגיאה בשליחת הצעה' });
+    }
+});
+
 // POST /api/dictionary/entries/:id/suggest - Submit translation suggestion
 // Support both JSON and FormData (with audio upload)
 const multer = require('multer');
@@ -783,14 +996,20 @@ const suggestionAudioUpload = multer({
     }
 });
 
-router.post('/entries/:id/suggest', authenticate, suggestionAudioUpload.single('audio'), async (req, res) => {
+router.post('/entries/:id/suggest', authenticate, suggestionAudioUpload.single('audio'), [
+    param('id').isInt().withMessage('מזהה לא חוקי'),
+    body('hebrew').trim().notEmpty().withMessage('נדרש תרגום')
+        .isLength({ max: 500 }).withMessage('התרגום ארוך מדי'),
+    body('dialect').trim().notEmpty().withMessage('נדרש ניב')
+        .isLength({ max: 50 }),
+    body('latin').optional().trim().isLength({ max: 500 }),
+    body('cyrillic').optional().trim().isLength({ max: 500 }),
+    body('reason').optional().trim().isLength({ max: 1000 }),
+    validate
+], async (req, res) => {
     try {
         const { id } = req.params;
         const { translationId, dialect, hebrew, latin, cyrillic, reason, audioDuration } = req.body;
-
-        if (!hebrew || !dialect) {
-            return res.status(400).json({ error: 'נדרש תרגום וניב' });
-        }
 
         // Handle audio file if uploaded
         let audioUrl = null;
@@ -1057,14 +1276,84 @@ router.get('/missing-audio', async (req, res) => {
     }
 });
 
+// GET /api/dictionary/ai-fields - Get entries with AI-generated field sources (admin)
+router.get('/ai-fields', async (req, res) => {
+    try {
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 30;
+        const offset = (page - 1) * limit;
+
+        // Count total entries with AI fields
+        const [countRows] = await db.query(
+            `SELECT COUNT(DISTINCT fs.entry_id) as total
+             FROM field_sources fs
+             WHERE fs.source_type = 'ai'`
+        );
+        const total = countRows[0]?.total || 0;
+
+        // Get entries with their AI field details
+        const [entries] = await db.query(
+            `SELECT de.id, de.term, de.pronunciation_guide,
+                    GROUP_CONCAT(DISTINCT fs.field_name ORDER BY fs.field_name SEPARATOR ', ') as ai_fields,
+                    t.hebrew, t.latin, t.cyrillic
+             FROM field_sources fs
+             JOIN dictionary_entries de ON fs.entry_id = de.id
+             LEFT JOIN translations t ON de.id = t.entry_id
+             WHERE fs.source_type = 'ai'
+             GROUP BY de.id
+             ORDER BY de.term
+             LIMIT ? OFFSET ?`,
+            [limit, offset]
+        );
+
+        res.json({
+            entries,
+            total,
+            page,
+            totalPages: Math.ceil(total / limit)
+        });
+    } catch (err) {
+        console.error('AI fields error:', err);
+        res.status(500).json({ error: 'שגיאה בטעינת שדות AI' });
+    }
+});
+
+// POST /api/dictionary/bulk-confirm-ai - Bulk confirm AI fields for multiple entries (admin)
+router.post('/bulk-confirm-ai', authenticate, requireApprover, async (req, res) => {
+    try {
+        const { entryIds } = req.body;
+        if (!entryIds || !Array.isArray(entryIds) || entryIds.length === 0) {
+            return res.status(400).json({ error: 'נדרשים מזהי ערכים' });
+        }
+
+        // Update all AI field sources to 'community' for selected entries
+        const placeholders = entryIds.map(() => '?').join(',');
+        const [result] = await db.query(
+            `UPDATE field_sources SET source_type = 'community'
+             WHERE entry_id IN (${placeholders}) AND source_type = 'ai'`,
+            entryIds
+        );
+
+        res.json({
+            success: true,
+            confirmed: result.affectedRows,
+            message: `${result.affectedRows} שדות AI אושרו בהצלחה`
+        });
+    } catch (err) {
+        console.error('Bulk confirm error:', err);
+        res.status(500).json({ error: 'שגיאה באישור מרובה' });
+    }
+});
+
 // GET /api/dictionary/pending-suggestions - Translations pending approval (for widget/admin)
 router.get('/pending-suggestions', async (req, res) => {
     try {
         const limit = req.query.limit ? parseInt(req.query.limit) : 50; // Default 50 for admin, widget can pass limit=10
         const [suggestions] = await db.query(
-            `SELECT ts.id, ts.entry_id, ts.dialect, ts.suggested_hebrew, ts.suggested_latin, 
+            `SELECT ts.id, ts.entry_id, ts.dialect, ts.suggested_hebrew, ts.suggested_latin,
                     ts.suggested_cyrillic, ts.user_id, ts.status, ts.created_at,
                     ts.audio_url, ts.audio_duration, ts.translation_id,
+                    ts.field_name, ts.suggested_russian, ts.reason, ts.user_name,
                     de.term,
                     u.name as contributor_name
              FROM translation_suggestions ts
@@ -1098,22 +1387,65 @@ router.put('/suggestions/:id/approve', authenticate, requireApprover, async (req
         }
         const suggestion = suggestions[0];
 
-        // Get dialect ID
-        const [dialects] = await db.query('SELECT id FROM dialects WHERE name = ?', [suggestion.dialect]);
-        const dialectId = dialects[0]?.id || 6;
+        // Field-level suggestion
+        if (suggestion.field_name) {
+            const fieldName = suggestion.field_name;
+            const entryId = suggestion.entry_id;
 
-        if (suggestion.translation_id) {
-            // Update existing translation
+            // Determine the suggested value based on which field columns have data
+            let suggestedValue = '';
+            if (fieldName === 'hebrew') suggestedValue = suggestion.suggested_hebrew;
+            else if (fieldName === 'latin') suggestedValue = suggestion.suggested_latin;
+            else if (fieldName === 'cyrillic') suggestedValue = suggestion.suggested_cyrillic;
+            else if (fieldName === 'russian') suggestedValue = suggestion.suggested_russian;
+            else if (fieldName === 'definition') suggestedValue = suggestion.suggested_hebrew; // stored in suggested_hebrew for definition
+            else if (fieldName === 'pronunciationGuide') suggestedValue = suggestion.suggested_hebrew;
+            else if (fieldName === 'partOfSpeech') suggestedValue = suggestion.suggested_hebrew;
+
+            // Update the appropriate table/column
+            if (['hebrew', 'latin', 'cyrillic'].includes(fieldName)) {
+                await db.query(
+                    `UPDATE translations SET ${fieldName} = ? WHERE entry_id = ? LIMIT 1`,
+                    [suggestedValue, entryId]
+                );
+            } else if (fieldName === 'russian') {
+                await db.query('UPDATE dictionary_entries SET russian = ? WHERE id = ?', [suggestedValue, entryId]);
+            } else if (fieldName === 'definition') {
+                // Update or insert definition
+                const [existingDefs] = await db.query('SELECT id FROM definitions WHERE entry_id = ? LIMIT 1', [entryId]);
+                if (existingDefs.length > 0) {
+                    await db.query('UPDATE definitions SET definition = ? WHERE id = ?', [suggestedValue, existingDefs[0].id]);
+                } else {
+                    await db.query('INSERT INTO definitions (entry_id, definition) VALUES (?, ?)', [entryId, suggestedValue]);
+                }
+            } else if (fieldName === 'pronunciationGuide') {
+                await db.query('UPDATE dictionary_entries SET pronunciation_guide = ? WHERE id = ?', [suggestedValue, entryId]);
+            } else if (fieldName === 'partOfSpeech') {
+                await db.query('UPDATE dictionary_entries SET part_of_speech = ? WHERE id = ?', [suggestedValue, entryId]);
+            }
+
+            // Update field_sources
             await db.query(
-                `UPDATE translations SET hebrew = ?, latin = ?, cyrillic = ? WHERE id = ?`,
-                [suggestion.suggested_hebrew, suggestion.suggested_latin, suggestion.suggested_cyrillic, suggestion.translation_id]
+                `INSERT INTO field_sources (entry_id, field_name, source_type) VALUES (?, ?, 'community')
+                 ON DUPLICATE KEY UPDATE source_type = 'community'`,
+                [entryId, fieldName]
             );
         } else {
-            // Add new translation
-            await db.query(
-                `INSERT INTO translations (entry_id, dialect_id, hebrew, latin, cyrillic) VALUES (?, ?, ?, ?, ?)`,
-                [suggestion.entry_id, dialectId, suggestion.suggested_hebrew, suggestion.suggested_latin, suggestion.suggested_cyrillic]
-            );
+            // Full translation suggestion (original behavior)
+            const [dialects] = await db.query('SELECT id FROM dialects WHERE name = ?', [suggestion.dialect]);
+            const dialectId = dialects[0]?.id || 6;
+
+            if (suggestion.translation_id) {
+                await db.query(
+                    `UPDATE translations SET hebrew = ?, latin = ?, cyrillic = ? WHERE id = ?`,
+                    [suggestion.suggested_hebrew, suggestion.suggested_latin, suggestion.suggested_cyrillic, suggestion.translation_id]
+                );
+            } else {
+                await db.query(
+                    `INSERT INTO translations (entry_id, dialect_id, hebrew, latin, cyrillic) VALUES (?, ?, ?, ?, ?)`,
+                    [suggestion.entry_id, dialectId, suggestion.suggested_hebrew, suggestion.suggested_latin, suggestion.suggested_cyrillic]
+                );
+            }
         }
 
         // Mark suggestion as approved
@@ -1123,7 +1455,9 @@ router.put('/suggestions/:id/approve', authenticate, requireApprover, async (req
         );
 
         // Award XP to suggester
-        await db.query('UPDATE users SET xp = xp + 50 WHERE id = ?', [suggestion.user_id]);
+        if (suggestion.user_id) {
+            await db.query('UPDATE users SET xp = xp + 50 WHERE id = ?', [suggestion.user_id]);
+        }
 
         res.json({ success: true });
     } catch (err) {
@@ -1182,6 +1516,184 @@ router.post('/entries/add-untranslated', authenticate, requireApprover, async (r
     } catch (err) {
         console.error('Add untranslated error:', err);
         res.status(500).json({ error: 'שגיאה בהוספת מילה' });
+    }
+});
+
+// ============================================
+// COMMUNITY EXAMPLES / PROVERBS
+// ============================================
+
+// POST /api/dictionary/entries/:id/suggest-example - Submit a community proverb/example
+router.post('/entries/:id/suggest-example', optionalAuth, [
+    param('id').isInt().withMessage('מזהה לא חוקי'),
+    body('origin').trim().notEmpty().withMessage('נדרש טקסט הפתגם')
+        .isLength({ max: 2000 }).withMessage('הטקסט ארוך מדי'),
+    body('translated').optional().trim().isLength({ max: 2000 }),
+    body('transliteration').optional().trim().isLength({ max: 2000 }),
+    validate
+], async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { origin, translated, transliteration } = req.body;
+
+        // Verify entry exists
+        const [entryRows] = await db.query('SELECT id, term FROM dictionary_entries WHERE id = ?', [id]);
+        if (entryRows.length === 0) {
+            return res.status(404).json({ error: 'ערך לא נמצא' });
+        }
+
+        const [result] = await db.query(
+            `INSERT INTO community_examples (entry_id, origin, translated, transliteration, user_id, user_name, source_type, status)
+             VALUES (?, ?, ?, ?, ?, ?, 'community', 'pending')`,
+            [
+                id,
+                origin.trim(),
+                translated?.trim() || null,
+                transliteration?.trim() || null,
+                req.user?.id || null,
+                req.user?.name || 'אורח',
+            ]
+        );
+
+        const exampleId = result.insertId;
+
+        // Auto-link: find dictionary words that appear in the proverb text
+        try {
+            const words = origin.trim().split(/\s+/).filter(w => w.length >= 2);
+            if (words.length > 0) {
+                const placeholders = words.map(() => '?').join(',');
+                const [matchedEntries] = await db.query(
+                    `SELECT id FROM dictionary_entries WHERE term IN (${placeholders}) AND status = 'active'`,
+                    words
+                );
+                for (const matched of matchedEntries) {
+                    await db.query(
+                        `INSERT IGNORE INTO example_word_links (example_id, entry_id) VALUES (?, ?)`,
+                        [exampleId, matched.id]
+                    );
+                }
+            }
+        } catch (linkErr) {
+            console.error('Auto-link error (non-fatal):', linkErr);
+        }
+
+        // Award XP
+        if (req.user?.id) {
+            await db.query('UPDATE users SET xp = xp + 20 WHERE id = ?', [req.user.id]);
+        }
+
+        res.json({ success: true, message: 'הפתגם נשלח לאישור. תודה!' });
+    } catch (err) {
+        console.error('Suggest example error:', err);
+        res.status(500).json({ error: 'שגיאה בשליחת פתגם' });
+    }
+});
+
+// GET /api/dictionary/entries/:id/community-examples - Get approved community examples for entry
+router.get('/entries/:id/community-examples', async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        // Get direct examples (linked to this entry)
+        const [directExamples] = await db.query(
+            `SELECT ce.id, ce.origin, ce.translated, ce.transliteration, ce.user_name, ce.source_type, ce.created_at
+             FROM community_examples ce
+             WHERE ce.entry_id = ? AND ce.status = 'approved'
+             ORDER BY ce.created_at DESC`,
+            [id]
+        );
+
+        // Get examples linked via word-matching
+        const [linkedExamples] = await db.query(
+            `SELECT DISTINCT ce.id, ce.origin, ce.translated, ce.transliteration, ce.user_name, ce.source_type, ce.created_at
+             FROM example_word_links ewl
+             JOIN community_examples ce ON ewl.example_id = ce.id
+             WHERE ewl.entry_id = ? AND ce.status = 'approved' AND ce.entry_id != ?
+             ORDER BY ce.created_at DESC
+             LIMIT 5`,
+            [id, id]
+        );
+
+        res.json({ directExamples, linkedExamples });
+    } catch (err) {
+        // Table might not exist yet
+        if (err.code === 'ER_NO_SUCH_TABLE') {
+            return res.json({ directExamples: [], linkedExamples: [] });
+        }
+        console.error('Community examples error:', err);
+        res.status(500).json({ error: 'שגיאה בטעינת פתגמים' });
+    }
+});
+
+// GET /api/dictionary/pending-examples - Get pending community examples (admin)
+router.get('/pending-examples', authenticate, requireApprover, async (req, res) => {
+    try {
+        const [examples] = await db.query(
+            `SELECT ce.*, de.term
+             FROM community_examples ce
+             LEFT JOIN dictionary_entries de ON ce.entry_id = de.id
+             WHERE ce.status = 'pending'
+             ORDER BY ce.created_at DESC
+             LIMIT 50`
+        );
+        res.json({ examples });
+    } catch (err) {
+        if (err.code === 'ER_NO_SUCH_TABLE') {
+            return res.json({ examples: [] });
+        }
+        console.error('Pending examples error:', err);
+        res.status(500).json({ error: 'שגיאה בטעינת פתגמים ממתינים' });
+    }
+});
+
+// PUT /api/dictionary/examples/:id/approve - Approve a community example (admin)
+router.put('/examples/:id/approve', authenticate, requireApprover, async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        await db.query('UPDATE community_examples SET status = ? WHERE id = ?', ['approved', id]);
+
+        // Re-run word linking for the approved example
+        const [examples] = await db.query('SELECT * FROM community_examples WHERE id = ?', [id]);
+        if (examples.length > 0) {
+            const ex = examples[0];
+            const words = ex.origin.split(/\s+/).filter(w => w.length >= 2);
+            if (words.length > 0) {
+                const placeholders = words.map(() => '?').join(',');
+                const [matchedEntries] = await db.query(
+                    `SELECT id FROM dictionary_entries WHERE term IN (${placeholders}) AND status = 'active'`,
+                    words
+                );
+                for (const matched of matchedEntries) {
+                    await db.query(
+                        'INSERT IGNORE INTO example_word_links (example_id, entry_id) VALUES (?, ?)',
+                        [id, matched.id]
+                    );
+                }
+            }
+
+            // Award XP to contributor
+            if (ex.user_id) {
+                await db.query('UPDATE users SET xp = xp + 30 WHERE id = ?', [ex.user_id]);
+            }
+        }
+
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Approve example error:', err);
+        res.status(500).json({ error: 'שגיאה באישור פתגם' });
+    }
+});
+
+// PUT /api/dictionary/examples/:id/reject - Reject a community example (admin)
+router.put('/examples/:id/reject', authenticate, requireApprover, async (req, res) => {
+    try {
+        const { id } = req.params;
+        await db.query('UPDATE community_examples SET status = ? WHERE id = ?', ['rejected', id]);
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Reject example error:', err);
+        res.status(500).json({ error: 'שגיאה בדחיית פתגם' });
     }
 });
 

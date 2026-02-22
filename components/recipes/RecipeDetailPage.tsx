@@ -8,9 +8,10 @@ import {
     X, ChevronDown, ChevronUp, BookOpen, Sparkles, Play
 } from 'lucide-react';
 import { recipesService, Recipe, RecipeComment } from '../../services/recipesService';
-import { useAuth0 } from '@auth0/auth0-react';
+import { useAuth } from '../../contexts/AuthContext';
 import { CookingMode } from './CookingMode';
 import { CategorizedTagsDisplay } from './CategorizedTagsDisplay';
+import { SEOHead, buildRecipeJsonLd } from '../seo/SEOHead';
 
 const DIFFICULTY_LABELS = {
     easy: { label: 'קל', color: 'text-green-600 bg-green-100 dark:bg-green-900/30' },
@@ -24,7 +25,7 @@ interface RecipeDetailPageProps {
 }
 
 export const RecipeDetailPage: React.FC<RecipeDetailPageProps> = ({ recipeId, onClose }) => {
-    const { user } = useAuth0();
+    const { user } = useAuth();
 
     const [recipe, setRecipe] = useState<Recipe | null>(null);
     const [loading, setLoading] = useState(true);
@@ -156,7 +157,7 @@ export const RecipeDetailPage: React.FC<RecipeDetailPageProps> = ({ recipeId, on
     // Check if user can edit/delete
     const canEdit = user && recipe && (
         user.email === recipe.author_name ||
-        user['https://juhuri-heritage.com/roles']?.includes('admin')
+        user.role === 'admin'
     );
 
     // Calculate scaled ingredient amounts (basic implementation)
@@ -205,6 +206,26 @@ export const RecipeDetailPage: React.FC<RecipeDetailPageProps> = ({ recipeId, on
 
     return (
         <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
+            <SEOHead
+                title={`${recipe.title} - מתכון`}
+                description={recipe.description || `מתכון מסורתי: ${recipe.title}`}
+                canonicalPath={`/recipes/${recipe.id}`}
+                ogType="article"
+                jsonLd={buildRecipeJsonLd({
+                    title: recipe.title,
+                    description: recipe.description,
+                    main_photo: recipe.main_photo,
+                    author_name: recipe.author_name,
+                    prep_time: recipe.prep_time,
+                    cook_time: recipe.cook_time,
+                    servings: recipe.servings,
+                    ingredients: recipe.ingredients?.map((i: any) => i.name || i),
+                    instructions: recipe.instructions,
+                    avg_rating: recipe.likes?.count ? 5 : undefined,
+                    review_count: recipe.likes?.count,
+                    tags: recipe.tags?.map((t: any) => t.name || t),
+                })}
+            />
             {/* Breadcrumb */}
             <div className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 print:hidden">
                 <div className="max-w-7xl mx-auto px-4 py-3">

@@ -29,8 +29,8 @@ const LocationMarker = ({ position }: { position: { lat: number; lng: number } }
     return (
         <Marker position={[position.lat, position.lng]} icon={
             new L.Icon({
-                iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-blue.png',
-                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                iconUrl: '/images/markers/marker-icon-blue.png',
+                shadowUrl: '/images/markers/marker-shadow.png',
                 iconSize: [25, 41],
                 iconAnchor: [12, 41],
                 popupAnchor: [1, -34],
@@ -109,8 +109,8 @@ export const VendorMap: React.FC<VendorMapProps> = ({ vendors, userLocation, onV
                         }}
                         icon={
                             new L.Icon({
-                                iconUrl: `https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-${status.isOpen ? 'green' : 'red'}.png`,
-                                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+                                iconUrl: `/images/markers/marker-icon-${status.isOpen ? 'green' : 'red'}.png`,
+                                shadowUrl: '/images/markers/marker-shadow.png',
                                 iconSize: [25, 41],
                                 iconAnchor: [12, 41],
                                 popupAnchor: [1, -34],

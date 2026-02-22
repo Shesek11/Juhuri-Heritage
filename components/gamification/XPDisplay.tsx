@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Star, Flame, Trophy, Award } from 'lucide-react';
-import { useAuth0 } from '@auth0/auth0-react';
+import { useAuth } from '../../contexts/AuthContext';
 import apiService from '../../services/apiService';
 
 interface Badge {
@@ -21,14 +21,14 @@ interface GamificationStats {
 }
 
 const XPDisplay: React.FC = () => {
-    const { user, isAuthenticated } = useAuth0();
+    const { user, isAuthenticated } = useAuth();
     const [stats, setStats] = useState<GamificationStats | null>(null);
     const [badges, setBadges] = useState<Badge[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [showBadges, setShowBadges] = useState(false);
 
     useEffect(() => {
-        if (!isAuthenticated || !user?.sub) return;
+        if (!isAuthenticated || !user?.id) return;
 
         const fetchData = async () => {
             try {
@@ -51,7 +51,7 @@ const XPDisplay: React.FC = () => {
         apiService.post('/gamification/check-login-streak', { userId: user.sub })
             .catch(err => console.error('Failed to check login streak:', err));
 
-    }, [isAuthenticated, user?.sub]);
+    }, [isAuthenticated, user?.id]);
 
     if (!isAuthenticated || isLoading || !stats) return null;
 

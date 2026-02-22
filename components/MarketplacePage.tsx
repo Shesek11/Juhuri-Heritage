@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { marketplaceService, Vendor } from '../services/marketplaceService';
 import { VendorMap } from './marketplace/VendorMap';
 import { VendorCard } from './marketplace/VendorCard';
@@ -8,8 +9,11 @@ import { useFeatureFlag } from '../hooks/useFeatureFlag';
 import { BecomeVendorWizard } from './marketplace/BecomeVendorWizard';
 import { VendorDetailsModal } from './marketplace/VendorDetailsModal';
 import { NotificationBell } from './marketplace/NotificationBell';
+import { SEOHead } from './seo/SEOHead';
 
 export const MarketplacePage: React.FC = () => {
+    const { slug: routeSlug } = useParams<{ slug?: string }>();
+    const navigate = useNavigate();
     const [vendors, setVendors] = useState<Vendor[]>([]);
     const [loading, setLoading] = useState(true);
     const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
@@ -35,6 +39,18 @@ export const MarketplacePage: React.FC = () => {
             (err) => console.log('Location access denied', err)
         );
     }, []);
+
+    // Load vendor from URL slug
+    useEffect(() => {
+        if (routeSlug && !selectedVendor) {
+            marketplaceService.getVendorBySlug(routeSlug)
+                .then(vendor => setSelectedVendor(vendor))
+                .catch(err => {
+                    console.error('Failed to load vendor:', err);
+                    navigate('/marketplace', { replace: true });
+                });
+        }
+    }, [routeSlug]);
 
     const loadVendors = async (loc?: { lat: number; lng: number }) => {
         try {
@@ -79,6 +95,11 @@ export const MarketplacePage: React.FC = () => {
 
     return (
         <div className="h-[calc(100vh-80px)] flex flex-col pt-4">
+            <SEOHead
+                title="שוק קהילתי - Taste of the Caucasus"
+                description="שוק האוכל הג'והורי - מצאו בשלנים ומאכלים קווקזיים אותנטיים באזורכם."
+                canonicalPath="/marketplace"
+            />
             {/* Header */}
             <div className="px-4 mb-4 flex justify-between items-center">
                 <div>
@@ -157,7 +178,10 @@ export const MarketplacePage: React.FC = () => {
                                 <VendorCard
                                     key={vendor.id}
                                     vendor={vendor}
-                                    onClick={() => setSelectedVendor(vendor)}
+                                    onClick={() => {
+                                        setSelectedVendor(vendor);
+                                        navigate(`/marketplace/${vendor.slug}`);
+                                    }}
                                 />
                             ))
                         )}
@@ -169,7 +193,10 @@ export const MarketplacePage: React.FC = () => {
                     <VendorMap
                         vendors={vendors}
                         userLocation={userLocation}
-                        onVendorClick={(v) => setSelectedVendor(v)}
+                        onVendorClick={(v) => {
+                            setSelectedVendor(v);
+                            navigate(`/marketplace/${v.slug}`);
+                        }}
                     />
 
                     {/* View Toggle (Mobile Only) */}
@@ -190,7 +217,10 @@ export const MarketplacePage: React.FC = () => {
             {selectedVendor && (
                 <VendorDetailsModal
                     vendor={selectedVendor}
-                    onClose={() => setSelectedVendor(null)}
+                    onClose={() => {
+                        setSelectedVendor(null);
+                        navigate('/marketplace');
+                    }}
                     onCartUpdated={loadCartCount}
                 />
             )}

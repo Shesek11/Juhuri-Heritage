@@ -4,6 +4,24 @@ const router = express.Router();
 const db = require('../config/db');
 const { authenticate, generateToken } = require('../middleware/auth');
 const passport = require('passport');
+const { body, validationResult } = require('express-validator');
+
+const validate = (req, res, next) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ error: errors.array()[0].msg });
+    }
+    next();
+};
+
+// Shared cookie options
+const cookieOptions = {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    path: '/'
+};
 
 // GET /api/auth/google
 // Starts the Google Login Flow
@@ -32,12 +50,7 @@ router.get('/google/callback',
         const token = generateToken(safeUser);
 
         // Set cookie
-        res.cookie('token', token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
-            maxAge: 7 * 24 * 60 * 60 * 1000
-        });
+        res.cookie('token', token, cookieOptions);
 
         // Redirect to frontend (home page)
         // We use window.location.origin in dev, but here we just redirect relative to root '/'
@@ -47,17 +60,17 @@ router.get('/google/callback',
 
 
 // POST /api/auth/register
-router.post('/register', async (req, res) => {
+router.post('/register', [
+    body('name').trim().notEmpty().withMessage('נדרש שם')
+        .isLength({ min: 2, max: 100 }).withMessage('שם חייב להכיל 2-100 תווים'),
+    body('email').trim().isEmail().withMessage('כתובת אימייל לא חוקית')
+        .normalizeEmail(),
+    body('password').isLength({ min: 8 }).withMessage('הסיסמה חייבת להכיל לפחות 8 תווים')
+        .isLength({ max: 128 }).withMessage('הסיסמה ארוכה מדי'),
+    validate
+], async (req, res) => {
     try {
         const { name, email, password } = req.body;
-
-        if (!name || !email || !password) {
-            return res.status(400).json({ error: 'נדרשים שם, אימייל וסיסמה' });
-        }
-
-        if (password.length < 4) {
-            return res.status(400).json({ error: 'הסיסמה חייבת להכיל לפחות 4 תווים' });
-        }
 
         // Check if email exists
         const [existing] = await db.query('SELECT id FROM users WHERE email = ?', [email.toLowerCase()]);
@@ -98,12 +111,7 @@ router.post('/register', async (req, res) => {
         const token = generateToken(user);
 
         // Set cookie
-        res.cookie('token', token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
-            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
-        });
+        res.cookie('token', token, cookieOptions);
 
         res.json({ user, token });
     } catch (err) {
@@ -113,13 +121,13 @@ router.post('/register', async (req, res) => {
 });
 
 // POST /api/auth/login
-router.post('/login', async (req, res) => {
+router.post('/login', [
+    body('email').trim().isEmail().withMessage('כתובת אימייל לא חוקית').normalizeEmail(),
+    body('password').notEmpty().withMessage('נדרשת סיסמה'),
+    validate
+], async (req, res) => {
     try {
         const { email, password } = req.body;
-
-        if (!email || !password) {
-            return res.status(400).json({ error: 'נדרשים אימייל וסיסמה' });
-        }
 
         // Find user
         const [users] = await db.query(
@@ -184,12 +192,7 @@ router.post('/login', async (req, res) => {
         const token = generateToken(safeUser);
 
         // Set cookie
-        res.cookie('token', token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
-            maxAge: 7 * 24 * 60 * 60 * 1000
-        });
+        res.cookie('token', token, cookieOptions);
 
         res.json({ user: safeUser, token });
     } catch (err) {
@@ -200,7 +203,7 @@ router.post('/login', async (req, res) => {
 
 // POST /api/auth/logout
 router.post('/logout', (req, res) => {
-    res.clearCookie('token');
+    res.clearCookie('token', { path: '/', httpOnly: true, sameSite: 'lax' });
     res.json({ message: 'התנתקת בהצלחה' });
 });
 
@@ -250,7 +253,7 @@ router.put('/profile', authenticate, async (req, res) => {
             params.push(name);
         }
 
-        if (password && password.length >= 4) {
+        if (password && password.length >= 8) {
             const passwordHash = await bcrypt.hash(password, 10);
             updates.push('password_hash = ?');
             params.push(passwordHash);

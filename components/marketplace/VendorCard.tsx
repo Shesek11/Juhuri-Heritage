@@ -39,7 +39,7 @@ export const VendorCard: React.FC<VendorCardProps> = ({ vendor, onClick }) => {
                     >
                         {isOpen ? 'פעיל' : 'לא פעיל'}
                     </span>
-                    {vendor.is_verified && (
+                    {!!vendor.is_verified && (
                         <span className="px-2 py-1 rounded-lg text-xs font-bold bg-blue-500 text-white backdrop-blur-sm shadow-sm flex items-center gap-1">
                             <CheckCircle size={12} />
                             מאומת

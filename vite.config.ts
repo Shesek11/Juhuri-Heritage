@@ -20,7 +20,16 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     build: {
       outDir: 'dist',
-      sourcemap: false
+      sourcemap: false,
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            'vendor-react': ['react', 'react-dom'],
+            'vendor-leaflet': ['leaflet', 'react-leaflet'],
+            'vendor-lucide': ['lucide-react'],
+          }
+        }
+      }
     },
     resolve: {
       alias: {

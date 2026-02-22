@@ -1,6 +1,33 @@
 
 import React, { useState, useEffect, useRef } from 'react';
-import { Database, Save, Trash2, FileSpreadsheet, Search, CheckCircle, XCircle, Sparkles, Loader2, Download, AlertCircle, Plus, Eraser, MapPin, Globe, LogOut, Users as UsersIcon, ShieldAlert, KeyRound, Activity, UserCheck, ToggleLeft, Pencil, X, Play, Pause, Volume2, Edit3, Tag, ChevronDown, ChevronUp, BookOpen, ShoppingCart, GitBranch, Settings } from 'lucide-react';
+import { Database, Save, Trash2, FileSpreadsheet, Search, CheckCircle, XCircle, Sparkles, Loader2, Download, AlertCircle, Plus, Eraser, MapPin, Globe, LogOut, Users as UsersIcon, ShieldAlert, KeyRound, Activity, UserCheck, ToggleLeft, Pencil, X, Play, Pause, Volume2, Edit3, Tag, ChevronDown, ChevronUp, BookOpen, ShoppingCart, GitBranch, Settings, Bot, Info } from 'lucide-react';
+
+// Section descriptions for admin panel
+const SECTION_DESCRIPTIONS: Record<string, string> = {
+    dict_active: 'כל המילים הפעילות במאגר. ניתן לחפש, לערוך ולמחוק ערכים.',
+    dict_pending: 'הצעות תרגום ותיקוני שדות שממתינים לאישור מנהל.',
+    dict_ai: 'שדות שמולאו אוטומטית על ידי AI. בחר ואשר כדי להפוך לתוכן קהילתי מאושר.',
+    dict_dialects: 'ניהול רשימת הניבים (דיאלקטים) הזמינים במילון.',
+    gen_users: 'ניהול משתמשים, שינוי תפקידים ואיפוס סיסמאות.',
+    gen_logs: 'יומן אירועים מהמערכת: כניסות, שינויים, שגיאות.',
+    gen_features: 'הפעלה/כיבוי של פיצ\'רים באתר. שינויים חלים מיד.',
+    gen_settings: 'הגדרת מפתחות API (Gemini). ניתן לבדוק חיבור.',
+    recipe_tags: 'ניהול תגיות לסינון מתכונים (סוג מנה, מרכיבים, אזור).',
+    market_vendors: 'ניהול חנויות בשוק: אישור, חסימה, תלונות.',
+    family_suggestions: 'בקשות מיזוג ושיוך באילן היוחסין.',
+};
+
+/** Small info bar showing section description */
+const SectionInfoBar: React.FC<{ sectionId: string }> = ({ sectionId }) => {
+    const desc = SECTION_DESCRIPTIONS[sectionId];
+    if (!desc) return null;
+    return (
+        <div className="flex items-center gap-2 px-3 py-2 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg text-xs text-indigo-700 dark:text-indigo-300 mb-4">
+            <Info size={14} className="shrink-0" />
+            <span>{desc}</span>
+        </div>
+    );
+};
 import FeatureFlagsPanel from './admin/FeatureFlagsPanel';
 import ApiSettingsPanel from './admin/ApiSettingsPanel';
 import AdminTagsPanel from './admin/AdminTagsPanel';
@@ -24,15 +51,31 @@ interface TranslationSuggestion {
     suggested_hebrew: string;
     suggested_latin: string;
     suggested_cyrillic: string;
+    suggested_russian: string | null;
     user_id: string | null;
+    user_name: string | null;
     status: string;
     created_at: string;
     audio_url: string | null;
     audio_duration: number | null;
     translation_id: number | null; // If set, this is a correction
+    field_name: string | null;     // If set, this is a per-field suggestion
+    reason: string | null;
     term: string;
     contributor_name: string | null;
 }
+
+// Field labels for admin display
+const ADMIN_FIELD_LABELS: Record<string, string> = {
+    hebrew: 'עברית',
+    latin: 'לטיני',
+    cyrillic: 'קירילי',
+    russian: 'רוסית',
+    definition: 'הגדרה',
+    pronunciationGuide: 'הגייה',
+    partOfSpeech: 'חלק דיבר',
+    dialect: 'ניב',
+};
 
 // Sidebar menu structure
 interface MenuItem {
@@ -78,6 +121,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
     const [suggestions, setSuggestions] = useState<TranslationSuggestion[]>([]);
     const [playingAudioId, setPlayingAudioId] = useState<number | null>(null);
     const audioRef = useRef<HTMLAudioElement | null>(null);
+
+    // AI Fields Confirmation State
+    const [aiFieldEntries, setAiFieldEntries] = useState<any[]>([]);
+    const [aiFieldsTotal, setAiFieldsTotal] = useState(0);
+    const [aiFieldsPage, setAiFieldsPage] = useState(1);
+    const [aiFieldsTotalPages, setAiFieldsTotalPages] = useState(1);
+    const [aiFieldsLoading, setAiFieldsLoading] = useState(false);
+    const [selectedAiEntries, setSelectedAiEntries] = useState<Set<number>>(new Set());
+    const [bulkConfirming, setBulkConfirming] = useState(false);
 
     // Grid State
     const [gridData, setGridData] = useState<string[][]>(
@@ -129,6 +181,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                 .then(data => setSuggestions(data.suggestions || []))
                 .catch(err => console.error('Error fetching suggestions:', err));
         }
+        if (activeSection === 'dict_ai') {
+            loadAiFields(1);
+        }
     }, [activeSection, isAdmin]);
 
     const loadEntries = async (page = 1, search = '') => {
@@ -143,6 +198,48 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
             console.error('Error loading entries:', err);
         } finally {
             setEntriesLoading(false);
+        }
+    };
+
+    const loadAiFields = async (page = 1) => {
+        setAiFieldsLoading(true);
+        try {
+            const res = await fetch(`/api/dictionary/ai-fields?page=${page}&limit=30`);
+            const data = await res.json();
+            setAiFieldEntries(data.entries || []);
+            setAiFieldsTotal(data.total || 0);
+            setAiFieldsPage(data.page || 1);
+            setAiFieldsTotalPages(data.totalPages || 1);
+            setSelectedAiEntries(new Set());
+        } catch (err) {
+            console.error('Error loading AI fields:', err);
+        } finally {
+            setAiFieldsLoading(false);
+        }
+    };
+
+    const handleBulkConfirmAi = async () => {
+        if (selectedAiEntries.size === 0) return;
+        setBulkConfirming(true);
+        try {
+            const res = await fetch('/api/dictionary/bulk-confirm-ai', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                credentials: 'include',
+                body: JSON.stringify({ entryIds: Array.from(selectedAiEntries) })
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert(data.message);
+                loadAiFields(aiFieldsPage);
+            } else {
+                alert(data.error || 'שגיאה באישור');
+            }
+        } catch (err) {
+            console.error('Bulk confirm error:', err);
+            alert('שגיאה באישור מרובה');
+        } finally {
+            setBulkConfirming(false);
         }
     };
 
@@ -202,6 +299,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
             children: [
                 { id: 'dict_active', label: 'מאגר פעיל' },
                 { id: 'dict_pending', label: 'אישורים', badge: pendingEntries.length },
+                { id: 'dict_ai', label: 'אישור AI' },
                 { id: 'dict_dialects', label: 'ניהול ניבים' }
             ]
         },
@@ -656,6 +754,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                 {/* Main Content Area */}
                 <main className="flex-1 overflow-y-auto p-6">
                     <div className="max-w-7xl mx-auto">
+                        <SectionInfoBar sectionId={activeSection} />
 
                         {/* Dictionary: Active Table */}
                         {activeSection === 'dict_active' && (
@@ -953,8 +1052,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                             <thead className="bg-slate-50 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 font-medium sticky top-0">
                                                 <tr>
                                                     <th className="p-4">מונח</th>
-                                                    <th className="p-4">תרגום מוצע</th>
-                                                    <th className="p-4">ניב</th>
+                                                    <th className="p-4">הצעה</th>
                                                     <th className="p-4">תורם</th>
                                                     <th className="p-4">סוג</th>
                                                     <th className="p-4">אודיו</th>
@@ -966,21 +1064,35 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                                     <tr key={s.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/30 text-slate-800 dark:text-slate-200">
                                                         <td className="p-4 font-bold text-lg">{s.term}</td>
                                                         <td className="p-4">
-                                                            <div className="flex flex-col gap-1">
-                                                                <span className="font-medium">{s.suggested_hebrew}</span>
-                                                                {s.suggested_latin && <span className="text-xs text-slate-500">{s.suggested_latin}</span>}
-                                                            </div>
-                                                        </td>
-                                                        <td className="p-4">
-                                                            <span className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 px-2 py-1 rounded text-xs">
-                                                                {s.dialect || 'General'}
-                                                            </span>
+                                                            {s.field_name ? (
+                                                                <div className="flex flex-col gap-1">
+                                                                    <span className="text-xs text-slate-400">שדה: <span className="font-bold text-indigo-600 dark:text-indigo-400">{ADMIN_FIELD_LABELS[s.field_name] || s.field_name}</span></span>
+                                                                    <span className="font-medium">
+                                                                        {s.field_name === 'russian' ? s.suggested_russian :
+                                                                         s.field_name === 'latin' ? s.suggested_latin :
+                                                                         s.field_name === 'cyrillic' ? s.suggested_cyrillic :
+                                                                         s.suggested_hebrew}
+                                                                    </span>
+                                                                    {s.reason && <span className="text-xs text-slate-400 italic">{s.reason}</span>}
+                                                                </div>
+                                                            ) : (
+                                                                <div className="flex flex-col gap-1">
+                                                                    <span className="font-medium">{s.suggested_hebrew}</span>
+                                                                    {s.suggested_latin && <span className="text-xs text-slate-500">{s.suggested_latin}</span>}
+                                                                    {s.suggested_russian && <span className="text-xs text-slate-500">{s.suggested_russian}</span>}
+                                                                </div>
+                                                            )}
                                                         </td>
                                                         <td className="p-4 text-xs text-slate-500">
-                                                            {s.contributor_name || (s.user_id ? 'משתמש רשום' : 'אורח')}
+                                                            {s.contributor_name || s.user_name || (s.user_id ? 'משתמש רשום' : 'אורח')}
                                                         </td>
                                                         <td className="p-4">
-                                                            {s.translation_id ? (
+                                                            {s.field_name ? (
+                                                                <span className="bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 px-2 py-1 rounded text-xs flex items-center gap-1 w-fit">
+                                                                    <Pencil size={12} />
+                                                                    תיקון שדה
+                                                                </span>
+                                                            ) : s.translation_id ? (
                                                                 <span className="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-2 py-1 rounded text-xs flex items-center gap-1 w-fit">
                                                                     <Edit3 size={12} />
                                                                     תיקון
@@ -1029,7 +1141,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                                 ))}
                                                 {suggestions.length === 0 && (
                                                     <tr>
-                                                        <td colSpan={7} className="p-12 text-center text-slate-400">
+                                                        <td colSpan={6} className="p-12 text-center text-slate-400">
                                                             <div className="flex flex-col items-center gap-2">
                                                                 <CheckCircle size={32} className="opacity-20" />
                                                                 <span>אין הצעות תרגום ממתינות</span>
@@ -1040,6 +1152,122 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                             </tbody>
                                         </table>
                                     </div>
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Dictionary: AI Fields Confirmation */}
+                        {activeSection === 'dict_ai' && (
+                            <div className="flex-1 flex flex-col space-y-4">
+                                <div className="flex items-center justify-between">
+                                    <h2 className="text-2xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                                        <Bot size={24} className="text-amber-500" />
+                                        אישור שדות AI ({aiFieldsTotal})
+                                    </h2>
+                                    {selectedAiEntries.size > 0 && (
+                                        <button
+                                            type="button"
+                                            onClick={handleBulkConfirmAi}
+                                            disabled={bulkConfirming}
+                                            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 flex items-center gap-2 text-sm font-medium"
+                                        >
+                                            {bulkConfirming ? <Loader2 size={16} className="animate-spin" /> : <CheckCircle size={16} />}
+                                            אשר {selectedAiEntries.size} נבחרים
+                                        </button>
+                                    )}
+                                </div>
+                                <p className="text-sm text-slate-500 dark:text-slate-400">
+                                    ערכים אלה מכילים שדות שמולאו אוטומטית על ידי AI. בחר ערכים ואשר כדי לשמור אותם כערכים קהילתיים.
+                                </p>
+
+                                <div className="bg-white dark:bg-slate-800 rounded-lg shadow border border-slate-200 dark:border-slate-700 overflow-hidden">
+                                    <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
+                                        <table className="w-full text-sm text-right">
+                                            <thead className="bg-slate-50 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 font-medium sticky top-0">
+                                                <tr>
+                                                    <th className="p-3 w-10">
+                                                        <input
+                                                            type="checkbox"
+                                                            checked={aiFieldEntries.length > 0 && selectedAiEntries.size === aiFieldEntries.length}
+                                                            onChange={(e) => {
+                                                                if (e.target.checked) {
+                                                                    setSelectedAiEntries(new Set(aiFieldEntries.map((en: any) => en.id)));
+                                                                } else {
+                                                                    setSelectedAiEntries(new Set());
+                                                                }
+                                                            }}
+                                                            title="בחר הכל"
+                                                        />
+                                                    </th>
+                                                    <th className="p-3">מונח</th>
+                                                    <th className="p-3">עברית</th>
+                                                    <th className="p-3">לטיני</th>
+                                                    <th className="p-3">שדות AI</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                                                {aiFieldsLoading ? (
+                                                    <tr><td colSpan={5} className="p-12 text-center"><Loader2 size={24} className="animate-spin mx-auto text-indigo-500" /></td></tr>
+                                                ) : aiFieldEntries.length === 0 ? (
+                                                    <tr><td colSpan={5} className="p-12 text-center text-slate-400">
+                                                        <div className="flex flex-col items-center gap-2">
+                                                            <CheckCircle size={32} className="opacity-20" />
+                                                            <span>אין שדות AI ממתינים לאישור</span>
+                                                        </div>
+                                                    </td></tr>
+                                                ) : aiFieldEntries.map((entry: any) => (
+                                                    <tr key={entry.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/30 text-slate-800 dark:text-slate-200">
+                                                        <td className="p-3">
+                                                            <input
+                                                                type="checkbox"
+                                                                checked={selectedAiEntries.has(entry.id)}
+                                                                onChange={(e) => {
+                                                                    const next = new Set(selectedAiEntries);
+                                                                    if (e.target.checked) next.add(entry.id);
+                                                                    else next.delete(entry.id);
+                                                                    setSelectedAiEntries(next);
+                                                                }}
+                                                                title={`בחר ${entry.term}`}
+                                                            />
+                                                        </td>
+                                                        <td className="p-3 font-bold text-lg">{entry.term}</td>
+                                                        <td className="p-3">{entry.hebrew || '—'}</td>
+                                                        <td className="p-3 font-mono text-xs">{entry.latin || '—'}</td>
+                                                        <td className="p-3">
+                                                            <div className="flex flex-wrap gap-1">
+                                                                {entry.ai_fields?.split(', ').map((field: string) => (
+                                                                    <span key={field} className="px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded text-[10px] font-medium">
+                                                                        {ADMIN_FIELD_LABELS[field] || field}
+                                                                    </span>
+                                                                ))}
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+
+                                    {/* Pagination */}
+                                    {aiFieldsTotalPages > 1 && (
+                                        <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-700/30 border-t border-slate-200 dark:border-slate-700">
+                                            <span className="text-xs text-slate-500">עמוד {aiFieldsPage} מתוך {aiFieldsTotalPages} ({aiFieldsTotal} ערכים)</span>
+                                            <div className="flex gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => loadAiFields(aiFieldsPage - 1)}
+                                                    disabled={aiFieldsPage <= 1}
+                                                    className="px-3 py-1 rounded bg-slate-200 dark:bg-slate-600 text-xs disabled:opacity-50"
+                                                >הקודם</button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => loadAiFields(aiFieldsPage + 1)}
+                                                    disabled={aiFieldsPage >= aiFieldsTotalPages}
+                                                    className="px-3 py-1 rounded bg-slate-200 dark:bg-slate-600 text-xs disabled:opacity-50"
+                                                >הבא</button>
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         )}

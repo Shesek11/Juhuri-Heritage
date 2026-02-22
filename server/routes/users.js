@@ -112,10 +112,17 @@ router.put('/:id/role', authenticate, requireAdmin, async (req, res) => {
 router.put('/:id/reset-password', authenticate, requireAdmin, async (req, res) => {
     try {
         const { id } = req.params;
-        const newPassword = Math.random().toString(36).slice(-8);
+        const crypto = require('crypto');
+        const newPassword = crypto.randomBytes(6).toString('base64url');
         const passwordHash = await bcrypt.hash(newPassword, 10);
 
         await db.query('UPDATE users SET password_hash = ? WHERE id = ?', [passwordHash, id]);
+
+        // Log password reset (without exposing the password)
+        await db.query(
+            `INSERT INTO system_logs (event_type, description, user_id, user_name) VALUES (?, ?, ?, ?)`,
+            ['PASSWORD_RESET', `Admin reset password for user ${id}`, req.user.id, req.user.name]
+        ).catch(() => {});
 
         res.json({ success: true, newPassword });
     } catch (err) {

@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Mic, Square, Play, Pause, Upload, X, RotateCcw, CheckCircle } from 'lucide-react';
-import { useAuth0 } from '@auth0/auth0-react';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface VoiceRecorderProps {
     entryId: string | number;
@@ -9,7 +9,7 @@ interface VoiceRecorderProps {
 }
 
 const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ entryId, dialectId, onRecordingComplete }) => {
-    const { user, isAuthenticated } = useAuth0();
+    const { user, isAuthenticated } = useAuth();
     const [isRecording, setIsRecording] = useState(false);
     const [isPaused, setIsPaused] = useState(false);
     const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
@@ -114,7 +114,7 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ entryId, dialectId, onRec
             formData.append('duration', String(recordingTime));
             if (dialectId) formData.append('dialectId', String(dialectId));
             if (isAuthenticated && user?.sub) {
-                formData.append('userId', user.sub);
+                formData.append('userId', String(user.id));
             } else {
                 formData.append('guestName', guestName);
             }
