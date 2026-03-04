@@ -2,6 +2,50 @@
 
 All notable changes to this project will be documented in this file.
 
+## [3.1.0] - 2026-03-04
+
+### 📖 Dictionary V2
+- **New Schema**: Complete dictionary restructuring with per-field source tracking.
+- **27K Entries**: Massive import from multiple sources (Bukvar, Naftalijev, Phrasebook, Juhuri-RU).
+- **Unified Dictionary**: Merged and deduplicated entries across all sources.
+- **Dashboard Widgets**: Improved dictionary statistics and recent additions display.
+
+### 🔍 SEO
+- **Full SEO Implementation**: React Router integration, dynamic meta tags, JSON-LD structured data, XML sitemap.
+- **Admin SEO Panel**: Meta templates, robots.txt editor, redirect management.
+- **Branding Assets**: Upload and manage favicon, OG images, and branding from admin panel.
+- **llms.txt Editor**: AI-friendly site description management.
+- **Critical Fixes**: Googlebot user-agent handling, sitemap entry limits, robots.txt improvements.
+
+### 🏪 Marketplace Improvements
+- **Community Marketplace**: Full vendor system with map, ratings, and demo data for Hadera/Pardes Hana area.
+- **Map Fixes**: Fixed initial tile loading, FitBounds, and auto-fit for all vendors.
+- **Rating System**: Fixed null/undefined avg_rating handling in API and client.
+
+### 👨‍👩‍👧‍👦 Family Tree
+- **Russian Localization**: Full Russian language support for member profiles.
+- **City Fields**: Birth city and current city fields with autocomplete.
+- **Date Picker**: Modern date selection for birth/death dates.
+- **Admin Management**: Merge suggestions and connection request handling interface.
+
+### 🎨 Design
+- **New Visual Theme**: Gold/burgundy palette with Noto fonts for elegant heritage feel.
+
+### 🍲 Recipes & Tags
+- **Tag Management**: Full admin panel for recipe tags with categories, editing modal, and enrichment.
+- **Admin Redesign**: Sidebar navigation with improved icon previews.
+
+### 🔒 Security
+- **Security Hardening**: Comprehensive v3.0.1 security improvements.
+- **Encrypted API Keys**: Gemini API key encrypted storage in admin panel.
+
+### 🛠️ Admin & Technical
+- **Server-side Pagination**: Handles 26K+ entries efficiently in admin panel.
+- **Migration System**: JavaScript-based migration runner with .env support and DELIMITER handling.
+- **DB Alignment**: Unified environment variable naming (DB_USERNAME, DB_DATABASE).
+
+---
+
 ## [2.5.0] - 2026-01-21
 
 ### ✨ UI/UX Overhaul
