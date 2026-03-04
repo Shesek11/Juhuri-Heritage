@@ -386,395 +386,385 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                                 </div>
                             </div>
 
-                            {/* Title */}
-                            <div>
-                                <label className="block text-sm font-medium mb-1">תואר</label>
-                                <input
-                                    value={formData.title}
-                                    onChange={e => setFormData({ ...formData, title: e.target.value })}
-                                    placeholder="ד&quot;ר, רב, עו&quot;ד..."
-                                    className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
-                                />
+                            {/* Language Tabs: Hebrew / Russian - wraps ALL fields */}
+                            <div className="flex items-center gap-2 mb-1">
+                                <div className="flex bg-slate-100 dark:bg-slate-700 rounded-lg p-0.5">
+                                    <button
+                                        type="button"
+                                        onClick={() => setLangTab('he')}
+                                        className={`px-3 py-1 rounded-md text-sm transition-all ${langTab === 'he' ? 'bg-white dark:bg-slate-600 shadow text-amber-600 font-medium' : 'text-slate-500 dark:text-slate-400'}`}
+                                    >
+                                        עברית
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setLangTab('ru')}
+                                        className={`px-3 py-1 rounded-md text-sm transition-all ${langTab === 'ru' ? 'bg-white dark:bg-slate-600 shadow text-amber-600 font-medium' : 'text-slate-500 dark:text-slate-400'}`}
+                                    >
+                                        Русский
+                                    </button>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={handleAITranslate}
+                                    disabled={translating}
+                                    className="flex items-center gap-1 px-2.5 py-1 bg-violet-100 text-violet-700 rounded-lg text-xs font-medium hover:bg-violet-200 transition-colors disabled:opacity-50"
+                                    title={langTab === 'he' ? 'תרגם לרוסית עם AI' : 'Перевести на иврит с AI'}
+                                >
+                                    {translating ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+                                    {langTab === 'he' ? 'תרגם → RU' : 'Перевести → HE'}
+                                </button>
                             </div>
 
-                            {/* First & Last Name */}
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">שם פרטי *</label>
-                                    <input
-                                        required
-                                        value={formData.first_name}
-                                        onChange={e => setFormData({ ...formData, first_name: e.target.value })}
-                                        className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">שם משפחה *</label>
-                                    <input
-                                        required
-                                        value={formData.last_name}
-                                        onChange={e => setFormData({ ...formData, last_name: e.target.value })}
-                                        className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
-                                    />
-                                </div>
-                            </div>
+                            {langTab === 'he' ? (
+                                /* ===== HEBREW TAB ===== */
+                                <div className="space-y-4" dir="rtl">
+                                    {/* First & Last Name */}
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium mb-1">שם פרטי *</label>
+                                            <input
+                                                required
+                                                value={formData.first_name}
+                                                onChange={e => setFormData({ ...formData, first_name: e.target.value })}
+                                                className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium mb-1">שם משפחה *</label>
+                                            <input
+                                                required
+                                                value={formData.last_name}
+                                                onChange={e => setFormData({ ...formData, last_name: e.target.value })}
+                                                className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
+                                            />
+                                        </div>
+                                    </div>
 
-                            {/* Duplicate Detection Warning */}
-                            {showDuplicateWarning && duplicates.length > 0 && (
-                                <div className="bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-400 rounded-lg p-4 space-y-3">
-                                    <div className="flex items-start gap-3">
-                                        <AlertTriangle className="text-amber-600 flex-shrink-0 mt-0.5" size={20} />
-                                        <div className="flex-1">
-                                            <h4 className="font-bold text-amber-800 dark:text-amber-200 mb-1">
-                                                נמצאו {duplicates.length} {duplicates.length === 1 ? 'אדם דומה' : 'אנשים דומים'}
-                                            </h4>
-                                            <p className="text-sm text-amber-700 dark:text-amber-300 mb-3">
-                                                האם התכוונת לאחד מהאנשים הבאים? אפשר להתחבר אליהם במקום ליצור רשומה חדשה.
-                                            </p>
-                                            <div className="space-y-2 max-h-40 overflow-y-auto">
-                                                {duplicates.map(dup => (
-                                                    <div key={dup.id} className="bg-white dark:bg-slate-800 rounded-lg p-3 flex items-center justify-between border border-amber-200 dark:border-amber-700">
-                                                        <div className="flex items-center gap-3">
-                                                            {dup.photo_url ? (
-                                                                <img src={dup.photo_url} alt="" className="w-10 h-10 rounded-full object-cover" />
-                                                            ) : (
-                                                                <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center">
-                                                                    <User size={20} className="text-slate-400" />
+                                    {/* Duplicate Detection Warning */}
+                                    {showDuplicateWarning && duplicates.length > 0 && (
+                                        <div className="bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-400 rounded-lg p-4 space-y-3">
+                                            <div className="flex items-start gap-3">
+                                                <AlertTriangle className="text-amber-600 flex-shrink-0 mt-0.5" size={20} />
+                                                <div className="flex-1">
+                                                    <h4 className="font-bold text-amber-800 dark:text-amber-200 mb-1">
+                                                        נמצאו {duplicates.length} {duplicates.length === 1 ? 'אדם דומה' : 'אנשים דומים'}
+                                                    </h4>
+                                                    <p className="text-sm text-amber-700 dark:text-amber-300 mb-3">
+                                                        האם התכוונת לאחד מהאנשים הבאים? אפשר להתחבר אליהם במקום ליצור רשומה חדשה.
+                                                    </p>
+                                                    <div className="space-y-2 max-h-40 overflow-y-auto">
+                                                        {duplicates.map(dup => (
+                                                            <div key={dup.id} className="bg-white dark:bg-slate-800 rounded-lg p-3 flex items-center justify-between border border-amber-200 dark:border-amber-700">
+                                                                <div className="flex items-center gap-3">
+                                                                    {dup.photo_url ? (
+                                                                        <img src={dup.photo_url} alt="" className="w-10 h-10 rounded-full object-cover" />
+                                                                    ) : (
+                                                                        <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center">
+                                                                            <User size={20} className="text-slate-400" />
+                                                                        </div>
+                                                                    )}
+                                                                    <div>
+                                                                        <div className="font-medium text-slate-800 dark:text-slate-200">
+                                                                            {dup.first_name} {dup.last_name}
+                                                                        </div>
+                                                                        <div className="text-xs text-slate-500">
+                                                                            {dup.birth_date ? `נולד ${new Date(dup.birth_date).getFullYear()}` : 'אין תאריך לידה'}
+                                                                            {dup.birth_place && ` • ${dup.birth_place}`}
+                                                                        </div>
+                                                                    </div>
                                                                 </div>
-                                                            )}
-                                                            <div>
-                                                                <div className="font-medium text-slate-800 dark:text-slate-200">
-                                                                    {dup.first_name} {dup.last_name}
-                                                                </div>
-                                                                <div className="text-xs text-slate-500">
-                                                                    {dup.birth_date ? `נולד ${new Date(dup.birth_date).getFullYear()}` : 'אין תאריך לידה'}
-                                                                    {dup.birth_place && ` • ${dup.birth_place}`}
-                                                                </div>
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => { onClose(); onSuccess(); }}
+                                                                    className="flex items-center gap-1 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-sm transition-colors"
+                                                                >
+                                                                    <Link size={14} />
+                                                                    <span>עבור לאדם זה</span>
+                                                                </button>
                                                             </div>
-                                                        </div>
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => {
-                                                                // Switch to existing member edit mode
-                                                                onClose();
-                                                                // Let parent component handle opening this member
-                                                                onSuccess();
-                                                            }}
-                                                            className="flex items-center gap-1 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-sm transition-colors"
-                                                        >
-                                                            <Link size={14} />
-                                                            <span>עבור לאדם זה</span>
+                                                        ))}
+                                                    </div>
+                                                    <div className="mt-3 pt-3 border-t border-amber-200 dark:border-amber-700">
+                                                        <button type="button" onClick={() => setShowDuplicateWarning(false)} className="text-sm text-amber-700 dark:text-amber-300 hover:underline">
+                                                            המשך בכל זאת ליצור רשומה חדשה
                                                         </button>
                                                     </div>
-                                                ))}
+                                                </div>
                                             </div>
-                                            <div className="mt-3 pt-3 border-t border-amber-200 dark:border-amber-700">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setShowDuplicateWarning(false)}
-                                                    className="text-sm text-amber-700 dark:text-amber-300 hover:underline"
-                                                >
-                                                    המשך בכל זאת ליצור רשומה חדשה
+                                        </div>
+                                    )}
+
+                                    {/* Maiden Name & Nickname */}
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium mb-1">שם נעורים</label>
+                                            <input
+                                                value={formData.maiden_name}
+                                                onChange={e => setFormData({ ...formData, maiden_name: e.target.value })}
+                                                placeholder="שם משפחה לפני נישואין"
+                                                className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium mb-1">כינוי</label>
+                                            <input
+                                                value={formData.nickname}
+                                                onChange={e => setFormData({ ...formData, nickname: e.target.value })}
+                                                placeholder="כינוי משפחתי"
+                                                className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Previous Name */}
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">שם קודם</label>
+                                        <input
+                                            value={formData.previous_name}
+                                            onChange={e => setFormData({ ...formData, previous_name: e.target.value })}
+                                            placeholder="במקרה של שינוי שם"
+                                            className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
+                                        />
+                                    </div>
+
+                                    {/* Title */}
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">תואר</label>
+                                        <input
+                                            value={formData.title}
+                                            onChange={e => setFormData({ ...formData, title: e.target.value })}
+                                            placeholder="ד&quot;ר, רב, עו&quot;ד..."
+                                            className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
+                                        />
+                                    </div>
+
+                                    {/* Gender & Is Alive */}
+                                    <div className="flex gap-4">
+                                        <div className="flex-1">
+                                            <label className="block text-sm font-medium mb-1">מין</label>
+                                            <select
+                                                value={formData.gender}
+                                                onChange={e => setFormData({ ...formData, gender: e.target.value as any })}
+                                                className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
+                                            >
+                                                <option value="male">זכר</option>
+                                                <option value="female">נקבה</option>
+                                                <option value="other">אחר</option>
+                                            </select>
+                                        </div>
+                                        <div className="flex-1">
+                                            <label className="block text-sm font-medium mb-1">חי/ה?</label>
+                                            <div className="flex bg-slate-100 dark:bg-slate-700 p-1 rounded-lg">
+                                                <button type="button" onClick={() => setFormData({ ...formData, is_alive: true })} className={`flex-1 text-sm py-1.5 rounded-md transition-all ${formData.is_alive ? 'bg-white dark:bg-slate-600 shadow text-emerald-600' : 'text-slate-500'}`}>
+                                                    כן
+                                                </button>
+                                                <button type="button" onClick={() => setFormData({ ...formData, is_alive: false })} className={`flex-1 text-sm py-1.5 rounded-md transition-all ${!formData.is_alive ? 'bg-white dark:bg-slate-600 shadow text-slate-800' : 'text-slate-500'}`}>
+                                                    לא
                                                 </button>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
-                            )}
 
-                            {/* Maiden Name & Nickname */}
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">שם נעורים</label>
-                                    <input
-                                        value={formData.maiden_name}
-                                        onChange={e => setFormData({ ...formData, maiden_name: e.target.value })}
-                                        placeholder="שם משפחה לפני נישואין"
-                                        className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">כינוי</label>
-                                    <input
-                                        value={formData.nickname}
-                                        onChange={e => setFormData({ ...formData, nickname: e.target.value })}
-                                        placeholder="כינוי משפחתי"
-                                        className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
-                                    />
-                                </div>
-                            </div>
-
-                            {/* Previous Name */}
-                            <div>
-                                <label className="block text-sm font-medium mb-1">שם קודם</label>
-                                <input
-                                    value={formData.previous_name}
-                                    onChange={e => setFormData({ ...formData, previous_name: e.target.value })}
-                                    placeholder="במקרה של שינוי שם"
-                                    className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
-                                />
-                            </div>
-
-                            {/* Gender & Is Alive */}
-                            <div className="flex gap-4">
-                                <div className="flex-1">
-                                    <label className="block text-sm font-medium mb-1">מין</label>
-                                    <select
-                                        value={formData.gender}
-                                        onChange={e => setFormData({ ...formData, gender: e.target.value as any })}
-                                        className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
-                                    >
-                                        <option value="male">זכר</option>
-                                        <option value="female">נקבה</option>
-                                        <option value="other">אחר</option>
-                                    </select>
-                                </div>
-                                <div className="flex-1">
-                                    <label className="block text-sm font-medium mb-1">חי?</label>
-                                    <div className="flex bg-slate-100 dark:bg-slate-700 p-1 rounded-lg">
-                                        <button
-                                            type="button"
-                                            onClick={() => setFormData({ ...formData, is_alive: true })}
-                                            className={`flex-1 text-sm py-1.5 rounded-md transition-all ${formData.is_alive ? 'bg-white dark:bg-slate-600 shadow text-emerald-600' : 'text-slate-500'}`}
-                                        >
-                                            כן
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => setFormData({ ...formData, is_alive: false })}
-                                            className={`flex-1 text-sm py-1.5 rounded-md transition-all ${!formData.is_alive ? 'bg-white dark:bg-slate-600 shadow text-slate-800' : 'text-slate-500'}`}
-                                        >
-                                            לא
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Dates */}
-                            <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-medium mb-1">תאריך לידה</label>
-                                    <input
-                                        type="date"
-                                        value={formData.birth_date || ''}
-                                        onChange={e => setFormData({ ...formData, birth_date: e.target.value })}
-                                        className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
-                                    />
-                                </div>
-                                {!formData.is_alive && (
-                                    <div>
-                                        <label className="block text-sm font-medium mb-1">תאריך פטירה</label>
-                                        <input
-                                            type="date"
-                                            value={formData.death_date || ''}
-                                            onChange={e => setFormData({ ...formData, death_date: e.target.value })}
-                                            className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
-                                        />
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Language Tabs: Hebrew / Russian */}
-                            <div className="border-t border-slate-200 dark:border-slate-600 pt-3 mt-2">
-                                <div className="flex items-center gap-2 mb-3">
-                                    <div className="flex bg-slate-100 dark:bg-slate-700 rounded-lg p-0.5">
-                                        <button
-                                            type="button"
-                                            onClick={() => setLangTab('he')}
-                                            className={`px-3 py-1 rounded-md text-sm transition-all ${langTab === 'he' ? 'bg-white dark:bg-slate-600 shadow text-amber-600 font-medium' : 'text-slate-500 dark:text-slate-400'}`}
-                                        >
-                                            עברית
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => setLangTab('ru')}
-                                            className={`px-3 py-1 rounded-md text-sm transition-all ${langTab === 'ru' ? 'bg-white dark:bg-slate-600 shadow text-amber-600 font-medium' : 'text-slate-500 dark:text-slate-400'}`}
-                                        >
-                                            Русский
-                                        </button>
-                                    </div>
-                                    <button
-                                        type="button"
-                                        onClick={handleAITranslate}
-                                        disabled={translating}
-                                        className="flex items-center gap-1 px-2.5 py-1 bg-violet-100 text-violet-700 rounded-lg text-xs font-medium hover:bg-violet-200 transition-colors disabled:opacity-50"
-                                        title={langTab === 'he' ? 'תרגם לרוסית עם AI' : 'Перевести на иврит с AI'}
-                                    >
-                                        {translating ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
-                                        {langTab === 'he' ? 'תרגם → RU' : 'Перевести → HE'}
-                                    </button>
-                                </div>
-
-                                {langTab === 'he' ? (
-                                    <div className="space-y-3">
-                                        {/* Hebrew: Birth Place */}
+                                    {/* Dates */}
+                                    <div className="grid grid-cols-2 gap-4">
                                         <div>
-                                            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">מקום לידה</label>
-                                            <div className="grid grid-cols-2 gap-2">
-                                                <input
-                                                    value={formData.birth_city || ''}
-                                                    onChange={e => setFormData({ ...formData, birth_city: e.target.value })}
-                                                    placeholder="עיר"
-                                                    className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 text-sm"
-                                                />
-                                                <input
-                                                    value={formData.birth_country || ''}
-                                                    onChange={e => setFormData({ ...formData, birth_country: e.target.value })}
-                                                    placeholder="מדינה"
-                                                    className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 text-sm"
-                                                />
-                                            </div>
+                                            <label className="block text-sm font-medium mb-1">תאריך לידה</label>
+                                            <input type="date" value={formData.birth_date || ''} onChange={e => setFormData({ ...formData, birth_date: e.target.value })} className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600" />
                                         </div>
-
-                                        {/* Hebrew: Death Place */}
                                         {!formData.is_alive && (
                                             <div>
-                                                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">מקום פטירה</label>
-                                                <div className="grid grid-cols-2 gap-2">
-                                                    <input
-                                                        value={formData.death_city || ''}
-                                                        onChange={e => setFormData({ ...formData, death_city: e.target.value })}
-                                                        placeholder="עיר"
-                                                        className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 text-sm"
-                                                    />
-                                                    <input
-                                                        value={formData.death_country || ''}
-                                                        onChange={e => setFormData({ ...formData, death_country: e.target.value })}
-                                                        placeholder="מדינה"
-                                                        className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 text-sm"
-                                                    />
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* Hebrew: Current Residence */}
-                                        {formData.is_alive && (
-                                            <div>
-                                                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">מקום מגורים</label>
-                                                <div className="grid grid-cols-2 gap-2">
-                                                    <input
-                                                        value={formData.residence_city || ''}
-                                                        onChange={e => setFormData({ ...formData, residence_city: e.target.value })}
-                                                        placeholder="עיר"
-                                                        className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 text-sm"
-                                                    />
-                                                    <input
-                                                        value={formData.residence_country || ''}
-                                                        onChange={e => setFormData({ ...formData, residence_country: e.target.value })}
-                                                        placeholder="מדינה"
-                                                        className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 text-sm"
-                                                    />
-                                                </div>
+                                                <label className="block text-sm font-medium mb-1">תאריך פטירה</label>
+                                                <input type="date" value={formData.death_date || ''} onChange={e => setFormData({ ...formData, death_date: e.target.value })} className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600" />
                                             </div>
                                         )}
                                     </div>
-                                ) : (
-                                    <div className="space-y-3" dir="ltr">
-                                        {/* Russian Names */}
+
+                                    {/* Birth Place */}
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">מקום לידה</label>
                                         <div className="grid grid-cols-2 gap-2">
-                                            <div>
-                                                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Имя</label>
-                                                <input
-                                                    value={formData.first_name_ru || ''}
-                                                    onChange={e => setFormData({ ...formData, first_name_ru: e.target.value })}
-                                                    placeholder="Имя"
-                                                    className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 text-sm"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Фамилия</label>
-                                                <input
-                                                    value={formData.last_name_ru || ''}
-                                                    onChange={e => setFormData({ ...formData, last_name_ru: e.target.value })}
-                                                    placeholder="Фамилия"
-                                                    className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 text-sm"
-                                                />
+                                            <input value={formData.birth_city || ''} onChange={e => setFormData({ ...formData, birth_city: e.target.value })} placeholder="עיר" className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 text-sm" />
+                                            <input value={formData.birth_country || ''} onChange={e => setFormData({ ...formData, birth_country: e.target.value })} placeholder="מדינה" className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 text-sm" />
+                                        </div>
+                                    </div>
+
+                                    {/* Death Place */}
+                                    {!formData.is_alive && (
+                                        <div>
+                                            <label className="block text-sm font-medium mb-1">מקום פטירה</label>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <input value={formData.death_city || ''} onChange={e => setFormData({ ...formData, death_city: e.target.value })} placeholder="עיר" className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 text-sm" />
+                                                <input value={formData.death_country || ''} onChange={e => setFormData({ ...formData, death_country: e.target.value })} placeholder="מדינה" className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 text-sm" />
                                             </div>
                                         </div>
+                                    )}
+
+                                    {/* Current Residence */}
+                                    {formData.is_alive && (
                                         <div>
-                                            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Девичья фамилия</label>
+                                            <label className="block text-sm font-medium mb-1">מקום מגורים</label>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <input value={formData.residence_city || ''} onChange={e => setFormData({ ...formData, residence_city: e.target.value })} placeholder="עיר" className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 text-sm" />
+                                                <input value={formData.residence_country || ''} onChange={e => setFormData({ ...formData, residence_country: e.target.value })} placeholder="מדינה" className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 text-sm" />
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Biography */}
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">ביוגרפיה קצרה</label>
+                                        <textarea value={formData.biography} onChange={e => setFormData({ ...formData, biography: e.target.value })} className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 h-20" placeholder="סיפור חיים קצר..." />
+                                    </div>
+                                </div>
+                            ) : (
+                                /* ===== RUSSIAN TAB ===== */
+                                <div className="space-y-4" dir="ltr">
+                                    {/* First & Last Name (Russian) */}
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium mb-1">Имя *</label>
+                                            <input
+                                                value={formData.first_name_ru || ''}
+                                                onChange={e => setFormData({ ...formData, first_name_ru: e.target.value })}
+                                                placeholder="Имя"
+                                                className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="block text-sm font-medium mb-1">Фамилия *</label>
+                                            <input
+                                                value={formData.last_name_ru || ''}
+                                                onChange={e => setFormData({ ...formData, last_name_ru: e.target.value })}
+                                                placeholder="Фамилия"
+                                                className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Maiden Name & Nickname */}
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium mb-1">Девичья фамилия</label>
                                             <input
                                                 value={formData.maiden_name_ru || ''}
                                                 onChange={e => setFormData({ ...formData, maiden_name_ru: e.target.value })}
-                                                placeholder="Девичья фамилия"
-                                                className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 text-sm"
+                                                placeholder="Фамилия до брака"
+                                                className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
                                             />
                                         </div>
-
-                                        {/* Russian: Birth Place */}
                                         <div>
-                                            <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Место рождения</label>
-                                            <div className="grid grid-cols-2 gap-2">
-                                                <input
-                                                    value={formData.birth_city_ru || ''}
-                                                    onChange={e => setFormData({ ...formData, birth_city_ru: e.target.value })}
-                                                    placeholder="Город"
-                                                    className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 text-sm"
-                                                />
-                                                <input
-                                                    value={formData.birth_country_ru || ''}
-                                                    onChange={e => setFormData({ ...formData, birth_country_ru: e.target.value })}
-                                                    placeholder="Страна"
-                                                    className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 text-sm"
-                                                />
+                                            <label className="block text-sm font-medium mb-1">Прозвище</label>
+                                            <input
+                                                value={formData.nickname}
+                                                onChange={e => setFormData({ ...formData, nickname: e.target.value })}
+                                                placeholder="Семейное прозвище"
+                                                className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Previous Name */}
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">Прежнее имя</label>
+                                        <input
+                                            value={formData.previous_name}
+                                            onChange={e => setFormData({ ...formData, previous_name: e.target.value })}
+                                            placeholder="В случае смены имени"
+                                            className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
+                                        />
+                                    </div>
+
+                                    {/* Title */}
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">Звание</label>
+                                        <input
+                                            value={formData.title}
+                                            onChange={e => setFormData({ ...formData, title: e.target.value })}
+                                            placeholder="Д-р, Раввин, Адв..."
+                                            className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
+                                        />
+                                    </div>
+
+                                    {/* Gender & Is Alive */}
+                                    <div className="flex gap-4">
+                                        <div className="flex-1">
+                                            <label className="block text-sm font-medium mb-1">Пол</label>
+                                            <select
+                                                value={formData.gender}
+                                                onChange={e => setFormData({ ...formData, gender: e.target.value as any })}
+                                                className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
+                                            >
+                                                <option value="male">Мужской</option>
+                                                <option value="female">Женский</option>
+                                                <option value="other">Другой</option>
+                                            </select>
+                                        </div>
+                                        <div className="flex-1">
+                                            <label className="block text-sm font-medium mb-1">Жив/а?</label>
+                                            <div className="flex bg-slate-100 dark:bg-slate-700 p-1 rounded-lg">
+                                                <button type="button" onClick={() => setFormData({ ...formData, is_alive: true })} className={`flex-1 text-sm py-1.5 rounded-md transition-all ${formData.is_alive ? 'bg-white dark:bg-slate-600 shadow text-emerald-600' : 'text-slate-500'}`}>
+                                                    Да
+                                                </button>
+                                                <button type="button" onClick={() => setFormData({ ...formData, is_alive: false })} className={`flex-1 text-sm py-1.5 rounded-md transition-all ${!formData.is_alive ? 'bg-white dark:bg-slate-600 shadow text-slate-800' : 'text-slate-500'}`}>
+                                                    Нет
+                                                </button>
                                             </div>
                                         </div>
+                                    </div>
 
-                                        {/* Russian: Death Place */}
+                                    {/* Dates */}
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-sm font-medium mb-1">Дата рождения</label>
+                                            <input type="date" value={formData.birth_date || ''} onChange={e => setFormData({ ...formData, birth_date: e.target.value })} className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600" />
+                                        </div>
                                         {!formData.is_alive && (
                                             <div>
-                                                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Место смерти</label>
-                                                <div className="grid grid-cols-2 gap-2">
-                                                    <input
-                                                        value={formData.death_city_ru || ''}
-                                                        onChange={e => setFormData({ ...formData, death_city_ru: e.target.value })}
-                                                        placeholder="Город"
-                                                        className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 text-sm"
-                                                    />
-                                                    <input
-                                                        value={formData.death_country_ru || ''}
-                                                        onChange={e => setFormData({ ...formData, death_country_ru: e.target.value })}
-                                                        placeholder="Страна"
-                                                        className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 text-sm"
-                                                    />
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        {/* Russian: Current Residence */}
-                                        {formData.is_alive && (
-                                            <div>
-                                                <label className="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">Место проживания</label>
-                                                <div className="grid grid-cols-2 gap-2">
-                                                    <input
-                                                        value={formData.residence_city_ru || ''}
-                                                        onChange={e => setFormData({ ...formData, residence_city_ru: e.target.value })}
-                                                        placeholder="Город"
-                                                        className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 text-sm"
-                                                    />
-                                                    <input
-                                                        value={formData.residence_country_ru || ''}
-                                                        onChange={e => setFormData({ ...formData, residence_country_ru: e.target.value })}
-                                                        placeholder="Страна"
-                                                        className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 text-sm"
-                                                    />
-                                                </div>
+                                                <label className="block text-sm font-medium mb-1">Дата смерти</label>
+                                                <input type="date" value={formData.death_date || ''} onChange={e => setFormData({ ...formData, death_date: e.target.value })} className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600" />
                                             </div>
                                         )}
                                     </div>
-                                )}
-                            </div>
 
-                            {/* Biography */}
-                            <div>
-                                <label className="block text-sm font-medium mb-1">ביוגרפיה קצרה</label>
-                                <textarea
-                                    value={formData.biography}
-                                    onChange={e => setFormData({ ...formData, biography: e.target.value })}
-                                    className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 h-20"
-                                    placeholder="סיפור חיים קצר..."
-                                />
-                            </div>
+                                    {/* Birth Place */}
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">Место рождения</label>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <input value={formData.birth_city_ru || ''} onChange={e => setFormData({ ...formData, birth_city_ru: e.target.value })} placeholder="Город" className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 text-sm" />
+                                            <input value={formData.birth_country_ru || ''} onChange={e => setFormData({ ...formData, birth_country_ru: e.target.value })} placeholder="Страна" className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 text-sm" />
+                                        </div>
+                                    </div>
+
+                                    {/* Death Place */}
+                                    {!formData.is_alive && (
+                                        <div>
+                                            <label className="block text-sm font-medium mb-1">Место смерти</label>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <input value={formData.death_city_ru || ''} onChange={e => setFormData({ ...formData, death_city_ru: e.target.value })} placeholder="Город" className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 text-sm" />
+                                                <input value={formData.death_country_ru || ''} onChange={e => setFormData({ ...formData, death_country_ru: e.target.value })} placeholder="Страна" className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 text-sm" />
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Current Residence */}
+                                    {formData.is_alive && (
+                                        <div>
+                                            <label className="block text-sm font-medium mb-1">Место проживания</label>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <input value={formData.residence_city_ru || ''} onChange={e => setFormData({ ...formData, residence_city_ru: e.target.value })} placeholder="Город" className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 text-sm" />
+                                                <input value={formData.residence_country_ru || ''} onChange={e => setFormData({ ...formData, residence_country_ru: e.target.value })} placeholder="Страна" className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 text-sm" />
+                                            </div>
+                                        </div>
+                                    )}
+
+                                    {/* Biography */}
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">Краткая биография</label>
+                                        <textarea value={formData.biography} onChange={e => setFormData({ ...formData, biography: e.target.value })} className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 h-20" placeholder="Краткая история жизни..." />
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </form>
                 ) : (

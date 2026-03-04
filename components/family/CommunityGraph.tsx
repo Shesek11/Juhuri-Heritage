@@ -1495,7 +1495,7 @@ export const CommunityGraph: React.FC = () => {
     }
 
     return (
-        <div className="flex flex-col bg-slate-900" style={{ height: 'calc(100vh - 60px)', minHeight: '600px' }}>
+        <div className="fixed inset-x-0 bottom-0 top-[130px] md:top-20 flex flex-col bg-slate-900 overflow-hidden z-20">
             <SEOHead
                 title="שורשים - רשת קהילתית"
                 description="חקרו את עץ המשפחה והרשת הקהילתית של יהודי ההרים. גלו קשרים משפחתיים ושורשים."
@@ -1744,7 +1744,7 @@ export const CommunityGraph: React.FC = () => {
                 )}
 
                 {/* Zoom Controls */}
-                <div className="absolute bottom-4 right-4 flex flex-col gap-2">
+                <div className="absolute top-3 right-3 flex gap-2">
                     <button
                         onClick={handleZoomIn}
                         className="p-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-white transition-colors"
@@ -1769,7 +1769,7 @@ export const CommunityGraph: React.FC = () => {
                 </div>
 
                 {/* Force Controls Panel */}
-                <div className="absolute bottom-4 left-4 flex flex-col gap-2">
+                <div className="absolute top-3 left-3 flex flex-col gap-2">
                     {/* Toggle button */}
                     <button
                         onClick={() => setShowControls(!showControls)}
