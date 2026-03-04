@@ -45,3 +45,20 @@ Thumbs.db
 audit-screenshots
 nul
 debug-*.js
+
+# Data pipeline artifacts
+data/intermediate/
+data/processed/
+data/raw/
+
+# Temporary files
+tmp-stitch-designs/
+screenshot-*.png
+
+# One-off scripts
+scripts/fetch.py
+scripts/fetch_fresh.js
+scripts/download_stitch.js
+
+# Miscellaneous
+ssh-copy-id
