@@ -39,6 +39,7 @@ app.use(helmet({
         preload: true,
     },
     xXssProtection: false,
+    referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
 }));
 
 // Permissions-Policy header
@@ -167,60 +168,129 @@ app.get('/api/health', async (req, res) => {
 // --- Dynamic Sitemap ---
 const SITE_URL = process.env.SITE_URL || 'https://juhuri.shesek.xyz';
 
+// Helper to generate a single <urlset> XML
+const buildUrlsetXml = (urls) => {
+    const items = urls.map(u =>
+        `  <url>\n    <loc>${u.loc}</loc>\n    <lastmod>${u.lastmod}</lastmod>\n    <changefreq>${u.changefreq}</changefreq>\n    <priority>${u.priority}</priority>\n  </url>`
+    );
+    return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${items.join('\n')}\n</urlset>`;
+};
+
+const toDate = (d) => d ? new Date(d).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+
+// Sitemap index (root)
 app.get('/sitemap.xml', async (req, res) => {
     try {
         res.header('Content-Type', 'application/xml');
-        res.header('Cache-Control', 'public, max-age=3600'); // 1 hour cache
-
-        // Static pages
+        res.header('Cache-Control', 'public, max-age=3600');
         const today = new Date().toISOString().split('T')[0];
-        const staticUrls = [
-            { loc: '/', priority: '1.0', changefreq: 'daily', lastmod: today },
-            { loc: '/tutor', priority: '0.8', changefreq: 'weekly', lastmod: today },
-            { loc: '/recipes', priority: '0.8', changefreq: 'weekly', lastmod: today },
-            { loc: '/marketplace', priority: '0.7', changefreq: 'weekly', lastmod: today },
-            { loc: '/family', priority: '0.6', changefreq: 'monthly', lastmod: today },
+
+        const sitemaps = [
+            { loc: `${SITE_URL}/sitemap-pages.xml`, lastmod: today },
+            { loc: `${SITE_URL}/sitemap-words.xml`, lastmod: today },
+            { loc: `${SITE_URL}/sitemap-recipes.xml`, lastmod: today },
+            { loc: `${SITE_URL}/sitemap-marketplace.xml`, lastmod: today },
         ];
 
-        // Dynamic: dictionary entries
-        const [entries] = await db.query(
-            `SELECT term, updated_at FROM dictionary_entries WHERE status = 'active' ORDER BY updated_at DESC`
+        const items = sitemaps.map(s =>
+            `  <sitemap>\n    <loc>${s.loc}</loc>\n    <lastmod>${s.lastmod}</lastmod>\n  </sitemap>`
         );
 
-        // Dynamic: approved recipes
-        const [recipes] = await db.query(
-            `SELECT id, updated_at FROM recipes WHERE is_approved = 1`
-        );
-
-        // Dynamic: active vendors
-        const [vendors] = await db.query(
-            `SELECT slug, updated_at FROM marketplace_vendors WHERE status = 'active'`
-        );
-
-        const toDate = (d) => d ? new Date(d).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
-
-        const urls = [
-            ...staticUrls.map(u => `  <url>\n    <loc>${SITE_URL}${u.loc}</loc>\n    <lastmod>${u.lastmod}</lastmod>\n    <priority>${u.priority}</priority>\n    <changefreq>${u.changefreq}</changefreq>\n  </url>`),
-            ...entries.map(e => `  <url>\n    <loc>${SITE_URL}/word/${encodeURIComponent(e.term)}</loc>\n    <lastmod>${toDate(e.updated_at)}</lastmod>\n    <changefreq>monthly</changefreq>\n    <priority>0.5</priority>\n  </url>`),
-            ...recipes.map(r => `  <url>\n    <loc>${SITE_URL}/recipes/${r.id}</loc>\n    <lastmod>${toDate(r.updated_at)}</lastmod>\n    <changefreq>monthly</changefreq>\n    <priority>0.6</priority>\n  </url>`),
-            ...vendors.map(v => `  <url>\n    <loc>${SITE_URL}/marketplace/${v.slug}</loc>\n    <lastmod>${toDate(v.updated_at)}</lastmod>\n    <changefreq>weekly</changefreq>\n    <priority>0.5</priority>\n  </url>`),
-        ];
-
-        res.send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls.join('\n')}\n</urlset>`);
+        res.send(`<?xml version="1.0" encoding="UTF-8"?>\n<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${items.join('\n')}\n</sitemapindex>`);
     } catch (err) {
-        console.error('Sitemap generation error:', err);
-        res.status(500).send('Error generating sitemap');
+        console.error('Sitemap index error:', err);
+        res.status(500).send('Error generating sitemap index');
     }
 });
 
-// --- Crawler Meta Injection (for social sharing previews) ---
-const CRAWLER_UA = /googlebot|bingbot|yandex|facebookexternalhit|twitterbot|telegrambot|linkedinbot|slackbot|whatsapp|pinterest|discordbot/i;
+// Static pages sitemap
+app.get('/sitemap-pages.xml', (req, res) => {
+    res.header('Content-Type', 'application/xml');
+    res.header('Cache-Control', 'public, max-age=3600');
+    const today = new Date().toISOString().split('T')[0];
+    res.send(buildUrlsetXml([
+        { loc: `${SITE_URL}/`, lastmod: today, priority: '1.0', changefreq: 'daily' },
+        { loc: `${SITE_URL}/tutor`, lastmod: today, priority: '0.8', changefreq: 'weekly' },
+        { loc: `${SITE_URL}/recipes`, lastmod: today, priority: '0.8', changefreq: 'weekly' },
+        { loc: `${SITE_URL}/marketplace`, lastmod: today, priority: '0.7', changefreq: 'weekly' },
+        { loc: `${SITE_URL}/family`, lastmod: today, priority: '0.6', changefreq: 'monthly' },
+    ]));
+});
+
+// Dictionary words sitemap
+app.get('/sitemap-words.xml', async (req, res) => {
+    try {
+        res.header('Content-Type', 'application/xml');
+        res.header('Cache-Control', 'public, max-age=3600');
+        const [entries] = await db.query(
+            `SELECT term, updated_at FROM dictionary_entries WHERE status = 'active' ORDER BY updated_at DESC`
+        );
+        res.send(buildUrlsetXml(entries.map(e => ({
+            loc: `${SITE_URL}/word/${encodeURIComponent(e.term)}`,
+            lastmod: toDate(e.updated_at),
+            changefreq: 'monthly',
+            priority: '0.5'
+        }))));
+    } catch (err) {
+        console.error('Sitemap words error:', err);
+        res.status(500).send('Error generating words sitemap');
+    }
+});
+
+// Recipes sitemap
+app.get('/sitemap-recipes.xml', async (req, res) => {
+    try {
+        res.header('Content-Type', 'application/xml');
+        res.header('Cache-Control', 'public, max-age=3600');
+        const [recipes] = await db.query(
+            `SELECT id, updated_at FROM recipes WHERE is_approved = 1`
+        );
+        res.send(buildUrlsetXml(recipes.map(r => ({
+            loc: `${SITE_URL}/recipes/${r.id}`,
+            lastmod: toDate(r.updated_at),
+            changefreq: 'monthly',
+            priority: '0.6'
+        }))));
+    } catch (err) {
+        console.error('Sitemap recipes error:', err);
+        res.status(500).send('Error generating recipes sitemap');
+    }
+});
+
+// Marketplace vendors sitemap
+app.get('/sitemap-marketplace.xml', async (req, res) => {
+    try {
+        res.header('Content-Type', 'application/xml');
+        res.header('Cache-Control', 'public, max-age=3600');
+        const [vendors] = await db.query(
+            `SELECT slug, updated_at FROM marketplace_vendors WHERE status = 'active'`
+        );
+        res.send(buildUrlsetXml(vendors.map(v => ({
+            loc: `${SITE_URL}/marketplace/${v.slug}`,
+            lastmod: toDate(v.updated_at),
+            changefreq: 'weekly',
+            priority: '0.5'
+        }))));
+    } catch (err) {
+        console.error('Sitemap marketplace error:', err);
+        res.status(500).send('Error generating marketplace sitemap');
+    }
+});
+
+// --- Crawler Meta Injection (SEO + social sharing) ---
+const CRAWLER_UA = /googlebot|bingbot|yandex|facebookexternalhit|twitterbot|telegrambot|linkedinbot|slackbot|whatsapp|pinterest|discordbot|applebot|duckduckbot|petalbot/i;
+
+// Known valid static routes
+const VALID_ROUTES = new Set(['/', '/tutor', '/recipes', '/marketplace', '/family', '/about']);
 
 const injectMetaTags = async (req, res, indexHtml) => {
     let title = 'מורשת ג\'והורי | המילון לשימור השפה';
     let description = 'מילון ג\'והורי-עברי אינטראקטיבי לשימור שפת יהודי ההרים';
     let image = `${SITE_URL}/images/og-default.png`;
     const url = `${SITE_URL}${req.path}`;
+    let jsonLd = null;
+    let bodyContent = '';
+    let isValidPage = VALID_ROUTES.has(req.path);
 
     try {
         const wordMatch = req.path.match(/^\/word\/(.+)$/);
@@ -230,12 +300,34 @@ const injectMetaTags = async (req, res, indexHtml) => {
         if (wordMatch) {
             const term = decodeURIComponent(wordMatch[1]);
             const [entries] = await db.query(
-                'SELECT term FROM dictionary_entries WHERE term = ? AND status = ? LIMIT 1',
-                [term, 'active']
+                `SELECT term, hebrew_translation, russian_translation, latin_spelling, cyrillic_spelling, part_of_speech
+                 FROM dictionary_entries WHERE term = ? AND status = 'active' LIMIT 1`,
+                [term]
             );
             if (entries.length) {
+                const e = entries[0];
+                isValidPage = true;
                 title = `${term} - תרגום ג'והורי | מורשת ג'והורי`;
-                description = `חפש את המשמעות של "${term}" במילון הג'והורי-עברי`;
+                const meanings = [e.hebrew_translation, e.russian_translation].filter(Boolean).join(' | ');
+                description = meanings
+                    ? `${term}: ${meanings} - מילון ג'והורי-עברי`
+                    : `חפש את המשמעות של "${term}" במילון הג'והורי-עברי`;
+                jsonLd = JSON.stringify({
+                    "@context": "https://schema.org",
+                    "@type": "DefinedTerm",
+                    "name": term,
+                    "description": meanings || description,
+                    "inDefinedTermSet": {
+                        "@type": "DefinedTermSet",
+                        "name": "מילון ג'והורי-עברי",
+                        "url": SITE_URL
+                    }
+                });
+                bodyContent = `<h1>${term}</h1>`;
+                if (e.hebrew_translation) bodyContent += `<p>עברית: ${e.hebrew_translation}</p>`;
+                if (e.russian_translation) bodyContent += `<p>Русский: ${e.russian_translation}</p>`;
+                if (e.latin_spelling) bodyContent += `<p>Latin: ${e.latin_spelling}</p>`;
+                if (e.part_of_speech) bodyContent += `<p>חלק דיבור: ${e.part_of_speech}</p>`;
             }
         } else if (recipeMatch) {
             const [recipes] = await db.query(
@@ -243,8 +335,17 @@ const injectMetaTags = async (req, res, indexHtml) => {
                 [recipeMatch[1]]
             );
             if (recipes.length) {
+                isValidPage = true;
                 title = `${recipes[0].title} - מתכון | מורשת ג'והורי`;
                 description = recipes[0].description || `מתכון מסורתי: ${recipes[0].title}`;
+                jsonLd = JSON.stringify({
+                    "@context": "https://schema.org",
+                    "@type": "Recipe",
+                    "name": recipes[0].title,
+                    "description": description,
+                    "recipeCuisine": "Caucasian Jewish"
+                });
+                bodyContent = `<h1>${recipes[0].title}</h1><p>${description}</p>`;
             }
         } else if (vendorMatch) {
             const [vendors] = await db.query(
@@ -252,26 +353,64 @@ const injectMetaTags = async (req, res, indexHtml) => {
                 [vendorMatch[1], 'active']
             );
             if (vendors.length) {
+                isValidPage = true;
                 title = `${vendors[0].name} - שוק | מורשת ג'והורי`;
                 description = vendors[0].about_text || `${vendors[0].name} בשוק הקהילתי`;
+                jsonLd = JSON.stringify({
+                    "@context": "https://schema.org",
+                    "@type": "LocalBusiness",
+                    "name": vendors[0].name,
+                    "description": description
+                });
+                bodyContent = `<h1>${vendors[0].name}</h1><p>${description}</p>`;
             }
+        } else if (req.path === '/') {
+            isValidPage = true;
+            jsonLd = JSON.stringify({
+                "@context": "https://schema.org",
+                "@type": "WebSite",
+                "name": "מורשת ג'והורי",
+                "url": SITE_URL,
+                "description": description,
+                "potentialAction": {
+                    "@type": "SearchAction",
+                    "target": `${SITE_URL}/?q={search_term_string}`,
+                    "query-input": "required name=search_term_string"
+                }
+            });
+            bodyContent = `<h1>מורשת ג'והורי - המילון לשימור השפה</h1><p>${description}</p>`;
         }
     } catch (err) {
         console.error('Crawler meta injection DB error:', err);
     }
 
     // Escape HTML entities for safety
-    const esc = (s) => s.replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const esc = (s) => s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    // For body content - less aggressive escaping (we control the template)
+    const escBody = (s) => s.replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
-    return indexHtml
+    let html = indexHtml
         .replace(/<title>.*?<\/title>/, `<title>${esc(title)}</title>`)
         .replace(/<meta name="description"[^>]*>/, `<meta name="description" content="${esc(description)}">`)
+        .replace(/<link rel="canonical"[^>]*>/, `<link rel="canonical" href="${esc(url)}">`)
         .replace(/<meta property="og:title"[^>]*>/, `<meta property="og:title" content="${esc(title)}">`)
         .replace(/<meta property="og:description"[^>]*>/, `<meta property="og:description" content="${esc(description)}">`)
         .replace(/<meta property="og:image"[^>]*>/, `<meta property="og:image" content="${esc(image)}">`)
         .replace(/<meta property="og:url"[^>]*>/, `<meta property="og:url" content="${esc(url)}">`)
         .replace(/<meta name="twitter:title"[^>]*>/, `<meta name="twitter:title" content="${esc(title)}">`)
         .replace(/<meta name="twitter:description"[^>]*>/, `<meta name="twitter:description" content="${esc(description)}">`);
+
+    // Inject JSON-LD structured data for crawlers
+    if (jsonLd) {
+        html = html.replace('</head>', `  <script type="application/ld+json">${jsonLd}</script>\n</head>`);
+    }
+
+    // Inject visible content for crawlers (inside noscript for non-JS rendering)
+    if (bodyContent) {
+        html = html.replace('<div id="root"></div>', `<div id="root"></div>\n  <noscript><main>${bodyContent}</main></noscript>`);
+    }
+
+    return { html, isValidPage };
 };
 
 // --- SEO Redirects Middleware ---
@@ -306,12 +445,15 @@ app.get('/robots.txt', async (req, res) => {
     } catch (err) {
         // Table might not exist yet, fall through
     }
-    // Fallback to static file
-    const robotsPath = path.join(__dirname, '../public/robots.txt');
-    if (fs.existsSync(robotsPath)) {
-        res.type('text/plain').sendFile(robotsPath);
+    // Fallback to static file (check dist first, then public)
+    const distPath = path.join(__dirname, '../dist/robots.txt');
+    const publicPath = path.join(__dirname, '../public/robots.txt');
+    if (fs.existsSync(distPath)) {
+        res.type('text/plain').sendFile(distPath);
+    } else if (fs.existsSync(publicPath)) {
+        res.type('text/plain').sendFile(publicPath);
     } else {
-        res.type('text/plain').send('User-agent: *\nAllow: /\nDisallow: /api/\n');
+        res.type('text/plain').send('User-agent: *\nAllow: /\nDisallow: /api/\nSitemap: https://juhuri.shesek.xyz/sitemap.xml\n');
     }
 });
 
@@ -328,9 +470,12 @@ app.get('/llms.txt', async (req, res) => {
     } catch (err) {
         // Table might not exist yet, fall through
     }
-    const llmsPath = path.join(__dirname, '../public/llms.txt');
-    if (fs.existsSync(llmsPath)) {
-        res.type('text/plain').sendFile(llmsPath);
+    const distPath = path.join(__dirname, '../dist/llms.txt');
+    const publicPath = path.join(__dirname, '../public/llms.txt');
+    if (fs.existsSync(distPath)) {
+        res.type('text/plain').sendFile(distPath);
+    } else if (fs.existsSync(publicPath)) {
+        res.type('text/plain').sendFile(publicPath);
     } else {
         res.status(404).send('Not found');
     }
@@ -347,7 +492,7 @@ if (process.env.NODE_ENV === 'production') {
         }
     }));
 
-    // Crawler-aware SPA fallback
+    // Crawler-aware SPA fallback with proper 404 handling
     app.get('*', async (req, res) => {
         if (req.path.startsWith('/api')) return;
 
@@ -356,9 +501,13 @@ if (process.env.NODE_ENV === 'production') {
 
         if (isCrawler) {
             try {
-                const html = fs.readFileSync(indexPath, 'utf8');
-                const injected = await injectMetaTags(req, res, html);
-                res.send(injected);
+                const rawHtml = fs.readFileSync(indexPath, 'utf8');
+                const { html, isValidPage } = await injectMetaTags(req, res, rawHtml);
+                if (!isValidPage) {
+                    res.status(404).send(html);
+                } else {
+                    res.send(html);
+                }
             } catch (err) {
                 console.error('Crawler injection error:', err);
                 res.sendFile(indexPath);

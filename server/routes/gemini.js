@@ -434,5 +434,41 @@ router.post('/tts', async (req, res) => {
     }
 });
 
+// POST /api/gemini/transliterate-names - Hebrew↔Russian name transliteration
+router.post('/transliterate-names', async (req, res) => {
+    try {
+        const { fields, direction } = req.body;
+        if (!fields || !direction) {
+            return res.status(400).json({ error: 'fields and direction required' });
+        }
+
+        const isHeToRu = direction === 'he-to-ru';
+        const fromLang = isHeToRu ? 'Hebrew' : 'Russian';
+        const toLang = isHeToRu ? 'Russian' : 'Hebrew';
+
+        const fieldEntries = Object.entries(fields).filter(([, v]) => v);
+        if (fieldEntries.length === 0) {
+            return res.status(400).json({ error: 'No non-empty fields provided' });
+        }
+
+        const fieldList = fieldEntries.map(([k, v]) => `${k}: "${v}"`).join('\n');
+        const prompt = `Transliterate the following ${fromLang} names and place names to ${toLang}. Return JSON with the same keys.\n\n${fieldList}`;
+
+        const schema = {
+            type: "OBJECT",
+            properties: {},
+        };
+        for (const [key] of fieldEntries) {
+            schema.properties[key] = { type: "STRING" };
+        }
+
+        const result = await callGemini(prompt, null, schema);
+        res.json(result);
+    } catch (err) {
+        console.error('Transliterate error:', err);
+        res.status(500).json({ error: 'Translation failed', details: err.message });
+    }
+});
+
 module.exports = router;
 module.exports.invalidateApiKeyCache = invalidateApiKeyCache;
