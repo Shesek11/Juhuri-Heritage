@@ -300,15 +300,18 @@ const injectMetaTags = async (req, res, indexHtml) => {
         if (wordMatch) {
             const term = decodeURIComponent(wordMatch[1]);
             const [entries] = await db.query(
-                `SELECT term, hebrew_translation, russian_translation, latin_spelling, cyrillic_spelling, part_of_speech
-                 FROM dictionary_entries WHERE term = ? AND status = 'active' LIMIT 1`,
+                `SELECT de.term, de.russian, de.english, de.part_of_speech, de.pronunciation_guide,
+                        t.hebrew, t.latin, t.cyrillic
+                 FROM dictionary_entries de
+                 LEFT JOIN translations t ON de.id = t.entry_id
+                 WHERE de.term = ? AND de.status = 'active' LIMIT 1`,
                 [term]
             );
             if (entries.length) {
                 const e = entries[0];
                 isValidPage = true;
                 title = `${term} - תרגום ג'והורי | מורשת ג'והורי`;
-                const meanings = [e.hebrew_translation, e.russian_translation].filter(Boolean).join(' | ');
+                const meanings = [e.hebrew, e.russian, e.english].filter(Boolean).join(' | ');
                 description = meanings
                     ? `${term}: ${meanings} - מילון ג'והורי-עברי`
                     : `חפש את המשמעות של "${term}" במילון הג'והורי-עברי`;
@@ -324,12 +327,13 @@ const injectMetaTags = async (req, res, indexHtml) => {
                         "inLanguage": ["jdt", "he", "ru"]
                     }
                 };
-                if (e.latin_spelling) ldData.termCode = e.latin_spelling;
+                if (e.latin) ldData.termCode = e.latin;
                 jsonLd = JSON.stringify(ldData);
                 bodyContent = `<h1>${term}</h1>`;
-                if (e.hebrew_translation) bodyContent += `<p>עברית: ${e.hebrew_translation}</p>`;
-                if (e.russian_translation) bodyContent += `<p>Русский: ${e.russian_translation}</p>`;
-                if (e.latin_spelling) bodyContent += `<p>Latin: ${e.latin_spelling}</p>`;
+                if (e.hebrew) bodyContent += `<p>עברית: ${e.hebrew}</p>`;
+                if (e.russian) bodyContent += `<p>Русский: ${e.russian}</p>`;
+                if (e.english) bodyContent += `<p>English: ${e.english}</p>`;
+                if (e.latin) bodyContent += `<p>Latin: ${e.latin}</p>`;
                 if (e.part_of_speech) bodyContent += `<p>חלק דיבור: ${e.part_of_speech}</p>`;
             }
         } else if (recipeMatch) {
