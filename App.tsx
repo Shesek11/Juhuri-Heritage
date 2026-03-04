@@ -1,52 +1,56 @@
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
+import { Routes, Route, NavLink, Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from './contexts/AuthContext';
-import { DictionaryEntry, HistoryItem, DialectItem, User } from './types';
-import { searchDictionary, searchByAudio } from './services/geminiService';
+import { DialectItem } from './types';
 import { getDialects } from './services/storageService';
 import { featureFlagService, FeatureFlagsMap } from './services/featureFlagService';
-import apiService from './services/apiService';
-import { blobToBase64 } from './utils/audioUtils';
-import ResultCard from './components/ResultCard';
-import HistoryPanel from './components/HistoryPanel';
-import ContributeModal from './components/ContributeModal';
-import AboutModal from './components/AboutModal';
-import TutorMode from './components/TutorMode';
-import AdminDashboard from './components/AdminDashboard';
-import MobileAdminPanel from './components/admin/MobileAdminPanel';
-import AuthModal from './components/AuthModal';
-import ProfileModal from './components/ProfileModal';
-import HeroSection from './components/HeroSection';
-import WordOfTheDay from './components/widgets/WordOfTheDay';
-import CommunityTicker from './components/widgets/CommunityTicker';
-import RecentAdditions from './components/widgets/RecentAdditions';
-import NeedsTranslation from './components/widgets/NeedsTranslation';
-import MissingDialects from './components/widgets/MissingDialects';
-import PendingApprovals from './components/widgets/PendingApprovals';
-import TranslationModal from './components/TranslationModal';
 import XPDisplay from './components/gamification/XPDisplay';
-import RecipesPage from './components/RecipesPage';
-import { MarketplacePage } from './components/MarketplacePage';
-import { CommunityGraph } from './components/family/CommunityGraph';
-import { Mic, Search, Scroll, Sun, Moon, Plus, Loader2, HeartHandshake, BookOpen, GraduationCap, Info, User as UserIcon, LogOut, Settings, LayoutDashboard, Menu, LogIn, ChevronDown, ChefHat, Store, TreeDeciduous, BarChart, Clock } from 'lucide-react';
+import FeedbackButton from './components/FeedbackButton';
+import { FeatureRoute } from './components/routing/FeatureRoute';
+import { ProtectedRoute } from './components/routing/ProtectedRoute';
+import DictionaryPage from './components/DictionaryPage';
+import { SEOHead, WEBSITE_JSONLD, ORGANIZATION_JSONLD } from './components/seo/SEOHead';
 
-// NavTab Component for Desktop Navigation
+// Lazy-loaded heavy components (tab pages & modals)
+const TutorMode = lazy(() => import('./components/TutorMode'));
+const RecipesPage = lazy(() => import('./components/RecipesPage'));
+const MarketplacePage = lazy(() => import('./components/MarketplacePage').then(m => ({ default: m.MarketplacePage })));
+const CommunityGraph = lazy(() => import('./components/family/CommunityGraph').then(m => ({ default: m.CommunityGraph })));
+const AdminDashboard = lazy(() => import('./components/AdminDashboard'));
+const MobileAdminPanel = lazy(() => import('./components/admin/MobileAdminPanel'));
+const ContributeModal = lazy(() => import('./components/ContributeModal'));
+const AboutModal = lazy(() => import('./components/AboutModal'));
+const ProfileModal = lazy(() => import('./components/ProfileModal'));
+const TranslationModal = lazy(() => import('./components/TranslationModal'));
+const WordListModal = lazy(() => import('./components/WordListModal'));
+import AuthModal from './components/AuthModal';
+
+const LazyFallback = () => (
+  <div className="flex items-center justify-center p-12">
+    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500" />
+  </div>
+);
+
+import { Scroll, Sun, Moon, Plus, HeartHandshake, BookOpen, GraduationCap, Info, User as UserIcon, LogOut, Settings, LayoutDashboard, Menu, LogIn, ChevronDown, ChefHat, Store, TreeDeciduous, BarChart, Clock } from 'lucide-react';
+
+// NavTab Component for Desktop Navigation using NavLink
 interface NavTabProps {
-  active: boolean;
-  onClick: () => void;
+  to: string;
   icon: React.ReactNode;
   label: string;
-  color?: string;
   comingSoon?: boolean;
 }
 
-const NavTab: React.FC<NavTabProps> = ({ active, onClick, icon, label, comingSoon }) => (
-  <button
-    onClick={onClick}
-    className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${active
-      ? 'bg-white/10 text-white shadow-sm'
-      : 'text-slate-400 hover:text-white hover:bg-white/5'
-      }`}
+const NavTab: React.FC<NavTabProps> = ({ to, icon, label, comingSoon }) => (
+  <NavLink
+    to={to}
+    className={({ isActive }) =>
+      `flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${isActive
+        ? 'bg-white/10 text-white shadow-sm'
+        : 'text-slate-400 hover:text-white hover:bg-white/5'
+      }`
+    }
   >
     {icon}
     <span>{label}</span>
@@ -55,25 +59,27 @@ const NavTab: React.FC<NavTabProps> = ({ active, onClick, icon, label, comingSoo
         בקרוב
       </span>
     )}
-  </button>
+  </NavLink>
 );
 
-// MobileNavTab Component for Mobile Navigation
+// MobileNavTab Component for Mobile Navigation using NavLink
 interface MobileNavTabProps {
-  active: boolean;
-  onClick: () => void;
+  to: string;
   icon: React.ReactNode;
   label: string;
   comingSoon?: boolean;
 }
 
-const MobileNavTab: React.FC<MobileNavTabProps> = ({ active, onClick, icon, label, comingSoon }) => (
-  <button
-    onClick={onClick}
-    className={`flex flex-col items-center justify-center gap-0.5 p-2 rounded-xl text-[10px] font-medium transition-all min-w-[56px] ${active
-      ? 'bg-amber-500/20 text-amber-400'
-      : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
-      }`}
+const MobileNavTab: React.FC<MobileNavTabProps> = ({ to, icon, label, comingSoon }) => (
+  <NavLink
+    to={to}
+    end={to === '/'}
+    className={({ isActive }) =>
+      `flex flex-col items-center justify-center gap-0.5 p-2 rounded-xl text-[10px] font-medium transition-all min-w-[56px] ${isActive
+        ? 'bg-amber-500/20 text-amber-400'
+        : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+      }`
+    }
     title={label}
   >
     <div className="relative">
@@ -83,19 +89,17 @@ const MobileNavTab: React.FC<MobileNavTabProps> = ({ active, onClick, icon, labe
       )}
     </div>
     <span className="truncate max-w-[48px]">{label}</span>
-  </button>
+  </NavLink>
 );
 
-const STORAGE_KEY = 'juhuri_history';
+// Helper: check if a path is the dictionary/home route
+function isDictionaryRoute(pathname: string) {
+  return pathname === '/' || pathname.startsWith('/word/');
+}
 
 function App() {
-  const { user, login, logout, isAuthenticated, refreshUser } = useAuth();
-  const [activeTab, setActiveTab] = useState<'dictionary' | 'tutor' | 'recipes' | 'marketplace' | 'family'>('dictionary');
-
-  // Note: 'user' is now fully managed by AuthContext, no need for local state sync
-
-
-
+  const { user, logout, refreshUser } = useAuth();
+  const location = useLocation();
 
   // Auth State (UI Modals)
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
@@ -108,25 +112,30 @@ function App() {
     setIsAuthModalOpen(true);
   };
 
-  // Translation Modal State (can include existing translation for correction mode)
+  // Translation Modal State
   const [translationModalEntry, setTranslationModalEntry] = useState<{
     id: number;
     term: string;
     existingTranslation?: { id?: number; dialect: string; hebrew: string; latin: string; cyrillic: string }
   } | null>(null);
 
-  // Dictionary State
-  const [query, setQuery] = useState('');
-  const [result, setResult] = useState<DictionaryEntry | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [loadingMessage, setLoadingMessage] = useState('');
-  const [history, setHistory] = useState<HistoryItem[]>([]);
-  const [isRecording, setIsRecording] = useState(false);
+  // Word List Modal State
+  const [wordListModal, setWordListModal] = useState<{
+    isOpen: boolean;
+    category: 'hebrew-only' | 'juhuri-only' | 'missing-dialects' | 'missing-audio';
+    title: string;
+    totalCount: number;
+  }>({ isOpen: false, category: 'hebrew-only', title: '', totalCount: 0 });
+
+  const openWordListModal = (category: typeof wordListModal.category, title: string, totalCount: number) => {
+    setWordListModal({ isOpen: true, category, title, totalCount });
+  };
+
+  // UI State
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [isContributeOpen, setIsContributeOpen] = useState(false);
   const [isAboutOpen, setIsAboutOpen] = useState(false);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   // Dynamic Dialects
@@ -141,7 +150,7 @@ function App() {
   // Helper: Check if a feature should be visible in header
   const isFeatureVisible = (featureKey: string): boolean => {
     const status = featureFlags[featureKey];
-    if (!status) return false; // disabled or not in response
+    if (!status) return false;
     if (status === 'active') return true;
     if (status === 'coming_soon') return true;
     if (status === 'admin_only') return isAdmin;
@@ -153,31 +162,15 @@ function App() {
     return featureFlags[featureKey] === 'coming_soon';
   };
 
-  // Helper: Check if user can access the real content (not just coming soon page)
-  const canAccessFeatureContent = (featureKey: string): boolean => {
-    const status = featureFlags[featureKey];
-    if (status === 'active') return true;
-    if (status === 'coming_soon') return isAdmin; // Only admins see real content
-    if (status === 'admin_only') return isAdmin;
-    return false;
-  };
-
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
-
   // Initialization
   useEffect(() => {
     const init = async () => {
-      // 1. History (still localStorage - local cache only)
-      const savedHistory = localStorage.getItem(STORAGE_KEY);
-      if (savedHistory) setHistory(JSON.parse(savedHistory));
-
-      // 2. Theme
+      // Theme
       if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
         setTheme('dark');
       }
 
-      // 3. Dialects (now async API)
+      // Dialects
       try {
         const dialectsList = await getDialects();
         setDialects(dialectsList);
@@ -185,16 +178,16 @@ function App() {
         console.error('Failed to load dialects:', err);
       }
 
-      // 4. Feature Flags
+      // Feature Flags
       try {
         const flags = await featureFlagService.getPublicFeatureFlags();
         console.log('Scaled Feature Flags:', flags);
         setFeatureFlags(flags);
+        // Make available to FeatureRoute
+        (window as any).__featureFlags = flags;
       } catch (err) {
         console.error('Failed to load feature flags:', err);
       }
-
-      // 4. Auth is now handled by usage of useAuth0 hook outside this effect
     };
 
     init();
@@ -216,146 +209,44 @@ function App() {
     }
   }, [theme]);
 
-  // Loading Messages
-  useEffect(() => {
-    let timers: ReturnType<typeof setTimeout>[] = [];
-    if (loading) {
-      setLoadingMessage('מחפש במילון...');
-      timers.push(setTimeout(() => setLoadingMessage('בודק במקורות ההיסטוריים...'), 2000));
-      timers.push(setTimeout(() => setLoadingMessage('מנתח ניבים והקשרים תרבותיים...'), 4500));
-      timers.push(setTimeout(() => setLoadingMessage('כבר מסיימים, תודה על הסבלנות...'), 8000));
-    } else {
-      setLoadingMessage('');
-    }
-    return () => timers.forEach(clearTimeout);
-  }, [loading]);
-
-  const addToHistory = (entry: DictionaryEntry) => {
-    const newItem: HistoryItem = { ...entry, timestamp: Date.now(), id: Date.now().toString() };
-    const updated = [newItem, ...history.filter(h => h.term !== entry.term)].slice(0, 10);
-    setHistory(updated);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-  };
-
-  const clearHistory = () => {
-    setHistory([]);
-    localStorage.removeItem(STORAGE_KEY);
-  };
-
-  const handleSearch = async (e?: React.FormEvent, specificTerm?: string) => {
-    if (e) e.preventDefault();
-    const termToSearch = specificTerm || query;
-    if (!termToSearch.trim()) return;
-
-    if (specificTerm && specificTerm !== query) {
-      setQuery(specificTerm);
-    }
-
-    setLoading(true);
-    setError(null);
-    try {
-      const data = await searchDictionary(query);
-      setResult(data);
-      addToHistory(data);
-    } catch (err) {
-      setError('לא הצלחנו למצוא תרגום במאגר המסורתי. נסה שוב או נסח אחרת.');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
-      audioChunksRef.current = [];
-
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          audioChunksRef.current.push(event.data);
-        }
-      };
-
-      mediaRecorder.onstop = async () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-        const base64Audio = await blobToBase64(audioBlob);
-
-        setLoading(true);
-        setError(null);
-        try {
-          const data = await searchByAudio(base64Audio, 'audio/webm');
-          setResult(data);
-          addToHistory(data);
-          setQuery(data.term);
-        } catch (err) {
-          setError('לא הצלחנו לזהות את הדיבור. נסה שוב, בקול ברור.');
-          console.error(err);
-        } finally {
-          setLoading(false);
-          stream.getTracks().forEach(track => track.stop());
-        }
-      };
-
-      mediaRecorder.start();
-      setIsRecording(true);
-    } catch (err) {
-      console.error('Error accessing microphone:', err);
-      setError('נדרשת גישה למיקרופון כדי להקליט.');
-    }
-  };
-
-  const stopRecording = () => {
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-    }
-  };
-
   const toggleTheme = () => {
     setTheme(prev => prev === 'light' ? 'dark' : 'light');
-    setIsMenuOpen(false); // Optional: close menu after toggle
-  };
-
-  const handleLogout = () => {
-    logout();
     setIsMenuOpen(false);
   };
 
   return (
     <div className={`min-h-screen ${theme === 'dark' ? 'dark bg-slate-900' : 'bg-slate-50'} dir-rtl font-rubik transition-colors duration-300`}>
-      {/* Header / Nav - Clean Modern Design */}
+      {/* Global structured data */}
+      <SEOHead jsonLd={[WEBSITE_JSONLD, ORGANIZATION_JSONLD]} />
+
+      {/* Header / Nav */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-slate-900 backdrop-blur-xl border-b border-slate-800">
         <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
 
           {/* Right: Logo */}
-          <div className="flex items-center gap-3">
+          <NavLink to="/" className="flex items-center gap-3">
             <div className="w-9 h-9 bg-gradient-to-br from-amber-400 to-orange-600 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/20">
               <Scroll size={18} className="text-white" />
             </div>
             <span className="text-lg font-bold text-white hidden sm:block">מורשת ג'והורי</span>
-          </div>
+          </NavLink>
 
           {/* Center: Navigation Tabs (Desktop) */}
           <nav className="hidden md:flex items-center">
             <div className="flex bg-slate-800/80 p-1 rounded-xl gap-0.5">
               <NavTab
-                active={activeTab === 'dictionary'}
-                onClick={() => setActiveTab('dictionary')}
+                to="/"
                 icon={<BookOpen size={16} />}
                 label="מילון"
               />
               <NavTab
-                active={activeTab === 'tutor'}
-                onClick={() => setActiveTab('tutor')}
+                to="/tutor"
                 icon={<GraduationCap size={16} />}
                 label="מורה פרטי"
               />
               {isFeatureVisible('recipes_module') && (
                 <NavTab
-                  active={activeTab === 'recipes'}
-                  onClick={() => setActiveTab('recipes')}
+                  to="/recipes"
                   icon={<ChefHat size={16} />}
                   label="מתכונים"
                   comingSoon={isComingSoon('recipes_module')}
@@ -363,8 +254,7 @@ function App() {
               )}
               {isFeatureVisible('marketplace_module') && (
                 <NavTab
-                  active={activeTab === 'marketplace'}
-                  onClick={() => setActiveTab('marketplace')}
+                  to="/marketplace"
                   icon={<Store size={16} />}
                   label="שוק"
                   comingSoon={isComingSoon('marketplace_module')}
@@ -372,8 +262,7 @@ function App() {
               )}
               {isFeatureVisible('family_tree_module') && (
                 <NavTab
-                  active={activeTab === 'family'}
-                  onClick={() => setActiveTab('family')}
+                  to="/family"
                   icon={<TreeDeciduous size={16} />}
                   label="שורשים"
                   comingSoon={isComingSoon('family_tree_module')}
@@ -520,21 +409,18 @@ function App() {
         <div className="md:hidden border-t border-slate-800 bg-slate-900/95">
           <div className="flex justify-around overflow-x-auto py-1 px-1 gap-0 scrollbar-hide">
             <MobileNavTab
-              active={activeTab === 'dictionary'}
-              onClick={() => setActiveTab('dictionary')}
+              to="/"
               icon={<BookOpen size={18} />}
               label="מילון"
             />
             <MobileNavTab
-              active={activeTab === 'tutor'}
-              onClick={() => setActiveTab('tutor')}
+              to="/tutor"
               icon={<GraduationCap size={18} />}
               label="מורה"
             />
             {isFeatureVisible('recipes_module') && (
               <MobileNavTab
-                active={activeTab === 'recipes'}
-                onClick={() => setActiveTab('recipes')}
+                to="/recipes"
                 icon={<ChefHat size={18} />}
                 label="מתכונים"
                 comingSoon={isComingSoon('recipes_module')}
@@ -542,8 +428,7 @@ function App() {
             )}
             {isFeatureVisible('marketplace_module') && (
               <MobileNavTab
-                active={activeTab === 'marketplace'}
-                onClick={() => setActiveTab('marketplace')}
+                to="/marketplace"
                 icon={<Store size={18} />}
                 label="שוק"
                 comingSoon={isComingSoon('marketplace_module')}
@@ -551,8 +436,7 @@ function App() {
             )}
             {isFeatureVisible('family_tree_module') && (
               <MobileNavTab
-                active={activeTab === 'family'}
-                onClick={() => setActiveTab('family')}
+                to="/family"
                 icon={<TreeDeciduous size={18} />}
                 label="שורשים"
                 comingSoon={isComingSoon('family_tree_module')}
@@ -567,266 +451,135 @@ function App() {
         {/* Extra padding for mobile nav bar */}
         <div className="md:hidden h-12" />
 
-        {activeTab === 'dictionary' ? (
-          /* --- DICTIONARY MODE --- */
-          <>
-            {/* HERO SECTION */}
-            <HeroSection dialects={dialects} showBottomContent={!result}>
-              <div className="w-full relative group">
-                <div className="absolute -inset-1 bg-gradient-to-r from-amber-500 to-orange-600 rounded-2xl blur opacity-20 group-hover:opacity-30 transition duration-1000 group-hover:duration-200"></div>
-                <form onSubmit={handleSearch} className="relative flex bg-white dark:bg-slate-800 rounded-xl shadow-xl overflow-hidden p-2 ring-1 ring-slate-900/5 dark:ring-white/10">
-                  <input
-                    type="text"
-                    value={query}
-                    onChange={(e) => setQuery(e.target.value)}
-                    placeholder="חפש מילה, פתגם או ברכה..."
-                    className="flex-1 bg-transparent px-4 py-3 text-lg outline-none text-slate-800 dark:text-slate-100 placeholder:text-slate-400"
-                    disabled={loading}
-                  />
-                  <div className="flex items-center border-r border-slate-100 dark:border-slate-700 pr-2 gap-1">
-                    <button
-                      type="button"
-                      onMouseDown={startRecording}
-                      onMouseUp={stopRecording}
-                      onTouchStart={startRecording}
-                      onTouchEnd={stopRecording}
-                      onMouseLeave={stopRecording}
-                      className={`p-3 rounded-lg transition-all duration-200 ${isRecording
-                        ? 'bg-red-500 text-white scale-110 shadow-lg shadow-red-500/30'
-                        : 'text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-amber-600'
-                        }`}
-                      title="לחיצה ארוכה להקלטה"
-                    >
-                      <Mic size={24} className={isRecording ? 'animate-pulse' : ''} />
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={loading}
-                      className="bg-amber-600 hover:bg-amber-700 text-white p-3 rounded-lg transition-colors shadow-md shadow-amber-500/20 disabled:opacity-50"
-                    >
-                      {loading ? <Loader2 className="animate-spin" size={24} /> : <Search size={24} />}
-                    </button>
-                  </div>
-                </form>
-              </div>
-              {/* Progressive Loading Feedback */}
-              {loading && (
-                <div className="text-white font-medium animate-pulse text-sm mt-4 text-center flex items-center justify-center gap-2">
-                  <span>{loadingMessage}</span>
-                </div>
-              )}
+        <Routes>
+          {/* Dictionary (home) */}
+          <Route path="/" element={
+            <DictionaryPage
+              dialects={dialects}
+              onOpenContribute={() => setIsContributeOpen(true)}
+              onOpenAuthModal={openAuthModal}
+              onOpenTranslationModal={setTranslationModalEntry}
+              onOpenWordListModal={openWordListModal}
+            />
+          } />
+          <Route path="/word/:term" element={
+            <DictionaryPage
+              dialects={dialects}
+              onOpenContribute={() => setIsContributeOpen(true)}
+              onOpenAuthModal={openAuthModal}
+              onOpenTranslationModal={setTranslationModalEntry}
+              onOpenWordListModal={openWordListModal}
+            />
+          } />
 
-              {/* Error Message */}
-              {error && (
-                <div className="bg-red-500/80 backdrop-blur text-white p-3 rounded-xl text-center animate-in fade-in slide-in-from-top-2 mt-4 mx-auto max-w-lg shadow-lg">
-                  {error}
-                </div>
-              )}
-
-              {/* History Panel */}
-              {!result && !loading && (
-                <div className="mt-4 w-full">
-                  <HistoryPanel
-                    history={history}
-                    onClear={clearHistory}
-                    onSelect={(item) => {
-                      setQuery(item.term);
-                      handleSearch(undefined, item.term);
-                    }}
-                  />
-                </div>
-              )}
-            </HeroSection>
-
-            <div className="w-full max-w-6xl mx-auto px-4 mt-0 relative z-20">
-
-              {/* Floating CTA: Add Word Button */}
-              <button
-                onClick={() => setIsContributeOpen(true)}
-                className="fixed bottom-6 left-6 z-40 flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-full shadow-xl shadow-amber-500/30 hover:shadow-amber-500/50 hover:scale-105 transition-all font-bold text-sm group"
-              >
-                <Plus size={20} className="group-hover:rotate-90 transition-transform" />
-                <span className="hidden sm:inline">הוסף מילה</span>
-              </button>
-
-              {/* Widgets Grid - Only show if not searching (result is null) and not loading */}
-              {!result && !loading && (
-                <>
-                  {/* Community Contribution Widgets - New Row */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in slide-in-from-bottom-8 duration-700 mb-6">
-                    <div className="h-56 md:h-64">
-                      <NeedsTranslation
-                        onTranslate={(entryId, term) => setTranslationModalEntry({ id: entryId, term })}
-                        onOpenAuthModal={openAuthModal}
-                      />
-                    </div>
-                    <div className="h-56 md:h-64">
-                      <MissingDialects
-                        onAddDialect={(entryId, term, missing) => setTranslationModalEntry({ id: entryId, term })}
-                        onOpenAuthModal={openAuthModal}
-                      />
-                    </div>
-                    <div className="h-56 md:h-64">
-                      <PendingApprovals
-                        onViewDetails={(suggestionId) => { console.log('View suggestion:', suggestionId); /* TODO: Open suggestion modal */ }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Original Widgets Row */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in slide-in-from-bottom-8 duration-700 delay-200">
-                    <div className="h-64 md:h-80"><WordOfTheDay onSelectWord={(term) => { setQuery(term); handleSearch(undefined, term); }} /></div>
-                    <div className="h-64 md:h-80"><CommunityTicker /></div>
-                    <div className="h-64 md:h-80"><RecentAdditions onSelectWord={setQuery} /></div>
-                  </div>
-                </>
-              )}
-
-
-              {/* Results Container */}
-              <div className="w-full max-w-2xl mx-auto mt-8">
-                {/* Results */}
-                {result && !loading && (
-                  <div className="w-full animate-in slide-in-from-bottom-8 duration-500">
-                    <ResultCard
-                      entry={result}
-                      onOpenAuthModal={(reason) => openAuthModal(reason)}
-                      onSuggestCorrection={(translation, entryId, term) => {
-                        setTranslationModalEntry({
-                          id: Number(entryId),
-                          term,
-                          existingTranslation: {
-                            id: translation.id,
-                            dialect: translation.dialect,
-                            hebrew: translation.hebrew,
-                            latin: translation.latin,
-                            cyrillic: translation.cyrillic
-                          }
-                        });
-                      }}
-                    />
-                  </div>
-                )}
-
-              </div>
-
+          {/* Tutor */}
+          <Route path="/tutor" element={
+            <div className="w-full animate-in slide-in-from-right duration-300">
+              <Suspense fallback={<LazyFallback />}>
+                <TutorMode />
+              </Suspense>
             </div>
-          </>
-        ) : activeTab === 'tutor' ? (
-          /* --- TUTOR MODE --- */
-          <div className="w-full animate-in slide-in-from-right duration-300">
-            <TutorMode />
-          </div>
-        ) : activeTab === 'recipes' ? (
-          /* --- RECIPES MODE --- */
-          <div className="w-full animate-in slide-in-from-right duration-300">
-            {canAccessFeatureContent('recipes_module') ? (
-              <RecipesPage />
-            ) : (
-              <div className="min-h-[60vh] flex flex-col items-center justify-center text-center p-8">
-                <div className="w-24 h-24 bg-gradient-to-br from-amber-400 to-orange-600 rounded-full flex items-center justify-center mb-6 shadow-lg shadow-amber-500/30 animate-pulse">
-                  <ChefHat className="w-12 h-12 text-white" />
-                </div>
-                <h2 className="text-3xl font-bold text-slate-800 dark:text-white mb-3">
-                  מתכונים - בקרוב! 🍲
-                </h2>
-                <p className="text-lg text-slate-600 dark:text-slate-300 max-w-md mb-4">
-                  אוסף המתכונים הקווקזיים שלנו בפיתוח. בקרוב תוכלו לגלות מתכונים מסורתיים!
-                </p>
-                <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-4 py-2 rounded-full">
-                  <Clock className="w-4 h-4" />
-                  <span>הפיצ'ר בשלבי פיתוח אחרונים</span>
-                </div>
+          } />
+
+          {/* Recipes */}
+          <Route path="/recipes" element={
+            <FeatureRoute feature="recipes_module">
+              <div className="w-full animate-in slide-in-from-right duration-300">
+                <Suspense fallback={<LazyFallback />}><RecipesPage /></Suspense>
               </div>
-            )}
-          </div>
-        ) : activeTab === 'marketplace' ? (
-          /* --- MARKETPLACE MODE --- */
-          <div className="w-full animate-in slide-in-from-right duration-300">
-            {canAccessFeatureContent('marketplace_module') ? (
-              <MarketplacePage />
-            ) : (
-              <div className="min-h-[60vh] flex flex-col items-center justify-center text-center p-8">
-                <div className="w-24 h-24 bg-gradient-to-br from-orange-400 to-red-600 rounded-full flex items-center justify-center mb-6 shadow-lg shadow-orange-500/30 animate-pulse">
-                  <Store className="w-12 h-12 text-white" />
-                </div>
-                <h2 className="text-3xl font-bold text-slate-800 dark:text-white mb-3">
-                  שוק - בקרוב! 🛒
-                </h2>
-                <p className="text-lg text-slate-600 dark:text-slate-300 max-w-md mb-4">
-                  השוק הקהילתי שלנו בפיתוח. בקרוב תוכלו למצוא עסקים ומוכרים מהקהילה!
-                </p>
-                <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-4 py-2 rounded-full">
-                  <Clock className="w-4 h-4" />
-                  <span>הפיצ'ר בשלבי פיתוח אחרונים</span>
-                </div>
+            </FeatureRoute>
+          } />
+          <Route path="/recipes/:id" element={
+            <FeatureRoute feature="recipes_module">
+              <div className="w-full animate-in slide-in-from-right duration-300">
+                <Suspense fallback={<LazyFallback />}><RecipesPage /></Suspense>
               </div>
-            )}
-          </div>
-        ) : (
-          /* --- FAMILY TREE MODE --- */
-          <div className="w-full animate-in slide-in-from-right duration-300">
-            {canAccessFeatureContent('family_tree_module') ? (
-              <CommunityGraph />
-            ) : (
-              /* Coming Soon Placeholder */
-              <div className="min-h-[60vh] flex flex-col items-center justify-center text-center p-8">
-                <div className="w-24 h-24 bg-gradient-to-br from-emerald-400 to-teal-600 rounded-full flex items-center justify-center mb-6 shadow-lg shadow-emerald-500/30 animate-pulse">
-                  <TreeDeciduous className="w-12 h-12 text-white" />
-                </div>
-                <h2 className="text-3xl font-bold text-slate-800 dark:text-white mb-3">
-                  שורשים - בקרוב! 🌳
-                </h2>
-                <p className="text-lg text-slate-600 dark:text-slate-300 max-w-md mb-4">
-                  עץ המשפחה שלנו בפיתוח. בקרוב תוכלו לחקור ולבנות את עץ השורשים של משפחתכם!
-                </p>
-                <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-4 py-2 rounded-full">
-                  <Clock className="w-4 h-4" />
-                  <span>הפיצ'ר בשלבי פיתוח אחרונים</span>
-                </div>
+            </FeatureRoute>
+          } />
+
+          {/* Marketplace */}
+          <Route path="/marketplace" element={
+            <FeatureRoute feature="marketplace_module">
+              <div className="w-full animate-in slide-in-from-right duration-300">
+                <Suspense fallback={<LazyFallback />}><MarketplacePage /></Suspense>
               </div>
-            )}
-          </div>
-        )}
+            </FeatureRoute>
+          } />
+          <Route path="/marketplace/:slug" element={
+            <FeatureRoute feature="marketplace_module">
+              <div className="w-full animate-in slide-in-from-right duration-300">
+                <Suspense fallback={<LazyFallback />}><MarketplacePage /></Suspense>
+              </div>
+            </FeatureRoute>
+          } />
+
+          {/* Family Tree */}
+          <Route path="/family" element={
+            <FeatureRoute feature="family_tree_module">
+              <div className="w-full animate-in slide-in-from-right duration-300">
+                <Suspense fallback={<LazyFallback />}><CommunityGraph /></Suspense>
+              </div>
+            </FeatureRoute>
+          } />
+
+          {/* Catch-all redirect to home */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
 
       </main>
 
       {/* Modals */}
-      <ContributeModal isOpen={isContributeOpen} onClose={() => setIsContributeOpen(false)} user={user} />
-      <AboutModal isOpen={isAboutOpen} onClose={() => setIsAboutOpen(false)} />
-      {isAdminOpen && user && <AdminDashboard user={user} onClose={() => setIsAdminOpen(false)} />}
-      {isMobileAdminOpen && <MobileAdminPanel onClose={() => setIsMobileAdminOpen(false)} />}
+      <Suspense fallback={null}>
+        <ContributeModal isOpen={isContributeOpen} onClose={() => setIsContributeOpen(false)} user={user} />
+        <AboutModal isOpen={isAboutOpen} onClose={() => setIsAboutOpen(false)} />
+      </Suspense>
+      {isAdminOpen && user && <Suspense fallback={<LazyFallback />}><AdminDashboard user={user} onClose={() => setIsAdminOpen(false)} /></Suspense>}
+      {isMobileAdminOpen && <Suspense fallback={<LazyFallback />}><MobileAdminPanel onClose={() => setIsMobileAdminOpen(false)} /></Suspense>}
       <AuthModal
         isOpen={isAuthModalOpen}
         onClose={() => { setIsAuthModalOpen(false); setAuthModalReason(undefined); }}
         onSuccess={(u) => { refreshUser(); setIsAuthModalOpen(false); setAuthModalReason(undefined); }}
         reason={authModalReason}
       />
-      {
-        user && (
+      <Suspense fallback={null}>
+        {user && (
           <ProfileModal
             isOpen={isProfileModalOpen}
             onClose={() => setIsProfileModalOpen(false)}
             user={user}
             onUpdate={(updated) => refreshUser()}
           />
-        )
-      }
+        )}
 
-      {/* Translation Modal */}
-      {
-        translationModalEntry && (
+        {/* Translation Modal */}
+        {translationModalEntry && (
           <TranslationModal
             entryId={translationModalEntry.id}
             term={translationModalEntry.term}
             existingTranslation={translationModalEntry.existingTranslation}
             onClose={() => setTranslationModalEntry(null)}
             onSuccess={() => {
-              alert(translationModalEntry.existingTranslation ? 'התיקון נשלח לאישור! תודה 🎉' : 'התרגום נשלח לאישור! תודה על התרומה 🎉');
+              alert(translationModalEntry.existingTranslation ? 'התיקון נשלח לאישור! תודה \u{1F389}' : 'התרגום נשלח לאישור! תודה על התרומה \u{1F389}');
             }}
           />
-        )
-      }
+        )}
+
+        {/* Word List Modal */}
+        <WordListModal
+          isOpen={wordListModal.isOpen}
+          onClose={() => setWordListModal(prev => ({ ...prev, isOpen: false }))}
+          title={wordListModal.title}
+          category={wordListModal.category}
+          totalCount={wordListModal.totalCount}
+          onSelectWord={(entryId, term) => {
+            setWordListModal(prev => ({ ...prev, isOpen: false }));
+            setTranslationModalEntry({ id: entryId, term });
+          }}
+        />
+      </Suspense>
+
+      {/* Floating Feedback Button */}
+      <FeedbackButton />
 
     </div >
   );

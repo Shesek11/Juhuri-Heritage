@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { X, Send, Loader2, CheckCircle, AlertCircle, Feather, Mic, Square, Play, Pause, RotateCcw } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { X, Send, Loader2, CheckCircle, AlertCircle, Feather, Mic, Square, Play, Pause, RotateCcw, Search, Edit3, GitBranch } from 'lucide-react';
 import { verifySuggestion } from '../services/geminiService';
 import { addCustomEntry, getDialects } from '../services/storageService';
+import { dictionaryApi } from '../services/apiService';
 import { DictionaryEntry, DialectItem, User } from '../types';
 import { incrementContribution } from '../services/authService';
 import apiService from '../services/apiService';
@@ -22,6 +23,13 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
   const [status, setStatus] = useState<'idle' | 'success' | 'error'>('idle');
   const [feedback, setFeedback] = useState('');
   const [dialects, setDialects] = useState<DialectItem[]>([]);
+
+  // Duplicate detection state
+  const [existingEntry, setExistingEntry] = useState<any | null>(null);
+  const [checkingDuplicate, setCheckingDuplicate] = useState(false);
+  const [duplicateMode, setDuplicateMode] = useState<'none' | 'found' | 'correct' | 'dialect'>('none');
+  const [fieldSuggestion, setFieldSuggestion] = useState({ fieldName: '', value: '', reason: '' });
+  const [suggestionSent, setSuggestionSent] = useState(false);
 
   // Audio recording state
   const [isRecording, setIsRecording] = useState(false);
@@ -44,6 +52,44 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
       if (audioUrl) URL.revokeObjectURL(audioUrl);
     };
   }, [isOpen]);
+
+  // Debounced duplicate check when term changes
+  useEffect(() => {
+    if (!term || term.trim().length < 2) {
+      setExistingEntry(null);
+      setDuplicateMode('none');
+      return;
+    }
+    const timeout = setTimeout(async () => {
+      setCheckingDuplicate(true);
+      try {
+        const result = await dictionaryApi.search(term.trim());
+        if (result.found && result.entry) {
+          // Check for exact match
+          const entry = result.entry;
+          const isExact = entry.term === term.trim() ||
+            entry.translations?.some((t: any) => t.hebrew === term.trim());
+          if (isExact) {
+            setExistingEntry(entry);
+            setDuplicateMode('found');
+          } else {
+            setExistingEntry(null);
+            setDuplicateMode('none');
+          }
+        } else {
+          setExistingEntry(null);
+          setDuplicateMode('none');
+        }
+      } catch {
+        // Search failed - continue normally
+        setExistingEntry(null);
+        setDuplicateMode('none');
+      } finally {
+        setCheckingDuplicate(false);
+      }
+    }, 500);
+    return () => clearTimeout(timeout);
+  }, [term]);
 
   if (!isOpen) return null;
 
@@ -175,6 +221,28 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
     }
   };
 
+  const handleFieldSuggestion = async () => {
+    if (!existingEntry?.id || !fieldSuggestion.fieldName || !fieldSuggestion.value.trim()) return;
+    setLoading(true);
+    try {
+      await apiService.post(`/dictionary/entries/${existingEntry.id}/suggest-field`, {
+        fieldName: fieldSuggestion.fieldName,
+        currentValue: '',
+        suggestedValue: fieldSuggestion.value.trim(),
+        reason: fieldSuggestion.reason.trim() || undefined,
+      });
+      setSuggestionSent(true);
+      setStatus('success');
+      setFeedback('ההצעה נשלחה בהצלחה! תודה על התרומה.');
+      setTimeout(() => { onClose(); resetForm(); }, 2500);
+    } catch {
+      setStatus('error');
+      setFeedback('שגיאה בשליחת ההצעה.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const resetForm = () => {
     setTerm('');
     setHebrew('');
@@ -182,6 +250,10 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
     setCyrillic('');
     setDialect('');
     setStatus('idle');
+    setExistingEntry(null);
+    setDuplicateMode('none');
+    setFieldSuggestion({ fieldName: '', value: '', reason: '' });
+    setSuggestionSent(false);
     resetRecording();
   };
 
@@ -219,7 +291,120 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
             />
           </div>
 
+          {/* Duplicate Detection Notice */}
+          {checkingDuplicate && (
+            <div className="flex items-center gap-2 text-xs text-slate-400">
+              <Loader2 size={12} className="animate-spin" />
+              בודק אם המילה קיימת...
+            </div>
+          )}
+
+          {duplicateMode === 'found' && existingEntry && (
+            <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl space-y-3 animate-in fade-in slide-in-from-top-2">
+              <div className="flex items-start gap-2">
+                <AlertCircle size={18} className="text-amber-600 shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-bold text-amber-800 dark:text-amber-300">מילה זו כבר קיימת במאגר!</p>
+                  <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">ניתן להציע תיקון לרשומה הקיימת או להוסיף דיאלקט חדש.</p>
+                </div>
+              </div>
+
+              {/* Existing entry preview */}
+              <div className="bg-white dark:bg-slate-800 rounded-lg p-3 border border-slate-200 dark:border-slate-700 text-sm">
+                <div className="font-bold text-lg text-slate-800 dark:text-slate-100">{existingEntry.term}</div>
+                {existingEntry.translations?.[0]?.hebrew && (
+                  <div className="text-slate-600 dark:text-slate-300">{existingEntry.translations[0].hebrew}</div>
+                )}
+                {existingEntry.translations?.[0]?.latin && (
+                  <div className="text-slate-500 dark:text-slate-400 font-mono text-xs">{existingEntry.translations[0].latin}</div>
+                )}
+                {existingEntry.definitions?.[0] && (
+                  <div className="text-slate-500 dark:text-slate-400 text-xs mt-1">{existingEntry.definitions[0]}</div>
+                )}
+              </div>
+
+              {/* Action buttons */}
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setDuplicateMode('correct')}
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-indigo-600 text-white text-xs font-medium rounded-lg hover:bg-indigo-700 transition-colors"
+                >
+                  <Edit3 size={14} />
+                  הצע תיקון
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDuplicateMode('dialect')}
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-emerald-600 text-white text-xs font-medium rounded-lg hover:bg-emerald-700 transition-colors"
+                >
+                  <GitBranch size={14} />
+                  הוסף דיאלקט
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Field correction mode */}
+          {duplicateMode === 'correct' && existingEntry && !suggestionSent && (
+            <div className="p-4 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-xl space-y-3 animate-in fade-in">
+              <p className="text-sm font-bold text-indigo-700 dark:text-indigo-300">הצע תיקון לרשומה: {existingEntry.term}</p>
+              <div>
+                <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">איזה שדה לתקן?</label>
+                <select
+                  value={fieldSuggestion.fieldName}
+                  onChange={e => setFieldSuggestion(prev => ({ ...prev, fieldName: e.target.value }))}
+                  className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                  title="בחר שדה לתיקון"
+                >
+                  <option value="">בחר שדה...</option>
+                  <option value="hebrew">תרגום עברי</option>
+                  <option value="latin">תעתיק לטיני</option>
+                  <option value="cyrillic">כתב קירילי</option>
+                  <option value="russian">רוסית</option>
+                  <option value="definition">הגדרה</option>
+                  <option value="pronunciationGuide">מדריך הגייה</option>
+                </select>
+              </div>
+              <input
+                type="text"
+                value={fieldSuggestion.value}
+                onChange={e => setFieldSuggestion(prev => ({ ...prev, value: e.target.value }))}
+                placeholder="הערך המוצע..."
+                className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                dir="auto"
+              />
+              <input
+                type="text"
+                value={fieldSuggestion.reason}
+                onChange={e => setFieldSuggestion(prev => ({ ...prev, reason: e.target.value }))}
+                placeholder="סיבה / מקור (אופציונלי)"
+                className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                dir="auto"
+              />
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={handleFieldSuggestion}
+                  disabled={loading || !fieldSuggestion.fieldName || !fieldSuggestion.value.trim()}
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-indigo-600 text-white text-xs font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  {loading ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+                  שלח הצעת תיקון
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDuplicateMode('found')}
+                  className="px-3 py-2 text-xs text-slate-500 hover:text-slate-700 transition-colors"
+                >
+                  חזור
+                </button>
+              </div>
+            </div>
+          )}
+
           {/* Translation - Hebrew */}
+          {(duplicateMode === 'none' || duplicateMode === 'dialect') && (<>
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
               התרגום/פירוש בעברית <span className="text-red-500">*</span>
@@ -352,6 +537,19 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
             </p>
           )}
 
+          {/* Submit Button */}
+          <div className="pt-2">
+            <button
+              type="submit"
+              disabled={loading || !term || !hebrew}
+              className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-bold rounded-xl shadow-lg shadow-amber-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? <Loader2 className="animate-spin" size={20} /> : <Send size={18} />}
+              {loading ? 'שולח לאישור...' : 'שלח לאישור'}
+            </button>
+          </div>
+          </>)}
+
           {/* Status Messages */}
           {status === 'success' && (
             <div className="p-3 bg-green-50 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-lg flex items-start gap-2 text-sm">
@@ -366,18 +564,6 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
               <span>{feedback}</span>
             </div>
           )}
-
-          {/* Submit Button */}
-          <div className="pt-2">
-            <button
-              type="submit"
-              disabled={loading || !term || !hebrew}
-              className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-bold rounded-xl shadow-lg shadow-amber-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? <Loader2 className="animate-spin" size={20} /> : <Send size={18} />}
-              {loading ? 'שולח לאישור...' : 'שלח לאישור'}
-            </button>
-          </div>
         </form>
       </div>
     </div>

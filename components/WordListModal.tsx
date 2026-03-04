@@ -1,0 +1,210 @@
+import React, { useState, useEffect, useCallback } from 'react';
+import { X, Search, ChevronRight, ChevronLeft, Loader2 } from 'lucide-react';
+import apiService from '../services/apiService';
+
+interface WordListEntry {
+    id: number;
+    term: string;
+    detected_language?: string;
+    hebrew?: string;
+    latin?: string;
+    cyrillic?: string;
+    existingDialects?: string[];
+    missingDialects?: string[];
+}
+
+interface WordListModalProps {
+    isOpen: boolean;
+    onClose: () => void;
+    title: string;
+    category: 'hebrew-only' | 'juhuri-only' | 'missing-dialects' | 'missing-audio';
+    totalCount: number;
+    onSelectWord: (entryId: number, term: string) => void;
+}
+
+const WordListModal: React.FC<WordListModalProps> = ({
+    isOpen,
+    onClose,
+    title,
+    category,
+    totalCount,
+    onSelectWord
+}) => {
+    const [entries, setEntries] = useState<WordListEntry[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [page, setPage] = useState(0);
+    const pageSize = 20;
+
+    const fetchEntries = useCallback(async () => {
+        setLoading(true);
+        try {
+            const offset = page * pageSize;
+            const res = await apiService.get<{ entries: WordListEntry[], total: number }>(
+                `/dictionary/${category}?limit=${pageSize}&offset=${offset}`
+            );
+            setEntries(res.entries || []);
+        } catch (err) {
+            console.error(`Failed to fetch ${category} entries:`, err);
+        } finally {
+            setLoading(false);
+        }
+    }, [category, page]);
+
+    useEffect(() => {
+        if (isOpen) {
+            fetchEntries();
+        }
+    }, [isOpen, fetchEntries]);
+
+    useEffect(() => {
+        if (isOpen) {
+            setPage(0);
+            setSearchTerm('');
+        }
+    }, [isOpen, category]);
+
+    if (!isOpen) return null;
+
+    const totalPages = Math.ceil(totalCount / pageSize);
+
+    const filteredEntries = searchTerm
+        ? entries.filter(e =>
+            e.term.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            e.hebrew?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            e.latin?.toLowerCase().includes(searchTerm.toLowerCase())
+        )
+        : entries;
+
+    const getCategoryColor = () => {
+        switch (category) {
+            case 'hebrew-only': return 'from-amber-500 to-orange-600';
+            case 'juhuri-only': return 'from-emerald-500 to-teal-600';
+            case 'missing-dialects': return 'from-blue-500 to-indigo-600';
+            case 'missing-audio': return 'from-purple-500 to-violet-600';
+            default: return 'from-slate-500 to-slate-600';
+        }
+    };
+
+    const getMissingInfo = (entry: WordListEntry) => {
+        switch (category) {
+            case 'hebrew-only':
+                return <span className="text-amber-600 dark:text-amber-400">חסר: ג'והורי/לטינית</span>;
+            case 'juhuri-only':
+                return <span className="text-emerald-600 dark:text-emerald-400">חסר: עברית</span>;
+            case 'missing-dialects':
+                return (
+                    <div className="flex flex-wrap gap-1">
+                        {entry.missingDialects?.slice(0, 2).map((d, i) => (
+                            <span key={i} className="text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-1 rounded text-[10px]">
+                                {d}
+                            </span>
+                        ))}
+                        {(entry.missingDialects?.length || 0) > 2 && (
+                            <span className="text-slate-400 text-[10px]">+{entry.missingDialects!.length - 2}</span>
+                        )}
+                    </div>
+                );
+            case 'missing-audio':
+                return <span className="text-purple-600 dark:text-purple-400">חסר: הקלטה</span>;
+            default:
+                return null;
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200 font-rubik" onClick={onClose}>
+            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-200 dark:border-slate-700 h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+
+                {/* Header */}
+                <div className={`p-5 bg-gradient-to-r ${getCategoryColor()} text-white flex justify-between items-center shrink-0`}>
+                    <div>
+                        <h3 className="font-bold text-lg">{title}</h3>
+                        <p className="text-sm text-white/80">{totalCount.toLocaleString()} מילים</p>
+                    </div>
+                    <button onClick={onClose} className="p-2 rounded-full hover:bg-white/20 transition-colors">
+                        <X size={20} />
+                    </button>
+                </div>
+
+                {/* Search */}
+                <div className="p-4 border-b border-slate-100 dark:border-slate-700 shrink-0">
+                    <div className="relative">
+                        <Search size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                        <input
+                            type="text"
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            placeholder="חיפוש בתוצאות..."
+                            className="w-full pr-10 pl-4 py-2 border border-slate-200 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                    </div>
+                </div>
+
+                {/* Content */}
+                <div className="flex-1 overflow-y-auto p-4">
+                    {loading ? (
+                        <div className="flex items-center justify-center h-32">
+                            <Loader2 className="animate-spin text-indigo-500" size={32} />
+                        </div>
+                    ) : filteredEntries.length === 0 ? (
+                        <div className="text-center text-slate-400 py-8">
+                            {searchTerm ? 'לא נמצאו תוצאות' : 'אין מילים בקטגוריה זו'}
+                        </div>
+                    ) : (
+                        <div className="space-y-2">
+                            {filteredEntries.map((entry) => (
+                                <button
+                                    key={entry.id}
+                                    onClick={() => onSelectWord(entry.id, entry.term)}
+                                    className="w-full text-right flex items-center justify-between p-4 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-all group border border-slate-100 dark:border-slate-700 hover:border-indigo-200 dark:hover:border-indigo-800"
+                                >
+                                    <div className="min-w-0 flex-1">
+                                        <div className="font-bold text-slate-800 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                                            {entry.term}
+                                        </div>
+                                        <div className="text-sm text-slate-500 mt-1 flex flex-wrap items-center gap-2">
+                                            {entry.hebrew && <span>{entry.hebrew}</span>}
+                                            {entry.latin && <span className="font-mono text-xs">{entry.latin}</span>}
+                                        </div>
+                                        <div className="text-xs mt-1">
+                                            {getMissingInfo(entry)}
+                                        </div>
+                                    </div>
+                                    <ChevronLeft size={18} className="text-slate-300 group-hover:text-indigo-500 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0 shrink-0 mr-2" />
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                </div>
+
+                {/* Pagination */}
+                {totalPages > 1 && (
+                    <div className="p-4 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between shrink-0">
+                        <button
+                            onClick={() => setPage(p => Math.max(0, p - 1))}
+                            disabled={page === 0}
+                            className="flex items-center gap-1 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                            <ChevronRight size={16} />
+                            הקודם
+                        </button>
+                        <span className="text-sm text-slate-500">
+                            עמוד {page + 1} מתוך {totalPages}
+                        </span>
+                        <button
+                            onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
+                            disabled={page >= totalPages - 1}
+                            className="flex items-center gap-1 px-3 py-2 rounded-lg border border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                            הבא
+                            <ChevronLeft size={16} />
+                        </button>
+                    </div>
+                )}
+            </div>
+        </div>
+    );
+};
+
+export default WordListModal;

@@ -27,13 +27,18 @@ export const logSystemEvent = async (
 
 // --- Custom Entries Logic ---
 
-export const getCustomEntries = async (): Promise<DictionaryEntry[]> => {
+export const getCustomEntries = async (params?: { page?: number; limit?: number; search?: string; status?: string }): Promise<{ entries: DictionaryEntry[]; total: number; page: number; totalPages: number }> => {
   try {
-    const response = await dictionaryApi.getEntries();
-    return response.entries || [];
+    const response = await dictionaryApi.getEntries(params);
+    return {
+      entries: response.entries || [],
+      total: response.total || 0,
+      page: response.page || 1,
+      totalPages: response.totalPages || 1,
+    };
   } catch (err) {
     console.error('Failed to get entries:', err);
-    return [];
+    return { entries: [], total: 0, page: 1, totalPages: 1 };
   }
 };
 

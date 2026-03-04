@@ -40,3 +40,8 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp
+
+# Audit/debug artifacts
+audit-screenshots
+nul
+debug-*.js

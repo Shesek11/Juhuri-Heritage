@@ -64,8 +64,18 @@ export const dictionaryApi = {
     search: (term: string) =>
         request(`/dictionary/search?q=${encodeURIComponent(term)}`),
 
-    getEntries: (status?: string) =>
-        request(`/dictionary/entries${status ? `?status=${status}` : ''}`),
+    getEntryByTerm: (term: string) =>
+        request(`/dictionary/entry/${encodeURIComponent(term)}`),
+
+    getEntries: (params?: { status?: string; page?: number; limit?: number; search?: string }) => {
+        const qs = new URLSearchParams();
+        if (params?.status) qs.set('status', params.status);
+        if (params?.page) qs.set('page', String(params.page));
+        if (params?.limit) qs.set('limit', String(params.limit));
+        if (params?.search) qs.set('search', params.search);
+        const query = qs.toString();
+        return request(`/dictionary/entries${query ? `?${query}` : ''}`);
+    },
 
     addEntry: (data: { term: string; translation: string; dialect?: string; notes?: string }) =>
         request('/dictionary/entries', {
@@ -135,6 +145,12 @@ export const geminiApi = {
         request('/gemini/search-audio', {
             method: 'POST',
             body: JSON.stringify({ audioData, mimeType })
+        }),
+
+    enrich: (term: string, hebrew: string, missingFields: string[]) =>
+        request('/gemini/enrich', {
+            method: 'POST',
+            body: JSON.stringify({ term, hebrew, missingFields })
         }),
 
     tts: (text: string, voice?: string) =>
