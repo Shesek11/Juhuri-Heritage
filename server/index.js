@@ -1,14 +1,62 @@
 const express = require('express');
 const cors = require('cors');
+const helmet = require('helmet');
 const cookieParser = require('cookie-parser');
+const rateLimit = require('express-rate-limit');
 const path = require('path');
 
-// Load environment variables
 // Load environment variables
 require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
 
 const app = express();
 const PORT = process.env.PORT || 3002;
+
+// Security headers
+app.use(helmet({
+    contentSecurityPolicy: {
+        directives: {
+            defaultSrc: ["'self'"],
+            scriptSrc: ["'self'"],
+            styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+            fontSrc: ["'self'", "https://fonts.gstatic.com"],
+            imgSrc: ["'self'", "data:", "blob:", "https://*.tile.openstreetmap.org", "https://unpkg.com"],
+            connectSrc: ["'self'", "https://generativelanguage.googleapis.com"],
+            frameSrc: ["'none'"],
+            objectSrc: ["'none'"],
+            baseUri: ["'self'"],
+            formAction: ["'self'"],
+            frameAncestors: ["'self'"],
+            scriptSrcAttr: ["'none'"],
+            upgradeInsecureRequests: [],
+        }
+    },
+    crossOriginEmbedderPolicy: false,
+    hsts: {
+        maxAge: 31536000,
+        includeSubDomains: true,
+        preload: true,
+    },
+    xXssProtection: false,
+}));
+
+// Permissions-Policy header
+app.use((req, res, next) => {
+    res.setHeader('Permissions-Policy', 'geolocation=(self), camera=(), microphone=(self), payment=()');
+    next();
+});
+
+// Rate limiters
+const commentLimiter = rateLimit({
+    windowMs: 5 * 60 * 1000,
+    max: 20,
+    message: { error: 'יותר מדי בקשות, נסה שוב בעוד כמה דקות' }
+});
+
+const gamificationLimiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 10,
+    message: { error: 'יותר מדי בקשות' }
+});
 
 // CORS configuration
 const corsOrigins = process.env.CORS_ORIGINS
@@ -35,9 +83,9 @@ app.use('/api/users', require('./routes/users'));
 app.use('/api/gemini', require('./routes/gemini'));
 app.use('/api/progress', require('./routes/progress'));
 app.use('/api/logs', require('./routes/logs'));
-app.use('/api/comments', require('./routes/comments'));
+app.use('/api/comments', commentLimiter, require('./routes/comments'));
 app.use('/api/recordings', require('./routes/recordings'));
-app.use('/api/gamification', require('./routes/gamification'));
+app.use('/api/gamification', gamificationLimiter, require('./routes/gamification'));
 app.use('/api/admin/features', require('./routes/features'));
 app.use('/api/recipes', require('./routes/recipes'));
 app.use('/api/marketplace', require('./routes/marketplace'));

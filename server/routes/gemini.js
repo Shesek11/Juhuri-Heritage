@@ -213,7 +213,7 @@ router.post('/search', async (req, res) => {
 
     } catch (err) {
         console.error('Gemini search error:', err);
-        res.status(500).json({ error: 'שגיאה בחיפוש AI', details: err.message });
+        res.status(500).json({ error: 'שגיאה בחיפוש AI' });
     }
 });
 
@@ -233,7 +233,7 @@ router.post('/search-audio', async (req, res) => {
 
     } catch (err) {
         console.error('Gemini audio error:', err);
-        res.status(500).json({ error: 'שגיאה בזיהוי שמע', details: err.message });
+        res.status(500).json({ error: 'שגיאה בזיהוי שמע' });
     }
 });
 
@@ -269,7 +269,7 @@ Rules: Strict dialect adherence, level adaptation, and always use Nikud for Hebr
 
     } catch (err) {
         console.error('Tutor error:', err);
-        res.status(500).json({ error: 'שגיאה במורה פרטי', details: err.message });
+        res.status(500).json({ error: 'שגיאה במורה פרטי' });
     }
 });
 
@@ -302,7 +302,7 @@ router.post('/generate-lesson', async (req, res) => {
 
     } catch (err) {
         console.error('Lesson gen error:', err);
-        res.status(500).json({ error: 'שגיאה ביצירת שיעור', details: err.message });
+        res.status(500).json({ error: 'שגיאה ביצירת שיעור' });
     }
 });
 
@@ -328,7 +328,7 @@ router.post('/tts', async (req, res) => {
 
     } catch (err) {
         console.error('TTS error:', err);
-        res.status(500).json({ error: 'שגיאת שרת ב-TTS', details: err.message });
+        res.status(500).json({ error: 'שגיאת שרת ב-TTS' });
     }
 });
 

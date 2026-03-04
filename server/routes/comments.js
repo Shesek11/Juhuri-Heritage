@@ -41,9 +41,10 @@ router.get('/:entryId', async (req, res) => {
  * - Auth users: status = 'approved'
  * - Guests: status = 'pending', requires name
  */
-router.post('/', async (req, res) => {
+router.post('/', optionalAuth, async (req, res) => {
     try {
-        const { entryId, content, guestName, userId } = req.body;
+        const { entryId, content, guestName } = req.body;
+        const userId = req.user ? req.user.id : null;
 
         if (!entryId || !content) {
             return res.status(400).json({ error: 'חסר מידע נדרש' });
@@ -124,14 +125,10 @@ router.delete('/:id', optionalAuth, async (req, res) => {
  * POST /api/comments/:id/like
  * Like a comment (auth users only).
  */
-router.post('/:id/like', async (req, res) => {
+router.post('/:id/like', authenticate, async (req, res) => {
     try {
         const { id } = req.params;
-        const { userId } = req.body;
-
-        if (!userId) {
-            return res.status(401).json({ error: 'יש להתחבר כדי לתת לייק' });
-        }
+        const userId = req.user.id;
 
         // Check if already liked
         const [existing] = await db.query(

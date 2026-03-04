@@ -48,7 +48,7 @@ const XPDisplay: React.FC = () => {
         fetchData();
 
         // Check login streak on mount
-        apiService.post('/gamification/check-login-streak', { userId: user.sub })
+        apiService.post('/gamification/check-login-streak', {})
             .catch(err => console.error('Failed to check login streak:', err));
 
     }, [isAuthenticated, user?.sub]);

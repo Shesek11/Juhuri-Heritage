@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
+const { authenticate } = require('../middleware/auth');
 
 // XP Award Values
 const XP_REWARDS = {
@@ -32,11 +33,12 @@ const xpForLevel = (level) => Math.pow(level, 2) * 100;
  * POST /api/gamification/award-xp
  * Award XP to a user for an action.
  */
-router.post('/award-xp', async (req, res) => {
+router.post('/award-xp', authenticate, async (req, res) => {
     try {
-        const { userId, action, amount } = req.body;
+        const { action, amount } = req.body;
+        const userId = req.user.id;
 
-        if (!userId || !action) {
+        if (!action) {
             return res.status(400).json({ error: 'Missing required fields' });
         }
 
@@ -87,13 +89,9 @@ router.post('/award-xp', async (req, res) => {
  * POST /api/gamification/check-login-streak
  * Check and update login streak, award daily XP.
  */
-router.post('/check-login-streak', async (req, res) => {
+router.post('/check-login-streak', authenticate, async (req, res) => {
     try {
-        const { userId } = req.body;
-
-        if (!userId) {
-            return res.status(400).json({ error: 'Missing userId' });
-        }
+        const userId = req.user.id;
 
         const [users] = await db.query(
             'SELECT id, xp, level, current_streak, last_login_date FROM users WHERE id = ? OR auth0_id = ?',

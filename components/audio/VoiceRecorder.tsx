@@ -113,15 +113,14 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ entryId, dialectId, onRec
             formData.append('entryId', String(entryId));
             formData.append('duration', String(recordingTime));
             if (dialectId) formData.append('dialectId', String(dialectId));
-            if (isAuthenticated && user?.sub) {
-                formData.append('userId', user.sub);
-            } else {
+            if (!isAuthenticated) {
                 formData.append('guestName', guestName);
             }
 
             const response = await fetch('/api/recordings/upload', {
                 method: 'POST',
-                body: formData
+                body: formData,
+                credentials: 'include',
             });
 
             const data = await response.json();

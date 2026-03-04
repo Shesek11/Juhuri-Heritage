@@ -4,7 +4,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const db = require('../config/db');
-const { authenticate, requireApprover } = require('../middleware/auth');
+const { authenticate, requireApprover, optionalAuth } = require('../middleware/auth');
 
 // Ensure uploads directory exists
 const uploadsDir = path.join(__dirname, '../../public/uploads/recordings');
@@ -39,13 +39,14 @@ const upload = multer({
  * POST /api/recordings/upload
  * Upload a new audio recording for an entry.
  */
-router.post('/upload', upload.single('audio'), async (req, res) => {
+router.post('/upload', optionalAuth, upload.single('audio'), async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ error: 'לא התקבל קובץ אודיו' });
         }
 
-        const { entryId, dialectId, userId, guestName } = req.body;
+        const { entryId, dialectId, guestName } = req.body;
+        const userId = req.user ? req.user.id : null;
 
         if (!entryId) {
             return res.status(400).json({ error: 'חסר מזהה ערך' });
@@ -118,14 +119,10 @@ router.get('/:entryId', async (req, res) => {
  * POST /api/recordings/:id/like
  * Like/unlike a recording.
  */
-router.post('/:id/like', async (req, res) => {
+router.post('/:id/like', authenticate, async (req, res) => {
     try {
         const { id } = req.params;
-        const { userId } = req.body;
-
-        if (!userId) {
-            return res.status(401).json({ error: 'יש להתחבר כדי לתת לייק' });
-        }
+        const userId = req.user.id;
 
         const [existing] = await db.query(
             'SELECT id FROM likes WHERE user_id = ? AND target_type = ? AND target_id = ?',

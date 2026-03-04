@@ -23,7 +23,9 @@ router.get('/vendors', async (req, res) => {
 
         // Basic query
         let query = `
-            SELECT v.*, u.name as owner_name, u.avatar as owner_avatar
+            SELECT v.id, v.business_name, v.description, v.logo_url,
+                   v.latitude, v.longitude, v.city, v.category,
+                   u.name as owner_name, u.avatar as owner_avatar
             FROM vendors v
             JOIN users u ON v.user_id = u.id
             WHERE v.is_active = 1
@@ -60,7 +62,10 @@ router.get('/vendors/:id', async (req, res) => {
         const { id } = req.params;
 
         const [vendors] = await pool.query(`
-            SELECT v.*, u.name as owner_name, u.avatar as owner_avatar
+            SELECT v.id, v.business_name, v.description, v.logo_url,
+                   v.latitude, v.longitude, v.city, v.category,
+                   v.phone, v.address,
+                   u.name as owner_name, u.avatar as owner_avatar
             FROM vendors v
             JOIN users u ON v.user_id = u.id
             WHERE v.id = ?

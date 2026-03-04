@@ -55,7 +55,6 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({ entryId }) => {
                 entryId,
                 content: content.trim(),
                 guestName: isAuthenticated ? undefined : guestName.trim(),
-                userId: isAuthenticated ? user?.sub : undefined
             });
 
             if (res.success) {
@@ -80,10 +79,7 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({ entryId }) => {
         if (!confirm('למחוק את התגובה?')) return;
 
         try {
-            await apiService.delete(`/comments/${commentId}`, {
-                userId: user?.sub,
-                isAdmin: false // TODO: Implement admin check
-            });
+            await apiService.delete(`/comments/${commentId}`);
             fetchComments();
         } catch (err) {
             console.error('Failed to delete comment:', err);
@@ -94,9 +90,7 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({ entryId }) => {
         if (!isAuthenticated) return;
 
         try {
-            await apiService.post(`/comments/${commentId}/like`, {
-                userId: user?.sub
-            });
+            await apiService.post(`/comments/${commentId}/like`, {});
             fetchComments();
         } catch (err) {
             console.error('Failed to like comment:', err);
