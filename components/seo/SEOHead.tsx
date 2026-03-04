@@ -25,7 +25,9 @@ export const SEOHead: React.FC<SEOHeadProps> = ({
     ? `${title} | ${SITE_NAME}`
     : `${SITE_NAME} | המילון לשימור השפה`;
 
-  const canonicalUrl = canonicalPath ? `${SITE_URL}${canonicalPath}` : undefined;
+  // Always resolve canonical: explicit path > current window path
+  const resolvedPath = canonicalPath ?? (typeof window !== 'undefined' ? window.location.pathname : '/');
+  const canonicalUrl = `${SITE_URL}${resolvedPath}`;
 
   const jsonLdArray = jsonLd
     ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd])
@@ -35,14 +37,14 @@ export const SEOHead: React.FC<SEOHeadProps> = ({
     <Helmet>
       <title>{fullTitle}</title>
       <meta name="description" content={description} />
-      {canonicalUrl && <link rel="canonical" href={canonicalUrl} />}
+      <link rel="canonical" href={canonicalUrl} />
 
       {/* Open Graph */}
       <meta property="og:title" content={fullTitle} />
       <meta property="og:description" content={description} />
       <meta property="og:image" content={ogImage} />
       <meta property="og:type" content={ogType} />
-      {canonicalUrl && <meta property="og:url" content={canonicalUrl} />}
+      <meta property="og:url" content={canonicalUrl} />
       <meta property="og:site_name" content={SITE_NAME} />
       <meta property="og:locale" content="he_IL" />
 
@@ -82,7 +84,10 @@ export const ORGANIZATION_JSONLD = {
   '@context': 'https://schema.org',
   '@type': 'Organization',
   'name': 'Juhuri Heritage',
+  'alternateName': 'מורשת ג\'והורי',
   'url': SITE_URL,
+  'logo': `${SITE_URL}/images/og-default.png`,
+  'description': 'שימור שפת ג\'והורי, מתכונים ומורשת תרבותית של יהודי ההרים',
 };
 
 export function buildDefinedTermJsonLd(term: string, definition: string) {

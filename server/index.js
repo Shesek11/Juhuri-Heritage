@@ -312,17 +312,20 @@ const injectMetaTags = async (req, res, indexHtml) => {
                 description = meanings
                     ? `${term}: ${meanings} - מילון ג'והורי-עברי`
                     : `חפש את המשמעות של "${term}" במילון הג'והורי-עברי`;
-                jsonLd = JSON.stringify({
-                    "@context": "https://schema.org",
+                const ldData = {
                     "@type": "DefinedTerm",
                     "name": term,
                     "description": meanings || description,
+                    "inLanguage": "jdt",
                     "inDefinedTermSet": {
                         "@type": "DefinedTermSet",
                         "name": "מילון ג'והורי-עברי",
-                        "url": SITE_URL
+                        "url": SITE_URL,
+                        "inLanguage": ["jdt", "he", "ru"]
                     }
-                });
+                };
+                if (e.latin_spelling) ldData.termCode = e.latin_spelling;
+                jsonLd = JSON.stringify(ldData);
                 bodyContent = `<h1>${term}</h1>`;
                 if (e.hebrew_translation) bodyContent += `<p>עברית: ${e.hebrew_translation}</p>`;
                 if (e.russian_translation) bodyContent += `<p>Русский: ${e.russian_translation}</p>`;
@@ -331,21 +334,42 @@ const injectMetaTags = async (req, res, indexHtml) => {
             }
         } else if (recipeMatch) {
             const [recipes] = await db.query(
-                'SELECT title, description FROM recipes WHERE id = ? AND is_approved = 1 LIMIT 1',
+                `SELECT r.title, r.description, r.prep_time, r.cook_time, r.servings,
+                        r.ingredients, r.instructions, r.created_at,
+                        u.name as author_name
+                 FROM recipes r
+                 LEFT JOIN users u ON r.user_id = u.id
+                 WHERE r.id = ? AND r.is_approved = 1 LIMIT 1`,
                 [recipeMatch[1]]
             );
             if (recipes.length) {
+                const r = recipes[0];
                 isValidPage = true;
-                title = `${recipes[0].title} - מתכון | מורשת ג'והורי`;
-                description = recipes[0].description || `מתכון מסורתי: ${recipes[0].title}`;
-                jsonLd = JSON.stringify({
-                    "@context": "https://schema.org",
+                title = `${r.title} - מתכון | מורשת ג'והורי`;
+                description = r.description || `מתכון מסורתי: ${r.title}`;
+                const ldData = {
                     "@type": "Recipe",
-                    "name": recipes[0].title,
+                    "name": r.title,
                     "description": description,
                     "recipeCuisine": "Caucasian Jewish"
-                });
-                bodyContent = `<h1>${recipes[0].title}</h1><p>${description}</p>`;
+                };
+                if (r.author_name) ldData.author = { "@type": "Person", "name": r.author_name };
+                if (r.created_at) ldData.datePublished = new Date(r.created_at).toISOString().split('T')[0];
+                if (r.prep_time) ldData.prepTime = `PT${r.prep_time}M`;
+                if (r.cook_time) ldData.cookTime = `PT${r.cook_time}M`;
+                if (r.servings) ldData.recipeYield = `${r.servings} מנות`;
+                try {
+                    const ingredients = typeof r.ingredients === 'string' ? JSON.parse(r.ingredients) : r.ingredients;
+                    if (Array.isArray(ingredients) && ingredients.length) ldData.recipeIngredient = ingredients;
+                } catch (_) {}
+                try {
+                    const instructions = typeof r.instructions === 'string' ? JSON.parse(r.instructions) : r.instructions;
+                    if (Array.isArray(instructions) && instructions.length) {
+                        ldData.recipeInstructions = instructions.map(step => ({ "@type": "HowToStep", "text": step }));
+                    }
+                } catch (_) {}
+                jsonLd = JSON.stringify(ldData);
+                bodyContent = `<h1>${r.title}</h1><p>${description}</p>`;
             }
         } else if (vendorMatch) {
             const [vendors] = await db.query(
@@ -357,28 +381,49 @@ const injectMetaTags = async (req, res, indexHtml) => {
                 title = `${vendors[0].name} - שוק | מורשת ג'והורי`;
                 description = vendors[0].about_text || `${vendors[0].name} בשוק הקהילתי`;
                 jsonLd = JSON.stringify({
-                    "@context": "https://schema.org",
                     "@type": "LocalBusiness",
                     "name": vendors[0].name,
-                    "description": description
+                    "description": description,
+                    "url": url
                 });
                 bodyContent = `<h1>${vendors[0].name}</h1><p>${description}</p>`;
             }
         } else if (req.path === '/') {
             isValidPage = true;
             jsonLd = JSON.stringify({
-                "@context": "https://schema.org",
                 "@type": "WebSite",
                 "name": "מורשת ג'והורי",
+                "alternateName": "Juhuri Heritage",
                 "url": SITE_URL,
                 "description": description,
+                "inLanguage": ["jdt", "he", "ru"],
                 "potentialAction": {
                     "@type": "SearchAction",
-                    "target": `${SITE_URL}/?q={search_term_string}`,
+                    "target": { "@type": "EntryPoint", "urlTemplate": `${SITE_URL}/?q={search_term_string}` },
                     "query-input": "required name=search_term_string"
                 }
             });
             bodyContent = `<h1>מורשת ג'והורי - המילון לשימור השפה</h1><p>${description}</p>`;
+        } else if (req.path === '/tutor') {
+            isValidPage = true;
+            title = 'מורה פרטי AI לג\'והורית | מורשת ג\'והורי';
+            description = 'למד ג\'והורית עם מורה פרטי מבוסס בינה מלאכותית. תרגול שיחה, תרגום ודקדוק בשפת יהודי ההרים.';
+            bodyContent = `<h1>מורה פרטי AI לג'והורית</h1><p>${description}</p><p>התחל שיחה עם סבא מרדכי - מורה וירטואלי שילמד אותך את שפת ג'והורי, שפת יהודי ההרים מהקווקז.</p>`;
+        } else if (req.path === '/recipes') {
+            isValidPage = true;
+            title = 'מתכונים מסורתיים של יהודי ההרים | מורשת ג\'והורי';
+            description = 'אוסף מתכונים מסורתיים של יהודי הקווקז - מאכלי ג\'והורי אותנטיים עם מרכיבים ושלבי הכנה.';
+            bodyContent = `<h1>מתכונים מסורתיים של יהודי ההרים</h1><p>${description}</p>`;
+        } else if (req.path === '/marketplace') {
+            isValidPage = true;
+            title = 'שוק קהילתי | מורשת ג\'והורי';
+            description = 'שוק קהילתי של יהודי ההרים - מוצרים, שירותים ועסקים של הקהילה הג\'והורית בישראל.';
+            bodyContent = `<h1>שוק קהילתי - יהודי ההרים</h1><p>${description}</p>`;
+        } else if (req.path === '/family') {
+            isValidPage = true;
+            title = 'עץ משפחה וגנאולוגיה | מורשת ג\'והורי';
+            description = 'חקרו את עץ המשפחה והרשת הקהילתית של יהודי ההרים. גלו קשרים משפחתיים ושורשים.';
+            bodyContent = `<h1>עץ משפחה - יהודי ההרים</h1><p>${description}</p><p>בנו את עץ המשפחה שלכם וגלו קשרים עם משפחות אחרות בקהילה הג\'והורית.</p>`;
         }
     } catch (err) {
         console.error('Crawler meta injection DB error:', err);
@@ -400,10 +445,48 @@ const injectMetaTags = async (req, res, indexHtml) => {
         .replace(/<meta name="twitter:title"[^>]*>/, `<meta name="twitter:title" content="${esc(title)}">`)
         .replace(/<meta name="twitter:description"[^>]*>/, `<meta name="twitter:description" content="${esc(description)}">`);
 
-    // Inject JSON-LD structured data for crawlers
+    // Build @graph with Organization + BreadcrumbList + page-specific schema
+    const graph = [{
+        "@type": "Organization",
+        "name": "Juhuri Heritage",
+        "alternateName": "מורשת ג'והורי",
+        "url": SITE_URL,
+        "logo": `${SITE_URL}/images/og-default.png`,
+        "description": "שימור שפת ג'והורי, מתכונים ומורשת תרבותית של יהודי ההרים"
+    }];
+
     if (jsonLd) {
-        html = html.replace('</head>', `  <script type="application/ld+json">${jsonLd}</script>\n</head>`);
+        graph.push(JSON.parse(jsonLd));
     }
+
+    // Add BreadcrumbList for non-homepage routes
+    if (req.path !== '/') {
+        const breadcrumb = {
+            "@type": "BreadcrumbList",
+            "itemListElement": [
+                { "@type": "ListItem", "position": 1, "name": "דף הבית", "item": SITE_URL }
+            ]
+        };
+        const wordMatch = req.path.match(/^\/word\//);
+        const recipeMatch = req.path.match(/^\/recipes\/(\d+)$/);
+        const vendorMatch = req.path.match(/^\/marketplace\/(.+)$/);
+        if (wordMatch) {
+            breadcrumb.itemListElement.push({ "@type": "ListItem", "position": 2, "name": "מילון", "item": SITE_URL });
+            breadcrumb.itemListElement.push({ "@type": "ListItem", "position": 3, "name": title.split(' - ')[0] });
+        } else if (recipeMatch) {
+            breadcrumb.itemListElement.push({ "@type": "ListItem", "position": 2, "name": "מתכונים", "item": `${SITE_URL}/recipes` });
+            breadcrumb.itemListElement.push({ "@type": "ListItem", "position": 3, "name": title.split(' - ')[0] });
+        } else if (vendorMatch) {
+            breadcrumb.itemListElement.push({ "@type": "ListItem", "position": 2, "name": "שוק", "item": `${SITE_URL}/marketplace` });
+            breadcrumb.itemListElement.push({ "@type": "ListItem", "position": 3, "name": title.split(' - ')[0] });
+        } else {
+            breadcrumb.itemListElement.push({ "@type": "ListItem", "position": 2, "name": title.split(' | ')[0] });
+        }
+        graph.push(breadcrumb);
+    }
+
+    const fullLd = JSON.stringify({ "@context": "https://schema.org", "@graph": graph });
+    html = html.replace('</head>', `  <script type="application/ld+json">${fullLd}</script>\n</head>`);
 
     // Inject visible content for crawlers (inside noscript for non-JS rendering)
     if (bodyContent) {
@@ -485,6 +568,7 @@ app.get('/llms.txt', async (req, res) => {
 if (process.env.NODE_ENV === 'production') {
     app.use(express.static(path.join(__dirname, '../dist'), {
         maxAge: '1y',
+        index: false, // Don't auto-serve index.html for '/' — let catch-all handle it for crawler injection
         setHeaders: (res, filePath) => {
             if (filePath.endsWith('.html')) {
                 res.setHeader('Cache-Control', 'no-cache');
