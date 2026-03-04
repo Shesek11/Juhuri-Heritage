@@ -8,7 +8,7 @@ export interface FamilyMember {
     id: number;
     user_id?: number;
 
-    // Name fields
+    // Name fields (Hebrew)
     first_name: string;
     last_name: string;
     maiden_name?: string;
@@ -16,14 +16,35 @@ export interface FamilyMember {
     previous_name?: string;
     title?: string;
 
+    // Name fields (Russian)
+    first_name_ru?: string;
+    last_name_ru?: string;
+    maiden_name_ru?: string;
+
     gender: 'male' | 'female' | 'other';
 
-    // Dates & Places
+    // Dates & Places (legacy combined fields)
     birth_date?: string;
     death_date?: string;
     birth_place?: string;
     death_place?: string;
     current_residence?: string;
+
+    // Places (split: city + country)
+    birth_city?: string;
+    birth_country?: string;
+    death_city?: string;
+    death_country?: string;
+    residence_city?: string;
+    residence_country?: string;
+
+    // Places (Russian)
+    birth_city_ru?: string;
+    birth_country_ru?: string;
+    death_city_ru?: string;
+    death_country_ru?: string;
+    residence_city_ru?: string;
+    residence_country_ru?: string;
 
     biography?: string;
     photo_url?: string;
@@ -120,11 +141,27 @@ export interface CreateMemberInput {
     nickname?: string;
     previous_name?: string;
     title?: string;
+    first_name_ru?: string;
+    last_name_ru?: string;
+    maiden_name_ru?: string;
     gender: 'male' | 'female' | 'other';
     birth_date?: string;
     death_date?: string;
     birth_place?: string;
     death_place?: string;
+    current_residence?: string;
+    birth_city?: string;
+    birth_country?: string;
+    death_city?: string;
+    death_country?: string;
+    residence_city?: string;
+    residence_country?: string;
+    birth_city_ru?: string;
+    birth_country_ru?: string;
+    death_city_ru?: string;
+    death_country_ru?: string;
+    residence_city_ru?: string;
+    residence_country_ru?: string;
     biography?: string;
     photo_url?: string;
     is_alive: boolean;
@@ -300,6 +337,11 @@ export const familyService = {
         }
 
         return response.json();
+    },
+
+    // AI Transliteration (Hebrew ↔ Russian)
+    transliterateNames: (fields: Record<string, string>, direction: 'he-to-ru' | 'ru-to-he') => {
+        return apiService.post<Record<string, string>>('/gemini/transliterate-names', { fields, direction });
     },
 
     exportGedcom: async () => {
