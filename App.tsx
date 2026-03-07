@@ -13,6 +13,7 @@ import DictionaryPage from './components/DictionaryPage';
 import { SEOHead, WEBSITE_JSONLD, ORGANIZATION_JSONLD } from './components/seo/SEOHead';
 
 // Lazy-loaded heavy components (tab pages & modals)
+const HomePage = lazy(() => import('./components/HomePage'));
 const TutorMode = lazy(() => import('./components/TutorMode'));
 const RecipesPage = lazy(() => import('./components/RecipesPage'));
 const MarketplacePage = lazy(() => import('./components/MarketplacePage').then(m => ({ default: m.MarketplacePage })));
@@ -447,13 +448,27 @@ function App() {
       </header>
 
       {/* Main Content Area */}
-      <main className="w-full relative z-10 flex flex-col items-center pb-20 pt-14 md:pt-14" onClick={() => setIsMenuOpen(false)}>
-        {/* Extra padding for mobile nav bar */}
-        <div className="md:hidden h-12" />
+      <main
+        className={`w-full relative z-10 flex flex-col items-center ${location.pathname === '/' ? '' : 'pb-20 pt-14 md:pt-14'}`}
+        onClick={() => setIsMenuOpen(false)}
+      >
+        {/* Extra padding for mobile nav bar (not on homepage) */}
+        {location.pathname !== '/' && <div className="md:hidden h-12" />}
 
         <Routes>
-          {/* Dictionary (home) */}
+          {/* Homepage */}
           <Route path="/" element={
+            <Suspense fallback={<LazyFallback />}>
+              <HomePage
+                featureFlags={featureFlags}
+                onOpenAuthModal={openAuthModal}
+                isAdmin={isAdmin}
+              />
+            </Suspense>
+          } />
+
+          {/* Dictionary */}
+          <Route path="/dictionary" element={
             <DictionaryPage
               dialects={dialects}
               onOpenContribute={() => setIsContributeOpen(true)}
