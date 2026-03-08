@@ -60,13 +60,13 @@ const WordOfTheDay: React.FC<WordOfTheDayProps> = ({ onSelectWord }) => {
         }
     };
 
-    if (isLoading) return <div className="h-full bg-white dark:bg-slate-800 rounded-2xl animate-pulse min-h-[16rem]" />;
+    if (isLoading) return <div className="h-full bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl animate-pulse min-h-[16rem]" />;
 
 
 
     return (
         <div
-            className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-100 dark:border-slate-700 overflow-hidden group hover:shadow-xl transition-all font-rubik h-full flex flex-col cursor-pointer"
+            className="bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-lg border border-white/10 overflow-hidden group hover:shadow-xl transition-all font-rubik h-full flex flex-col cursor-pointer"
             onClick={() => onSelectWord(displayWord.term)}
         >
             <div className="bg-gradient-to-r from-amber-500 to-orange-600 p-4 text-white flex justify-between items-center">
@@ -78,7 +78,7 @@ const WordOfTheDay: React.FC<WordOfTheDayProps> = ({ onSelectWord }) => {
 
             <div className="p-6 flex-1 flex flex-col justify-center items-center text-center space-y-4">
                 <div className="space-y-1">
-                    <h4 className="text-4xl font-bold text-slate-800 dark:text-slate-100 group-hover:text-amber-600 transition-colors">
+                    <h4 className="text-4xl font-bold text-slate-100 group-hover:text-amber-600 transition-colors">
                         {displayWord.term}
                     </h4>
                     <p className="text-sm text-slate-400 font-mono">{displayWord.pronunciationGuide}</p>
@@ -100,7 +100,7 @@ const WordOfTheDay: React.FC<WordOfTheDayProps> = ({ onSelectWord }) => {
 
             <button
                 // onClick removed from here because the parent div handles it, preventing double trigger or bubbling issues
-                className="w-full pt-3 pb-8 bg-slate-50 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors flex items-center justify-center gap-2 border-t border-slate-100 dark:border-slate-700 mt-auto"
+                className="w-full pt-3 pb-8 bg-white/5 text-slate-500 dark:text-slate-400 text-sm font-medium hover:bg-white/10 transition-colors flex items-center justify-center gap-2 border-t border-white/10 mt-auto"
             >
                 לכרטיס המלא
                 <ArrowLeft size={16} />

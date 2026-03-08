@@ -48,7 +48,7 @@ const MissingDialects: React.FC<MissingDialectsProps> = ({ onAddDialect, onOpenA
 
     if (loading) {
         return (
-            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-100 dark:border-slate-700 overflow-hidden h-full flex items-center justify-center">
+            <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-lg border border-white/10 overflow-hidden h-full flex items-center justify-center">
                 <Loader2 className="animate-spin text-blue-500" size={32} />
             </div>
         );
@@ -56,7 +56,7 @@ const MissingDialects: React.FC<MissingDialectsProps> = ({ onAddDialect, onOpenA
 
     if (entries.length === 0) {
         return (
-            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-100 dark:border-slate-700 overflow-hidden h-full flex flex-col">
+            <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-lg border border-white/10 overflow-hidden h-full flex flex-col">
                 <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-4 text-white">
                     <h3 className="font-bold text-lg flex items-center gap-2">
                         <Globe size={20} /> חסרים ניבים
@@ -70,7 +70,7 @@ const MissingDialects: React.FC<MissingDialectsProps> = ({ onAddDialect, onOpenA
     }
 
     return (
-        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-100 dark:border-slate-700 overflow-hidden font-rubik h-full flex flex-col">
+        <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-lg border border-white/10 overflow-hidden font-rubik h-full flex flex-col">
             <div className="bg-gradient-to-r from-blue-500 to-indigo-600 p-4 text-white">
                 <h3 className="font-bold text-lg flex items-center gap-2">
                     <Globe size={20} /> חסרים ניבים
@@ -87,7 +87,7 @@ const MissingDialects: React.FC<MissingDialectsProps> = ({ onAddDialect, onOpenA
                             className="w-full text-right flex items-center justify-between p-3 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all group border border-transparent hover:border-blue-200 dark:hover:border-blue-800"
                         >
                             <div>
-                                <div className="font-bold text-slate-800 dark:text-slate-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                <div className="font-bold text-slate-200 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                                     {entry.term}
                                 </div>
                                 <div className="flex flex-wrap gap-1 mt-1">
@@ -111,7 +111,7 @@ const MissingDialects: React.FC<MissingDialectsProps> = ({ onAddDialect, onOpenA
 
             <button
                 onClick={() => onViewAll(total)}
-                className="p-3 border-t border-slate-100 dark:border-slate-700 text-center hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+                className="p-3 border-t border-white/10 text-center hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
             >
                 <span className="text-xs text-slate-500 hover:text-blue-600 dark:hover:text-blue-400">
                     צפייה בכל {total.toLocaleString()} המילים

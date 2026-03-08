@@ -13,11 +13,11 @@ const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200 font-rubik" onClick={onClose}>
-      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-200 dark:border-slate-700 h-[85vh] flex flex-col" onClick={e => e.stopPropagation()}>
+      <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in zoom-in-95 duration-200 border border-white/10 h-[85vh] flex flex-col" onClick={e => e.stopPropagation()}>
 
         {/* Header */}
-        <div className="p-5 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50 shrink-0">
-          <div className="flex items-center gap-2 text-slate-800 dark:text-slate-200">
+        <div className="p-5 border-b border-white/10 flex justify-between items-center bg-white/5 shrink-0">
+          <div className="flex items-center gap-2 text-slate-200">
             <Info size={20} className="text-indigo-600 dark:text-indigo-400" />
             <h3 className="font-bold text-lg">מרכז מידע ועזרה</h3>
           </div>
@@ -27,7 +27,7 @@ const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-slate-100 dark:border-slate-700 shrink-0">
+        <div className="flex border-b border-white/10 shrink-0">
           <button
             onClick={() => setActiveTab('about')}
             className={`flex-1 py-3 text-sm font-medium transition-colors flex items-center justify-center gap-2 border-b-2 ${activeTab === 'about' ? 'border-indigo-600 text-indigo-600 dark:text-indigo-400' : 'border-transparent text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-700/30'}`}
@@ -62,32 +62,32 @@ const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-4 border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800/30">
+                <div className="p-4 border border-white/10 rounded-xl bg-slate-50 dark:bg-slate-800/30">
                   <div className="bg-white dark:bg-slate-700 w-10 h-10 rounded-lg flex items-center justify-center shadow-sm mb-3 text-amber-500">
                     <Book size={20} />
                   </div>
-                  <h5 className="font-bold text-slate-900 dark:text-white mb-1">המילון החכם</h5>
+                  <h5 className="font-bold text-white mb-1">המילון החכם</h5>
                   <p className="text-sm text-slate-500">מאגר עצום של מילים וביטויים, כולל תרגום משולש (עברית, לטינית, קירילית) וזיהוי ניבים אוטומטי.</p>
                 </div>
-                <div className="p-4 border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800/30">
+                <div className="p-4 border border-white/10 rounded-xl bg-slate-50 dark:bg-slate-800/30">
                   <div className="bg-white dark:bg-slate-700 w-10 h-10 rounded-lg flex items-center justify-center shadow-sm mb-3 text-purple-500">
                     <GraduationCap size={20} />
                   </div>
-                  <h5 className="font-bold text-slate-900 dark:text-white mb-1">המורה הפרטי</h5>
+                  <h5 className="font-bold text-white mb-1">המורה הפרטי</h5>
                   <p className="text-sm text-slate-500">מערכת למידה אינטראקטיבית המאפשרת לתרגל את השפה באמצעות שיעורים מובנים ושיחות עם דמויות AI.</p>
                 </div>
-                <div className="p-4 border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800/30">
+                <div className="p-4 border border-white/10 rounded-xl bg-slate-50 dark:bg-slate-800/30">
                   <div className="bg-white dark:bg-slate-700 w-10 h-10 rounded-lg flex items-center justify-center shadow-sm mb-3 text-rose-500">
                     <Mic size={20} />
                   </div>
-                  <h5 className="font-bold text-slate-900 dark:text-white mb-1">חיפוש קולי</h5>
+                  <h5 className="font-bold text-white mb-1">חיפוש קולי</h5>
                   <p className="text-sm text-slate-500">ניתן לחפש מילים וביטויים פשוט על ידי דיבור אל המיקרופון, והמערכת תזהה ותתרגם בזמן אמת.</p>
                 </div>
-                <div className="p-4 border border-slate-200 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-800/30">
+                <div className="p-4 border border-white/10 rounded-xl bg-slate-50 dark:bg-slate-800/30">
                   <div className="bg-white dark:bg-slate-700 w-10 h-10 rounded-lg flex items-center justify-center shadow-sm mb-3 text-green-500">
                     <Layout size={20} />
                   </div>
-                  <h5 className="font-bold text-slate-900 dark:text-white mb-1">ממשק מתקדם</h5>
+                  <h5 className="font-bold text-white mb-1">ממשק מתקדם</h5>
                   <p className="text-sm text-slate-500">חוויית משתמש מודרנית ונגישה, מותאמת לכל המכשירים, עם תמיכה במצב כהה (Dark Mode).</p>
                 </div>
               </div>
@@ -99,29 +99,29 @@ const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
             <div className="space-y-8 animate-in fade-in duration-300">
               {/* Dictionary Guide */}
               <div className="space-y-4">
-                <h4 className="font-bold text-slate-900 dark:text-white text-lg flex items-center gap-2 border-b border-slate-200 dark:border-slate-700 pb-2">
+                <h4 className="font-bold text-white text-lg flex items-center gap-2 border-b border-white/10 pb-2">
                   <Search size={20} className="text-indigo-500" />
                   איך להשתמש במילון?
                 </h4>
                 <ul className="space-y-4">
                   <li className="flex gap-4 items-start">
-                    <span className="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 text-xs">1</span>
+                    <span className="bg-white/10 text-slate-600 dark:text-slate-300 font-bold w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 text-xs">1</span>
                     <div>
-                      <p className="font-bold text-slate-800 dark:text-slate-200">חיפוש חופשי</p>
+                      <p className="font-bold text-slate-200">חיפוש חופשי</p>
                       <p className="text-sm text-slate-500">הקלידו מילה בעברית, בג'והורית (באותיות לטיניות או קיריליות) או אפילו באנגלית. המערכת תזהה את השפה אוטומטית.</p>
                     </div>
                   </li>
                   <li className="flex gap-4 items-start">
-                    <span className="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 text-xs">2</span>
+                    <span className="bg-white/10 text-slate-600 dark:text-slate-300 font-bold w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 text-xs">2</span>
                     <div>
-                      <p className="font-bold text-slate-800 dark:text-slate-200">חיפוש קולי</p>
+                      <p className="font-bold text-slate-200">חיפוש קולי</p>
                       <p className="text-sm text-slate-500">לחצו על סמל המיקרופון <Mic size={14} className="inline mx-1" /> ואמרו מילה. המערכת תתמלל אותה ותציג תוצאות מיד.</p>
                     </div>
                   </li>
                   <li className="flex gap-4 items-start">
-                    <span className="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 text-xs">3</span>
+                    <span className="bg-white/10 text-slate-600 dark:text-slate-300 font-bold w-6 h-6 rounded-full flex items-center justify-center shrink-0 mt-0.5 text-xs">3</span>
                     <div>
-                      <p className="font-bold text-slate-800 dark:text-slate-200">כרטיס התוצאה</p>
+                      <p className="font-bold text-slate-200">כרטיס התוצאה</p>
                       <p className="text-sm text-slate-500">לכל מילה תקבלו הגדרה מדויקת, תרגום לניבים שונים, דוגמאות לשימוש במשפט ומדריך הגייה מפורט.</p>
                     </div>
                   </li>
@@ -130,7 +130,7 @@ const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
 
               {/* Tutor Guide */}
               <div className="space-y-4">
-                <h4 className="font-bold text-slate-900 dark:text-white text-lg flex items-center gap-2 border-b border-slate-200 dark:border-slate-700 pb-2">
+                <h4 className="font-bold text-white text-lg flex items-center gap-2 border-b border-white/10 pb-2">
                   <MessageCircle size={20} className="text-emerald-500" />
                   המורה הפרטי ("סבא מרדכי")
                 </h4>
@@ -143,7 +143,7 @@ const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
                       <GraduationCap size={16} />
                     </div>
                     <div>
-                      <p className="font-bold text-slate-800 dark:text-slate-200">מצב לימוד (Tutor Mode)</p>
+                      <p className="font-bold text-slate-200">מצב לימוד (Tutor Mode)</p>
                       <p className="text-sm text-slate-500">בחרו "מצב לימוד" בתפריט הצד כדי לגשת לשיעורים מובנים לפי רמות קושי.</p>
                     </div>
                   </li>
@@ -152,7 +152,7 @@ const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
                       <MessageCircle size={16} />
                     </div>
                     <div>
-                      <p className="font-bold text-slate-800 dark:text-slate-200">שיחה חופשית</p>
+                      <p className="font-bold text-slate-200">שיחה חופשית</p>
                       <p className="text-sm text-slate-500">ניתן להתכתב עם סבא מרדכי, לבקש ממנו להסביר דקדוק, או סתם לפטפט ב'והורית.</p>
                     </div>
                   </li>
@@ -170,7 +170,7 @@ const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
 
               {/* Section 1: Dictionaries */}
               <div>
-                <h4 className="font-bold text-slate-900 dark:text-white mb-3 flex items-center gap-2 text-sm uppercase tracking-wider">
+                <h4 className="font-bold text-white mb-3 flex items-center gap-2 text-sm uppercase tracking-wider">
                   <Library size={16} className="text-amber-600" />
                   מילונים מרכזיים
                 </h4>
@@ -193,7 +193,7 @@ const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
 
               {/* Section 2: Grammar & Research */}
               <div>
-                <h4 className="font-bold text-slate-900 dark:text-white mb-3 flex items-center gap-2 text-sm uppercase tracking-wider">
+                <h4 className="font-bold text-white mb-3 flex items-center gap-2 text-sm uppercase tracking-wider">
                   <GraduationCap size={16} className="text-emerald-600" />
                   דקדוק ומחקר אקדמי
                 </h4>
@@ -211,7 +211,7 @@ const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
 
               {/* Section 3: History */}
               <div>
-                <h4 className="font-bold text-slate-900 dark:text-white mb-3 flex items-center gap-2 text-sm uppercase tracking-wider">
+                <h4 className="font-bold text-white mb-3 flex items-center gap-2 text-sm uppercase tracking-wider">
                   <History size={16} className="text-rose-600" />
                   מחקר היסטורי (ארכאי)
                 </h4>
@@ -221,25 +221,25 @@ const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
                 </div>
               </div>
 
-              <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
+              <div className="mt-4 pt-4 border-t border-white/10">
                 <a
                   href="https://stmegi.com/gorskie_evrei/juhuri/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-3 p-2 hover:bg-slate-100 dark:hover:bg-slate-700/50 rounded-lg transition-colors group"
+                  className="flex items-center gap-3 p-2 hover:bg-white/10/50 rounded-lg transition-colors group"
                 >
                   <div className="bg-indigo-100 dark:bg-indigo-900/50 p-2 rounded-lg text-indigo-600 dark:text-indigo-400">
                     <Globe size={18} />
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-slate-800 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">מרכז המורשת STMEGI</p>
+                    <p className="text-sm font-bold text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">מרכז המורשת STMEGI</p>
                     <p className="text-xs text-slate-500">לעיון במקורות הדיגיטליים</p>
                   </div>
                   <ExternalLink size={14} className="mr-auto text-slate-400" />
                 </a>
               </div>
 
-              <div className="text-[10px] text-slate-400 border-t border-slate-100 dark:border-slate-700 pt-2 text-center">
+              <div className="text-[10px] text-slate-400 border-t border-white/10 pt-2 text-center">
                 <p>ט.ל.ח • המערכת משתמשת בבינה מלאכותית ומבצעת סינתזה של המקורות הנ"ל.</p>
               </div>
             </div>

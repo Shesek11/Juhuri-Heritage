@@ -47,14 +47,14 @@ const MissingAudioWidget: React.FC<MissingAudioWidgetProps> = ({ onAddAudio, onO
 
     if (loading) {
         return (
-            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-100 dark:border-slate-700 overflow-hidden h-full flex items-center justify-center">
+            <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-lg border border-white/10 overflow-hidden h-full flex items-center justify-center">
                 <Loader2 className="animate-spin text-purple-500" size={32} />
             </div>
         );
     }
 
     return (
-        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-100 dark:border-slate-700 overflow-hidden font-rubik h-full flex flex-col">
+        <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-lg border border-white/10 overflow-hidden font-rubik h-full flex flex-col">
             <div className="bg-gradient-to-r from-purple-500 to-violet-600 p-4 text-white">
                 <h3 className="font-bold text-lg flex items-center gap-2">
                     <Mic size={20} /> חסרה הקלטה
@@ -76,7 +76,7 @@ const MissingAudioWidget: React.FC<MissingAudioWidgetProps> = ({ onAddAudio, onO
                                 className="w-full text-right flex items-center justify-between p-3 rounded-xl hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all group border border-transparent hover:border-purple-200 dark:hover:border-purple-800"
                             >
                                 <div>
-                                    <div className="font-bold text-slate-800 dark:text-slate-200 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
+                                    <div className="font-bold text-slate-200 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
                                         {entry.term}
                                     </div>
                                     <div className="text-xs text-slate-500 mt-0.5">
@@ -94,7 +94,7 @@ const MissingAudioWidget: React.FC<MissingAudioWidgetProps> = ({ onAddAudio, onO
 
             <button
                 onClick={() => onViewAll(total)}
-                className="p-3 border-t border-slate-100 dark:border-slate-700 text-center hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+                className="p-3 border-t border-white/10 text-center hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
             >
                 <span className="text-xs text-slate-500 hover:text-purple-600 dark:hover:text-purple-400">
                     צפייה בכל {total.toLocaleString()} המילים

@@ -144,7 +144,7 @@ export const RecipesPage: React.FC = () => {
             </div>
 
             {/* Search & Filters */}
-            <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-md border border-slate-200 dark:border-slate-700 mb-6">
+            <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-xl p-4 shadow-md border border-white/10 mb-6">
                 <div className="flex flex-col md:flex-row gap-4">
                     {/* Search */}
                     <form onSubmit={handleSearch} className="flex-1">
@@ -155,7 +155,7 @@ export const RecipesPage: React.FC = () => {
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
                                 placeholder="חפש מתכון..."
-                                className="w-full pr-10 pl-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                                className="w-full pr-10 pl-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-200 focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                             />
                         </div>
                     </form>
@@ -166,7 +166,7 @@ export const RecipesPage: React.FC = () => {
                             onClick={() => setShowFilters(!showFilters)}
                             className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border transition-colors ${showFilters
                                 ? 'bg-amber-100 dark:bg-amber-900/30 border-amber-400 text-amber-700 dark:text-amber-300'
-                                : 'border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'
+                                : 'border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-400 hover:bg-white/10'
                                 }`}
                         >
                             <Filter className="w-4 h-4" />
@@ -187,13 +187,13 @@ export const RecipesPage: React.FC = () => {
                         <div className="flex border border-slate-300 dark:border-slate-600 rounded-lg overflow-hidden">
                             <button
                                 onClick={() => setViewMode('grid')}
-                                className={`p-2.5 ${viewMode === 'grid' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600' : 'text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
+                                className={`p-2.5 ${viewMode === 'grid' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600' : 'text-slate-400 hover:bg-white/10'}`}
                             >
                                 <Grid className="w-5 h-5" />
                             </button>
                             <button
                                 onClick={() => setViewMode('list')}
-                                className={`p-2.5 ${viewMode === 'list' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600' : 'text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
+                                className={`p-2.5 ${viewMode === 'list' ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-600' : 'text-slate-400 hover:bg-white/10'}`}
                             >
                                 <List className="w-5 h-5" />
                             </button>
@@ -201,7 +201,7 @@ export const RecipesPage: React.FC = () => {
 
                         <button
                             onClick={() => loadRecipes(pagination.page)}
-                            className="p-2.5 rounded-lg border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700"
+                            className="p-2.5 rounded-lg border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-400 hover:bg-white/10"
                         >
                             <RefreshCw className="w-5 h-5" />
                         </button>
@@ -210,7 +210,7 @@ export const RecipesPage: React.FC = () => {
 
                 {/* Tag Filters */}
                 {showFilters && tags.length > 0 && (
-                    <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+                    <div className="mt-4 pt-4 border-t border-white/10">
                         <CategorizedTagFilter
                             tags={tags}
                             selectedTags={selectedTags}
@@ -281,7 +281,7 @@ export const RecipesPage: React.FC = () => {
                                     onClick={() => loadRecipes(page)}
                                     className={`w-10 h-10 rounded-lg font-medium transition-colors ${page === pagination.page
                                         ? 'bg-amber-500 text-white'
-                                        : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600'
+                                        : 'bg-white/10 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600'
                                         }`}
                                 >
                                     {page}

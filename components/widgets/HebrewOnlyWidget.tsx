@@ -46,14 +46,14 @@ const HebrewOnlyWidget: React.FC<HebrewOnlyWidgetProps> = ({ onAddTranslation, o
 
     if (loading) {
         return (
-            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-100 dark:border-slate-700 overflow-hidden h-full flex items-center justify-center">
+            <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-lg border border-white/10 overflow-hidden h-full flex items-center justify-center">
                 <Loader2 className="animate-spin text-amber-500" size={32} />
             </div>
         );
     }
 
     return (
-        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-100 dark:border-slate-700 overflow-hidden font-rubik h-full flex flex-col">
+        <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-lg border border-white/10 overflow-hidden font-rubik h-full flex flex-col">
             <div className="bg-gradient-to-r from-amber-500 to-orange-600 p-4 text-white">
                 <h3 className="font-bold text-lg flex items-center gap-2">
                     <Languages size={20} /> חסר ג'והורי
@@ -75,7 +75,7 @@ const HebrewOnlyWidget: React.FC<HebrewOnlyWidgetProps> = ({ onAddTranslation, o
                                 className="w-full text-right flex items-center justify-between p-3 rounded-xl hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-all group border border-transparent hover:border-amber-200 dark:hover:border-amber-800"
                             >
                                 <div>
-                                    <div className="font-bold text-slate-800 dark:text-slate-200 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
+                                    <div className="font-bold text-slate-200 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
                                         {entry.term}
                                     </div>
                                     <div className="text-xs text-slate-500 mt-0.5">
@@ -93,7 +93,7 @@ const HebrewOnlyWidget: React.FC<HebrewOnlyWidgetProps> = ({ onAddTranslation, o
 
             <button
                 onClick={() => onViewAll(total)}
-                className="p-3 border-t border-slate-100 dark:border-slate-700 text-center hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
+                className="p-3 border-t border-white/10 text-center hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
             >
                 <span className="text-xs text-slate-500 hover:text-amber-600 dark:hover:text-amber-400">
                     צפייה בכל {total.toLocaleString()} המילים

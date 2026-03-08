@@ -92,7 +92,7 @@ export const ShoppingCart: React.FC<ShoppingCartProps> = ({ isOpen, onClose }) =
     return (
         <div className="fixed inset-0 z-[110] bg-black/60 backdrop-blur-sm flex items-end md:items-center md:justify-end p-0 md:p-4 animate-in fade-in duration-200" onClick={onClose}>
             <div
-                className="bg-white dark:bg-slate-900 w-full md:w-96 h-[90vh] md:h-[85vh] md:rounded-2xl shadow-2xl flex flex-col animate-in slide-in-from-bottom md:slide-in-from-right duration-300"
+                className="bg-[#0d1424]/60 backdrop-blur-xl w-full md:w-96 h-[90vh] md:h-[85vh] md:rounded-2xl shadow-2xl flex flex-col animate-in slide-in-from-bottom md:slide-in-from-right duration-300"
                 onClick={e => e.stopPropagation()}
             >
                 {/* Header */}
@@ -101,7 +101,7 @@ export const ShoppingCart: React.FC<ShoppingCartProps> = ({ isOpen, onClose }) =
                         <div className="bg-orange-100 dark:bg-orange-900/40 p-2 rounded-lg">
                             <CartIcon className="text-orange-600 dark:text-orange-400" size={20} />
                         </div>
-                        <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">
+                        <h2 className="text-xl font-bold text-slate-100">
                             סל קניות ({cart.length})
                         </h2>
                     </div>
@@ -126,13 +126,13 @@ export const ShoppingCart: React.FC<ShoppingCartProps> = ({ isOpen, onClose }) =
                         <div className="space-y-6">
                             {Object.entries(groupedCart).map(([vendorId, vendor]) => (
                                 <div key={vendorId} className="space-y-3">
-                                    <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100 flex items-center gap-2 pb-2 border-b border-slate-200 dark:border-slate-700">
+                                    <h3 className="font-bold text-lg text-slate-100 flex items-center gap-2 pb-2 border-b border-white/10">
                                         🏪 {vendor.vendor_name}
                                     </h3>
                                     {vendor.items.map(item => (
                                         <div
                                             key={item.id}
-                                            className="bg-slate-50 dark:bg-slate-800 rounded-xl p-3 border border-slate-200 dark:border-slate-700"
+                                            className="bg-slate-50 dark:bg-slate-800 rounded-xl p-3 border border-white/10"
                                         >
                                             <div className="flex gap-3">
                                                 {item.item_image_url && (
@@ -143,7 +143,7 @@ export const ShoppingCart: React.FC<ShoppingCartProps> = ({ isOpen, onClose }) =
                                                     />
                                                 )}
                                                 <div className="flex-1">
-                                                    <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm">
+                                                    <h4 className="font-bold text-slate-100 text-sm">
                                                         {item.item_name}
                                                     </h4>
                                                     <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -168,7 +168,7 @@ export const ShoppingCart: React.FC<ShoppingCartProps> = ({ isOpen, onClose }) =
                                                         <button
                                                             onClick={() => updateQuantity(item.id, item.quantity - 1)}
                                                             disabled={updating === item.id || item.quantity <= 1}
-                                                            className="p-1 hover:bg-slate-100 dark:hover:bg-slate-600 rounded disabled:opacity-50"
+                                                            className="p-1 hover:bg-white/10 rounded disabled:opacity-50"
                                                         >
                                                             <Minus size={14} />
                                                         </button>
@@ -178,7 +178,7 @@ export const ShoppingCart: React.FC<ShoppingCartProps> = ({ isOpen, onClose }) =
                                                         <button
                                                             onClick={() => updateQuantity(item.id, item.quantity + 1)}
                                                             disabled={updating === item.id}
-                                                            className="p-1 hover:bg-slate-100 dark:hover:bg-slate-600 rounded disabled:opacity-50"
+                                                            className="p-1 hover:bg-white/10 rounded disabled:opacity-50"
                                                         >
                                                             <Plus size={14} />
                                                         </button>
@@ -195,7 +195,7 @@ export const ShoppingCart: React.FC<ShoppingCartProps> = ({ isOpen, onClose }) =
 
                 {/* Footer */}
                 {cart.length > 0 && (
-                    <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 space-y-3">
+                    <div className="p-4 border-t border-slate-200 dark:border-slate-800 bg-white/5/50 space-y-3">
                         <div className="flex justify-between items-center text-lg font-bold">
                             <span className="text-slate-700 dark:text-slate-300">סה"כ:</span>
                             <span className="text-orange-600 dark:text-orange-400">

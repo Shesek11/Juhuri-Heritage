@@ -126,7 +126,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user, onUp
             onClick={onClose}
         >
             <div
-                className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-200 dark:border-slate-700"
+                className="bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200 border border-white/10"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Header with Avatar */}
@@ -200,7 +200,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user, onUp
                 </div>
 
                 {/* Contributions Stats */}
-                <div className="mx-5 mb-4 p-4 bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-slate-100 dark:border-slate-700">
+                <div className="mx-5 mb-4 p-4 bg-white/5/50 rounded-xl border border-white/10">
                     <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
@@ -218,7 +218,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user, onUp
                 </div>
 
                 {/* Edit Profile Collapsible */}
-                <div className="border-t border-slate-100 dark:border-slate-700">
+                <div className="border-t border-white/10">
                     <button
                         onClick={() => setShowEditSection(!showEditSection)}
                         className="w-full p-4 flex items-center justify-between text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
@@ -240,12 +240,12 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user, onUp
                                         type="text"
                                         value={name}
                                         onChange={(e) => setName(e.target.value)}
-                                        className="w-full pr-10 pl-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                                        className="w-full pr-10 pl-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-[#0d1424]/60 backdrop-blur-xl text-white focus:ring-2 focus:ring-indigo-500 outline-none"
                                     />
                                 </div>
                             </div>
 
-                            <div className="border-t border-slate-100 dark:border-slate-700 pt-4">
+                            <div className="border-t border-white/10 pt-4">
                                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">שינוי סיסמה (אופציונלי)</label>
                                 <div className="space-y-3">
                                     <div className="relative">
@@ -255,7 +255,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user, onUp
                                             placeholder="סיסמה חדשה"
                                             value={password}
                                             onChange={(e) => setPassword(e.target.value)}
-                                            className="w-full pr-10 pl-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none placeholder:text-slate-400"
+                                            className="w-full pr-10 pl-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-[#0d1424]/60 backdrop-blur-xl text-white focus:ring-2 focus:ring-indigo-500 outline-none placeholder:text-slate-400"
                                         />
                                     </div>
                                     <div className="relative">
@@ -265,7 +265,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user, onUp
                                             placeholder="אימות סיסמה חדשה"
                                             value={confirmPassword}
                                             onChange={(e) => setConfirmPassword(e.target.value)}
-                                            className="w-full pr-10 pl-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-2 focus:ring-indigo-500 outline-none placeholder:text-slate-400"
+                                            className="w-full pr-10 pl-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-[#0d1424]/60 backdrop-blur-xl text-white focus:ring-2 focus:ring-indigo-500 outline-none placeholder:text-slate-400"
                                         />
                                     </div>
                                 </div>

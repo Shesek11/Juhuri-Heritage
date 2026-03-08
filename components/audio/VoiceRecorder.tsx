@@ -148,7 +148,7 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ entryId, dialectId, onRec
     };
 
     return (
-        <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 space-y-3">
+        <div className="bg-white/5 rounded-xl p-4 space-y-3">
             <div className="flex items-center justify-between">
                 <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
                     <Mic size={16} />
@@ -164,7 +164,7 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ entryId, dialectId, onRec
                     value={guestName}
                     onChange={(e) => setGuestName(e.target.value)}
                     placeholder="השם שלך"
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200"
+                    className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-200"
                 />
             )}
 

@@ -29,7 +29,7 @@ const RecentAdditions: React.FC<RecentAdditionsProps> = ({ onSelectWord }) => {
     }, []);
 
     return (
-        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-100 dark:border-slate-700 overflow-hidden font-rubik h-full flex flex-col">
+        <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-lg border border-white/10 overflow-hidden font-rubik h-full flex flex-col">
             <div className="bg-gradient-to-r from-emerald-500 to-teal-600 p-4 text-white">
                 <h3 className="font-bold text-lg flex items-center gap-2">
                     <Clock size={20} /> נוספו לאחרונה
@@ -39,7 +39,7 @@ const RecentAdditions: React.FC<RecentAdditionsProps> = ({ onSelectWord }) => {
             <div className="flex-1 p-2">
                 {loading ? (
                     <div className="space-y-3 p-2">
-                        {[1, 2, 3].map(i => <div key={i} className="h-12 bg-slate-100 dark:bg-slate-700 rounded-lg animate-pulse" />)}
+                        {[1, 2, 3].map(i => <div key={i} className="h-12 bg-white/10 text-white rounded-lg animate-pulse" />)}
                     </div>
                 ) : (
                     <div className="space-y-1">
@@ -50,7 +50,7 @@ const RecentAdditions: React.FC<RecentAdditionsProps> = ({ onSelectWord }) => {
                                 className="w-full text-right flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-all group"
                             >
                                 <div>
-                                    <div className="font-bold text-slate-800 dark:text-slate-200 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                                    <div className="font-bold text-slate-200 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
                                         {term.term}
                                     </div>
                                     <div className="text-xs text-slate-500">

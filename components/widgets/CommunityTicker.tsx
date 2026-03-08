@@ -128,7 +128,7 @@ const CommunityTicker: React.FC = () => {
     };
 
     return (
-        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-100 dark:border-slate-700 overflow-hidden font-rubik h-full flex flex-col">
+        <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-lg border border-white/10 overflow-hidden font-rubik h-full flex flex-col">
             <div className="bg-gradient-to-r from-indigo-500 to-purple-600 p-4 text-white flex justify-between items-center">
                 <h3 className="font-bold text-lg flex items-center gap-2">
                     <Activity size={20} /> קורה עכשיו
@@ -142,7 +142,7 @@ const CommunityTicker: React.FC = () => {
             <div className="flex-1 overflow-hidden relative p-2">
                 {loading ? (
                     <div className="space-y-2 p-2">
-                        {[1, 2, 3].map(i => <div key={i} className="h-16 bg-slate-100 dark:bg-slate-700 rounded-xl animate-pulse" />)}
+                        {[1, 2, 3].map(i => <div key={i} className="h-16 bg-white/10 text-white rounded-xl animate-pulse" />)}
                     </div>
                 ) : activities.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-slate-400 dark:text-slate-500 p-4">
@@ -153,12 +153,12 @@ const CommunityTicker: React.FC = () => {
                 ) : (
                     <div className="space-y-2 p-2" ref={scrollRef}>
                         {activities.map((item) => (
-                            <div key={item.id} className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-700/30 border border-slate-100 dark:border-slate-700/50 hover:bg-indigo-50 dark:hover:bg-indigo-900/10 transition-colors">
+                            <div key={item.id} className="flex items-center gap-3 p-3 rounded-xl bg-white/5 border border-white/10/50 hover:bg-indigo-50 dark:hover:bg-indigo-900/10 transition-colors">
                                 <div className="w-8 h-8 rounded-full bg-white dark:bg-slate-600 flex items-center justify-center shadow-sm border border-slate-100 dark:border-slate-500 text-xs font-bold text-slate-700 dark:text-slate-200">
                                     {item.user[0]}
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                    <p className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate">{item.user}</p>
+                                    <p className="text-xs font-bold text-slate-200 truncate">{item.user}</p>
                                     <p className="text-xs text-slate-600 dark:text-slate-400 truncate flex items-center gap-1">
                                         {getIcon(item.action)}
                                         {getText(item)}

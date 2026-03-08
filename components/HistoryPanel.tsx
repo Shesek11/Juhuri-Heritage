@@ -31,7 +31,7 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ history, onSelect, onClear 
           <button
             key={item.id}
             onClick={() => onSelect(item)}
-            className="flex items-center gap-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-2 rounded-lg hover:border-indigo-300 dark:hover:border-indigo-700 hover:shadow-sm transition-all text-sm text-slate-700 dark:text-slate-200"
+            className="flex items-center gap-2 bg-[#0d1424]/60 backdrop-blur-xl border border-white/10 px-3 py-2 rounded-lg hover:border-indigo-300 dark:hover:border-indigo-700 hover:shadow-sm transition-all text-sm text-slate-700 dark:text-slate-200"
           >
             <span className="font-medium">{item.term}</span>
             <ArrowRightLeft size={12} className="text-slate-400" />

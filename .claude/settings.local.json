@@ -13,7 +13,10 @@
       "Bash(git merge:*)",
       "Bash(ssh juhuri@apps:*)",
       "Bash(gh api:*)",
-      "Bash(ssh:*)"
+      "Bash(ssh:*)",
+      "Bash(code --list-extensions --show-versions)",
+      "Bash(where antigravity)",
+      "Read(//c/Users/shimo/AppData/Local/Programs/Antigravity/bin//**)"
     ]
   }
 }

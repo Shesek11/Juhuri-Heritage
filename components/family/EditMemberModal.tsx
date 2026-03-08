@@ -309,9 +309,9 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
 
     return (
         <div className="fixed inset-0 z-[100] bg-black/50 flex items-center justify-center p-4 backdrop-blur-sm" onClick={onClose}>
-            <div className="bg-white dark:bg-slate-800 w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden" dir="rtl" onClick={e => e.stopPropagation()}>
-                <div className="p-4 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-amber-50 dark:bg-amber-900/20">
-                    <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+            <div className="bg-[#0d1424]/60 backdrop-blur-xl w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden" dir="rtl" onClick={e => e.stopPropagation()}>
+                <div className="p-4 border-b border-white/10 flex justify-between items-center bg-amber-50 dark:bg-amber-900/20">
+                    <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2">
                         {isEditing ? <Pencil className="text-amber-600" size={20} /> : <UserPlus className="text-amber-600" size={20} />}
                         {isEditing ? 'עריכת בן משפחה' : 'הוספת בן משפחה'}
                     </h2>
@@ -337,7 +337,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                         <div className="space-y-4">
                             {/* Profile Photo */}
                             <div className="flex items-center gap-4">
-                                <div className="w-24 h-24 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden flex items-center justify-center border border-slate-200 dark:border-slate-600 relative group">
+                                <div className="w-24 h-24 rounded-full bg-white/10 overflow-hidden flex items-center justify-center border border-slate-200 dark:border-slate-600 relative group">
                                     {formData.photo_url ? (
                                         <img src={formData.photo_url} alt="Preview" className="w-full h-full object-cover" />
                                     ) : (
@@ -381,14 +381,14 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                                     </label>
                                 </div>
                                 <div className="flex-1">
-                                    <h3 className="font-bold text-slate-800 dark:text-slate-200">תמונת פרופיל</h3>
+                                    <h3 className="font-bold text-slate-200">תמונת פרופיל</h3>
                                     <p className="text-sm text-slate-500">לחץ על העיגול כדי להחליף תמונה.</p>
                                 </div>
                             </div>
 
                             {/* Language Tabs: Hebrew / Russian - wraps ALL fields */}
                             <div className="flex items-center gap-2 mb-1">
-                                <div className="flex bg-slate-100 dark:bg-slate-700 rounded-lg p-0.5">
+                                <div className="flex bg-white/10 rounded-lg p-0.5">
                                     <button
                                         type="button"
                                         onClick={() => setLangTab('he')}
@@ -455,7 +455,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                                                     </p>
                                                     <div className="space-y-2 max-h-40 overflow-y-auto">
                                                         {duplicates.map(dup => (
-                                                            <div key={dup.id} className="bg-white dark:bg-slate-800 rounded-lg p-3 flex items-center justify-between border border-amber-200 dark:border-amber-700">
+                                                            <div key={dup.id} className="bg-[#0d1424]/60 backdrop-blur-xl rounded-lg p-3 flex items-center justify-between border border-amber-200 dark:border-amber-700">
                                                                 <div className="flex items-center gap-3">
                                                                     {dup.photo_url ? (
                                                                         <img src={dup.photo_url} alt="" className="w-10 h-10 rounded-full object-cover" />
@@ -465,7 +465,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                                                                         </div>
                                                                     )}
                                                                     <div>
-                                                                        <div className="font-medium text-slate-800 dark:text-slate-200">
+                                                                        <div className="font-medium text-slate-200">
                                                                             {dup.first_name} {dup.last_name}
                                                                         </div>
                                                                         <div className="text-xs text-slate-500">
@@ -555,7 +555,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                                         </div>
                                         <div className="flex-1">
                                             <label className="block text-sm font-medium mb-1">חי/ה?</label>
-                                            <div className="flex bg-slate-100 dark:bg-slate-700 p-1 rounded-lg">
+                                            <div className="flex bg-white/10 p-1 rounded-lg">
                                                 <button type="button" onClick={() => setFormData({ ...formData, is_alive: true })} className={`flex-1 text-sm py-1.5 rounded-md transition-all ${formData.is_alive ? 'bg-white dark:bg-slate-600 shadow text-emerald-600' : 'text-slate-500'}`}>
                                                     כן
                                                 </button>
@@ -702,7 +702,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                                         </div>
                                         <div className="flex-1">
                                             <label className="block text-sm font-medium mb-1">Жив/а?</label>
-                                            <div className="flex bg-slate-100 dark:bg-slate-700 p-1 rounded-lg">
+                                            <div className="flex bg-white/10 p-1 rounded-lg">
                                                 <button type="button" onClick={() => setFormData({ ...formData, is_alive: true })} className={`flex-1 text-sm py-1.5 rounded-md transition-all ${formData.is_alive ? 'bg-white dark:bg-slate-600 shadow text-emerald-600' : 'text-slate-500'}`}>
                                                     Да
                                                 </button>
@@ -975,7 +975,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                     </div>
                 )}
 
-                <div className="p-4 border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50">
+                <div className="p-4 border-t border-white/10 bg-white/5/50">
                     {/* Only show quick add relative in Details tab */}
                     {activeTab === 'details' && onAddRelative && isEditing && (
                         <div className="mb-4">

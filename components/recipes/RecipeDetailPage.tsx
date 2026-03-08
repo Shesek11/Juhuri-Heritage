@@ -205,7 +205,7 @@ export const RecipeDetailPage: React.FC<RecipeDetailPageProps> = ({ recipeId, on
     const totalTime = (recipe.prep_time || 0) + (recipe.cook_time || 0);
 
     return (
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-900">
+        <div className="min-h-screen bg-white/5">
             <SEOHead
                 title={`${recipe.title} - מתכון`}
                 description={recipe.description || `מתכון מסורתי: ${recipe.title}`}
@@ -227,7 +227,7 @@ export const RecipeDetailPage: React.FC<RecipeDetailPageProps> = ({ recipeId, on
                 })}
             />
             {/* Breadcrumb */}
-            <div className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 print:hidden">
+            <div className="bg-[#0d1424]/60 backdrop-blur-xl border-b border-white/10 print:hidden">
                 <div className="max-w-7xl mx-auto px-4 py-3">
                     <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
                         <button
@@ -318,7 +318,7 @@ export const RecipeDetailPage: React.FC<RecipeDetailPageProps> = ({ recipeId, on
                     <div className="lg:col-span-2 space-y-8">
                         {/* Description & Story */}
                         {(recipe.description || recipe.story) && (
-                            <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-md border border-slate-200 dark:border-slate-700">
+                            <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-xl p-6 shadow-md border border-white/10">
                                 {recipe.description && (
                                     <p className="text-slate-700 dark:text-slate-300 text-lg mb-4 leading-relaxed">
                                         {recipe.description}
@@ -341,7 +341,7 @@ export const RecipeDetailPage: React.FC<RecipeDetailPageProps> = ({ recipeId, on
                         )}
 
                         {/* Instructions */}
-                        <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-md border border-slate-200 dark:border-slate-700">
+                        <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-xl p-6 shadow-md border border-white/10">
                             <h2 className="text-2xl font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
                                 <ChefHat className="w-6 h-6 text-amber-600" />
                                 אופן ההכנה
@@ -361,7 +361,7 @@ export const RecipeDetailPage: React.FC<RecipeDetailPageProps> = ({ recipeId, on
                         </div>
 
                         {/* Comments Section */}
-                        <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-md border border-slate-200 dark:border-slate-700 print:hidden">
+                        <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-xl p-6 shadow-md border border-white/10 print:hidden">
                             <button
                                 onClick={() => setShowComments(!showComments)}
                                 className="w-full flex items-center justify-between mb-4"
@@ -382,7 +382,7 @@ export const RecipeDetailPage: React.FC<RecipeDetailPageProps> = ({ recipeId, on
                                                 value={newComment}
                                                 onChange={(e) => setNewComment(e.target.value)}
                                                 placeholder="שתף את המחשבות שלך על המתכון..."
-                                                className="w-full p-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                                                className="w-full p-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-200 focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                                                 rows={3}
                                             />
                                             <button
@@ -399,7 +399,7 @@ export const RecipeDetailPage: React.FC<RecipeDetailPageProps> = ({ recipeId, on
                                     {recipe.comments && recipe.comments.length > 0 ? (
                                         <div className="space-y-4">
                                             {recipe.comments.map((comment) => (
-                                                <div key={comment.id} className="flex gap-3 p-4 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
+                                                <div key={comment.id} className="flex gap-3 p-4 bg-white/5 rounded-lg">
                                                     {comment.author_avatar ? (
                                                         <img
                                                             src={comment.author_avatar}
@@ -413,7 +413,7 @@ export const RecipeDetailPage: React.FC<RecipeDetailPageProps> = ({ recipeId, on
                                                     )}
                                                     <div className="flex-1">
                                                         <div className="flex items-center gap-2 mb-1">
-                                                            <span className="font-medium text-slate-800 dark:text-slate-200">
+                                                            <span className="font-medium text-slate-200">
                                                                 {comment.author_name}
                                                             </span>
                                                             <span className="text-xs text-slate-400">
@@ -440,7 +440,7 @@ export const RecipeDetailPage: React.FC<RecipeDetailPageProps> = ({ recipeId, on
                     {/* Right Column - Sidebar */}
                     <div className="space-y-6">
                         {/* Action Buttons */}
-                        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 shadow-md border border-slate-200 dark:border-slate-700 print:hidden sticky top-4">
+                        <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-xl p-4 shadow-md border border-white/10 print:hidden sticky top-4">
                             {/* Cooking Mode Button */}
                             <button
                                 onClick={() => setCookingMode(true)}
@@ -476,7 +476,7 @@ export const RecipeDetailPage: React.FC<RecipeDetailPageProps> = ({ recipeId, on
                                     className={`flex flex-col items-center gap-1 p-3 rounded-lg transition-all ${
                                         liked
                                             ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
-                                            : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600'
+                                            : 'bg-white/10 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600'
                                     }`}
                                 >
                                     <Heart className={`w-5 h-5 ${liked ? 'fill-current' : ''}`} />
@@ -485,7 +485,7 @@ export const RecipeDetailPage: React.FC<RecipeDetailPageProps> = ({ recipeId, on
 
                                 <button
                                     onClick={handleShare}
-                                    className="flex flex-col items-center gap-1 p-3 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600 transition-all"
+                                    className="flex flex-col items-center gap-1 p-3 rounded-lg bg-white/10 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600 transition-all"
                                 >
                                     <Share2 className="w-5 h-5" />
                                     <span className="text-xs font-medium">שתף</span>
@@ -493,7 +493,7 @@ export const RecipeDetailPage: React.FC<RecipeDetailPageProps> = ({ recipeId, on
 
                                 <button
                                     onClick={handlePrint}
-                                    className="flex flex-col items-center gap-1 p-3 rounded-lg bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600 transition-all"
+                                    className="flex flex-col items-center gap-1 p-3 rounded-lg bg-white/10 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600 transition-all"
                                 >
                                     <Printer className="w-5 h-5" />
                                     <span className="text-xs font-medium">הדפס</span>
@@ -501,7 +501,7 @@ export const RecipeDetailPage: React.FC<RecipeDetailPageProps> = ({ recipeId, on
                             </div>
 
                             {/* Author Info */}
-                            <div className="flex items-center gap-3 pt-4 border-t border-slate-200 dark:border-slate-700">
+                            <div className="flex items-center gap-3 pt-4 border-t border-white/10">
                                 {recipe.author_avatar ? (
                                     <img
                                         src={recipe.author_avatar}
@@ -515,7 +515,7 @@ export const RecipeDetailPage: React.FC<RecipeDetailPageProps> = ({ recipeId, on
                                 )}
                                 <div>
                                     <p className="text-xs text-slate-500 dark:text-slate-400">מחבר המתכון</p>
-                                    <p className="font-medium text-slate-800 dark:text-slate-200">
+                                    <p className="font-medium text-slate-200">
                                         {recipe.author_name}
                                     </p>
                                 </div>
@@ -523,7 +523,7 @@ export const RecipeDetailPage: React.FC<RecipeDetailPageProps> = ({ recipeId, on
                         </div>
 
                         {/* Ingredients */}
-                        <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-md border border-slate-200 dark:border-slate-700">
+                        <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-xl p-6 shadow-md border border-white/10">
                             <div className="flex items-center justify-between mb-4">
                                 <h2 className="text-xl font-bold text-slate-800 dark:text-white">
                                     מרכיבים
@@ -531,7 +531,7 @@ export const RecipeDetailPage: React.FC<RecipeDetailPageProps> = ({ recipeId, on
                                 <div className="flex items-center gap-2">
                                     <button
                                         onClick={() => setServings(Math.max(1, servings - 1))}
-                                        className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 flex items-center justify-center"
+                                        className="w-8 h-8 rounded-full bg-white/10 hover:bg-slate-200 dark:hover:bg-slate-600 flex items-center justify-center"
                                     >
                                         -
                                     </button>
@@ -540,7 +540,7 @@ export const RecipeDetailPage: React.FC<RecipeDetailPageProps> = ({ recipeId, on
                                     </span>
                                     <button
                                         onClick={() => setServings(servings + 1)}
-                                        className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 flex items-center justify-center"
+                                        className="w-8 h-8 rounded-full bg-white/10 hover:bg-slate-200 dark:hover:bg-slate-600 flex items-center justify-center"
                                     >
                                         +
                                     </button>
@@ -575,7 +575,7 @@ export const RecipeDetailPage: React.FC<RecipeDetailPageProps> = ({ recipeId, on
 
                         {/* Tags */}
                         {recipe.tags && recipe.tags.length > 0 && (
-                            <div className="bg-white dark:bg-slate-800 rounded-xl p-6 shadow-md border border-slate-200 dark:border-slate-700">
+                            <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-xl p-6 shadow-md border border-white/10">
                                 <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
                                     <Tag className="w-5 h-5 text-amber-600" />
                                     תגיות
@@ -599,7 +599,7 @@ export const RecipeDetailPage: React.FC<RecipeDetailPageProps> = ({ recipeId, on
             {/* Delete Confirmation Modal */}
             {showDeleteConfirm && (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-                    <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full p-6">
+                    <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-2xl max-w-md w-full p-6">
                         <div className="flex items-center gap-3 mb-4">
                             <div className="w-12 h-12 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center">
                                 <Trash2 className="w-6 h-6 text-red-600 dark:text-red-400" />
@@ -623,7 +623,7 @@ export const RecipeDetailPage: React.FC<RecipeDetailPageProps> = ({ recipeId, on
                             <button
                                 onClick={() => setShowDeleteConfirm(false)}
                                 disabled={deleting}
-                                className="flex-1 px-4 py-3 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 font-medium rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors disabled:opacity-50"
+                                className="flex-1 px-4 py-3 bg-white/10 text-slate-700 dark:text-slate-300 font-medium rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors disabled:opacity-50"
                             >
                                 ביטול
                             </button>

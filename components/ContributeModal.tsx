@@ -259,9 +259,9 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200 font-rubik">
-      <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-200 dark:border-slate-700 max-h-[90vh] overflow-y-auto">
+      <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200 border border-white/10 max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="p-5 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center bg-gradient-to-r from-amber-50 to-orange-50 dark:from-slate-800 dark:to-slate-800">
+        <div className="p-5 border-b border-white/10 flex justify-between items-center bg-gradient-to-r from-amber-50 to-orange-50 dark:from-slate-800 dark:to-slate-800">
           <div className="flex items-center gap-2 text-amber-800 dark:text-amber-400">
             <Feather size={22} />
             <h3 className="font-bold text-lg">הוספת מילה חדשה</h3>
@@ -286,7 +286,7 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
               required
               value={term}
               onChange={(e) => setTerm(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
+              className="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-[#0d1424]/60 backdrop-blur-xl text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
               placeholder="למשל: מזל טוב"
             />
           </div>
@@ -310,8 +310,8 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
               </div>
 
               {/* Existing entry preview */}
-              <div className="bg-white dark:bg-slate-800 rounded-lg p-3 border border-slate-200 dark:border-slate-700 text-sm">
-                <div className="font-bold text-lg text-slate-800 dark:text-slate-100">{existingEntry.term}</div>
+              <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-lg p-3 border border-white/10 text-sm">
+                <div className="font-bold text-lg text-slate-100">{existingEntry.term}</div>
                 {existingEntry.translations?.[0]?.hebrew && (
                   <div className="text-slate-600 dark:text-slate-300">{existingEntry.translations[0].hebrew}</div>
                 )}
@@ -354,7 +354,7 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
                 <select
                   value={fieldSuggestion.fieldName}
                   onChange={e => setFieldSuggestion(prev => ({ ...prev, fieldName: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                  className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-[#0d1424]/60 backdrop-blur-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
                   title="בחר שדה לתיקון"
                 >
                   <option value="">בחר שדה...</option>
@@ -371,7 +371,7 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
                 value={fieldSuggestion.value}
                 onChange={e => setFieldSuggestion(prev => ({ ...prev, value: e.target.value }))}
                 placeholder="הערך המוצע..."
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-[#0d1424]/60 backdrop-blur-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
                 dir="auto"
               />
               <input
@@ -379,7 +379,7 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
                 value={fieldSuggestion.reason}
                 onChange={e => setFieldSuggestion(prev => ({ ...prev, reason: e.target.value }))}
                 placeholder="סיבה / מקור (אופציונלי)"
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-[#0d1424]/60 backdrop-blur-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
                 dir="auto"
               />
               <div className="flex gap-2">
@@ -414,7 +414,7 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
               required
               value={hebrew}
               onChange={(e) => setHebrew(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
+              className="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-[#0d1424]/60 backdrop-blur-xl text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
               placeholder="מה זה אומר?"
             />
           </div>
@@ -429,7 +429,7 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
                 type="text"
                 value={latin}
                 onChange={(e) => setLatin(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none text-sm"
+                className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-[#0d1424]/60 backdrop-blur-xl text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none text-sm"
                 placeholder="Mazal tov"
                 dir="ltr"
               />
@@ -442,7 +442,7 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
                 type="text"
                 value={cyrillic}
                 onChange={(e) => setCyrillic(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none text-sm"
+                className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-[#0d1424]/60 backdrop-blur-xl text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none text-sm"
                 placeholder="Мазал тов"
                 dir="ltr"
               />
@@ -455,7 +455,7 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
             <select
               value={dialect}
               onChange={(e) => setDialect(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
+              className="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-[#0d1424]/60 backdrop-blur-xl text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
             >
               <option value="">כללי / לא ידוע</option>
               {dialects.map(d => (
@@ -465,7 +465,7 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
           </div>
 
           {/* Audio Recording Section */}
-          <div className="bg-slate-50 dark:bg-slate-700/30 p-4 rounded-xl border border-slate-200 dark:border-slate-600">
+          <div className="bg-white/5 p-4 rounded-xl border border-slate-200 dark:border-slate-600">
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
               🎙️ הקלטת הגייה (אופציונלי)
             </label>
@@ -499,7 +499,7 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
                 )}
               </div>
             ) : (
-              <div className="flex items-center justify-between bg-white dark:bg-slate-800 p-3 rounded-lg border border-slate-200 dark:border-slate-600">
+              <div className="flex items-center justify-between bg-[#0d1424]/60 backdrop-blur-xl p-3 rounded-lg border border-slate-200 dark:border-slate-600">
                 <div className="flex items-center gap-3">
                   <button
                     type="button"

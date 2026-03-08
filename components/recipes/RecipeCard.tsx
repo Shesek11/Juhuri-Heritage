@@ -26,7 +26,7 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, onClick, viewMod
         return (
             <div
                 onClick={onClick}
-                className="group bg-white dark:bg-slate-800 rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer border border-slate-200 dark:border-slate-700 hover:border-amber-400 dark:hover:border-amber-600"
+                className="group bg-[#0d1424]/60 backdrop-blur-xl rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer border border-white/10 hover:border-amber-400 dark:hover:border-amber-600"
             >
                 {/* Image */}
                 <div className="relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/20 dark:to-orange-900/20">
@@ -66,7 +66,7 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, onClick, viewMod
 
                 {/* Content */}
                 <div className="p-4">
-                    <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100 mb-1 line-clamp-1 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
+                    <h3 className="font-bold text-lg text-slate-100 mb-1 line-clamp-1 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
                         {recipe.title}
                     </h3>
 
@@ -103,7 +103,7 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, onClick, viewMod
                     </div>
 
                     {/* Footer */}
-                    <div className="flex items-center justify-between mt-4 pt-3 border-t border-slate-100 dark:border-slate-700">
+                    <div className="flex items-center justify-between mt-4 pt-3 border-t border-white/10">
                         <div className="flex items-center gap-2">
                             {recipe.author_avatar ? (
                                 <img
@@ -141,7 +141,7 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, onClick, viewMod
     return (
         <div
             onClick={onClick}
-            className="group bg-white dark:bg-slate-800 rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer border border-slate-200 dark:border-slate-700 hover:border-amber-400 dark:hover:border-amber-600 flex flex-col md:flex-row"
+            className="group bg-[#0d1424]/60 backdrop-blur-xl rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer border border-white/10 hover:border-amber-400 dark:hover:border-amber-600 flex flex-col md:flex-row"
         >
             {/* Image - fixed width on desktop */}
             <div className="relative w-full md:w-64 lg:w-80 aspect-[4/3] md:aspect-auto md:h-48 flex-shrink-0 overflow-hidden bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/20 dark:to-orange-900/20">
@@ -175,7 +175,7 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, onClick, viewMod
                 <div>
                     <div className="flex items-start justify-between gap-4 mb-3">
                         <div className="flex-1">
-                            <h3 className="font-bold text-xl md:text-2xl text-slate-800 dark:text-slate-100 mb-1 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
+                            <h3 className="font-bold text-xl md:text-2xl text-slate-100 mb-1 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
                                 {recipe.title}
                             </h3>
                             {recipe.title_juhuri && (
@@ -186,7 +186,7 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, onClick, viewMod
                         </div>
 
                         {recipe.region_name && (
-                            <span className="px-3 py-1.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 text-sm rounded-full flex-shrink-0">
+                            <span className="px-3 py-1.5 bg-white/10 text-slate-600 dark:text-slate-400 text-sm rounded-full flex-shrink-0">
                                 {recipe.region_name}
                             </span>
                         )}
@@ -220,7 +220,7 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, onClick, viewMod
                 </div>
 
                 {/* Footer */}
-                <div className="flex items-center justify-between mt-4 pt-4 border-t border-slate-100 dark:border-slate-700">
+                <div className="flex items-center justify-between mt-4 pt-4 border-t border-white/10">
                     <div className="flex items-center gap-2">
                         {recipe.author_avatar ? (
                             <img

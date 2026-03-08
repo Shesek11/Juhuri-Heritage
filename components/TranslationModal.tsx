@@ -178,7 +178,7 @@ const TranslationModal: React.FC<TranslationModalProps> = ({ entryId, term, onCl
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 font-rubik">
-            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
                 {/* Header */}
                 <div className={`p-4 text-white flex justify-between items-center ${isCorrection ? 'bg-gradient-to-r from-indigo-500 to-purple-600' : 'bg-gradient-to-r from-amber-500 to-orange-600'}`}>
                     <h2 className="text-xl font-bold flex items-center gap-2">
@@ -277,7 +277,7 @@ const TranslationModal: React.FC<TranslationModalProps> = ({ entryId, term, onCl
                     </div>
 
                     {/* Audio Recording Section */}
-                    <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-4 space-y-3">
+                    <div className="bg-white/5 rounded-xl p-4 space-y-3">
                         <div className="flex items-center justify-between">
                             <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
                                 <Mic size={16} />

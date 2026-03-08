@@ -35,7 +35,7 @@ const PendingApprovals: React.FC<PendingApprovalsProps> = ({ onViewDetails }) =>
 
     if (loading) {
         return (
-            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-100 dark:border-slate-700 overflow-hidden h-full flex items-center justify-center">
+            <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-lg border border-white/10 overflow-hidden h-full flex items-center justify-center">
                 <Loader2 className="animate-spin text-emerald-500" size={32} />
             </div>
         );
@@ -43,7 +43,7 @@ const PendingApprovals: React.FC<PendingApprovalsProps> = ({ onViewDetails }) =>
 
     if (suggestions.length === 0) {
         return (
-            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-100 dark:border-slate-700 overflow-hidden h-full flex flex-col">
+            <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-lg border border-white/10 overflow-hidden h-full flex flex-col">
                 <div className="bg-gradient-to-r from-emerald-500 to-green-600 p-4 text-white">
                     <h3 className="font-bold text-lg flex items-center gap-2">
                         <CheckCircle size={20} /> ממתינים לאישור
@@ -57,7 +57,7 @@ const PendingApprovals: React.FC<PendingApprovalsProps> = ({ onViewDetails }) =>
     }
 
     return (
-        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-lg border border-slate-100 dark:border-slate-700 overflow-hidden font-rubik h-full flex flex-col">
+        <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-lg border border-white/10 overflow-hidden font-rubik h-full flex flex-col">
             <div className="bg-gradient-to-r from-emerald-500 to-green-600 p-4 text-white">
                 <h3 className="font-bold text-lg flex items-center gap-2">
                     <CheckCircle size={20} /> ממתינים לאישור
@@ -75,7 +75,7 @@ const PendingApprovals: React.FC<PendingApprovalsProps> = ({ onViewDetails }) =>
                         >
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2">
-                                    <span className="font-bold text-slate-800 dark:text-slate-200 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                                    <span className="font-bold text-slate-200 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
                                         {suggestion.term}
                                     </span>
                                     <span className="text-[10px] bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded">
@@ -97,7 +97,7 @@ const PendingApprovals: React.FC<PendingApprovalsProps> = ({ onViewDetails }) =>
                 </div>
             </div>
 
-            <div className="p-3 border-t border-slate-100 dark:border-slate-700 text-center">
+            <div className="p-3 border-t border-white/10 text-center">
                 <span className="text-xs text-slate-400">
                     {suggestions.length} הצעות ממתינות
                 </span>

@@ -119,7 +119,7 @@ export const VendorDetailsModal: React.FC<VendorDetailsModalProps> = ({ vendor: 
                     review_count: vendor.review_count,
                 })}
             />
-            <div className="bg-white dark:bg-slate-900 w-full max-w-5xl h-[90vh] rounded-2xl shadow-2xl flex overflow-hidden lg:flex-row flex-col" onClick={e => e.stopPropagation()}>
+            <div className="bg-[#0d1424]/60 backdrop-blur-xl w-full max-w-5xl h-[90vh] rounded-2xl shadow-2xl flex overflow-hidden lg:flex-row flex-col" onClick={e => e.stopPropagation()}>
 
                 {/* Left Side: Cover & Info */}
                 <div className="w-full lg:w-1/3 bg-slate-50 dark:bg-slate-950 flex flex-col border-l border-slate-200 dark:border-slate-800">
@@ -144,7 +144,7 @@ export const VendorDetailsModal: React.FC<VendorDetailsModalProps> = ({ vendor: 
                     </div>
 
                     <div className="p-6 flex-1 overflow-y-auto">
-                        <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-2">{vendor.name}</h2>
+                        <h2 className="text-2xl font-bold text-slate-100 mb-2">{vendor.name}</h2>
 
                         <div className="flex items-center gap-2 mb-4 flex-wrap">
                             {(() => {
@@ -216,7 +216,7 @@ export const VendorDetailsModal: React.FC<VendorDetailsModalProps> = ({ vendor: 
                                     />
                                     <div>
                                         <p className="text-xs text-slate-500 uppercase font-bold">הבשלן/ית</p>
-                                        <p className="font-medium text-slate-800 dark:text-slate-200">{vendor.owner_name}</p>
+                                        <p className="font-medium text-slate-200">{vendor.owner_name}</p>
                                     </div>
                                 </div>
                             </div>
@@ -225,9 +225,9 @@ export const VendorDetailsModal: React.FC<VendorDetailsModalProps> = ({ vendor: 
                 </div>
 
                 {/* Right Side: Tabs & Content */}
-                <div className="flex-1 flex flex-col bg-white dark:bg-slate-900">
+                <div className="flex-1 flex flex-col bg-[#0d1424]/60 backdrop-blur-xl">
                     {/* Tabs */}
-                    <div className="flex border-b border-slate-100 dark:border-slate-800 overflow-x-auto bg-white dark:bg-slate-900 z-10">
+                    <div className="flex border-b border-slate-100 dark:border-slate-800 overflow-x-auto bg-[#0d1424]/60 backdrop-blur-xl z-10">
                         <button
                             onClick={() => setActiveTab('menu')}
                             className={`flex-1 min-w-[80px] py-3 px-2 font-bold text-xs border-b-2 transition-colors flex items-center justify-center gap-1 ${
@@ -273,7 +273,7 @@ export const VendorDetailsModal: React.FC<VendorDetailsModalProps> = ({ vendor: 
                                     vendor.menu.map(item => (
                                         <div
                                             key={item.id}
-                                            className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-100 dark:border-slate-700 hover:shadow-md transition-all flex gap-4"
+                                            className="bg-[#0d1424]/60 backdrop-blur-xl p-4 rounded-xl border border-white/10 hover:shadow-md transition-all flex gap-4"
                                         >
                                             {item.image_url && (
                                                 <img src={item.image_url} alt={item.name} className="w-20 h-20 rounded-lg object-cover bg-slate-100 shrink-0" />
@@ -281,7 +281,7 @@ export const VendorDetailsModal: React.FC<VendorDetailsModalProps> = ({ vendor: 
                                             <div className="flex-1">
                                                 <div className="flex justify-between items-start mb-1">
                                                     <div>
-                                                        <h3 className="font-bold text-slate-800 dark:text-slate-100">{item.name}</h3>
+                                                        <h3 className="font-bold text-slate-100">{item.name}</h3>
                                                         {item.name_hebrew && item.name_hebrew !== item.name && (
                                                             <p className="text-xs text-slate-400">{item.name_hebrew}</p>
                                                         )}
@@ -294,7 +294,7 @@ export const VendorDetailsModal: React.FC<VendorDetailsModalProps> = ({ vendor: 
                                                 <div className="flex items-center justify-between gap-2">
                                                     <div className="flex items-center gap-2">
                                                         {item.category && (
-                                                            <span className="text-xs px-2 py-0.5 bg-slate-100 dark:bg-slate-700 rounded text-slate-600 dark:text-slate-400">
+                                                            <span className="text-xs px-2 py-0.5 bg-white/10 rounded text-slate-600 dark:text-slate-400">
                                                                 {item.category}
                                                             </span>
                                                         )}
@@ -329,7 +329,7 @@ export const VendorDetailsModal: React.FC<VendorDetailsModalProps> = ({ vendor: 
                             <div className="space-y-6">
                                 {/* Submit Review */}
                                 {user && (
-                                    <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+                                    <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-xl p-4 border border-white/10">
                                         <h3 className="font-bold mb-3">כתוב ביקורת</h3>
                                         <div className="space-y-3">
                                             <div>
@@ -376,7 +376,7 @@ export const VendorDetailsModal: React.FC<VendorDetailsModalProps> = ({ vendor: 
                                         </div>
                                     ) : (
                                         reviews.map(review => (
-                                            <div key={review.id} className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+                                            <div key={review.id} className="bg-[#0d1424]/60 backdrop-blur-xl rounded-xl p-4 border border-white/10">
                                                 <div className="flex items-start gap-3 mb-2">
                                                     <img
                                                         src={`https://ui-avatars.com/api/?name=${encodeURIComponent(review.user_name || 'User')}`}
@@ -385,7 +385,7 @@ export const VendorDetailsModal: React.FC<VendorDetailsModalProps> = ({ vendor: 
                                                     />
                                                     <div className="flex-1">
                                                         <div className="flex items-center gap-2 mb-1">
-                                                            <span className="font-bold text-slate-800 dark:text-slate-100">{review.user_name}</span>
+                                                            <span className="font-bold text-slate-100">{review.user_name}</span>
                                                             {review.is_verified && (
                                                                 <span className="text-xs px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded">
                                                                     מאומת
@@ -446,14 +446,14 @@ export const VendorDetailsModal: React.FC<VendorDetailsModalProps> = ({ vendor: 
                                             );
                                         })()}
 
-                                        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+                                        <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-xl p-4 border border-white/10">
                                             <h3 className="font-bold mb-4 flex items-center gap-2">
                                                 <Clock size={20} />
                                                 שעות פתיחה
                                             </h3>
                                         <div className="space-y-2">
                                             {vendor.hours.sort((a, b) => a.day_of_week - b.day_of_week).map(hour => (
-                                                <div key={hour.id} className="flex justify-between items-center py-2 border-b border-slate-100 dark:border-slate-700 last:border-0">
+                                                <div key={hour.id} className="flex justify-between items-center py-2 border-b border-white/10 last:border-0">
                                                     <span className="font-medium text-slate-700 dark:text-slate-300">
                                                         {getDayName(hour.day_of_week)}
                                                     </span>
@@ -464,7 +464,7 @@ export const VendorDetailsModal: React.FC<VendorDetailsModalProps> = ({ vendor: 
                                             ))}
                                         </div>
                                         {vendor.closures && vendor.closures.length > 0 && (
-                                            <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+                                            <div className="mt-4 pt-4 border-t border-white/10">
                                                 <h4 className="font-bold text-sm mb-2">סגירות מיוחדות</h4>
                                                 <div className="space-y-1">
                                                     {vendor.closures.map(closure => (
@@ -491,7 +491,7 @@ export const VendorDetailsModal: React.FC<VendorDetailsModalProps> = ({ vendor: 
                                     </div>
                                 ) : (
                                     vendor.updates.filter(u => u.is_active).map(update => (
-                                        <div key={update.id} className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
+                                        <div key={update.id} className="bg-[#0d1424]/60 backdrop-blur-xl rounded-xl p-4 border border-white/10">
                                             {update.image_url && (
                                                 <img src={update.image_url} alt={update.title} className="w-full h-48 object-cover rounded-lg mb-3" />
                                             )}

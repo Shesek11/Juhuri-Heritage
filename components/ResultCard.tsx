@@ -94,7 +94,7 @@ const FieldEditForm: React.FC<{
         placeholder="הערך המוצע..."
         required
         autoFocus
-        className="w-full px-3 py-1.5 text-sm rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none"
+        className="w-full px-3 py-1.5 text-sm rounded-md border border-slate-200 dark:border-slate-600 bg-[#0d1424]/60 backdrop-blur-xl focus:ring-2 focus:ring-indigo-500 outline-none"
         dir="auto"
       />
       <input
@@ -102,7 +102,7 @@ const FieldEditForm: React.FC<{
         value={reason}
         onChange={e => setReason(e.target.value)}
         placeholder="סיבה / מקור (אופציונלי)"
-        className="w-full px-3 py-1.5 text-sm rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none"
+        className="w-full px-3 py-1.5 text-sm rounded-md border border-slate-200 dark:border-slate-600 bg-[#0d1424]/60 backdrop-blur-xl focus:ring-2 focus:ring-indigo-500 outline-none"
         dir="auto"
       />
       <div className="flex items-center gap-2">
@@ -416,9 +416,9 @@ const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal, onSugge
   };
 
   return (
-    <div className="w-full max-w-2xl bg-white dark:bg-slate-800 rounded-2xl shadow-xl overflow-hidden border border-slate-100 dark:border-slate-700 transition-all font-rubik">
+    <div className="w-full max-w-2xl bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-2xl overflow-hidden border border-white/10 transition-all font-rubik">
       {/* Header */}
-      <div className="p-6 bg-gradient-to-l from-indigo-500 to-purple-600 text-white relative">
+      <div className="p-6 bg-gradient-to-br from-white/10 to-transparent border-b border-white/10 text-white relative">
         <div className="flex justify-between items-start">
           <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2 flex-wrap">
@@ -460,9 +460,9 @@ const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal, onSugge
                 <button className="p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors" title="בחר קול">
                   <Settings2 size={20} />
                 </button>
-                <div className="absolute top-full left-0 mt-2 w-32 bg-white dark:bg-slate-800 rounded-lg shadow-xl p-1 hidden group-hover:block z-20 text-slate-800 dark:text-slate-200 text-sm">
-                  <button onClick={() => setVoice('Zephyr')} className={`w-full text-right px-3 py-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700 ${voice === 'Zephyr' ? 'font-bold text-indigo-600' : ''}`}>קול אישה</button>
-                  <button onClick={() => setVoice('Fenrir')} className={`w-full text-right px-3 py-2 rounded-md hover:bg-slate-100 dark:hover:bg-slate-700 ${voice === 'Fenrir' ? 'font-bold text-indigo-600' : ''}`}>קול גבר</button>
+                <div className="absolute top-full left-0 mt-2 w-32 bg-[#0d1424]/60 backdrop-blur-xl rounded-lg shadow-xl p-1 hidden group-hover:block z-20 text-slate-200 text-sm">
+                  <button onClick={() => setVoice('Zephyr')} className={`w-full text-right px-3 py-2 rounded-md hover:bg-white/10 ${voice === 'Zephyr' ? 'font-bold text-indigo-600' : ''}`}>קול אישה</button>
+                  <button onClick={() => setVoice('Fenrir')} className={`w-full text-right px-3 py-2 rounded-md hover:bg-white/10 ${voice === 'Fenrir' ? 'font-bold text-indigo-600' : ''}`}>קול גבר</button>
                 </div>
               </div>
 
@@ -480,7 +480,7 @@ const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal, onSugge
       <div className="p-6 space-y-6">
         {/* Definitions */}
         {entry.definitions.length > 0 && (
-          <div className="text-slate-700 dark:text-slate-200 text-lg leading-relaxed border-b border-slate-100 dark:border-slate-700 pb-4 font-medium group">
+          <div className="text-slate-700 dark:text-slate-200 text-lg leading-relaxed border-b border-white/10 pb-4 font-medium group">
             <div className="flex items-start gap-1">
               <div className="flex-1">
                 <FieldSourceBadge source={entry.fieldSources?.definition} />
@@ -502,7 +502,7 @@ const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal, onSugge
                 fieldName="definition"
                 currentValue={entry.definitions.join('; ')}
                 onClose={() => setEditingField(null)}
-                onSuccess={() => {}}
+                onSuccess={() => { }}
               />
             )}
           </div>
@@ -510,7 +510,7 @@ const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal, onSugge
 
         {/* Russian translation */}
         {entry.russian && (
-          <div className="border-b border-slate-100 dark:border-slate-700 pb-3 group">
+          <div className="border-b border-white/10 pb-3 group">
             <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
               <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">רוסית</span>
               <FieldSourceBadge source={entry.fieldSources?.russian} />
@@ -531,7 +531,7 @@ const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal, onSugge
                 fieldName="russian"
                 currentValue={entry.russian}
                 onClose={() => setEditingField(null)}
-                onSuccess={() => {}}
+                onSuccess={() => { }}
               />
             )}
           </div>
@@ -544,7 +544,7 @@ const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal, onSugge
             {entry.translations.map((t, idx) => {
               const voteData = t.id ? translationVotes[t.id] : null;
               return (
-                <div key={idx} className="relative p-4 rounded-xl bg-slate-50 dark:bg-slate-700/50 hover:bg-indigo-50 dark:hover:bg-slate-700 transition-colors group border border-slate-100 dark:border-slate-700/50">
+                <div key={idx} className="relative p-4 rounded-xl bg-white/5 hover:bg-white/10 transition-colors group border border-white/10">
                   {/* Top-left: Play button */}
                   <div className="absolute top-3 left-3 flex gap-1">
                     <button
@@ -556,7 +556,7 @@ const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal, onSugge
                   </div>
 
                   <div className="flex flex-col gap-1 pr-2">
-                    <div className="text-2xl font-bold text-slate-800 dark:text-slate-100 font-rubik flex items-center gap-1">
+                    <div className="text-2xl font-bold text-slate-100 font-rubik flex items-center gap-1">
                       <FieldSourceBadge source={entry.fieldSources?.hebrew} />
                       <span className="flex-1">{t.hebrew}</span>
                       <ConfirmAiButton entryId={entry.id} fieldName="hebrew" value={t.hebrew} source={entry.fieldSources?.hebrew} />
@@ -570,7 +570,7 @@ const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal, onSugge
                       />
                     </div>
                     {editingField === 'hebrew' && entry.id && (
-                      <FieldEditForm entryId={entry.id} fieldName="hebrew" currentValue={t.hebrew} onClose={() => setEditingField(null)} onSuccess={() => {}} />
+                      <FieldEditForm entryId={entry.id} fieldName="hebrew" currentValue={t.hebrew} onClose={() => setEditingField(null)} onSuccess={() => { }} />
                     )}
                     <div className="flex items-center gap-2 text-sm">
                       {t.dialect && t.dialect !== 'לא ידוע' && (
@@ -593,7 +593,7 @@ const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal, onSugge
                       )}
                     </div>
                     {editingField === 'latin' && entry.id && (
-                      <FieldEditForm entryId={entry.id} fieldName="latin" currentValue={t.latin} onClose={() => setEditingField(null)} onSuccess={() => {}} />
+                      <FieldEditForm entryId={entry.id} fieldName="latin" currentValue={t.latin} onClose={() => setEditingField(null)} onSuccess={() => { }} />
                     )}
                     {t.cyrillic && (
                       <div className="text-lg text-slate-500 dark:text-slate-400 font-serif flex items-center gap-1">
@@ -611,7 +611,7 @@ const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal, onSugge
                       </div>
                     )}
                     {editingField === 'cyrillic' && entry.id && (
-                      <FieldEditForm entryId={entry.id} fieldName="cyrillic" currentValue={t.cyrillic} onClose={() => setEditingField(null)} onSuccess={() => {}} />
+                      <FieldEditForm entryId={entry.id} fieldName="cyrillic" currentValue={t.cyrillic} onClose={() => setEditingField(null)} onSuccess={() => { }} />
                     )}
 
                     {/* Voting and Correction Row */}
@@ -623,7 +623,7 @@ const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal, onSugge
                             onClick={() => handleTranslationVote(t.id!, 'up')}
                             className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs transition-all ${voteData?.userVote === 'up'
                               ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
-                              : 'text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-600'
+                              : 'text-slate-400 hover:bg-white/10'
                               }`}
                             title="הצבע לטובה"
                           >
@@ -634,7 +634,7 @@ const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal, onSugge
                             onClick={() => handleTranslationVote(t.id!, 'down')}
                             className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs transition-all ${voteData?.userVote === 'down'
                               ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
-                              : 'text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-600'
+                              : 'text-slate-400 hover:bg-white/10'
                               }`}
                             title="הצבע נגד"
                           >
@@ -697,9 +697,9 @@ const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal, onSugge
             {/* AI-generated examples */}
             <div className="space-y-3">
               {entry.examples.map((ex, idx) => (
-                <div key={idx} className="border-r-4 border-indigo-200 dark:border-indigo-900 pr-4 py-2 bg-slate-50/50 dark:bg-slate-800/50 rounded-r-lg">
+                <div key={idx} className="border-r-4 border-indigo-200 dark:border-indigo-900 pr-4 py-2 bg-white/5 rounded-r-lg">
                   <div className="flex justify-between items-start mb-1">
-                    <p className="text-lg font-medium text-slate-800 dark:text-slate-200">{ex.origin}</p>
+                    <p className="text-lg font-medium text-slate-200">{ex.origin}</p>
                     <button onClick={() => handlePlay(ex.origin, `ex-orig-${idx}`)} className={`text-slate-300 hover:text-indigo-500 transition-colors ${isPlaying === `ex-orig-${idx}` ? 'text-indigo-500 animate-pulse' : ''}`}>
                       <Volume2 size={16} />
                     </button>
@@ -720,7 +720,7 @@ const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal, onSugge
                   {communityExamples.map((ex) => (
                     <div key={ex.id} className="border-r-4 border-blue-200 dark:border-blue-900 pr-4 py-2 bg-blue-50/50 dark:bg-blue-900/20 rounded-r-lg">
                       <div className="flex justify-between items-start mb-1">
-                        <p className="text-lg font-medium text-slate-800 dark:text-slate-200">{ex.origin}</p>
+                        <p className="text-lg font-medium text-slate-200">{ex.origin}</p>
                         <button onClick={() => handlePlay(ex.origin, `comm-${ex.id}`)} className={`text-slate-300 hover:text-blue-500 transition-colors ${isPlaying === `comm-${ex.id}` ? 'text-blue-500 animate-pulse' : ''}`}>
                           <Volume2 size={16} />
                         </button>
@@ -748,7 +748,7 @@ const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal, onSugge
                   value={proverbOrigin}
                   onChange={e => setProverbOrigin(e.target.value)}
                   placeholder="הפתגם / הברכה בשפת המקור..."
-                  className="w-full px-3 py-2 text-sm rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none"
+                  className="w-full px-3 py-2 text-sm rounded-md border border-slate-200 dark:border-slate-600 bg-[#0d1424]/60 backdrop-blur-xl focus:ring-2 focus:ring-indigo-500 outline-none"
                   dir="auto"
                 />
                 <input
@@ -756,7 +756,7 @@ const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal, onSugge
                   value={proverbTranslated}
                   onChange={e => setProverbTranslated(e.target.value)}
                   placeholder="תרגום (אופציונלי)"
-                  className="w-full px-3 py-2 text-sm rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none"
+                  className="w-full px-3 py-2 text-sm rounded-md border border-slate-200 dark:border-slate-600 bg-[#0d1424]/60 backdrop-blur-xl focus:ring-2 focus:ring-indigo-500 outline-none"
                   dir="auto"
                 />
                 <input
@@ -764,7 +764,7 @@ const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal, onSugge
                   value={proverbTranslit}
                   onChange={e => setProverbTranslit(e.target.value)}
                   placeholder="תעתיק לטיני (אופציונלי)"
-                  className="w-full px-3 py-2 text-sm rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none"
+                  className="w-full px-3 py-2 text-sm rounded-md border border-slate-200 dark:border-slate-600 bg-[#0d1424]/60 backdrop-blur-xl focus:ring-2 focus:ring-indigo-500 outline-none"
                   dir="ltr"
                 />
                 <div className="flex items-center gap-2">
@@ -818,7 +818,7 @@ const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal, onSugge
                   value={proverbOrigin}
                   onChange={e => setProverbOrigin(e.target.value)}
                   placeholder="הפתגם / הברכה בשפת המקור..."
-                  className="w-full px-3 py-2 text-sm rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none"
+                  className="w-full px-3 py-2 text-sm rounded-md border border-slate-200 dark:border-slate-600 bg-[#0d1424]/60 backdrop-blur-xl focus:ring-2 focus:ring-indigo-500 outline-none"
                   dir="auto"
                 />
                 <input
@@ -826,7 +826,7 @@ const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal, onSugge
                   value={proverbTranslated}
                   onChange={e => setProverbTranslated(e.target.value)}
                   placeholder="תרגום (אופציונלי)"
-                  className="w-full px-3 py-2 text-sm rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none"
+                  className="w-full px-3 py-2 text-sm rounded-md border border-slate-200 dark:border-slate-600 bg-[#0d1424]/60 backdrop-blur-xl focus:ring-2 focus:ring-indigo-500 outline-none"
                   dir="auto"
                 />
                 <input
@@ -834,7 +834,7 @@ const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal, onSugge
                   value={proverbTranslit}
                   onChange={e => setProverbTranslit(e.target.value)}
                   placeholder="תעתיק לטיני (אופציונלי)"
-                  className="w-full px-3 py-2 text-sm rounded-md border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 focus:ring-2 focus:ring-indigo-500 outline-none"
+                  className="w-full px-3 py-2 text-sm rounded-md border border-slate-200 dark:border-slate-600 bg-[#0d1424]/60 backdrop-blur-xl focus:ring-2 focus:ring-indigo-500 outline-none"
                   dir="ltr"
                 />
                 <div className="flex items-center gap-2">
@@ -859,11 +859,11 @@ const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal, onSugge
         )}
 
         {/* Community Actions */}
-        <div className="pt-4 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between">
+        <div className="pt-4 border-t border-white/10 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button
               onClick={handleLike}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-full transition-all ${isLiked ? 'bg-pink-50 dark:bg-pink-900/20 text-pink-600' : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-full transition-all ${isLiked ? 'bg-pink-50 dark:bg-pink-900/20 text-pink-600' : 'text-slate-500 hover:bg-white/5'}`}
             >
               <Heart size={20} fill={isLiked ? "currentColor" : "none"} />
               <span className="font-bold">{likesCount}</span>
@@ -871,7 +871,7 @@ const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal, onSugge
 
             <button
               onClick={toggleComments}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-full transition-all ${showComments ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600' : 'text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-full transition-all ${showComments ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600' : 'text-slate-500 hover:bg-white/5'}`}
             >
               <MessageCircle size={20} />
               <span className="font-bold">{entry.commentsCount || 0}</span>
@@ -881,7 +881,7 @@ const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal, onSugge
 
         {/* Comments Section */}
         {showComments && (
-          <div className="animate-in fade-in slide-in-from-top-2 bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 space-y-4">
+          <div className="animate-in fade-in slide-in-from-top-2 bg-white/5/50 rounded-xl p-4 space-y-4">
             <h4 className="font-bold text-slate-700 dark:text-slate-200 text-sm">תגובות בקהילה</h4>
 
             <div className="space-y-3 max-h-60 overflow-y-auto custom-scrollbar">
@@ -889,7 +889,7 @@ const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal, onSugge
                 <p className="text-center text-slate-400 text-sm py-4">אין עדיין תגובות. היה הראשון להגיב!</p>
               ) : (
                 comments.map(c => (
-                  <div key={c.id} className="bg-white dark:bg-slate-800 p-3 rounded-lg shadow-sm border border-slate-100 dark:border-slate-700">
+                  <div key={c.id} className="bg-[#0d1424]/60 backdrop-blur-xl p-3 rounded-lg shadow-sm border border-white/10">
                     <div className="flex justify-between items-start">
                       <span className="font-bold text-xs text-indigo-600 dark:text-indigo-400">{c.user_name}</span>
                       <span className="text-[10px] text-slate-400">{new Date(c.created_at).toLocaleDateString()}</span>
@@ -908,7 +908,7 @@ const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal, onSugge
                   onChange={e => setGuestName(e.target.value)}
                   placeholder="השם שלך"
                   required
-                  className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                  className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-[#0d1424]/60 backdrop-blur-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
                 />
               )}
               <div className="flex gap-2">
@@ -918,7 +918,7 @@ const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal, onSugge
                   onChange={e => setNewComment(e.target.value)}
                   placeholder="הוסף תגובה, דוגמה או הערה..."
                   required
-                  className="flex-1 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                  className="flex-1 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-[#0d1424]/60 backdrop-blur-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
                 />
                 <button
                   type="submit"

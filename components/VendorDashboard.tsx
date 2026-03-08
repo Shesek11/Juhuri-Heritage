@@ -204,7 +204,7 @@ export const VendorDashboard: React.FC = () => {
             <div className="mb-6">
                 <div className="flex items-center justify-between mb-4">
                     <div>
-                        <h1 className="text-3xl font-bold text-slate-800 dark:text-slate-100">{vendor.name}</h1>
+                        <h1 className="text-3xl font-bold text-slate-100">{vendor.name}</h1>
                         <p className="text-slate-500">{vendor.address}</p>
                     </div>
                     <div className="flex items-center gap-3">
@@ -221,7 +221,7 @@ export const VendorDashboard: React.FC = () => {
 
                 {/* Stats Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+                    <div className="bg-[#0d1424]/60 backdrop-blur-xl p-4 rounded-xl border border-white/10">
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm text-slate-500">דירוג ממוצע</p>
@@ -234,7 +234,7 @@ export const VendorDashboard: React.FC = () => {
                         </div>
                     </div>
 
-                    <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+                    <div className="bg-[#0d1424]/60 backdrop-blur-xl p-4 rounded-xl border border-white/10">
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm text-slate-500">ביקורות</p>
@@ -244,7 +244,7 @@ export const VendorDashboard: React.FC = () => {
                         </div>
                     </div>
 
-                    <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+                    <div className="bg-[#0d1424]/60 backdrop-blur-xl p-4 rounded-xl border border-white/10">
                         <div className="flex items-center justify-between">
                             <div>
                                 <p className="text-sm text-slate-500">מנות בתפריט</p>
@@ -257,7 +257,7 @@ export const VendorDashboard: React.FC = () => {
             </div>
 
             {/* Tabs */}
-            <div className="flex border-b border-slate-200 dark:border-slate-700 mb-6 overflow-x-auto">
+            <div className="flex border-b border-white/10 mb-6 overflow-x-auto">
                 <button
                     onClick={() => setActiveTab('orders')}
                     className={`px-4 py-3 font-bold border-b-2 transition-colors flex items-center gap-2 ${
@@ -314,7 +314,7 @@ export const VendorDashboard: React.FC = () => {
                 {activeTab === 'menu' && (
                     <div className="space-y-6">
                         {/* Add New Item Form */}
-                        <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700">
+                        <div className="bg-[#0d1424]/60 backdrop-blur-xl p-6 rounded-xl border border-white/10">
                             <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
                                 <Plus size={20} />
                                 הוסף מנה חדשה
@@ -379,7 +379,7 @@ export const VendorDashboard: React.FC = () => {
                                 <p className="text-slate-500">אין מנות בתפריט</p>
                             ) : (
                                 menuItems.map(item => (
-                                    <div key={item.id} className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+                                    <div key={item.id} className="bg-[#0d1424]/60 backdrop-blur-xl p-4 rounded-xl border border-white/10">
                                         {editingItem?.id === item.id ? (
                                             <div className="space-y-3">
                                                 <input
@@ -424,7 +424,7 @@ export const VendorDashboard: React.FC = () => {
                                                     <div className="flex items-center gap-3 mt-2">
                                                         <span className="font-bold text-orange-600">₪{item.price}</span>
                                                         {item.category && (
-                                                            <span className="text-xs px-2 py-0.5 bg-slate-100 dark:bg-slate-700 rounded">{item.category}</span>
+                                                            <span className="text-xs px-2 py-0.5 bg-white/10 rounded">{item.category}</span>
                                                         )}
                                                         <span className={`text-xs px-2 py-0.5 rounded ${
                                                             item.is_available ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
@@ -458,7 +458,7 @@ export const VendorDashboard: React.FC = () => {
 
                 {/* HOURS TAB */}
                 {activeTab === 'hours' && (
-                    <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700">
+                    <div className="bg-[#0d1424]/60 backdrop-blur-xl p-6 rounded-xl border border-white/10">
                         <h3 className="text-lg font-bold mb-4">ניהול שעות פתיחה</h3>
                         <p className="text-slate-500 mb-4">
                             תכונה זו תאפשר לך לערוך שעות פתיחה ולהגדיר סגירות מיוחדות. בקרוב!
@@ -470,7 +470,7 @@ export const VendorDashboard: React.FC = () => {
                 {activeTab === 'updates' && (
                     <div className="space-y-6">
                         {/* Add New Update Form */}
-                        <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700">
+                        <div className="bg-[#0d1424]/60 backdrop-blur-xl p-6 rounded-xl border border-white/10">
                             <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
                                 <Plus size={20} />
                                 פרסם עדכון חדש
@@ -512,7 +512,7 @@ export const VendorDashboard: React.FC = () => {
                             <h3 className="text-lg font-bold">עדכונים קיימים</h3>
                             {vendor.updates && vendor.updates.length > 0 ? (
                                 vendor.updates.map(update => (
-                                    <div key={update.id} className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+                                    <div key={update.id} className="bg-[#0d1424]/60 backdrop-blur-xl p-4 rounded-xl border border-white/10">
                                         <h4 className="font-bold text-lg">{update.title}</h4>
                                         <p className="text-sm text-slate-600 dark:text-slate-300 mt-2">{update.content}</p>
                                         <p className="text-xs text-slate-400 mt-2">
@@ -530,7 +530,7 @@ export const VendorDashboard: React.FC = () => {
                 {/* ORDERS TAB */}
                 {activeTab === 'orders' && (
                     <div className="space-y-4">
-                        <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700">
+                        <div className="bg-[#0d1424]/60 backdrop-blur-xl p-6 rounded-xl border border-white/10">
                             <h3 className="text-lg font-bold mb-4">ההזמנות שלי</h3>
 
                             {orders.length === 0 ? (
@@ -543,11 +543,11 @@ export const VendorDashboard: React.FC = () => {
                                     {orders.map(order => (
                                         <div
                                             key={order.id}
-                                            className="p-4 bg-slate-50 dark:bg-slate-900/50 rounded-lg border border-slate-200 dark:border-slate-700"
+                                            className="p-4 bg-white/5/50 rounded-lg border border-white/10"
                                         >
                                             <div className="flex justify-between items-start mb-3">
                                                 <div>
-                                                    <h4 className="font-bold text-slate-800 dark:text-slate-100">
+                                                    <h4 className="font-bold text-slate-100">
                                                         הזמנה #{order.order_number}
                                                     </h4>
                                                     <p className="text-sm text-slate-500">
@@ -683,7 +683,7 @@ export const VendorDashboard: React.FC = () => {
 
                                 {/* Daily Orders Chart */}
                                 {statistics.daily_orders && statistics.daily_orders.length > 0 && (
-                                    <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700">
+                                    <div className="bg-[#0d1424]/60 backdrop-blur-xl p-6 rounded-xl border border-white/10">
                                         <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
                                             <TrendingUp size={20} />
                                             הזמנות ב-7 הימים האחרונים
@@ -698,7 +698,7 @@ export const VendorDashboard: React.FC = () => {
                                                         <span className="text-sm text-slate-600 dark:text-slate-400 w-24 shrink-0">
                                                             {new Date(day.order_date).toLocaleDateString('he-IL', { month: 'short', day: 'numeric' })}
                                                         </span>
-                                                        <div className="flex-1 bg-slate-100 dark:bg-slate-700 rounded-full h-8 overflow-hidden">
+                                                        <div className="flex-1 bg-white/10 rounded-full h-8 overflow-hidden">
                                                             <div
                                                                 className="bg-gradient-to-r from-orange-500 to-orange-600 h-full flex items-center px-3 text-white text-sm font-bold transition-all"
                                                                 style={{ width: `${widthPercent}%` }}
@@ -718,7 +718,7 @@ export const VendorDashboard: React.FC = () => {
 
                                 {/* Top Selling Items */}
                                 {statistics.top_items && statistics.top_items.length > 0 && (
-                                    <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700">
+                                    <div className="bg-[#0d1424]/60 backdrop-blur-xl p-6 rounded-xl border border-white/10">
                                         <h3 className="text-lg font-bold mb-4 flex items-center gap-2">
                                             <Star size={20} />
                                             המנות הפופולריות ביותר
@@ -727,7 +727,7 @@ export const VendorDashboard: React.FC = () => {
                                             {statistics.top_items.map((item, idx) => (
                                                 <div
                                                     key={idx}
-                                                    className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg"
+                                                    className="flex items-center justify-between p-3 bg-white/5/50 rounded-lg"
                                                 >
                                                     <div className="flex items-center gap-3">
                                                         <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-white ${
@@ -739,7 +739,7 @@ export const VendorDashboard: React.FC = () => {
                                                             {idx + 1}
                                                         </div>
                                                         <div>
-                                                            <p className="font-bold text-slate-800 dark:text-slate-100">
+                                                            <p className="font-bold text-slate-100">
                                                                 {item.item_name}
                                                             </p>
                                                             <p className="text-xs text-slate-500">
@@ -762,7 +762,7 @@ export const VendorDashboard: React.FC = () => {
 
                 {/* REVIEWS TAB */}
                 {activeTab === 'reviews' && (
-                    <div className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700">
+                    <div className="bg-[#0d1424]/60 backdrop-blur-xl p-6 rounded-xl border border-white/10">
                         <h3 className="text-lg font-bold mb-4">ביקורות</h3>
                         <p className="text-slate-500">
                             צפייה בביקורות תתווסף בקרוב. כרגע ניתן לראות ביקורות דרך עמוד החנות הציבורי.

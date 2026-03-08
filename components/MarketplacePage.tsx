@@ -103,7 +103,7 @@ export const MarketplacePage: React.FC = () => {
             {/* Header */}
             <div className="px-4 mb-4 flex justify-between items-center">
                 <div>
-                    <h1 className="text-2xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                    <h1 className="text-2xl font-black text-slate-100 flex items-center gap-2">
                         <span className="bg-gradient-to-r from-orange-500 to-red-500 text-transparent bg-clip-text">
                             Taste of the Caucasus
                         </span>
@@ -119,7 +119,7 @@ export const MarketplacePage: React.FC = () => {
                     {/* Shopping Cart Button */}
                     <button
                         onClick={() => setIsCartOpen(true)}
-                        className="relative bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 p-2 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-600 transition"
+                        className="relative bg-white/10 text-slate-700 dark:text-slate-300 p-2 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-600 transition"
                     >
                         <CartIcon size={20} />
                         {cartCount > 0 && (
@@ -148,7 +148,7 @@ export const MarketplacePage: React.FC = () => {
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         placeholder="חפש מאכלים, בשלנים..."
-                        className="w-full pl-4 pr-10 py-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 shadow-sm focus:ring-2 focus:ring-orange-500 outline-none"
+                        className="w-full pl-4 pr-10 py-3 rounded-xl bg-[#0d1424]/60 backdrop-blur-xl border border-white/10 shadow-sm focus:ring-2 focus:ring-orange-500 outline-none"
                     />
                 </form>
             </div>
@@ -156,12 +156,12 @@ export const MarketplacePage: React.FC = () => {
             <div className="flex-1 flex flex-col md:flex-row overflow-hidden relative">
                 {/* List View (Mobile: Conditional, Desktop: Side Panel) */}
                 <div className={`
-                    bg-slate-50 dark:bg-slate-900/50
-                    md:w-[400px] md:border-l border-slate-200 dark:border-slate-700
+                    bg-white/5/50
+                    md:w-[400px] md:border-l border-white/10
                     flex flex-col
                     ${viewMode === 'map' ? 'hidden md:flex' : 'flex-1'}
                 `}>
-                    <div className="p-4 flex justify-between items-center bg-white dark:bg-slate-800 border-b border-slate-100 dark:border-slate-700 shadow-sm z-10">
+                    <div className="p-4 flex justify-between items-center bg-[#0d1424]/60 backdrop-blur-xl border-b border-white/10 shadow-sm z-10">
                         <span className="font-bold text-slate-700 dark:text-slate-200">{vendors.length} בשלנים באזור</span>
                         <button className="text-slate-400 hover:text-orange-500">
                             <Filter size={18} />

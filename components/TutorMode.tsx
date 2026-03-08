@@ -113,7 +113,7 @@ const TutorMode: React.FC = () => {
 
     if (!config) {
         return (
-            <div className="w-full max-w-2xl mx-auto mt-8 bg-white dark:bg-slate-800 rounded-2xl shadow-xl p-8 border border-slate-200 dark:border-slate-700 font-rubik">
+            <div className="w-full max-w-2xl mx-auto mt-8 bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-xl p-8 border border-white/10 font-rubik">
                 <SEOHead
                     title="מורה פרטי AI - לימוד ג'והורי"
                     description="למד ג'והורי עם מורה פרטי AI אינטראקטיבי. בחר ניב, רמה, והתחל את המסע במפת הלימוד."
@@ -123,7 +123,7 @@ const TutorMode: React.FC = () => {
                     <div className="inline-block p-4 bg-indigo-100 dark:bg-indigo-900/30 rounded-full mb-4 text-indigo-600 dark:text-indigo-400">
                         <GraduationCap size={48} />
                     </div>
-                    <h2 className="text-3xl font-bold text-slate-800 dark:text-slate-100 mb-2">שיעור פרטי בג'והורי</h2>
+                    <h2 className="text-3xl font-bold text-slate-100 mb-2">שיעור פרטי בג'והורי</h2>
                     <p className="text-slate-600 dark:text-slate-400">בחר ניב ורמה, והתחל את המסע במפת הלימוד האינטראקטיבית.</p>
                     {!user && (
                         <div className="mt-4 p-3 bg-amber-50 text-amber-800 text-sm rounded-lg inline-block">
@@ -152,7 +152,7 @@ const TutorMode: React.FC = () => {
     // Free Chat View
     if (mode === 'chat') {
         return (
-            <div className="w-full max-w-2xl mx-auto mt-8 h-[600px] flex flex-col bg-white dark:bg-slate-800 rounded-2xl shadow-xl overflow-hidden border border-slate-200 dark:border-slate-700 font-rubik">
+            <div className="w-full max-w-2xl mx-auto mt-8 h-[600px] flex flex-col bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-xl overflow-hidden border border-white/10 font-rubik">
                 <div className="bg-indigo-600 p-4 flex justify-between items-center text-white shadow-md z-10">
                     <div className="flex items-center gap-3">
                         <MessageCircle />
@@ -160,11 +160,11 @@ const TutorMode: React.FC = () => {
                     </div>
                     <button onClick={() => setMode('map')} className="text-sm bg-indigo-700 hover:bg-indigo-800 px-3 py-1 rounded">חזרה למפה</button>
                 </div>
-                <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-slate-50 dark:bg-slate-900/50 scroll-smooth">
+                <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-white/5/50 scroll-smooth">
                     {messages.length === 0 && <p className="text-center text-slate-400 mt-10">התחל שיחה... נסה להגיד "שלום"</p>}
                     {messages.map((msg) => (
                         <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                            <div className={`max-w-[80%] rounded-2xl p-4 shadow-sm ${msg.role === 'user' ? 'bg-indigo-600 text-white rounded-br-none' : 'bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 rounded-bl-none'}`}>
+                            <div className={`max-w-[80%] rounded-2xl p-4 shadow-sm ${msg.role === 'user' ? 'bg-indigo-600 text-white rounded-br-none' : 'bg-white dark:bg-slate-700 text-slate-100 rounded-bl-none'}`}>
                                 {msg.content}
                                 {msg.audioText && (
                                     <button onClick={() => handlePlayAudio(msg.audioText!, msg.id)} className={`mt-2 flex items-center gap-2 text-xs font-bold px-3 py-1.5 rounded-full bg-indigo-50 text-indigo-600 ${isPlaying === msg.id ? 'animate-pulse' : ''}`}>
@@ -175,7 +175,7 @@ const TutorMode: React.FC = () => {
                         </div>
                     ))}
                 </div>
-                <form onSubmit={handleSendMessage} className="p-4 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 flex gap-2">
+                <form onSubmit={handleSendMessage} className="p-4 bg-[#0d1424]/60 backdrop-blur-xl border-t border-white/10 flex gap-2">
                     <input type="text" value={input} onChange={(e) => setInput(e.target.value)} placeholder="כתוב הודעה..." className="flex-1 px-4 py-3 bg-slate-100 dark:bg-slate-900 rounded-xl outline-none dark:text-white" disabled={loading} />
                     <button type="submit" disabled={loading || !input.trim()} className="p-3 bg-indigo-600 text-white rounded-xl"><Send size={20} /></button>
                 </form>
@@ -185,7 +185,7 @@ const TutorMode: React.FC = () => {
 
     // Default: Map View
     return (
-        <div className="w-full max-w-2xl mx-auto mt-8 bg-white dark:bg-slate-800 rounded-2xl shadow-xl overflow-hidden border border-slate-200 dark:border-slate-700 font-rubik flex flex-col h-[600px]">
+        <div className="w-full max-w-2xl mx-auto mt-8 bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-xl overflow-hidden border border-white/10 font-rubik flex flex-col h-[600px]">
             {/* Header Stats */}
             <div className="bg-slate-900 text-white p-4 shadow-md z-10 flex justify-between items-center">
                 <div className="flex items-center gap-3">
@@ -208,7 +208,7 @@ const TutorMode: React.FC = () => {
             </div>
 
             {/* Map Scroll Area */}
-            <div className="flex-1 overflow-y-auto bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-slate-50 dark:bg-slate-900 p-8 relative">
+            <div className="flex-1 overflow-y-auto bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-white/5 p-8 relative">
                 <div className="absolute inset-0 bg-slate-50/90 dark:bg-slate-900/90 pointer-events-none"></div>
 
                 <div className="relative z-10 flex flex-col items-center gap-8 py-8">
@@ -239,8 +239,8 @@ const TutorMode: React.FC = () => {
                                     {completed ? <CheckCircle size={32} /> : locked ? <Lock size={24} /> : getIcon(unit.icon, 32)}
 
                                     {/* Floating Label */}
-                                    <div className="absolute top-full mt-3 bg-white dark:bg-slate-800 px-3 py-1 rounded-lg shadow-md border border-slate-100 dark:border-slate-700 whitespace-nowrap z-20 transition-opacity">
-                                        <p className="font-bold text-sm text-slate-800 dark:text-slate-200">{unit.title}</p>
+                                    <div className="absolute top-full mt-3 bg-[#0d1424]/60 backdrop-blur-xl px-3 py-1 rounded-lg shadow-md border border-white/10 whitespace-nowrap z-20 transition-opacity">
+                                        <p className="font-bold text-sm text-slate-200">{unit.title}</p>
                                     </div>
                                 </button>
                             </div>
@@ -250,7 +250,7 @@ const TutorMode: React.FC = () => {
             </div>
 
             {/* Bottom Action Bar */}
-            <div className="p-4 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 flex justify-center">
+            <div className="p-4 bg-[#0d1424]/60 backdrop-blur-xl border-t border-white/10 flex justify-center">
                 <button
                     onClick={() => setMode('chat')}
                     className="flex items-center gap-2 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 px-6 py-3 rounded-xl font-bold hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors"
@@ -283,7 +283,7 @@ const SetupForm: React.FC<{ onStart: (d: Dialect, l: ProficiencyLevel) => void }
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">בחר ניב ללימוד</label>
                 <div className="grid grid-cols-2 gap-3">
                     {dialects.map((d) => (
-                        <button key={d.id} onClick={() => setDialect(d.name)} className={`p-3 rounded-lg border text-sm font-medium transition-all text-right ${dialect === d.name ? 'border-indigo-600 bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-400' : 'border-slate-200 dark:border-slate-700 hover:border-indigo-300'}`}>
+                        <button key={d.id} onClick={() => setDialect(d.name)} className={`p-3 rounded-lg border text-sm font-medium transition-all text-right ${dialect === d.name ? 'border-indigo-600 bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-400' : 'border-white/10 hover:border-indigo-300'}`}>
                             {d.description}
                         </button>
                     ))}
@@ -293,7 +293,7 @@ const SetupForm: React.FC<{ onStart: (d: Dialect, l: ProficiencyLevel) => void }
                 <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">רמת ידע נוכחית</label>
                 <div className="flex gap-3">
                     {[{ val: 'Beginner', label: 'מתחיל' }, { val: 'Intermediate', label: 'בינוני' }, { val: 'Advanced', label: 'מתקדם' }].map((opt) => (
-                        <button key={opt.val} onClick={() => setLevel(opt.val as ProficiencyLevel)} className={`flex-1 p-3 rounded-lg border text-sm font-medium transition-all ${level === opt.val ? 'border-indigo-600 bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-400' : 'border-slate-200 dark:border-slate-700 hover:border-indigo-300'}`}>
+                        <button key={opt.val} onClick={() => setLevel(opt.val as ProficiencyLevel)} className={`flex-1 p-3 rounded-lg border text-sm font-medium transition-all ${level === opt.val ? 'border-indigo-600 bg-indigo-50 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-300 dark:border-indigo-400' : 'border-white/10 hover:border-indigo-300'}`}>
                             {opt.label}
                         </button>
                     ))}

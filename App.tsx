@@ -216,12 +216,12 @@ function App() {
   };
 
   return (
-    <div className={`min-h-screen ${theme === 'dark' ? 'dark bg-slate-900' : 'bg-slate-50'} dir-rtl font-rubik transition-colors duration-300`}>
+    <div className="min-h-screen dark bg-[#050B14] text-slate-200 dir-rtl font-rubik">
       {/* Global structured data */}
       <SEOHead jsonLd={[WEBSITE_JSONLD, ORGANIZATION_JSONLD]} />
 
       {/* Header / Nav */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-slate-900 backdrop-blur-xl border-b border-slate-800">
+      <header className="fixed top-0 left-0 right-0 z-50 bg-[#050B14]/80 backdrop-blur-2xl border-b border-white/10">
         <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
 
           {/* Right: Logo */}
@@ -234,7 +234,7 @@ function App() {
 
           {/* Center: Navigation Tabs (Desktop) */}
           <nav className="hidden md:flex items-center">
-            <div className="flex bg-slate-800/80 p-1 rounded-xl gap-0.5">
+            <div className="flex bg-[#0d1424]/60 border border-white/5 p-1 rounded-xl gap-0.5 backdrop-blur-md">
               <NavTab
                 to="/"
                 icon={<BookOpen size={16} />}
@@ -306,14 +306,16 @@ function App() {
               </div>
             )}
 
-            {/* Theme Toggle */}
+            {/* Theme Toggle (Hidden for Premium Dark Theme) */}
+            {/* 
             <button
               onClick={toggleTheme}
               className="hidden sm:flex w-8 h-8 items-center justify-center rounded-lg bg-slate-800 text-slate-400 hover:text-white transition-all"
               title={theme === 'light' ? 'מצב כהה' : 'מצב בהיר'}
             >
               {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
-            </button>
+            </button> 
+            */}
 
             {/* User Menu */}
             <div className="relative" onClick={e => e.stopPropagation()}>
@@ -407,7 +409,7 @@ function App() {
         </div>
 
         {/* Mobile Navigation Bar */}
-        <div className="md:hidden border-t border-slate-800 bg-slate-900/95">
+        <div className="md:hidden border-t border-white/10 bg-[#050B14]/95 backdrop-blur-2xl supports-[backdrop-filter]:bg-[#050B14]/80">
           <div className="flex justify-around overflow-x-auto py-1 px-1 gap-0 scrollbar-hide">
             <MobileNavTab
               to="/"

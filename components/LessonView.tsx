@@ -103,7 +103,7 @@ const LessonView: React.FC<LessonViewProps> = ({ unit, dialect, level, onComplet
   if (isFinished) {
       const passed = lives > 0;
       return (
-        <div className="flex flex-col items-center justify-center h-[500px] text-center p-8 bg-white dark:bg-slate-800 rounded-2xl animate-in zoom-in">
+        <div className="flex flex-col items-center justify-center h-[500px] text-center p-8 bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl animate-in zoom-in">
              <div className={`p-6 rounded-full mb-6 ${passed ? 'bg-green-100 text-green-600' : 'bg-red-100 text-red-600'}`}>
                  {passed ? <Trophy size={64} /> : <XCircle size={64} />}
              </div>
@@ -122,9 +122,9 @@ const LessonView: React.FC<LessonViewProps> = ({ unit, dialect, level, onComplet
   const progress = ((currentIndex + 1) / exercises.length) * 100;
 
   return (
-    <div className="flex flex-col h-[600px] bg-white dark:bg-slate-800 rounded-2xl shadow-xl overflow-hidden font-rubik relative">
+    <div className="flex flex-col h-[600px] bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-xl overflow-hidden font-rubik relative">
         {/* Header */}
-        <div className="p-4 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+        <div className="p-4 bg-white/5 border-b border-white/10 flex items-center justify-between">
             <button onClick={onBack} className="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full transition-colors"><ArrowLeft size={20} /></button>
             <div className="flex-1 mx-4">
                 <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
@@ -160,7 +160,7 @@ const LessonView: React.FC<LessonViewProps> = ({ unit, dialect, level, onComplet
                         </button>
                     )}
                  </div>
-                 <h2 className="text-3xl font-bold text-slate-800 dark:text-slate-100 text-center leading-tight">
+                 <h2 className="text-3xl font-bold text-slate-100 text-center leading-tight">
                      {currentEx.question}
                  </h2>
             </div>
@@ -176,7 +176,7 @@ const LessonView: React.FC<LessonViewProps> = ({ unit, dialect, level, onComplet
                         } else if (feedback && opt === selectedOption && opt !== currentEx.correctAnswer) {
                             btnClass = "w-full p-4 rounded-xl border-2 border-red-500 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300";
                         } else {
-                            btnClass = "w-full p-4 rounded-xl border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:border-indigo-400";
+                            btnClass = "w-full p-4 rounded-xl border-slate-200 dark:border-slate-600 bg-[#0d1424]/60 backdrop-blur-xl text-slate-700 dark:text-slate-200 hover:border-indigo-400";
                         }
 
                         return (

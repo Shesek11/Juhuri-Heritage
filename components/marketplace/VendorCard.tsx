@@ -15,7 +15,7 @@ export const VendorCard: React.FC<VendorCardProps> = ({ vendor, onClick }) => {
     return (
         <div
             onClick={onClick}
-            className="bg-white dark:bg-slate-800 rounded-xl shadow-sm hover:shadow-md transition-all cursor-pointer overflow-hidden border border-slate-100 dark:border-slate-700 group"
+            className="bg-[#0d1424]/60 backdrop-blur-xl rounded-xl shadow-sm hover:shadow-md transition-all cursor-pointer overflow-hidden border border-white/10 group"
         >
             <div className="h-40 bg-slate-200 dark:bg-slate-700 relative overflow-hidden">
                 {vendor.logo_url || vendor.about_image_url ? (
@@ -57,7 +57,7 @@ export const VendorCard: React.FC<VendorCardProps> = ({ vendor, onClick }) => {
             <div className="p-4">
                 <div className="flex justify-between items-start mb-2">
                     <div>
-                        <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100 leading-tight">
+                        <h3 className="font-bold text-lg text-slate-100 leading-tight">
                             {vendor.name}
                         </h3>
                         <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-1">
@@ -76,7 +76,7 @@ export const VendorCard: React.FC<VendorCardProps> = ({ vendor, onClick }) => {
                     {vendor.about_text || 'אוכל עדתי מסורתי'}
                 </p>
 
-                <div className="flex items-center justify-between pt-3 border-t border-slate-100 dark:border-slate-700">
+                <div className="flex items-center justify-between pt-3 border-t border-white/10">
                     <div className="flex items-center gap-2">
                         {vendor.owner_name ? (
                             <>

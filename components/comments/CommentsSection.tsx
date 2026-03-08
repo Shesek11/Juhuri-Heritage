@@ -109,8 +109,8 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({ entryId }) => {
     };
 
     return (
-        <div className="mt-6 border-t border-slate-200 dark:border-slate-700 pt-6">
-            <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-4 flex items-center gap-2">
+        <div className="mt-6 border-t border-white/10 pt-6">
+            <h3 className="text-lg font-semibold text-slate-200 mb-4 flex items-center gap-2">
                 <MessageCircle size={20} />
                 תגובות ({comments.length})
             </h3>
@@ -123,7 +123,7 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({ entryId }) => {
                         value={guestName}
                         onChange={(e) => setGuestName(e.target.value)}
                         placeholder="השם שלך"
-                        className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                        className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-200 focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                         required={!isAuthenticated}
                     />
                 )}
@@ -133,7 +133,7 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({ entryId }) => {
                         onChange={(e) => setContent(e.target.value)}
                         placeholder="הוסף תגובה..."
                         rows={2}
-                        className="flex-1 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 resize-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                        className="flex-1 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-200 resize-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                         required
                     />
                     <button
@@ -177,7 +177,7 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({ entryId }) => {
                     {comments.map((comment) => (
                         <div
                             key={comment.id}
-                            className="flex gap-3 p-4 bg-slate-50 dark:bg-slate-800/50 rounded-lg"
+                            className="flex gap-3 p-4 bg-white/5 rounded-lg"
                         >
                             {/* Avatar */}
                             <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-amber-600 dark:text-amber-400 flex-shrink-0">
@@ -195,7 +195,7 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({ entryId }) => {
                             {/* Content */}
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2 mb-1">
-                                    <span className="font-medium text-slate-800 dark:text-slate-200">
+                                    <span className="font-medium text-slate-200">
                                         {comment.user_display_name || comment.guest_name || 'אורח'}
                                     </span>
                                     <span className="text-xs text-slate-400">

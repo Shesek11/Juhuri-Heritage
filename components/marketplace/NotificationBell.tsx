@@ -109,7 +109,7 @@ export const NotificationBell: React.FC = () => {
         <div className="relative" ref={dropdownRef}>
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className="relative bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 p-2 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-600 transition"
+                className="relative bg-white/10 text-slate-700 dark:text-slate-300 p-2 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-600 transition"
             >
                 <Bell size={20} />
                 {unreadCount > 0 && (
@@ -120,10 +120,10 @@ export const NotificationBell: React.FC = () => {
             </button>
 
             {isOpen && (
-                <div className="absolute left-0 mt-2 w-80 bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200 dark:border-slate-700 z-50 max-h-[500px] flex flex-col">
+                <div className="absolute left-0 mt-2 w-80 bg-[#0d1424]/60 backdrop-blur-xl rounded-xl shadow-2xl border border-white/10 z-50 max-h-[500px] flex flex-col">
                     {/* Header */}
-                    <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
-                        <h3 className="font-bold text-slate-800 dark:text-slate-100">התראות</h3>
+                    <div className="p-4 border-b border-white/10 flex justify-between items-center">
+                        <h3 className="font-bold text-slate-100">התראות</h3>
                         {unreadCount > 0 && (
                             <button
                                 onClick={markAllAsRead}

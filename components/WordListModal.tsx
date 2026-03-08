@@ -114,7 +114,7 @@ const WordListModal: React.FC<WordListModalProps> = ({
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200 font-rubik" onClick={onClose}>
-            <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-200 dark:border-slate-700 h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in zoom-in-95 duration-200 border border-white/10 h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
 
                 {/* Header */}
                 <div className={`p-5 bg-gradient-to-r ${getCategoryColor()} text-white flex justify-between items-center shrink-0`}>
@@ -128,7 +128,7 @@ const WordListModal: React.FC<WordListModalProps> = ({
                 </div>
 
                 {/* Search */}
-                <div className="p-4 border-b border-slate-100 dark:border-slate-700 shrink-0">
+                <div className="p-4 border-b border-white/10 shrink-0">
                     <div className="relative">
                         <Search size={18} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
                         <input
@@ -136,7 +136,7 @@ const WordListModal: React.FC<WordListModalProps> = ({
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
                             placeholder="חיפוש בתוצאות..."
-                            className="w-full pr-10 pl-4 py-2 border border-slate-200 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-700 text-slate-800 dark:text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                            className="w-full pr-10 pl-4 py-2 border border-slate-200 dark:border-slate-600 rounded-xl bg-slate-50 dark:bg-slate-700 text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         />
                     </div>
                 </div>
@@ -157,10 +157,10 @@ const WordListModal: React.FC<WordListModalProps> = ({
                                 <button
                                     key={entry.id}
                                     onClick={() => onSelectWord(entry.id, entry.term)}
-                                    className="w-full text-right flex items-center justify-between p-4 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-all group border border-slate-100 dark:border-slate-700 hover:border-indigo-200 dark:hover:border-indigo-800"
+                                    className="w-full text-right flex items-center justify-between p-4 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-all group border border-white/10 hover:border-indigo-200 dark:hover:border-indigo-800"
                                 >
                                     <div className="min-w-0 flex-1">
-                                        <div className="font-bold text-slate-800 dark:text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                                        <div className="font-bold text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                                             {entry.term}
                                         </div>
                                         <div className="text-sm text-slate-500 mt-1 flex flex-wrap items-center gap-2">
@@ -180,7 +180,7 @@ const WordListModal: React.FC<WordListModalProps> = ({
 
                 {/* Pagination */}
                 {totalPages > 1 && (
-                    <div className="p-4 border-t border-slate-100 dark:border-slate-700 flex items-center justify-between shrink-0">
+                    <div className="p-4 border-t border-white/10 flex items-center justify-between shrink-0">
                         <button
                             onClick={() => setPage(p => Math.max(0, p - 1))}
                             disabled={page === 0}

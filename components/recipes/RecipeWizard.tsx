@@ -263,7 +263,7 @@ export const RecipeWizard: React.FC<RecipeWizardProps> = ({ isOpen, onClose, onS
 
                         <div>
                             <label className="block text-sm font-medium mb-2">תגיות</label>
-                            <div className="bg-slate-50 dark:bg-slate-900/50 rounded-lg p-3 border border-slate-200 dark:border-slate-700">
+                            <div className="bg-white/5/50 rounded-lg p-3 border border-white/10">
                                 <CategorizedTagFilter
                                     tags={availableTags}
                                     selectedTags={formData.tags || []}
@@ -375,7 +375,7 @@ export const RecipeWizard: React.FC<RecipeWizardProps> = ({ isOpen, onClose, onS
                                         <img
                                             src={photo.preview}
                                             alt={`תצוגה מקדימה ${index + 1}`}
-                                            className="w-full h-32 object-cover rounded-lg border-2 border-slate-200 dark:border-slate-700"
+                                            className="w-full h-32 object-cover rounded-lg border-2 border-white/10"
                                         />
                                         {index === 0 && (
                                             <div className="absolute top-2 left-2 px-2 py-1 bg-amber-500 text-white text-xs font-bold rounded">
@@ -441,15 +441,15 @@ export const RecipeWizard: React.FC<RecipeWizardProps> = ({ isOpen, onClose, onS
 
     return (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-            <div className="bg-white dark:bg-slate-800 w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
+            <div className="bg-[#0d1424]/60 backdrop-blur-xl w-full max-w-2xl rounded-2xl shadow-2xl flex flex-col max-h-[90vh]">
 
                 {/* Header */}
-                <div className="p-4 border-b border-slate-100 dark:border-slate-700 flex justify-between items-center">
+                <div className="p-4 border-b border-white/10 flex justify-between items-center">
                     <div className="flex items-center gap-2">
                         <div className="bg-amber-100 dark:bg-amber-900/40 p-2 rounded-lg">
                             <ChefHat className="text-amber-600 dark:text-amber-400" size={20} />
                         </div>
-                        <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100">הוספת מתכון חדש</h2>
+                        <h2 className="text-xl font-bold text-slate-100">הוספת מתכון חדש</h2>
                     </div>
                     <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
                         <X size={24} />
@@ -469,7 +469,7 @@ export const RecipeWizard: React.FC<RecipeWizardProps> = ({ isOpen, onClose, onS
                             );
                         })}
                     </div>
-                    <div className="h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden flex">
+                    <div className="h-2 bg-white/10 rounded-full overflow-hidden flex">
                         {['basics', 'ingredients', 'instructions', 'photos', 'review'].map((step, i) => {
                             const stepIds: Step[] = ['basics', 'ingredients', 'instructions', 'photos', 'review'];
                             const currentIndex = stepIds.indexOf(currentStep);
@@ -497,7 +497,7 @@ export const RecipeWizard: React.FC<RecipeWizardProps> = ({ isOpen, onClose, onS
                 </div>
 
                 {/* Footer */}
-                <div className="p-4 border-t border-slate-100 dark:border-slate-700 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/30">
+                <div className="p-4 border-t border-white/10 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/30">
                     <button
                         onClick={handleBack}
                         disabled={currentStep === 'basics' || loading}

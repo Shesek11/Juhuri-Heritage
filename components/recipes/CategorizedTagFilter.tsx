@@ -105,7 +105,7 @@ export const CategorizedTagFilter: React.FC<CategorizedTagFilterProps> = ({
                     ).length;
 
                     return (
-                        <div key={category} className="border-b border-slate-200 dark:border-slate-700 last:border-0 pb-2">
+                        <div key={category} className="border-b border-white/10 last:border-0 pb-2">
                             {/* Category header - clickable */}
                             <button
                                 onClick={() => toggleCategory(category)}
@@ -141,7 +141,7 @@ export const CategorizedTagFilter: React.FC<CategorizedTagFilterProps> = ({
                                                 className={`px-2.5 py-1 rounded-full text-xs transition-all ${
                                                     isSelected
                                                         ? 'bg-amber-500 text-white shadow-sm'
-                                                        : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600'
+                                                        : 'bg-white/10 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-600'
                                                 }`}
                                                 title={tag.name}
                                             >

@@ -97,11 +97,11 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess, reaso
             onClick={onClose}
         >
             <div
-                className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200 border border-slate-200 dark:border-slate-700 relative"
+                className="bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200 border border-white/10 relative"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Header */}
-                <div className="flex border-b border-slate-200 dark:border-slate-700 relative bg-slate-50 dark:bg-slate-900/50">
+                <div className="flex border-b border-white/10 relative bg-white/5/50">
                     <h3 className="flex-1 py-4 text-center font-bold text-slate-700 dark:text-slate-200">
                         {mode === 'login' ? 'כניסה למערכת' : 'הרשמה מהירה'}
                     </h3>
@@ -143,10 +143,10 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess, reaso
 
                             <div className="relative my-6">
                                 <div className="absolute inset-0 flex items-center">
-                                    <div className="w-full border-t border-slate-200 dark:border-slate-700"></div>
+                                    <div className="w-full border-t border-white/10"></div>
                                 </div>
                                 <div className="relative flex justify-center text-sm">
-                                    <span className="px-2 bg-white dark:bg-slate-800 text-slate-500">או</span>
+                                    <span className="px-2 bg-[#0d1424]/60 backdrop-blur-xl text-slate-500">או</span>
                                 </div>
                             </div>
 
@@ -181,7 +181,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess, reaso
                                             value={name}
                                             onChange={(e) => setName(e.target.value)}
                                             placeholder="השם שלך"
-                                            className="w-full pr-10 pl-4 py-2.5 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+                                            className="w-full pr-10 pl-4 py-2.5 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
                                             required
                                         />
                                     </div>
@@ -199,7 +199,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess, reaso
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
                                         placeholder="your@email.com"
-                                        className="w-full pr-10 pl-4 py-2.5 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+                                        className="w-full pr-10 pl-4 py-2.5 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
                                         required
                                         dir="ltr"
                                     />
@@ -217,7 +217,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess, reaso
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
                                         placeholder="********"
-                                        className="w-full pr-10 pl-4 py-2.5 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+                                        className="w-full pr-10 pl-4 py-2.5 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-100 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
                                         required
                                         minLength={6}
                                         dir="ltr"

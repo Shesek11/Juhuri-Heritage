@@ -188,18 +188,18 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({
 
       {/* HERO SECTION */}
       <HeroSection dialects={dialects} showBottomContent={!result}>
-        <div className="w-full relative group">
-          <div className="absolute -inset-1 bg-gradient-to-r from-amber-500 to-orange-600 rounded-2xl blur opacity-20 group-hover:opacity-30 transition duration-1000 group-hover:duration-200"></div>
-          <form onSubmit={handleSearch} className="relative flex bg-white dark:bg-slate-800 rounded-xl shadow-xl overflow-hidden p-2 ring-1 ring-slate-900/5 dark:ring-white/10">
+        <div className="w-full relative group max-w-2xl mx-auto">
+          <div className="absolute -inset-1 bg-gradient-to-r from-amber-500/30 to-yellow-600/30 rounded-[2rem] blur-md opacity-50 group-hover:opacity-80 transition duration-500"></div>
+          <form onSubmit={handleSearch} className="relative flex bg-[#050B14]/70 border border-white/10 backdrop-blur-2xl rounded-full overflow-hidden p-2">
             <input
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="חפש מילה, פתגם או ברכה..."
-              className="flex-1 bg-transparent px-4 py-3 text-lg outline-none text-slate-800 dark:text-slate-100 placeholder:text-slate-400"
+              placeholder="חפש במילון המורשת..."
+              className="flex-1 bg-transparent px-6 py-3 text-lg outline-none text-white placeholder:text-slate-400"
               disabled={loading}
             />
-            <div className="flex items-center border-r border-slate-100 dark:border-slate-700 pr-2 gap-1">
+            <div className="flex items-center border-r border-white/10 pr-2 gap-2 pl-1">
               <button
                 type="button"
                 onMouseDown={startRecording}
@@ -207,9 +207,9 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({
                 onTouchStart={startRecording}
                 onTouchEnd={stopRecording}
                 onMouseLeave={stopRecording}
-                className={`p-3 rounded-lg transition-all duration-200 ${isRecording
-                  ? 'bg-red-500 text-white scale-110 shadow-lg shadow-red-500/30'
-                  : 'text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-amber-600'
+                className={`p-3 rounded-full transition-all duration-300 ${isRecording
+                  ? 'bg-red-500 text-white scale-110 shadow-[0_0_20px_rgba(239,68,68,0.5)]'
+                  : 'text-slate-400 hover:bg-white/5 hover:text-amber-500'
                   }`}
                 title="לחיצה ארוכה להקלטה"
               >
@@ -218,7 +218,7 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({
               <button
                 type="submit"
                 disabled={loading}
-                className="bg-amber-600 hover:bg-amber-700 text-white p-3 rounded-lg transition-colors shadow-md shadow-amber-500/20 disabled:opacity-50"
+                className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-[#050B14] p-3 rounded-full transition-all shadow-[0_0_15px_rgba(245,158,11,0.3)] disabled:opacity-50 hover:scale-105"
               >
                 {loading ? <Loader2 className="animate-spin" size={24} /> : <Search size={24} />}
               </button>

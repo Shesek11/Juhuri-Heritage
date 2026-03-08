@@ -91,7 +91,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
                 {preview ? (
                     <div className="relative group">
                         <div
-                            className="w-full bg-slate-100 dark:bg-slate-700 rounded-xl overflow-hidden border-2 border-slate-200 dark:border-slate-600"
+                            className="w-full bg-white/10 rounded-xl overflow-hidden border-2 border-slate-200 dark:border-slate-600"
                             style={{ aspectRatio }}
                         >
                             <img
