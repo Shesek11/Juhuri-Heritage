@@ -129,14 +129,16 @@ const CommunityTicker: React.FC = () => {
 
     return (
         <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-lg border border-white/10 overflow-hidden font-rubik h-full flex flex-col">
-            <div className="bg-white/5 border-b border-white/10 backdrop-blur-xl p-4 text-white flex justify-between items-center">
-                <h3 className="font-bold text-lg flex items-center gap-2">
-                    <Activity size={20} /> קורה עכשיו
-                </h3>
-                <div className="flex items-center gap-1.5 px-2 py-0.5 bg-white/20 rounded-full">
+            <div className="p-6 border-b border-white/10 flex flex-col items-center justify-center text-center h-40 bg-[#0d1424]/40 relative group-hover:bg-[#0d1424]/60 transition-colors">
+                <div className="absolute top-4 left-4 flex items-center gap-1.5 px-2 py-0.5 bg-white/10 rounded-full">
                     <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
-                    <span className="text-[10px] font-medium">LIVE</span>
+                    <span className="text-[10px] font-medium text-white">LIVE</span>
                 </div>
+                <div className="w-12 h-12 bg-gradient-to-br from-indigo-400 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-500/20 mb-3 text-white">
+                    <Activity size={24} />
+                </div>
+                <h3 className="font-bold text-lg text-white">קורה עכשיו</h3>
+                <p className="text-xs text-white/50 mt-1 line-clamp-1">פעילות הקהילה בזמן אמת</p>
             </div>
 
             <div className="flex-1 overflow-hidden relative p-2">

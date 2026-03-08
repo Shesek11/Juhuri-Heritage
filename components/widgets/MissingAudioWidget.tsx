@@ -55,11 +55,12 @@ const MissingAudioWidget: React.FC<MissingAudioWidgetProps> = ({ onAddAudio, onO
 
     return (
         <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-lg border border-white/10 overflow-hidden font-rubik h-full flex flex-col">
-            <div className="bg-white/5 border-b border-white/10 backdrop-blur-xl p-4 text-white">
-                <h3 className="font-bold text-lg flex items-center gap-2">
-                    <Mic size={20} /> חסרה הקלטה
-                </h3>
-                <p className="text-xs text-white/80 mt-1">עזרו לנו להקליט הגיות</p>
+            <div className="p-6 border-b border-white/10 flex flex-col items-center justify-center text-center h-40 bg-[#0d1424]/40 relative group-hover:bg-[#0d1424]/60 transition-colors">
+                <div className="w-12 h-12 bg-gradient-to-br from-purple-400 to-violet-600 rounded-2xl flex items-center justify-center shadow-lg shadow-purple-500/20 mb-3 text-white">
+                    <Mic size={24} />
+                </div>
+                <h3 className="font-bold text-lg text-white">חסרה הקלטה</h3>
+                <p className="text-xs text-white/50 mt-1 line-clamp-1">עזרו לנו להקליט הגיות</p>
             </div>
 
             <div className="flex-1 p-2 overflow-y-auto">

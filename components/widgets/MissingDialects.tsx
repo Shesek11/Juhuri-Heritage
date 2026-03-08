@@ -57,10 +57,12 @@ const MissingDialects: React.FC<MissingDialectsProps> = ({ onAddDialect, onOpenA
     if (entries.length === 0) {
         return (
             <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-lg border border-white/10 overflow-hidden h-full flex flex-col">
-                <div className="bg-white/5 border-b border-white/10 backdrop-blur-xl p-4 text-white">
-                    <h3 className="font-bold text-lg flex items-center gap-2">
-                        <Globe size={20} /> חסרים ניבים
-                    </h3>
+                <div className="p-6 border-b border-white/10 flex flex-col items-center justify-center text-center h-40 bg-[#0d1424]/40 relative group-hover:bg-[#0d1424]/60 transition-colors">
+                    <div className="w-12 h-12 bg-gradient-to-br from-blue-400 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/20 mb-3 text-white">
+                        <Globe size={24} />
+                    </div>
+                    <h3 className="font-bold text-lg text-white">חסרים ניבים</h3>
+                    <p className="text-xs text-white/50 mt-1 line-clamp-1">מילים שחסרות בחלק מהניבים</p>
                 </div>
                 <div className="flex-1 flex items-center justify-center text-slate-400 text-sm p-4">
                     כל המילים מכילות את כל הניבים! 🌍

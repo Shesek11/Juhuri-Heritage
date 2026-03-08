@@ -69,11 +69,15 @@ const WordOfTheDay: React.FC<WordOfTheDayProps> = ({ onSelectWord }) => {
             className="bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-lg border border-white/10 overflow-hidden group hover:shadow-xl transition-all font-rubik h-full flex flex-col cursor-pointer"
             onClick={() => onSelectWord(displayWord.term)}
         >
-            <div className="bg-white/5 border-b border-white/10 backdrop-blur-xl p-4 text-white flex justify-between items-center">
-                <h3 className="font-bold text-lg flex items-center gap-2">
-                    <span className="text-xl">☀️</span> המילה היומית
-                </h3>
-                <span className="text-xs bg-white/20 px-2 py-1 rounded-full">{new Date().toLocaleDateString('he-IL')}</span>
+            <div className="p-6 border-b border-white/10 flex flex-col items-center justify-center text-center h-40 bg-[#0d1424]/40 relative group-hover:bg-[#0d1424]/60 transition-colors">
+                <div className="absolute top-4 left-4 text-[10px] bg-white/10 px-2 py-0.5 rounded-full text-white/80">
+                    {new Date().toLocaleDateString('he-IL')}
+                </div>
+                <div className="w-12 h-12 bg-gradient-to-br from-amber-400 to-orange-600 rounded-2xl flex items-center justify-center shadow-lg shadow-amber-500/20 mb-3 text-white">
+                    <span className="text-2xl drop-shadow-md">☀️</span>
+                </div>
+                <h3 className="font-bold text-lg text-white">המילה היומית</h3>
+                <p className="text-xs text-white/50 mt-1 line-clamp-1">למד מילה ביום</p>
             </div>
 
             <div className="p-6 flex-1 flex flex-col justify-center items-center text-center space-y-4">
