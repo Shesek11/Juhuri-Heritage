@@ -216,7 +216,16 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen dark bg-[#050B14] text-slate-200 dir-rtl font-rubik">
+    <div className="min-h-screen dark bg-[#050B14] text-slate-200 dir-rtl font-rubik relative">
+      {/* Subtle Premium Background Pattern Overlay */}
+      <div
+        className="fixed inset-0 pointer-events-none z-0 mix-blend-screen opacity-[0.03]"
+        style={{
+          backgroundImage: "url('/pattern-juhuri.svg')",
+          backgroundRepeat: 'repeat',
+          backgroundSize: '100px 100px'
+        }}
+      />
       {/* Global structured data */}
       <SEOHead jsonLd={[WEBSITE_JSONLD, ORGANIZATION_JSONLD]} />
 
