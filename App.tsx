@@ -247,6 +247,11 @@ function App() {
               <NavTab
                 to="/"
                 icon={<BookOpen size={16} />}
+                label="בית"
+              />
+              <NavTab
+                to="/dictionary"
+                icon={<BookOpen size={16} />}
                 label="מילון"
               />
               <NavTab
@@ -422,6 +427,11 @@ function App() {
           <div className="flex justify-around overflow-x-auto py-1 px-1 gap-0 scrollbar-hide">
             <MobileNavTab
               to="/"
+              icon={<BookOpen size={18} />}
+              label="בית"
+            />
+            <MobileNavTab
+              to="/dictionary"
               icon={<BookOpen size={18} />}
               label="מילון"
             />

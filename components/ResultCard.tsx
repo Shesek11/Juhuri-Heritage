@@ -19,7 +19,7 @@ const FieldSourceBadge: React.FC<{ source?: string }> = ({ source }) => {
   }
   if (source === 'community') {
     return (
-      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 mr-1" title="תרומה קהילתית">
+      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 mr-1" title="תרומה קהילתית">
         <Users size={10} /> קהילה
       </span>
     );
@@ -431,7 +431,7 @@ const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal, onSugge
                   <Bot size={12} /> תרגום AI
                 </span>
               ) : entry.source === 'Community' ? (
-                <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-500/80 rounded-md text-xs font-medium backdrop-blur-sm">
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-indigo-500/80 rounded-md text-xs font-medium backdrop-blur-sm">
                   <Users size={12} /> תרומה קהילתית
                 </span>
               ) : (
@@ -713,15 +713,15 @@ const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal, onSugge
             {/* Community proverbs */}
             {communityExamples.length > 0 && (
               <div className="mt-4">
-                <p className="text-xs font-bold text-blue-600 dark:text-blue-400 mb-2 flex items-center gap-1">
+                <p className="text-xs font-bold text-indigo-600 dark:text-indigo-400 mb-2 flex items-center gap-1">
                   <Users size={12} /> פתגמים מהקהילה
                 </p>
                 <div className="space-y-3">
                   {communityExamples.map((ex) => (
-                    <div key={ex.id} className="border-r-4 border-blue-200 dark:border-blue-900 pr-4 py-2 bg-blue-50/50 dark:bg-blue-900/20 rounded-r-lg">
+                    <div key={ex.id} className="border-r-4 border-indigo-200 dark:border-indigo-900 pr-4 py-2 bg-indigo-50/50 dark:bg-indigo-900/20 rounded-r-lg">
                       <div className="flex justify-between items-start mb-1">
                         <p className="text-lg font-medium text-slate-200">{ex.origin}</p>
-                        <button onClick={() => handlePlay(ex.origin, `comm-${ex.id}`)} className={`text-slate-300 hover:text-blue-500 transition-colors ${isPlaying === `comm-${ex.id}` ? 'text-blue-500 animate-pulse' : ''}`}>
+                        <button onClick={() => handlePlay(ex.origin, `comm-${ex.id}`)} className={`text-slate-300 hover:text-indigo-500 transition-colors ${isPlaying === `comm-${ex.id}` ? 'text-indigo-500 animate-pulse' : ''}`}>
                           <Volume2 size={16} />
                         </button>
                       </div>
@@ -863,7 +863,7 @@ const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal, onSugge
           <div className="flex items-center gap-4">
             <button
               onClick={handleLike}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-full transition-all ${isLiked ? 'bg-pink-50 dark:bg-pink-900/20 text-pink-600' : 'text-slate-500 hover:bg-white/5'}`}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-full transition-all ${isLiked ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600' : 'text-slate-500 hover:bg-white/5'}`}
             >
               <Heart size={20} fill={isLiked ? "currentColor" : "none"} />
               <span className="font-bold">{likesCount}</span>

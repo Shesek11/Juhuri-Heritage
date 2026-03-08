@@ -343,7 +343,7 @@ export const CommunityGraph: React.FC = () => {
                     .attr('stroke-width', 3)
                     .attr('stroke', d => {
                         const nodeData = d as GraphNode;
-                        return nodeData.gender === 'female' ? '#ec4899' : '#3b82f6';
+                        return nodeData.gender === 'female' ? '#f59e0b' : '#6366f1';
                     });
             }
             return;
@@ -358,7 +358,7 @@ export const CommunityGraph: React.FC = () => {
             .attr('stroke-width', 3)
             .attr('stroke', d => {
                 const nodeData = d as GraphNode;
-                return nodeData.gender === 'female' ? '#ec4899' : '#3b82f6';
+                return nodeData.gender === 'female' ? '#f59e0b' : '#6366f1';
             });
 
         // Highlight the first selected node
@@ -685,10 +685,10 @@ export const CommunityGraph: React.FC = () => {
             if (d.type === 'spouse') {
                 if (d.status === 'divorced') return '#ef4444'; // Vibrant red for divorced
                 if (d.status === 'widowed') return '#9ca3af'; // Gray for widowed
-                return '#ec4899'; // Vibrant pink for married
+                return '#f59e0b'; // Vibrant pink for married
             }
-            if (d.type === 'parent-child') return '#3b82f6'; // Vibrant blue
-            if (d.type === 'sibling') return '#a855f7'; // Vibrant purple
+            if (d.type === 'parent-child') return '#6366f1'; // Vibrant blue
+            if (d.type === 'sibling') return '#14b8a6'; // Vibrant purple
             return '#94a3b8';
         };
 
@@ -951,7 +951,7 @@ export const CommunityGraph: React.FC = () => {
         node.append('circle')
             .attr('r', 25)
             .attr('fill', d => d.gender === 'female' ? '#fce7f3' : '#dbeafe')
-            .attr('stroke', d => d.gender === 'female' ? '#ec4899' : '#3b82f6')
+            .attr('stroke', d => d.gender === 'female' ? '#f59e0b' : '#6366f1')
             .attr('stroke-width', 3);
 
         // Node initials
@@ -1625,9 +1625,9 @@ export const CommunityGraph: React.FC = () => {
                                     </h3>
                                     <div className="space-y-2 text-sm">
                                         <div className="flex items-center gap-2 pb-2 border-b border-slate-700">
-                                            <div className="w-4 h-4 rounded-full bg-blue-500 border-2 border-blue-600" />
+                                            <div className="w-4 h-4 rounded-full bg-indigo-500 border-2 border-indigo-600" />
                                             <span className="text-slate-300">גבר</span>
-                                            <div className="w-4 h-4 rounded-full bg-pink-500 border-2 border-pink-600 mr-auto" />
+                                            <div className="w-4 h-4 rounded-full bg-amber-500 border-2 border-amber-600 mr-auto" />
                                             <span className="text-slate-300">אישה</span>
                                         </div>
 
@@ -1712,23 +1712,23 @@ export const CommunityGraph: React.FC = () => {
 
                                 <button
                                     onClick={() => createConnection('spouse')}
-                                    className="w-full flex items-center gap-3 p-4 bg-pink-600 hover:bg-pink-700 rounded-lg text-white transition-colors"
+                                    className="w-full flex items-center gap-3 p-4 bg-amber-600 hover:bg-amber-700 rounded-lg text-white transition-colors"
                                 >
-                                    <div className="w-10 h-1 bg-pink-400" />
+                                    <div className="w-10 h-1 bg-amber-400" />
                                     <div className="flex-1 text-right">
                                         <div className="font-bold">בני זוג (נשואים)</div>
-                                        <div className="text-xs text-pink-200">{firstSelectedNode.name} ו-{secondSelectedNode.name} נשואים</div>
+                                        <div className="text-xs text-amber-200">{firstSelectedNode.name} ו-{secondSelectedNode.name} נשואים</div>
                                     </div>
                                 </button>
 
                                 <button
                                     onClick={() => createConnection('sibling')}
-                                    className="w-full flex items-center gap-3 p-4 bg-purple-600 hover:bg-purple-700 rounded-lg text-white transition-colors"
+                                    className="w-full flex items-center gap-3 p-4 bg-teal-600 hover:bg-teal-700 rounded-lg text-white transition-colors"
                                 >
-                                    <div className="w-10 h-1 bg-purple-400 border-dashed" />
+                                    <div className="w-10 h-1 bg-teal-400 border-dashed" />
                                     <div className="flex-1 text-right">
                                         <div className="font-bold">אחים</div>
-                                        <div className="text-xs text-purple-200">{firstSelectedNode.name} ו-{secondSelectedNode.name} הם אחים</div>
+                                        <div className="text-xs text-teal-200">{firstSelectedNode.name} ו-{secondSelectedNode.name} הם אחים</div>
                                     </div>
                                 </button>
                             </div>
@@ -1834,7 +1834,7 @@ export const CommunityGraph: React.FC = () => {
                                 <div>
                                     <div className="flex justify-between items-center mb-1">
                                         <label className="text-slate-300">חוזק בני זוג</label>
-                                        <span className="text-pink-400 font-mono">{forceParams.spouseStrength.toFixed(2)}</span>
+                                        <span className="text-amber-400 font-mono">{forceParams.spouseStrength.toFixed(2)}</span>
                                     </div>
                                     <input
                                         type="range"
@@ -1843,7 +1843,7 @@ export const CommunityGraph: React.FC = () => {
                                         step="0.05"
                                         value={forceParams.spouseStrength}
                                         onChange={(e) => setForceParams(prev => ({ ...prev, spouseStrength: parseFloat(e.target.value) }))}
-                                        className="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-pink-500"
+                                        className="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-amber-500"
                                     />
                                     <div className="flex justify-between text-xs text-slate-500 mt-1">
                                         <span>חלש</span>
@@ -1855,7 +1855,7 @@ export const CommunityGraph: React.FC = () => {
                                 <div>
                                     <div className="flex justify-between items-center mb-1">
                                         <label className="text-slate-300">מרחק בני זוג</label>
-                                        <span className="text-pink-400 font-mono">{forceParams.spouseDistance}</span>
+                                        <span className="text-amber-400 font-mono">{forceParams.spouseDistance}</span>
                                     </div>
                                     <input
                                         type="range"
@@ -1864,7 +1864,7 @@ export const CommunityGraph: React.FC = () => {
                                         step="10"
                                         value={forceParams.spouseDistance}
                                         onChange={(e) => setForceParams(prev => ({ ...prev, spouseDistance: parseInt(e.target.value) }))}
-                                        className="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-pink-500"
+                                        className="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-amber-500"
                                     />
                                     <div className="flex justify-between text-xs text-slate-500 mt-1">
                                         <span>קרוב</span>
@@ -1897,7 +1897,7 @@ export const CommunityGraph: React.FC = () => {
                                 <div>
                                     <div className="flex justify-between items-center mb-1">
                                         <label className="text-slate-300">רדיוס התנגשות</label>
-                                        <span className="text-blue-400 font-mono">{forceParams.collisionRadius}</span>
+                                        <span className="text-indigo-400 font-mono">{forceParams.collisionRadius}</span>
                                     </div>
                                     <input
                                         type="range"
@@ -1906,7 +1906,7 @@ export const CommunityGraph: React.FC = () => {
                                         step="5"
                                         value={forceParams.collisionRadius}
                                         onChange={(e) => setForceParams(prev => ({ ...prev, collisionRadius: parseInt(e.target.value) }))}
-                                        className="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-blue-500"
+                                        className="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-indigo-500"
                                     />
                                     <div className="flex justify-between text-xs text-slate-500 mt-1">
                                         <span>קטן</span>
@@ -2020,7 +2020,7 @@ export const CommunityGraph: React.FC = () => {
                             {/* Current residence */}
                             {tooltip.member.is_alive && tooltip.member.current_residence && (
                                 <div className="flex items-start gap-2">
-                                    <span className="text-blue-400">📍</span>
+                                    <span className="text-indigo-400">📍</span>
                                     <div className="flex-1 text-slate-200">
                                         <span className="font-medium">מתגורר:</span> {tooltip.member.current_residence}
                                     </div>
@@ -2030,7 +2030,7 @@ export const CommunityGraph: React.FC = () => {
                             {/* Maiden name */}
                             {tooltip.member.maiden_name && (
                                 <div className="flex items-start gap-2">
-                                    <span className="text-pink-400">💝</span>
+                                    <span className="text-amber-400">💝</span>
                                     <div className="flex-1 text-slate-200">
                                         <span className="font-medium">שם נעורים:</span> {tooltip.member.maiden_name}
                                     </div>

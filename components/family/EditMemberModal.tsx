@@ -791,7 +791,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                                 <h3 className="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2">
                                     <Users size={16} /> הורים
                                 </h3>
-                                <button onClick={() => setConnectMode('parent')} className="text-xs text-blue-600 hover:underline">+ חבר הורה קיים</button>
+                                <button onClick={() => setConnectMode('parent')} className="text-xs text-indigo-600 hover:underline">+ חבר הורה קיים</button>
                             </div>
                             {parents.map(p => (
                                 <div key={p.id} className="flex justify-between items-center bg-slate-50 dark:bg-slate-800 p-2 rounded border dark:border-slate-700">
@@ -808,7 +808,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                                 <h3 className="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2">
                                     <Heart size={16} /> בני זוג
                                 </h3>
-                                <button onClick={() => setConnectMode('spouse')} className="text-xs text-pink-600 hover:underline">+ חבר בן/ת זוג</button>
+                                <button onClick={() => setConnectMode('spouse')} className="text-xs text-amber-600 hover:underline">+ חבר בן/ת זוג</button>
                             </div>
                             {partnerships.map(p => (
                                 <div key={p.id} className="bg-slate-50 dark:bg-slate-800 p-3 rounded border dark:border-slate-700">
@@ -865,7 +865,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                                             <div className="flex gap-1">
                                                 <button
                                                     onClick={() => setEditingPartnership(p)}
-                                                    className="text-blue-600 hover:bg-blue-50 p-1 rounded"
+                                                    className="text-indigo-600 hover:bg-indigo-50 p-1 rounded"
                                                     title="ערוך סטטוס"
                                                 >
                                                     <Pencil size={14} />
@@ -984,7 +984,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                                 <button
                                     type="button"
                                     onClick={() => { onClose(); onAddRelative('parent'); }}
-                                    className="flex items-center gap-1 px-3 py-1.5 bg-blue-100 text-blue-700 rounded-lg text-sm hover:bg-blue-200"
+                                    className="flex items-center gap-1 px-3 py-1.5 bg-indigo-100 text-indigo-700 rounded-lg text-sm hover:bg-indigo-200"
                                 >
                                     <Users size={14} /> הורה
                                 </button>
@@ -998,7 +998,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                                 <button
                                     type="button"
                                     onClick={() => { onClose(); onAddRelative('spouse'); }}
-                                    className="flex items-center gap-1 px-3 py-1.5 bg-pink-100 text-pink-700 rounded-lg text-sm hover:bg-pink-200"
+                                    className="flex items-center gap-1 px-3 py-1.5 bg-amber-100 text-amber-700 rounded-lg text-sm hover:bg-amber-200"
                                 >
                                     <Heart size={14} /> בן/ת זוג
                                 </button>
