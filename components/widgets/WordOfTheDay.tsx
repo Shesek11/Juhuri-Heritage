@@ -69,7 +69,7 @@ const WordOfTheDay: React.FC<WordOfTheDayProps> = ({ onSelectWord }) => {
             className="bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-lg border border-white/10 overflow-hidden group hover:shadow-xl transition-all font-rubik h-full flex flex-col cursor-pointer"
             onClick={() => onSelectWord(displayWord.term)}
         >
-            <div className="bg-gradient-to-r from-amber-500 to-orange-600 p-4 text-white flex justify-between items-center">
+            <div className="bg-white/5 border-b border-white/10 backdrop-blur-xl p-4 text-white flex justify-between items-center">
                 <h3 className="font-bold text-lg flex items-center gap-2">
                     <span className="text-xl">☀️</span> המילה היומית
                 </h3>

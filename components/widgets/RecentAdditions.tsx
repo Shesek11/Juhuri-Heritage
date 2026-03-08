@@ -30,7 +30,7 @@ const RecentAdditions: React.FC<RecentAdditionsProps> = ({ onSelectWord }) => {
 
     return (
         <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-lg border border-white/10 overflow-hidden font-rubik h-full flex flex-col">
-            <div className="bg-gradient-to-r from-emerald-500 to-teal-600 p-4 text-white">
+            <div className="bg-white/5 border-b border-white/10 backdrop-blur-xl p-4 text-white">
                 <h3 className="font-bold text-lg flex items-center gap-2">
                     <Clock size={20} /> נוספו לאחרונה
                 </h3>
