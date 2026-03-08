@@ -310,7 +310,7 @@ export const AdminSEOPanel: React.FC = () => {
     // ============================================
 
     const StatCard: React.FC<{ label: string; value: number; icon: React.ReactNode; color: string }> = ({ label, value, icon, color }) => (
-        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
+        <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-xl border border-white/10 p-4">
             <div className="flex items-center gap-3">
                 <div className={`p-2.5 rounded-lg ${color}`}>{icon}</div>
                 <div>
@@ -329,14 +329,14 @@ export const AdminSEOPanel: React.FC = () => {
         <div className="space-y-6">
             {/* Index Stats */}
             <div>
-                <h4 className="text-sm font-semibold text-slate-600 dark:text-slate-400 mb-3">URLs ב-Sitemap</h4>
+                <h4 className="text-sm font-semibold text-slate-400 mb-3">URLs ב-Sitemap</h4>
                 {indexStats ? (
                     <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                         <StatCard label="עמודים סטטיים" value={indexStats.staticPages} icon={<Globe size={18} />} color="bg-blue-100 dark:bg-blue-900/30 text-blue-600" />
                         <StatCard label="מילים" value={indexStats.dictionaryEntries} icon={<Search size={18} />} color="bg-amber-100 dark:bg-amber-900/30 text-amber-600" />
                         <StatCard label="מתכונים" value={indexStats.recipes} icon={<FileText size={18} />} color="bg-green-100 dark:bg-green-900/30 text-green-600" />
                         <StatCard label="חנויות" value={indexStats.vendors} icon={<Map size={18} />} color="bg-purple-100 dark:bg-purple-900/30 text-purple-600" />
-                        <StatCard label="סה״כ URLs" value={indexStats.totalUrls} icon={<BarChart3 size={18} />} color="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300" />
+                        <StatCard label="סה״כ URLs" value={indexStats.totalUrls} icon={<BarChart3 size={18} />} color="bg-white/10 text-slate-600 dark:text-slate-300" />
                     </div>
                 ) : loading ? (
                     <div className="flex items-center gap-2 text-slate-400"><Loader2 size={16} className="animate-spin" /> טוען...</div>
@@ -345,7 +345,7 @@ export const AdminSEOPanel: React.FC = () => {
 
             {/* SEO Checklist */}
             <div>
-                <h4 className="text-sm font-semibold text-slate-600 dark:text-slate-400 mb-3">מצב SEO</h4>
+                <h4 className="text-sm font-semibold text-slate-400 mb-3">מצב SEO</h4>
                 <div className="space-y-2">
                     {[
                         { label: 'React Router - URLs ייחודיים', done: true },
@@ -360,13 +360,13 @@ export const AdminSEOPanel: React.FC = () => {
                         { label: 'hreflang (עברית/אנגלית)', done: false, note: 'אופציונלי - אם יתווסף תוכן באנגלית' },
                         { label: 'llms.txt', done: llmsSource === 'database' || llmsSource === 'file', note: llmsSource === 'none' || !llmsSource ? 'ערוך בטאב "llms.txt"' : undefined },
                     ].map((item, i) => (
-                        <div key={i} className="flex items-start gap-2 p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                        <div key={i} className="flex items-start gap-2 p-2 rounded-lg hover:bg-white/5/50">
                             {item.done
                                 ? <CheckCircle size={18} className="text-green-500 mt-0.5 shrink-0" />
                                 : <AlertTriangle size={18} className="text-amber-500 mt-0.5 shrink-0" />
                             }
                             <div>
-                                <span className={`text-sm ${item.done ? 'text-slate-700 dark:text-slate-300' : 'text-amber-700 dark:text-amber-300 font-medium'}`}>
+                                <span className={`text-sm ${item.done ? 'text-slate-300' : 'text-amber-700 dark:text-amber-300 font-medium'}`}>
                                     {item.label}
                                 </span>
                                 {item.note && (
@@ -380,7 +380,7 @@ export const AdminSEOPanel: React.FC = () => {
 
             {/* Quick Links */}
             <div>
-                <h4 className="text-sm font-semibold text-slate-600 dark:text-slate-400 mb-3">קישורים מהירים</h4>
+                <h4 className="text-sm font-semibold text-slate-400 mb-3">קישורים מהירים</h4>
                 <div className="flex flex-wrap gap-2">
                     {[
                         { label: 'Sitemap', url: '/sitemap.xml' },
@@ -393,7 +393,7 @@ export const AdminSEOPanel: React.FC = () => {
                             href={link.url.startsWith('/') ? `https://juhuri.shesek.xyz${link.url}` : link.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-sm hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/10 text-slate-300 rounded-lg text-sm hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
                         >
                             <ExternalLink size={14} />
                             {link.label}
@@ -408,7 +408,7 @@ export const AdminSEOPanel: React.FC = () => {
         <div className="space-y-6">
             <div className="flex items-center justify-between">
                 <p className="text-sm text-slate-500 dark:text-slate-400">
-                    תבניות כותרת ותיאור לכל סוג עמוד. משתנים: <code className="bg-slate-100 dark:bg-slate-700 px-1 rounded">{'{term}'}</code>, <code className="bg-slate-100 dark:bg-slate-700 px-1 rounded">{'{title}'}</code>, <code className="bg-slate-100 dark:bg-slate-700 px-1 rounded">{'{name}'}</code>
+                    תבניות כותרת ותיאור לכל סוג עמוד. משתנים: <code className="bg-white/10 px-1 rounded">{'{term}'}</code>, <code className="bg-white/10 px-1 rounded">{'{title}'}</code>, <code className="bg-white/10 px-1 rounded">{'{name}'}</code>
                 </p>
                 <button
                     onClick={saveMeta}
@@ -422,9 +422,9 @@ export const AdminSEOPanel: React.FC = () => {
 
             <div className="space-y-4">
                 {Object.entries(metaDefaults).map(([pageType, meta]) => (
-                    <div key={pageType} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
+                    <div key={pageType} className="bg-[#0d1424]/60 backdrop-blur-xl rounded-xl border border-white/10 p-4">
                         <div className="flex items-center gap-2 mb-3">
-                            <h4 className="font-semibold text-slate-800 dark:text-slate-200 text-sm">
+                            <h4 className="font-semibold text-slate-200 text-sm">
                                 {PAGE_TYPE_LABELS[pageType] || pageType}
                             </h4>
                             {PAGE_TYPE_VARS[pageType] && (
@@ -446,7 +446,7 @@ export const AdminSEOPanel: React.FC = () => {
                                         ...prev,
                                         [pageType]: { ...prev[pageType], titleTemplate: e.target.value }
                                     }))}
-                                    className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 text-sm"
+                                    className="w-full px-3 py-2 rounded-lg border border-white/10 bg-white dark:bg-slate-700 text-slate-200 text-sm"
                                     dir="rtl"
                                 />
                             </div>
@@ -461,14 +461,14 @@ export const AdminSEOPanel: React.FC = () => {
                                         [pageType]: { ...prev[pageType], description: e.target.value }
                                     }))}
                                     rows={2}
-                                    className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-200 text-sm resize-none"
+                                    className="w-full px-3 py-2 rounded-lg border border-white/10 bg-white dark:bg-slate-700 text-slate-200 text-sm resize-none"
                                     dir="rtl"
                                 />
                             </div>
                         </div>
 
                         {/* Google Preview */}
-                        <div className="mt-3 p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg">
+                        <div className="mt-3 p-3 bg-white/5 rounded-lg">
                             <div className="text-xs text-slate-400 mb-1">תצוגה מקדימה בגוגל:</div>
                             <div className="text-blue-700 dark:text-blue-400 text-sm font-medium truncate">
                                 {meta.titleTemplate || 'ללא כותרת'}
@@ -476,7 +476,7 @@ export const AdminSEOPanel: React.FC = () => {
                             <div className="text-green-700 dark:text-green-500 text-xs truncate">
                                 juhuri.shesek.xyz/{pageType === 'home' ? '' : pageType}
                             </div>
-                            <div className="text-slate-600 dark:text-slate-400 text-xs line-clamp-2 mt-0.5">
+                            <div className="text-slate-400 text-xs line-clamp-2 mt-0.5">
                                 {meta.description || 'ללא תיאור'}
                             </div>
                         </div>
@@ -513,7 +513,7 @@ export const AdminSEOPanel: React.FC = () => {
                 value={robotsTxt}
                 onChange={(e) => setRobotsTxt(e.target.value)}
                 rows={18}
-                className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-mono text-sm leading-relaxed resize-none"
+                className="w-full px-4 py-3 rounded-xl border border-white/10 bg-[#0d1424]/60 backdrop-blur-xl text-slate-200 font-mono text-sm leading-relaxed resize-none"
                 dir="ltr"
                 spellCheck={false}
             />
@@ -531,7 +531,7 @@ export const AdminSEOPanel: React.FC = () => {
             </p>
 
             {/* Add new */}
-            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4">
+            <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-xl border border-white/10 p-4">
                 <div className="flex flex-col md:flex-row gap-3">
                     <div className="flex-1">
                         <label className="text-xs font-medium text-slate-500 block mb-1">מנתיב</label>
@@ -540,7 +540,7 @@ export const AdminSEOPanel: React.FC = () => {
                             value={newFrom}
                             onChange={(e) => setNewFrom(e.target.value)}
                             placeholder="/old-page"
-                            className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm"
+                            className="w-full px-3 py-2 rounded-lg border border-white/10 bg-white dark:bg-slate-700 text-sm"
                             dir="ltr"
                         />
                     </div>
@@ -554,7 +554,7 @@ export const AdminSEOPanel: React.FC = () => {
                             value={newTo}
                             onChange={(e) => setNewTo(e.target.value)}
                             placeholder="/new-page"
-                            className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm"
+                            className="w-full px-3 py-2 rounded-lg border border-white/10 bg-white dark:bg-slate-700 text-sm"
                             dir="ltr"
                         />
                     </div>
@@ -563,7 +563,7 @@ export const AdminSEOPanel: React.FC = () => {
                         <select
                             value={newCode}
                             onChange={(e) => setNewCode(Number(e.target.value))}
-                            className="w-full px-2 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm"
+                            className="w-full px-2 py-2 rounded-lg border border-white/10 bg-white dark:bg-slate-700 text-sm"
                         >
                             <option value={301}>301</option>
                             <option value={302}>302</option>
@@ -594,8 +594,8 @@ export const AdminSEOPanel: React.FC = () => {
                             key={r.id}
                             className={`flex items-center gap-3 p-3 rounded-xl border transition-colors ${
                                 r.is_active
-                                    ? 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'
-                                    : 'bg-slate-50 dark:bg-slate-900 border-slate-100 dark:border-slate-800 opacity-60'
+                                    ? 'bg-[#0d1424]/60 backdrop-blur-xl border-white/10'
+                                    : 'bg-white/5 border-slate-100 dark:border-slate-800 opacity-60'
                             }`}
                         >
                             <button
@@ -614,7 +614,7 @@ export const AdminSEOPanel: React.FC = () => {
                                 </div>
                             </div>
 
-                            <span className="text-xs bg-slate-100 dark:bg-slate-700 text-slate-500 px-2 py-0.5 rounded shrink-0">
+                            <span className="text-xs bg-white/10 text-slate-500 px-2 py-0.5 rounded shrink-0">
                                 {r.status_code}
                             </span>
 
@@ -640,7 +640,7 @@ export const AdminSEOPanel: React.FC = () => {
             <div className="flex items-center justify-between">
                 <div>
                     <p className="text-sm text-slate-500 dark:text-slate-400">
-                        קובץ <code className="bg-slate-100 dark:bg-slate-700 px-1 rounded">llms.txt</code> מספק מידע מובנה למנועי AI (ChatGPT, Claude, Perplexity).
+                        קובץ <code className="bg-white/10 px-1 rounded">llms.txt</code> מספק מידע מובנה למנועי AI (ChatGPT, Claude, Perplexity).
                     </p>
                     {llmsSource && (
                         <span className="text-xs text-slate-400">
@@ -663,7 +663,7 @@ export const AdminSEOPanel: React.FC = () => {
                 onChange={(e) => setLlmsTxt(e.target.value)}
                 rows={20}
                 placeholder={`# Juhuri Heritage\n> Interactive Juhuri-Hebrew dictionary for preserving the Mountain Jewish language.\n\n## About\nJuhuri Heritage is a community-driven platform...\n\n## Main Features\n- Dictionary: ...\n- AI Tutor: ...\n- Recipes: ...\n- Marketplace: ...\n\n## API\n- /api/dictionary/search?q={query}\n- /sitemap.xml`}
-                className="w-full px-4 py-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 font-mono text-sm leading-relaxed resize-none"
+                className="w-full px-4 py-3 rounded-xl border border-white/10 bg-[#0d1424]/60 backdrop-blur-xl text-slate-200 font-mono text-sm leading-relaxed resize-none"
                 dir="ltr"
                 spellCheck={false}
             />
@@ -689,10 +689,10 @@ export const AdminSEOPanel: React.FC = () => {
         const siteUrl = 'https://juhuri.shesek.xyz';
 
         return (
-            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5">
+            <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-xl border border-white/10 p-5">
                 <div className="flex items-start gap-4">
                     {/* Preview */}
-                    <div className="w-24 h-24 rounded-lg border-2 border-dashed border-slate-300 dark:border-slate-600 flex items-center justify-center bg-slate-50 dark:bg-slate-900/50 overflow-hidden shrink-0">
+                    <div className="w-24 h-24 rounded-lg border-2 border-dashed border-white/10 flex items-center justify-center bg-white/5 overflow-hidden shrink-0">
                         {currentUrl ? (
                             <img src={`${siteUrl}${currentUrl}`} alt={label} className="w-full h-full object-contain" />
                         ) : (
@@ -701,7 +701,7 @@ export const AdminSEOPanel: React.FC = () => {
                     </div>
 
                     <div className="flex-1 min-w-0">
-                        <h4 className="font-semibold text-slate-800 dark:text-slate-200 text-sm">{label}</h4>
+                        <h4 className="font-semibold text-slate-200 text-sm">{label}</h4>
                         <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{desc}</p>
                         {recommended && (
                             <p className="text-xs text-blue-500 dark:text-blue-400 mt-1">מומלץ: {recommended}</p>
@@ -796,7 +796,7 @@ export const AdminSEOPanel: React.FC = () => {
                             className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
                                 previewUrl === `${siteUrl}${u.path}`
                                     ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 font-medium'
-                                    : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-200'
+                                    : 'bg-white/10 text-slate-400 hover:bg-slate-200'
                             }`}
                         >
                             {u.label}
@@ -811,7 +811,7 @@ export const AdminSEOPanel: React.FC = () => {
                         value={previewUrl}
                         onChange={(e) => setPreviewUrl(e.target.value)}
                         placeholder="https://juhuri.shesek.xyz/word/שלום"
-                        className="flex-1 px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-sm"
+                        className="flex-1 px-3 py-2 rounded-lg border border-white/10 bg-white dark:bg-slate-700 text-sm"
                         dir="ltr"
                     />
                     <button
@@ -861,11 +861,11 @@ export const AdminSEOPanel: React.FC = () => {
                             href={tool.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className={`flex items-start gap-3 p-4 bg-white dark:bg-slate-800 rounded-xl border ${tool.color} hover:shadow-md transition-shadow`}
+                            className={`flex items-start gap-3 p-4 bg-[#0d1424]/60 backdrop-blur-xl rounded-xl border ${tool.color} hover:shadow-md transition-shadow`}
                         >
                             <ExternalLink size={18} className="text-slate-400 mt-0.5 shrink-0" />
                             <div>
-                                <div className="font-medium text-sm text-slate-800 dark:text-slate-200">{tool.title}</div>
+                                <div className="font-medium text-sm text-slate-200">{tool.title}</div>
                                 <div className="text-xs text-slate-500 dark:text-slate-400">{tool.desc}</div>
                             </div>
                         </a>
@@ -890,7 +890,7 @@ export const AdminSEOPanel: React.FC = () => {
                         className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
                             activeTab === tab.id
                                 ? 'bg-white dark:bg-slate-700 text-amber-700 dark:text-amber-400 shadow-sm'
-                                : 'text-slate-600 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+                                : 'text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
                         }`}
                     >
                         {tab.icon}

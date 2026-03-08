@@ -98,7 +98,7 @@ const ApiSettingsPanel: React.FC = () => {
     return (
       <div className="flex items-center justify-center p-8 gap-2">
         <Loader2 className="w-6 h-6 animate-spin text-amber-600" />
-        <span className="text-slate-600 dark:text-slate-400">טוען הגדרות...</span>
+        <span className="text-slate-400">טוען הגדרות...</span>
       </div>
     );
   }
@@ -108,7 +108,7 @@ const ApiSettingsPanel: React.FC = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-lg font-medium text-slate-800 dark:text-slate-200">
+          <h3 className="text-lg font-medium text-slate-200">
             מפתחות API
           </h3>
           <p className="text-sm text-slate-500 dark:text-slate-400">
@@ -120,7 +120,7 @@ const ApiSettingsPanel: React.FC = () => {
           className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           title="רענן"
         >
-          <RefreshCw className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+          <RefreshCw className="w-5 h-5 text-slate-400" />
         </button>
       </div>
 
@@ -139,17 +139,17 @@ const ApiSettingsPanel: React.FC = () => {
       )}
 
       {/* Gemini API Key Card */}
-      <div className="p-5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/50 space-y-4">
+      <div className="p-5 rounded-xl border border-white/10 bg-[#0d1424]/60 backdrop-blur-xl/50 space-y-4">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
             <Key className="w-5 h-5 text-purple-600 dark:text-purple-400" />
           </div>
           <div className="flex-1">
-            <h4 className="font-medium text-slate-800 dark:text-slate-200">Gemini API Key</h4>
+            <h4 className="font-medium text-slate-200">Gemini API Key</h4>
             <p className="text-sm text-slate-500 dark:text-slate-400">מפתח לשירותי Google Gemini AI (חיפוש, תרגום, TTS)</p>
           </div>
           {geminiSetting ? (
-            <code className="text-sm bg-slate-100 dark:bg-slate-900 px-3 py-1 rounded font-mono text-slate-600 dark:text-slate-400">
+            <code className="text-sm bg-slate-100 dark:bg-slate-900 px-3 py-1 rounded font-mono text-slate-400">
               {geminiSetting.masked_value}
             </code>
           ) : (
@@ -161,9 +161,9 @@ const ApiSettingsPanel: React.FC = () => {
 
         {/* Update form */}
         {showInput ? (
-          <div className="space-y-3 pt-3 border-t border-slate-100 dark:border-slate-700">
+          <div className="space-y-3 pt-3 border-t border-white/10">
             <div>
-              <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">
+              <label className="block text-sm font-medium mb-1 text-slate-300">
                 מפתח API חדש
               </label>
               <input
@@ -183,7 +183,7 @@ const ApiSettingsPanel: React.FC = () => {
             <div className="flex gap-2">
               <button
                 onClick={() => { setShowInput(false); setNewApiKey(''); }}
-                className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 rounded-lg text-sm transition-colors text-slate-700 dark:text-slate-300"
+                className="px-4 py-2 bg-slate-100 hover:bg-white/10 dark:hover:bg-slate-600 rounded-lg text-sm transition-colors text-slate-300"
               >
                 ביטול
               </button>
@@ -198,7 +198,7 @@ const ApiSettingsPanel: React.FC = () => {
             </div>
           </div>
         ) : (
-          <div className="flex flex-wrap gap-2 pt-3 border-t border-slate-100 dark:border-slate-700">
+          <div className="flex flex-wrap gap-2 pt-3 border-t border-white/10">
             <button
               onClick={() => setShowInput(true)}
               className="px-4 py-2 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 hover:bg-purple-200 dark:hover:bg-purple-900/50 rounded-lg text-sm flex items-center gap-2 transition-colors"
@@ -209,7 +209,7 @@ const ApiSettingsPanel: React.FC = () => {
             <button
               onClick={handleTestKey}
               disabled={testing}
-              className="px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg text-sm flex items-center gap-2 transition-colors"
+              className="px-4 py-2 bg-white/10 text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg text-sm flex items-center gap-2 transition-colors"
             >
               {testing ? <Loader2 className="w-4 h-4 animate-spin" /> : <FlaskConical className="w-4 h-4" />}
               בדוק חיבור

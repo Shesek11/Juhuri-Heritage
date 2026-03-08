@@ -94,7 +94,7 @@ export const FeatureFlagsPanel: React.FC = () => {
         return (
             <div className="flex items-center justify-center p-8">
                 <Loader2 className="w-6 h-6 animate-spin text-amber-600" />
-                <span className="mr-2 text-slate-600 dark:text-slate-400">טוען פיצ\'רים...</span>
+                <span className="mr-2 text-slate-400">טוען פיצ\'רים...</span>
             </div>
         );
     }
@@ -104,7 +104,7 @@ export const FeatureFlagsPanel: React.FC = () => {
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
-                    <h3 className="text-lg font-medium text-slate-800 dark:text-slate-200">
+                    <h3 className="text-lg font-medium text-slate-200">
                         ניהול פיצ'רים
                     </h3>
                     <p className="text-sm text-slate-500 dark:text-slate-400">
@@ -116,7 +116,7 @@ export const FeatureFlagsPanel: React.FC = () => {
                     className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                     title="רענן"
                 >
-                    <RefreshCw className="w-5 h-5 text-slate-600 dark:text-slate-400" />
+                    <RefreshCw className="w-5 h-5 text-slate-400" />
                 </button>
             </div>
 
@@ -137,14 +137,14 @@ export const FeatureFlagsPanel: React.FC = () => {
                             key={flag.feature_key}
                             className={`p-4 rounded-xl border transition-all ${isUpdating
                                 ? 'border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-900/20'
-                                : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800'
+                                : 'border-white/10 bg-[#0d1424]/60 backdrop-blur-xl'
                                 }`}
                         >
                             <div className="flex items-start justify-between gap-4">
                                 {/* Info */}
                                 <div className="flex-1 min-w-0">
                                     <div className="flex items-center gap-2">
-                                        <h4 className="font-medium text-slate-800 dark:text-slate-200">
+                                        <h4 className="font-medium text-slate-200">
                                             {flag.name}
                                         </h4>
                                         <span className={`px-2 py-0.5 rounded-full text-xs flex items-center gap-1 ${currentConfig.bgColor} ${currentConfig.color}`}>
@@ -174,7 +174,7 @@ export const FeatureFlagsPanel: React.FC = () => {
                                                 disabled={isUpdating}
                                                 className={`flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-lg transition-all text-sm ${isActive
                                                     ? `${config.bgColor} ${config.color} ring-2 ring-offset-1 ring-current`
-                                                    : 'hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-400'
+                                                    : 'hover:bg-white/10 text-slate-400'
                                                     } ${isUpdating ? 'opacity-50 cursor-wait' : ''}`}
                                                 title={config.tooltip}
                                             >

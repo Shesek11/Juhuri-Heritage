@@ -60,7 +60,7 @@ export const AdminFamilyPanel: React.FC = () => {
         const confidenceColor = confidencePercent >= 80 ? 'text-green-600' : confidencePercent >= 50 ? 'text-amber-600' : 'text-red-600';
 
         return (
-            <div key={suggestion.id} className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-6 space-y-4">
+            <div key={suggestion.id} className="bg-[#0d1424]/60 backdrop-blur-xl rounded-lg border border-white/10 p-6 space-y-4">
                 {/* Header */}
                 <div className="flex items-start justify-between">
                     <div className="flex items-center gap-2">
@@ -89,7 +89,7 @@ export const AdminFamilyPanel: React.FC = () => {
                 {/* Two Members Side by Side */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Member 1 */}
-                    <div className="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-lg border border-slate-200 dark:border-slate-600">
+                    <div className="bg-white/5 p-4 rounded-lg border border-white/10">
                         <div className="flex items-center gap-3 mb-3">
                             {suggestion.member1_photo ? (
                                 <img src={suggestion.member1_photo} alt="" className="w-16 h-16 rounded-full object-cover" />
@@ -116,7 +116,7 @@ export const AdminFamilyPanel: React.FC = () => {
                     </div>
 
                     {/* Member 2 */}
-                    <div className="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-lg border border-slate-200 dark:border-slate-600">
+                    <div className="bg-white/5 p-4 rounded-lg border border-white/10">
                         <div className="flex items-center gap-3 mb-3">
                             {suggestion.member2_photo ? (
                                 <img src={suggestion.member2_photo} alt="" className="w-16 h-16 rounded-full object-cover" />
@@ -144,7 +144,7 @@ export const AdminFamilyPanel: React.FC = () => {
                 </div>
 
                 {/* Actions */}
-                <div className="flex gap-3 pt-4 border-t border-slate-200 dark:border-slate-700">
+                <div className="flex gap-3 pt-4 border-t border-white/10">
                     <button
                         onClick={() => {
                             const keepId = confirm('איזה רשומה לשמור?\nאישור = רשומה ראשונה | ביטול = רשומה שנייה')
@@ -184,7 +184,7 @@ export const AdminFamilyPanel: React.FC = () => {
         };
 
         return (
-            <div key={request.id} className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-6 space-y-4">
+            <div key={request.id} className="bg-[#0d1424]/60 backdrop-blur-xl rounded-lg border border-white/10 p-6 space-y-4">
                 {/* Header */}
                 <div className="flex items-start justify-between">
                     <div className="flex items-center gap-2">
@@ -210,7 +210,7 @@ export const AdminFamilyPanel: React.FC = () => {
                 {/* Source and Target */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Source Member */}
-                    <div className="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-lg border border-slate-200 dark:border-slate-600">
+                    <div className="bg-white/5 p-4 rounded-lg border border-white/10">
                         <div className="text-xs text-slate-500 mb-2">מתוך עץ המבקש:</div>
                         <h4 className="font-semibold text-slate-800 dark:text-white">
                             {request.source_first} {request.source_last}
@@ -233,7 +233,7 @@ export const AdminFamilyPanel: React.FC = () => {
                 </div>
 
                 {/* Actions */}
-                <div className="flex gap-3 pt-4 border-t border-slate-200 dark:border-slate-700">
+                <div className="flex gap-3 pt-4 border-t border-white/10">
                     <button
                         onClick={() => {
                             if (confirm(`האם לאשר את החיבור כ-"${relationshipLabels[request.relationship_type]}"?`)) {
@@ -303,7 +303,7 @@ export const AdminFamilyPanel: React.FC = () => {
                 <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg border border-amber-200 dark:border-amber-800">
                     <div className="flex items-center justify-between">
                         <div>
-                            <div className="text-sm text-slate-600 dark:text-slate-400">הצעות מיזוג ממתינות</div>
+                            <div className="text-sm text-slate-400">הצעות מיזוג ממתינות</div>
                             <div className="text-2xl font-bold text-amber-600">{mergeSuggestions.length}</div>
                         </div>
                         <AlertCircle className="w-8 h-8 text-amber-500" />
@@ -312,7 +312,7 @@ export const AdminFamilyPanel: React.FC = () => {
                 <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
                     <div className="flex items-center justify-between">
                         <div>
-                            <div className="text-sm text-slate-600 dark:text-slate-400">בקשות חיבור ממתינות</div>
+                            <div className="text-sm text-slate-400">בקשות חיבור ממתינות</div>
                             <div className="text-2xl font-bold text-blue-600">{linkRequests.length}</div>
                         </div>
                         <Users className="w-8 h-8 text-blue-500" />
@@ -321,7 +321,7 @@ export const AdminFamilyPanel: React.FC = () => {
             </div>
 
             {/* Tabs */}
-            <div className="border-b border-slate-200 dark:border-slate-700">
+            <div className="border-b border-white/10">
                 <div className="flex gap-4">
                     <button
                         onClick={() => setActiveTab('merge')}

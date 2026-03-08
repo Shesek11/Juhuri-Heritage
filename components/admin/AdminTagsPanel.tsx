@@ -221,11 +221,11 @@ export const AdminTagsPanel: React.FC = () => {
                     {tagsByCategory.map(cat => (
                         <div
                             key={cat.value}
-                            className="bg-white dark:bg-slate-800 rounded-lg p-3 border border-slate-200 dark:border-slate-700"
+                            className="bg-[#0d1424]/60 backdrop-blur-xl rounded-lg p-3 border border-white/10"
                         >
                             <div className="flex items-center gap-2 mb-1">
                                 <span className="text-xl">{cat.icon}</span>
-                                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                                <span className="text-sm font-medium text-slate-300">
                                     {cat.label}
                                 </span>
                             </div>
@@ -240,14 +240,14 @@ export const AdminTagsPanel: React.FC = () => {
             {/* Add/Edit Modal */}
             {showModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-2xl border border-slate-200 dark:border-slate-700 max-h-[90vh] overflow-y-auto">
-                        <div className="sticky top-0 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 p-6 flex justify-between items-center">
+                    <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-xl shadow-2xl w-full max-w-2xl border border-white/10 max-h-[90vh] overflow-y-auto">
+                        <div className="sticky top-0 bg-[#0d1424]/60 backdrop-blur-xl border-b border-white/10 p-6 flex justify-between items-center">
                             <h2 className="text-xl font-bold text-slate-800 dark:text-white">
                                 {editingId ? 'עריכת תגית' : 'תגית חדשה'}
                             </h2>
                             <button
                                 onClick={resetForm}
-                                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
                             >
                                 <X className="w-5 h-5" />
                             </button>
@@ -289,7 +289,7 @@ export const AdminTagsPanel: React.FC = () => {
                                             placeholder="🍗"
                                         />
                                         {formData.icon && (
-                                            <div className="flex items-center justify-center w-12 h-10 text-3xl bg-slate-100 dark:bg-slate-700 rounded-lg border dark:border-slate-600">
+                                            <div className="flex items-center justify-center w-12 h-10 text-3xl bg-white/10 rounded-lg border dark:border-slate-600">
                                                 {formData.icon}
                                             </div>
                                         )}
@@ -321,7 +321,7 @@ export const AdminTagsPanel: React.FC = () => {
                                 </div>
                             </div>
 
-                            <div className="flex gap-2 pt-4 border-t border-slate-200 dark:border-slate-700">
+                            <div className="flex gap-2 pt-4 border-t border-white/10">
                                 <button
                                     type="submit"
                                     className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
@@ -332,7 +332,7 @@ export const AdminTagsPanel: React.FC = () => {
                                 <button
                                     type="button"
                                     onClick={resetForm}
-                                    className="px-4 py-2 bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
+                                    className="px-4 py-2 bg-white/10 text-slate-300 rounded-lg hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
                                 >
                                     ביטול
                                 </button>
@@ -359,10 +359,10 @@ export const AdminTagsPanel: React.FC = () => {
             </div>
 
             {/* Tags List */}
-            <div className="bg-white dark:bg-slate-800 rounded-xl shadow-lg border border-slate-200 dark:border-slate-700">
+            <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-xl shadow-lg border border-white/10">
                 <div className="overflow-x-auto">
                     <table className="w-full">
-                        <thead className="bg-slate-50 dark:bg-slate-700/50">
+                        <thead className="bg-white/5">
                             <tr>
                                 <th className="px-4 py-3 text-right text-sm font-semibold">אייקון</th>
                                 <th className="px-4 py-3 text-right text-sm font-semibold">שם עברית</th>
@@ -376,7 +376,7 @@ export const AdminTagsPanel: React.FC = () => {
                             {filteredTags.map(tag => {
                                 const category = categories.find(c => c.value === (tag.category || 'general'));
                                 return (
-                                    <tr key={tag.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                                    <tr key={tag.id} className="hover:bg-white/5">
                                         <td className="px-4 py-3 text-2xl">{tag.icon}</td>
                                         <td className="px-4 py-3 font-medium">{tag.name_hebrew}</td>
                                         <td className="px-4 py-3 text-slate-500">{tag.name}</td>
@@ -423,15 +423,15 @@ export const AdminTagsPanel: React.FC = () => {
             {/* Category Management Modal */}
             {showCategoryModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-                    <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-3xl border border-slate-200 dark:border-slate-700 max-h-[90vh] overflow-y-auto">
-                        <div className="sticky top-0 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 p-6 flex justify-between items-center">
+                    <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-xl shadow-2xl w-full max-w-3xl border border-white/10 max-h-[90vh] overflow-y-auto">
+                        <div className="sticky top-0 bg-[#0d1424]/60 backdrop-blur-xl border-b border-white/10 p-6 flex justify-between items-center">
                             <h2 className="text-xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
                                 <Edit className="w-6 h-6 text-indigo-500" />
                                 ניהול קטגוריות
                             </h2>
                             <button
                                 onClick={() => setShowCategoryModal(false)}
-                                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
                             >
                                 <X className="w-5 h-5" />
                             </button>
@@ -485,7 +485,7 @@ export const AdminTagsPanel: React.FC = () => {
                                         return (
                                             <div
                                                 key={cat.value}
-                                                className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg border border-slate-200 dark:border-slate-700"
+                                                className="flex items-center justify-between p-3 bg-white/5 rounded-lg border border-white/10"
                                             >
                                                 <div className="flex items-center gap-3">
                                                     <span className="text-2xl">{cat.icon}</span>

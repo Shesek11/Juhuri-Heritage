@@ -681,7 +681,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
     const filteredActive = entries;
 
     return (
-        <div className="fixed inset-0 z-50 bg-slate-50 dark:bg-slate-900 overflow-hidden font-rubik flex flex-col">
+        <div className="fixed inset-0 z-50 bg-white/5 overflow-hidden font-rubik flex flex-col">
             {/* Header */}
             <header className="bg-slate-900 text-white p-4 shadow-md shrink-0">
                 <div className="max-w-7xl mx-auto flex justify-between items-center">
@@ -697,7 +697,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
             {/* Main Layout: Sidebar + Content */}
             <div className="flex flex-1 overflow-hidden">
                 {/* Sidebar */}
-                <aside className="w-64 bg-white dark:bg-slate-800 border-l border-slate-200 dark:border-slate-700 overflow-y-auto shrink-0">
+                <aside className="w-64 bg-[#0d1424]/60 backdrop-blur-xl border-l border-white/10 overflow-y-auto shrink-0">
                     <nav className="p-4 space-y-2">
                         {menuItems.map(menu => {
                             // Hide non-admin sections for non-admins
@@ -714,7 +714,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                         className={`w-full flex items-center justify-between p-3 rounded-lg transition-colors ${
                                             hasActiveChild || isExpanded
                                                 ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400'
-                                                : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
+                                                : 'text-slate-300 hover:bg-white/10'
                                         }`}
                                     >
                                         <div className="flex items-center gap-3">
@@ -741,7 +741,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                                                 ? 'bg-amber-500 text-white font-medium'
                                                                 : isDisabled
                                                                 ? 'text-slate-400 dark:text-slate-600 cursor-not-allowed italic'
-                                                                : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700'
+                                                                : 'text-slate-400 hover:bg-white/10'
                                                         }`}
                                                     >
                                                         <span>{child.label}</span>
@@ -786,7 +786,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                         <>
                                             <button
                                                 onClick={() => setViewMode(viewMode === 'table' ? 'bulk' : 'table')}
-                                                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-all ${viewMode === 'bulk' ? 'bg-green-600 text-white' : 'bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600'}`}
+                                                className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium whitespace-nowrap transition-all ${viewMode === 'bulk' ? 'bg-green-600 text-white' : 'bg-white/10 text-slate-300 hover:bg-slate-300 dark:hover:bg-slate-600'}`}
                                             >
                                                 <FileSpreadsheet size={18} /> {viewMode === 'bulk' ? 'חזרה לתצוגה' : 'הוספה בבולק'}
                                             </button>
@@ -806,10 +806,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
 
                                 {/* View Mode: Table */}
                                 {viewMode === 'table' && (
-                                    <div className="bg-white dark:bg-slate-800 rounded-lg shadow border border-slate-200 dark:border-slate-700 overflow-hidden">
+                                    <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-lg shadow border border-white/10 overflow-hidden">
                                         <div className="overflow-x-auto max-h-[calc(100vh-280px)] overflow-y-auto">
                                             <table className="w-full text-sm text-right">
-                                                <thead className="bg-slate-50 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 font-medium sticky top-0">
+                                                <thead className="bg-white/5 text-slate-500 dark:text-slate-400 font-medium sticky top-0">
                                                     <tr>
                                                         <th className="p-4">מקור</th>
                                                         <th className="p-4">מונח (Term)</th>
@@ -826,7 +826,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                                         const isEditing = editingEntryId === entryId;
 
                                                         return (
-                                                            <tr key={idx} className={`text-slate-800 dark:text-slate-200 ${isEditing ? 'bg-amber-50 dark:bg-amber-900/20' : 'hover:bg-slate-50 dark:hover:bg-slate-700/30'}`}>
+                                                            <tr key={idx} className={`text-slate-200 ${isEditing ? 'bg-amber-50 dark:bg-amber-900/20' : 'hover:bg-white/5'}`}>
                                                                 <td className="p-4">
                                                                     <span className={`text-[10px] px-2 py-0.5 rounded-full border ${entry.source === 'AI' ? 'bg-purple-50 text-purple-600 border-purple-200' : entry.source === 'User' ? 'bg-blue-50 text-blue-600 border-blue-200' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>{entry.source || 'Manual'}</span>
                                                                 </td>
@@ -893,7 +893,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                                                         {isEditing ? (
                                                                             <div className="flex gap-1">
                                                                                 <button onClick={handleSaveEdit} className="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded transition-colors" title="שמור"><Save size={16} /></button>
-                                                                                <button onClick={handleCancelEdit} className="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors" title="בטל"><X size={16} /></button>
+                                                                                <button onClick={handleCancelEdit} className="p-2 text-slate-500 hover:bg-white/10 rounded transition-colors" title="בטל"><X size={16} /></button>
                                                                             </div>
                                                                         ) : (
                                                                             <div className="flex gap-1">
@@ -912,13 +912,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                             </table>
                                         </div>
                                         {/* Pagination */}
-                                        <div className="p-3 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between text-sm text-slate-600 dark:text-slate-400">
+                                        <div className="p-3 border-t border-white/10 flex items-center justify-between text-sm text-slate-400">
                                             <span>{totalEntries.toLocaleString()} מילים סה"כ</span>
                                             <div className="flex items-center gap-2">
                                                 <button
                                                     onClick={() => loadEntries(currentPage - 1, searchFilter)}
                                                     disabled={currentPage <= 1 || entriesLoading}
-                                                    className="px-3 py-1 rounded border border-slate-300 dark:border-slate-600 disabled:opacity-30 hover:bg-slate-100 dark:hover:bg-slate-700"
+                                                    className="px-3 py-1 rounded border border-white/10 disabled:opacity-30 hover:bg-white/10"
                                                 >
                                                     הקודם
                                                 </button>
@@ -926,7 +926,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                                 <button
                                                     onClick={() => loadEntries(currentPage + 1, searchFilter)}
                                                     disabled={currentPage >= totalPages || entriesLoading}
-                                                    className="px-3 py-1 rounded border border-slate-300 dark:border-slate-600 disabled:opacity-30 hover:bg-slate-100 dark:hover:bg-slate-700"
+                                                    className="px-3 py-1 rounded border border-white/10 disabled:opacity-30 hover:bg-white/10"
                                                 >
                                                     הבא
                                                 </button>
@@ -947,12 +947,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                                     onChange={(e) => setBulkNoTranslation(e.target.checked)}
                                                     className="w-5 h-5 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
                                                 />
-                                                <span className="font-medium text-slate-700 dark:text-slate-300">הוסף ללא תרגום</span>
+                                                <span className="font-medium text-slate-300">הוסף ללא תרגום</span>
                                                 <span className="text-xs text-slate-500">(המילים יוצגו לקהילה לתרגום)</span>
                                             </label>
                                         </div>
 
-                                        <div className="flex-1 overflow-auto bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 shadow-inner rounded-lg relative max-h-[calc(100vh-400px)]">
+                                        <div className="flex-1 overflow-auto bg-[#0d1424]/60 backdrop-blur-xl border border-slate-300 dark:border-slate-700 shadow-inner rounded-lg relative max-h-[calc(100vh-400px)]">
                                             <table className="w-full border-collapse text-sm">
                                                 <thead className="bg-slate-100 dark:bg-slate-900 sticky top-0 z-10 shadow-sm text-slate-600 dark:text-slate-300">
                                                     <tr>
@@ -969,13 +969,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                                         )}
                                                     </tr>
                                                 </thead>
-                                                <tbody className="bg-white dark:bg-slate-800">
+                                                <tbody className="bg-[#0d1424]/60 backdrop-blur-xl">
                                                     {gridData.map((row, rIdx) => (
-                                                        <tr key={rIdx} className="hover:bg-slate-50 dark:hover:bg-slate-700/50">
-                                                            <td className="border-b border-r dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 text-center text-xs text-slate-400 select-none">{rIdx + 1}</td>
+                                                        <tr key={rIdx} className="hover:bg-white/5">
+                                                            <td className="border-b border-r dark:border-slate-700 bg-white/5 text-center text-xs text-slate-400 select-none">{rIdx + 1}</td>
                                                             {row.slice(0, bulkNoTranslation ? 1 : 6).map((cell, cIdx) => (
                                                                 <td key={cIdx} className="border-b border-r dark:border-slate-700 p-0 relative focus-within:ring-2 focus-within:ring-indigo-500 focus-within:z-10">
-                                                                    <input type="text" value={cell} onChange={(e) => handleGridChange(rIdx, cIdx, e.target.value)} onPaste={(e) => handleGridPaste(e, rIdx, cIdx)} className="w-full h-full px-2 py-2 bg-transparent border-none outline-none text-slate-800 dark:text-slate-200" />
+                                                                    <input type="text" value={cell} onChange={(e) => handleGridChange(rIdx, cIdx, e.target.value)} onPaste={(e) => handleGridPaste(e, rIdx, cIdx)} className="w-full h-full px-2 py-2 bg-transparent border-none outline-none text-slate-200" />
                                                                 </td>
                                                             ))}
                                                         </tr>
@@ -984,13 +984,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                             </table>
                                         </div>
 
-                                        <div className="mt-4 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50 p-3 rounded-lg border border-slate-200 dark:border-slate-700">
+                                        <div className="mt-4 flex justify-between items-center bg-white/5 p-3 rounded-lg border border-white/10">
                                             <div className="flex gap-2 items-center">
-                                                <button onClick={handleAddRows} className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 px-3 py-2 rounded hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors text-sm font-medium"><Plus size={16} /> הוסף</button>
-                                                <input type="number" min="1" value={rowsToAdd} onChange={(e) => setRowsToAdd(parseInt(e.target.value) || 1)} className="w-16 p-2 rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-center text-sm" />
+                                                <button onClick={handleAddRows} className="flex items-center gap-2 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 px-3 py-2 rounded hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors text-sm font-medium"><Plus size={16} /> הוסף</button>
+                                                <input type="number" min="1" value={rowsToAdd} onChange={(e) => setRowsToAdd(parseInt(e.target.value) || 1)} className="w-16 p-2 rounded border border-white/10 bg-[#0d1424]/60 backdrop-blur-xl text-center text-sm" />
                                                 <span className="text-sm text-slate-500">שורות</span>
                                                 <div className="h-6 w-px bg-slate-300 dark:bg-slate-600 mx-2"></div>
-                                                <button onClick={handleClearGrid} className="flex items-center gap-2 text-slate-600 dark:text-slate-400 hover:text-red-600 dark:hover:text-red-400 px-3 py-2 rounded hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors text-sm font-medium"><Eraser size={16} /> נקה טבלה</button>
+                                                <button onClick={handleClearGrid} className="flex items-center gap-2 text-slate-400 hover:text-red-600 dark:hover:text-red-400 px-3 py-2 rounded hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors text-sm font-medium"><Eraser size={16} /> נקה טבלה</button>
                                             </div>
                                             <button onClick={() => { bulkNoTranslation ? handleSaveBulkUntranslated() : handleSaveGrid(); }} className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-6 py-2.5 rounded-lg font-bold shadow-lg shadow-green-600/20 transition-all"><Save size={18} /> שמור למאגר</button>
                                         </div>
@@ -1008,13 +1008,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                 </h2>
 
                                 {/* Pending Entries */}
-                                <div className="bg-white dark:bg-slate-800 rounded-lg shadow border border-slate-200 dark:border-slate-700 overflow-hidden">
-                                    <h3 className="text-lg font-bold text-slate-700 dark:text-slate-200 p-4 bg-slate-50 dark:bg-slate-700/50 border-b dark:border-slate-700">
+                                <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-lg shadow border border-white/10 overflow-hidden">
+                                    <h3 className="text-lg font-bold text-slate-200 p-4 bg-white/5 border-b dark:border-slate-700">
                                         רשומות חדשות ({pendingEntries.length})
                                     </h3>
                                     <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
                                         <table className="w-full text-sm text-right">
-                                            <thead className="bg-slate-50 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 font-medium sticky top-0">
+                                            <thead className="bg-white/5 text-slate-500 dark:text-slate-400 font-medium sticky top-0">
                                                 <tr>
                                                     <th className="p-4">מונח</th>
                                                     <th className="p-4">תרגום מוצע</th>
@@ -1025,7 +1025,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                             </thead>
                                             <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                                                 {pendingEntries.map((entry, idx) => (
-                                                    <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-700/30 text-slate-800 dark:text-slate-200">
+                                                    <tr key={idx} className="hover:bg-white/5 text-slate-200">
                                                         <td className="p-4 font-bold text-lg">{entry.term}</td>
                                                         <td className="p-4">{entry.translations[0]?.hebrew}</td>
                                                         <td className="p-4"><span className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 px-2 py-1 rounded text-xs">{entry.translations[0]?.dialect || 'General'}</span></td>
@@ -1052,14 +1052,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                 </div>
 
                                 {/* Translation Suggestions */}
-                                <div className="bg-white dark:bg-slate-800 rounded-lg shadow border border-slate-200 dark:border-slate-700 overflow-hidden">
-                                    <h3 className="text-lg font-bold text-slate-700 dark:text-slate-200 p-4 bg-slate-50 dark:bg-slate-700/50 border-b dark:border-slate-700 flex items-center gap-2">
+                                <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-lg shadow border border-white/10 overflow-hidden">
+                                    <h3 className="text-lg font-bold text-slate-200 p-4 bg-white/5 border-b dark:border-slate-700 flex items-center gap-2">
                                         <Volume2 size={20} className="text-indigo-500" />
                                         הצעות תרגום ({suggestions.length})
                                     </h3>
                                     <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
                                         <table className="w-full text-sm text-right">
-                                            <thead className="bg-slate-50 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 font-medium sticky top-0">
+                                            <thead className="bg-white/5 text-slate-500 dark:text-slate-400 font-medium sticky top-0">
                                                 <tr>
                                                     <th className="p-4">מונח</th>
                                                     <th className="p-4">הצעה</th>
@@ -1071,7 +1071,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                             </thead>
                                             <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                                                 {suggestions.map((s) => (
-                                                    <tr key={s.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/30 text-slate-800 dark:text-slate-200">
+                                                    <tr key={s.id} className="hover:bg-white/5 text-slate-200">
                                                         <td className="p-4 font-bold text-lg">{s.term}</td>
                                                         <td className="p-4">
                                                             {s.field_name ? (
@@ -1190,10 +1190,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                     ערכים אלה מכילים שדות שמולאו אוטומטית על ידי AI. בחר ערכים ואשר כדי לשמור אותם כערכים קהילתיים.
                                 </p>
 
-                                <div className="bg-white dark:bg-slate-800 rounded-lg shadow border border-slate-200 dark:border-slate-700 overflow-hidden">
+                                <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-lg shadow border border-white/10 overflow-hidden">
                                     <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
                                         <table className="w-full text-sm text-right">
-                                            <thead className="bg-slate-50 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 font-medium sticky top-0">
+                                            <thead className="bg-white/5 text-slate-500 dark:text-slate-400 font-medium sticky top-0">
                                                 <tr>
                                                     <th className="p-3 w-10">
                                                         <input
@@ -1226,7 +1226,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                                         </div>
                                                     </td></tr>
                                                 ) : aiFieldEntries.map((entry: any) => (
-                                                    <tr key={entry.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/30 text-slate-800 dark:text-slate-200">
+                                                    <tr key={entry.id} className="hover:bg-white/5 text-slate-200">
                                                         <td className="p-3">
                                                             <input
                                                                 type="checkbox"
@@ -1260,7 +1260,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
 
                                     {/* Pagination */}
                                     {aiFieldsTotalPages > 1 && (
-                                        <div className="flex items-center justify-between p-3 bg-slate-50 dark:bg-slate-700/30 border-t border-slate-200 dark:border-slate-700">
+                                        <div className="flex items-center justify-between p-3 bg-white/5 border-t border-white/10">
                                             <span className="text-xs text-slate-500">עמוד {aiFieldsPage} מתוך {aiFieldsTotalPages} ({aiFieldsTotal} ערכים)</span>
                                             <div className="flex gap-2">
                                                 <button
@@ -1290,13 +1290,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                     ניהול ניבים
                                 </h2>
 
-                                <div className="flex gap-4 mb-6 items-end bg-white dark:bg-slate-800 p-4 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm">
+                                <div className="flex gap-4 mb-6 items-end bg-[#0d1424]/60 backdrop-blur-xl p-4 rounded-lg border border-white/10 shadow-sm">
                                     <div className="flex-1">
-                                        <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">שם הניב (אנגלית/מזהה)</label>
+                                        <label className="block text-sm font-medium mb-1 text-slate-300">שם הניב (אנגלית/מזהה)</label>
                                         <input type="text" value={newDialectName} onChange={(e) => setNewDialectName(e.target.value)} className="w-full p-2 border rounded-lg dark:bg-slate-900 dark:border-slate-600 dark:text-white" placeholder="למשל: Baku" />
                                     </div>
                                     <div className="flex-1">
-                                        <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">תיאור (לתצוגה)</label>
+                                        <label className="block text-sm font-medium mb-1 text-slate-300">תיאור (לתצוגה)</label>
                                         <input type="text" value={newDialectDesc} onChange={(e) => setNewDialectDesc(e.target.value)} className="w-full p-2 border rounded-lg dark:bg-slate-900 dark:border-slate-600 dark:text-white" placeholder="למשל: באקו (עיר הבירה)" />
                                     </div>
                                     <button onClick={handleAddDialect} className="bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 rounded-lg font-bold flex items-center gap-2 h-[42px]">
@@ -1304,10 +1304,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                     </button>
                                 </div>
 
-                                <div className="bg-white dark:bg-slate-800 rounded-lg shadow border border-slate-200 dark:border-slate-700 overflow-hidden">
+                                <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-lg shadow border border-white/10 overflow-hidden">
                                     <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
                                         <table className="w-full text-sm text-right">
-                                            <thead className="bg-slate-50 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 font-medium sticky top-0">
+                                            <thead className="bg-white/5 text-slate-500 dark:text-slate-400 font-medium sticky top-0">
                                                 <tr>
                                                     <th className="p-4">מזהה / שם</th>
                                                     <th className="p-4">תיאור תצוגה</th>
@@ -1316,7 +1316,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                             </thead>
                                             <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                                                 {dialects.map((d) => (
-                                                    <tr key={d.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/30 text-slate-800 dark:text-slate-200">
+                                                    <tr key={d.id} className="hover:bg-white/5 text-slate-200">
                                                         <td className="p-4 font-bold">{d.name}</td>
                                                         <td className="p-4">{d.description}</td>
                                                         <td className="p-4">
@@ -1353,10 +1353,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                     ניהול משתמשים
                                 </h2>
 
-                                <div className="bg-white dark:bg-slate-800 rounded-lg shadow border border-slate-200 dark:border-slate-700 overflow-hidden">
+                                <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-lg shadow border border-white/10 overflow-hidden">
                                     <div className="overflow-x-auto max-h-[calc(100vh-250px)] overflow-y-auto">
                                         <table className="w-full text-sm text-right">
-                                            <thead className="bg-slate-50 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 font-medium sticky top-0">
+                                            <thead className="bg-white/5 text-slate-500 dark:text-slate-400 font-medium sticky top-0">
                                                 <tr>
                                                     <th className="p-4">שם משתמש</th>
                                                     <th className="p-4">אימייל</th>
@@ -1368,9 +1368,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                             </thead>
                                             <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                                                 {usersList.map((u) => (
-                                                    <tr key={u.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/30 text-slate-800 dark:text-slate-200">
+                                                    <tr key={u.id} className="hover:bg-white/5 text-slate-200">
                                                         <td className="p-4 font-bold flex items-center gap-2">
-                                                            <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-500">
+                                                            <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-slate-500">
                                                                 <UsersIcon size={14} />
                                                             </div>
                                                             {u.name} {u.id === user.id && <span className="text-xs text-indigo-500">(אני)</span>}
@@ -1386,7 +1386,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                                             <select
                                                                 value={u.role}
                                                                 onChange={(e) => handleRoleChange(u.id, e.target.value)}
-                                                                className="bg-transparent border border-slate-300 dark:border-slate-600 rounded px-2 py-1 outline-none focus:ring-1 focus:ring-indigo-500"
+                                                                className="bg-transparent border border-white/10 rounded px-2 py-1 outline-none focus:ring-1 focus:ring-indigo-500"
                                                                 disabled={u.id === user.id}
                                                             >
                                                                 <option value="user">משתמש</option>
@@ -1430,10 +1430,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                     יומן אירועים
                                 </h2>
 
-                                <div className="bg-white dark:bg-slate-800 rounded-lg shadow border border-slate-200 dark:border-slate-700 overflow-hidden">
+                                <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-lg shadow border border-white/10 overflow-hidden">
                                     <div className="overflow-x-auto max-h-[calc(100vh-250px)] overflow-y-auto">
                                         <table className="w-full text-sm text-right">
-                                            <thead className="bg-slate-50 dark:bg-slate-700/50 text-slate-500 dark:text-slate-400 font-medium sticky top-0">
+                                            <thead className="bg-white/5 text-slate-500 dark:text-slate-400 font-medium sticky top-0">
                                                 <tr>
                                                     <th className="p-4">תאריך ושעה</th>
                                                     <th className="p-4">סוג פעולה</th>
@@ -1443,7 +1443,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                             </thead>
                                             <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                                                 {logs.map((log) => (
-                                                    <tr key={log.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/30 text-slate-800 dark:text-slate-200">
+                                                    <tr key={log.id} className="hover:bg-white/5 text-slate-200">
                                                         <td className="p-4 text-slate-500 font-mono text-xs">
                                                             {new Date(log.timestamp).toLocaleString('he-IL')}
                                                         </td>
@@ -1490,7 +1490,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                     ניהול פיצ'רים
                                 </h2>
 
-                                <div className="bg-white dark:bg-slate-800 rounded-lg shadow border border-slate-200 dark:border-slate-700 p-6">
+                                <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-lg shadow border border-white/10 p-6">
                                     <FeatureFlagsPanel />
                                 </div>
                             </div>
@@ -1504,7 +1504,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                     מפתחות API
                                 </h2>
 
-                                <div className="bg-white dark:bg-slate-800 rounded-lg shadow border border-slate-200 dark:border-slate-700 p-6">
+                                <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-lg shadow border border-white/10 p-6">
                                     <ApiSettingsPanel />
                                 </div>
                             </div>
@@ -1522,19 +1522,19 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
             {/* AI Modal */}
             {showAiModal && (
                 <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-                    <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-2xl w-full max-w-md border border-slate-200 dark:border-slate-700">
-                        <h3 className="text-xl font-bold mb-4 text-slate-900 dark:text-white flex items-center gap-2"><Sparkles className="text-purple-500" /> יצירת רשומות אוטומטית</h3>
+                    <div className="bg-[#0d1424]/60 backdrop-blur-xl p-6 rounded-xl shadow-2xl w-full max-w-md border border-white/10">
+                        <h3 className="text-xl font-bold mb-4 text-white flex items-center gap-2"><Sparkles className="text-purple-500" /> יצירת רשומות אוטומטית</h3>
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">נושא / קטגוריה</label>
+                                <label className="block text-sm font-medium mb-1 text-slate-300">נושא / קטגוריה</label>
                                 <input type="text" value={aiTopic} onChange={(e) => setAiTopic(e.target.value)} className="w-full p-2 border rounded-lg dark:bg-slate-900 dark:border-slate-600 dark:text-white" placeholder="למשל: כלי מטבח, ברכות לחג, מספרים..." />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">כמות רשומות</label>
+                                <label className="block text-sm font-medium mb-1 text-slate-300">כמות רשומות</label>
                                 <input type="number" min="1" max="20" value={aiCount} onChange={(e) => setAiCount(parseInt(e.target.value))} className="w-full p-2 border rounded-lg dark:bg-slate-900 dark:border-slate-600 dark:text-white" />
                             </div>
                             <div className="flex gap-2 pt-2">
-                                <button onClick={() => setShowAiModal(false)} className="flex-1 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 rounded-lg text-slate-700 dark:text-slate-300 transition-colors">ביטול</button>
+                                <button onClick={() => setShowAiModal(false)} className="flex-1 py-2 bg-slate-100 hover:bg-white/10 dark:hover:bg-slate-600 rounded-lg text-slate-300 transition-colors">ביטול</button>
                                 <button onClick={handleAiGenerate} disabled={isGenerating || !aiTopic} className="flex-1 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg flex justify-center items-center gap-2 transition-colors disabled:opacity-50">
                                     {isGenerating ? <Loader2 className="animate-spin" size={18} /> : <Sparkles size={18} />} {isGenerating ? 'מייצר...' : 'צור מילים'}
                                 </button>
@@ -1547,8 +1547,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
             {/* Untranslated Words Modal */}
             {showUntranslatedModal && (
                 <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-                    <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-2xl w-full max-w-md border border-slate-200 dark:border-slate-700">
-                        <h3 className="text-xl font-bold mb-4 text-slate-900 dark:text-white flex items-center gap-2">
+                    <div className="bg-[#0d1424]/60 backdrop-blur-xl p-6 rounded-xl shadow-2xl w-full max-w-md border border-white/10">
+                        <h3 className="text-xl font-bold mb-4 text-white flex items-center gap-2">
                             <Plus className="text-amber-500" /> הוסף מילה ללא תרגום
                         </h3>
                         <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
@@ -1556,7 +1556,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                         </p>
                         <div className="space-y-4">
                             <div>
-                                <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">מילה בעברית *</label>
+                                <label className="block text-sm font-medium mb-1 text-slate-300">מילה בעברית *</label>
                                 <input
                                     type="text"
                                     value={untranslatedTerm}
@@ -1567,7 +1567,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium mb-1 text-slate-700 dark:text-slate-300">מדריך הגייה (אופציונלי)</label>
+                                <label className="block text-sm font-medium mb-1 text-slate-300">מדריך הגייה (אופציונלי)</label>
                                 <input
                                     type="text"
                                     value={untranslatedPronunciation}
@@ -1580,7 +1580,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                             <div className="flex gap-2 pt-2">
                                 <button
                                     onClick={() => { setShowUntranslatedModal(false); setUntranslatedTerm(''); setUntranslatedPronunciation(''); }}
-                                    className="flex-1 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 rounded-lg text-slate-700 dark:text-slate-300 transition-colors"
+                                    className="flex-1 py-2 bg-slate-100 hover:bg-white/10 dark:hover:bg-slate-600 rounded-lg text-slate-300 transition-colors"
                                 >
                                     ביטול
                                 </button>

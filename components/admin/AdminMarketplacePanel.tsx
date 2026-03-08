@@ -96,7 +96,7 @@ const AdminMarketplacePanel: React.FC = () => {
             </h2>
 
             {/* Tabs */}
-            <div className="flex gap-2 mb-6 border-b border-slate-200 dark:border-slate-700">
+            <div className="flex gap-2 mb-6 border-b border-white/10">
                 <button
                     onClick={() => setActiveTab('pending')}
                     className={`px-4 py-2 font-bold border-b-2 transition-colors ${
@@ -148,16 +148,16 @@ const AdminMarketplacePanel: React.FC = () => {
                                     pendingVendors.map(vendor => (
                                         <div
                                             key={vendor.id}
-                                            className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700"
+                                            className="bg-[#0d1424]/60 backdrop-blur-xl p-6 rounded-xl border border-white/10"
                                         >
                                             <div className="flex justify-between items-start mb-4">
                                                 <div>
-                                                    <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100">
+                                                    <h3 className="text-xl font-bold text-slate-100">
                                                         {vendor.name}
                                                     </h3>
                                                     <p className="text-sm text-slate-500">{vendor.address}</p>
                                                     {vendor.owner_name && (
-                                                        <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                                                        <p className="text-sm text-slate-400 mt-1">
                                                             בעלים: {vendor.owner_name}
                                                         </p>
                                                     )}
@@ -216,17 +216,17 @@ const AdminMarketplacePanel: React.FC = () => {
                                     reports.map(report => (
                                         <div
                                             key={report.id}
-                                            className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700"
+                                            className="bg-[#0d1424]/60 backdrop-blur-xl p-6 rounded-xl border border-white/10"
                                         >
                                             <div className="flex items-start gap-3 mb-4">
                                                 <AlertTriangle className="text-orange-500 shrink-0" size={24} />
                                                 <div className="flex-1">
-                                                    <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">
+                                                    <h3 className="text-lg font-bold text-slate-100">
                                                         {report.vendor_name}
                                                     </h3>
                                                     <p className="text-sm text-slate-500">{report.vendor_address}</p>
                                                     {report.vendor_phone && (
-                                                        <p className="text-sm text-slate-600 dark:text-slate-400">
+                                                        <p className="text-sm text-slate-400">
                                                             טלפון: {report.vendor_phone}
                                                         </p>
                                                     )}
@@ -285,11 +285,11 @@ const AdminMarketplacePanel: React.FC = () => {
                                     allVendors.map(vendor => (
                                         <div
                                             key={vendor.id}
-                                            className="bg-white dark:bg-slate-800 p-6 rounded-xl border border-slate-200 dark:border-slate-700"
+                                            className="bg-[#0d1424]/60 backdrop-blur-xl p-6 rounded-xl border border-white/10"
                                         >
                                             <div className="flex justify-between items-start">
                                                 <div>
-                                                    <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                                                    <h3 className="text-xl font-bold text-slate-100 flex items-center gap-2">
                                                         {vendor.name}
                                                         {!!vendor.is_verified && (
                                                             <span className="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs">
@@ -299,7 +299,7 @@ const AdminMarketplacePanel: React.FC = () => {
                                                     </h3>
                                                     <p className="text-sm text-slate-500">{vendor.address}</p>
                                                     {vendor.owner_name && (
-                                                        <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
+                                                        <p className="text-sm text-slate-400 mt-1">
                                                             בעלים: {vendor.owner_name}
                                                         </p>
                                                     )}
