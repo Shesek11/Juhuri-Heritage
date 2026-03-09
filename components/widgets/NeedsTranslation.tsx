@@ -67,7 +67,8 @@ const NeedsTranslation: React.FC<NeedsTranslationProps> = ({ onTranslate, onOpen
     }
 
     return (
-        <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-lg border border-white/10 overflow-hidden font-rubik h-full flex flex-col">
+        <div className="relative bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-lg border border-white/10 overflow-hidden font-rubik h-full flex flex-col group transition-all duration-500 hover:-translate-y-2 hover:border-amber-500/40 hover:bg-[#0d1424]/90 hover:shadow-[0_20px_40px_-15px_rgba(245,158,11,0.15)] cursor-pointer">
+            <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-transparent via-amber-500/80 to-transparent scale-x-0 group-hover:scale-x-100 transition-transform duration-700 z-50" />
             <div className="bg-white/5 border-b border-white/10 backdrop-blur-xl p-4 text-white">
                 <h3 className="font-bold text-lg flex items-center gap-2">
                     <Languages size={20} /> מחכות לתרגום

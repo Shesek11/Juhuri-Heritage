@@ -26,8 +26,10 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, onClick, viewMod
         return (
             <div
                 onClick={onClick}
-                className="group bg-[#0d1424]/60 backdrop-blur-xl rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer border border-white/10 hover:border-amber-400 dark:hover:border-amber-600"
+                className="group relative bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl overflow-hidden shadow-lg transition-all duration-500 cursor-pointer border border-white/10 hover:-translate-y-2 hover:border-amber-500/40 hover:bg-[#0d1424]/90 hover:shadow-[0_20px_40px_-15px_rgba(245,158,11,0.15)]"
             >
+                {/* Subtle top gradient line */}
+                <div className="absolute z-50 top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-transparent via-amber-500/80 to-transparent scale-x-0 group-hover:scale-x-100 transition-transform duration-700" />
                 {/* Image */}
                 <div className="relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/20 dark:to-orange-900/20">
                     {recipe.main_photo ? (
@@ -141,8 +143,10 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, onClick, viewMod
     return (
         <div
             onClick={onClick}
-            className="group bg-[#0d1424]/60 backdrop-blur-xl rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 cursor-pointer border border-white/10 hover:border-amber-400 dark:hover:border-amber-600 flex flex-col md:flex-row"
+            className="group relative bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl overflow-hidden shadow-lg transition-all duration-500 cursor-pointer border border-white/10 hover:-translate-y-2 hover:border-amber-500/40 hover:bg-[#0d1424]/90 hover:shadow-[0_20px_40px_-15px_rgba(245,158,11,0.15)] flex flex-col md:flex-row"
         >
+            {/* Subtle top gradient line */}
+            <div className="absolute z-50 top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-transparent via-amber-500/80 to-transparent scale-x-0 group-hover:scale-x-100 transition-transform duration-700 md:h-full md:w-[3px] md:top-0 md:bottom-0 md:bg-gradient-to-b md:scale-y-0 md:group-hover:scale-y-100 md:scale-x-100" />
             {/* Image - fixed width on desktop */}
             <div className="relative w-full md:w-64 lg:w-80 aspect-[4/3] md:aspect-auto md:h-48 flex-shrink-0 overflow-hidden bg-gradient-to-br from-amber-100 to-orange-100 dark:from-amber-900/20 dark:to-orange-900/20">
                 {recipe.main_photo ? (

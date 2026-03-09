@@ -416,7 +416,9 @@ const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal, onSugge
   };
 
   return (
-    <div className="w-full max-w-2xl bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-2xl overflow-hidden border border-white/10 transition-all font-rubik">
+    <div className="group relative w-full max-w-2xl bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-2xl overflow-hidden border border-white/10 transition-all duration-500 hover:-translate-y-1 hover:border-amber-500/40 hover:bg-[#0d1424]/90 hover:shadow-[0_20px_40px_-15px_rgba(245,158,11,0.15)] font-rubik">
+      {/* Subtle top gradient line */}
+      <div className="absolute z-50 top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-transparent via-amber-500/80 to-transparent scale-x-0 group-hover:scale-x-100 transition-transform duration-700" />
       {/* Header */}
       <div className="p-6 bg-gradient-to-br from-white/10 to-transparent border-b border-white/10 text-white relative">
         <div className="flex justify-between items-start">
