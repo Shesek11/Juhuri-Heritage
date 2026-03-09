@@ -39,8 +39,12 @@ export const FeatureRoute: React.FC<FeatureRouteProps> = ({ feature, children })
   // We read feature flags from a global state that's loaded in App.tsx
   // and passed via context. For now, we use a simpler approach:
   // the FeatureRoute checks window.__featureFlags which App.tsx sets.
+  const flagsLoaded = (window as any).__featureFlagsLoaded || false;
   const flags = (window as any).__featureFlags || {};
   const status = flags[feature];
+
+  // Wait for flags to load before deciding — prevents redirect on refresh
+  if (!flagsLoaded) return null;
 
   if (!status || status === 'disabled') return <Navigate to="/" replace />;
 

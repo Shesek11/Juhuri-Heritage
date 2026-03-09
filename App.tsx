@@ -155,6 +155,7 @@ function App() {
 
   // Feature Flags
   const [featureFlags, setFeatureFlags] = useState<FeatureFlagsMap>({});
+  const [featureFlagsLoaded, setFeatureFlagsLoaded] = useState(false);
 
   // Derived: is current user an admin?
   const isAdmin = user?.role === 'admin' || user?.role === 'approver';
@@ -195,10 +196,14 @@ function App() {
         const flags = await featureFlagService.getPublicFeatureFlags();
         console.log('Scaled Feature Flags:', flags);
         setFeatureFlags(flags);
+        setFeatureFlagsLoaded(true);
         // Make available to FeatureRoute
         (window as any).__featureFlags = flags;
+        (window as any).__featureFlagsLoaded = true;
       } catch (err) {
         console.error('Failed to load feature flags:', err);
+        setFeatureFlagsLoaded(true);
+        (window as any).__featureFlagsLoaded = true;
       }
     };
 
