@@ -12,9 +12,9 @@ interface RecipeCardProps {
 }
 
 const DIFFICULTY_LABELS = {
-    easy: { label: 'קל', color: 'text-green-600 bg-green-100 dark:bg-green-900/30' },
-    medium: { label: 'בינוני', color: 'text-amber-600 bg-amber-100 dark:bg-amber-900/30' },
-    hard: { label: 'מאתגר', color: 'text-red-600 bg-red-100 dark:bg-red-900/30' }
+    easy: { label: 'קל', color: 'text-white bg-green-600/90 backdrop-blur-sm' },
+    medium: { label: 'בינוני', color: 'text-white bg-amber-600/90 backdrop-blur-sm' },
+    hard: { label: 'מאתגר', color: 'text-white bg-red-600/90 backdrop-blur-sm' }
 };
 
 export const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, onClick, viewMode = 'grid' }) => {
@@ -46,7 +46,7 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, onClick, viewMod
 
                     {/* Overlay badges - show only 2 primary tags */}
                     <div className="absolute top-3 left-3 flex gap-2">
-                        {recipe.is_featured && (
+                        {!!recipe.is_featured && (
                             <span className="px-2 py-1 bg-amber-500 text-white text-xs font-bold rounded-full">
                                 מומלץ
                             </span>
@@ -163,7 +163,7 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, onClick, viewMod
 
                 {/* Overlay badges - show only 2 primary tags */}
                 <div className="absolute top-3 left-3 flex gap-2">
-                    {recipe.is_featured && (
+                    {!!recipe.is_featured && (
                         <span className="px-2 py-1 bg-amber-500 text-white text-xs font-bold rounded-full">
                             מומלץ
                         </span>
