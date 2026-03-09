@@ -93,7 +93,7 @@ const LessonView: React.FC<LessonViewProps> = ({ unit, dialect, level, onComplet
   if (loading) {
     return (
         <div className="flex flex-col items-center justify-center h-[500px] text-center p-8">
-            <Sparkles className="text-indigo-500 animate-pulse mb-4" size={48} />
+            <Sparkles className="text-amber-500 animate-pulse mb-4" size={48} />
             <h3 className="text-xl font-bold mb-2">סבא מרדכי מכין את השיעור...</h3>
             <p className="text-slate-500">מכין תרגילים בנושא: {unit.title}</p>
         </div>
@@ -111,7 +111,7 @@ const LessonView: React.FC<LessonViewProps> = ({ unit, dialect, level, onComplet
              <p className="text-slate-500 mb-6 text-lg">
                  {passed ? `סיימת את היחידה עם ${score} נקודות.` : 'נגמרו לך הלבבות. נסה שוב כדי להתקדם.'}
              </p>
-             <button onClick={onBack} className="bg-indigo-600 text-white px-8 py-3 rounded-xl font-bold hover:scale-105 transition-transform">
+             <button onClick={onBack} className="bg-gradient-to-r from-amber-400 via-amber-500 to-orange-600 text-[#050B14] px-8 py-3 rounded-xl font-bold hover:scale-105 shadow-[0_0_30px_rgba(245,158,11,0.3)] transition-transform">
                  {passed ? 'חזרה למפה' : 'נסה שוב'}
              </button>
         </div>
@@ -125,9 +125,9 @@ const LessonView: React.FC<LessonViewProps> = ({ unit, dialect, level, onComplet
     <div className="flex flex-col h-[600px] bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-xl overflow-hidden font-rubik relative">
         {/* Header */}
         <div className="p-4 bg-white/5 border-b border-white/10 flex items-center justify-between">
-            <button onClick={onBack} className="p-2 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-full transition-colors"><ArrowLeft size={20} /></button>
+            <button onClick={onBack} className="p-2 hover:bg-white/10 text-slate-300 hover:text-white rounded-full transition-colors"><ArrowLeft size={20} /></button>
             <div className="flex-1 mx-4">
-                <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                <div className="h-2 bg-white/10 rounded-full overflow-hidden">
                     <div className="h-full bg-green-500 transition-all duration-500" style={{ width: `${progress}%` }}></div>
                 </div>
             </div>
@@ -154,7 +154,7 @@ const LessonView: React.FC<LessonViewProps> = ({ unit, dialect, level, onComplet
                     {currentEx.audioText && (
                         <button 
                             onClick={() => handlePlayAudio(currentEx.audioText!)}
-                            className={`p-3 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:scale-105 transition-transform ${isPlaying ? 'animate-pulse' : ''}`}
+                            className={`p-3 rounded-xl bg-amber-500/10 text-amber-500 border border-amber-500/20 hover:scale-105 transition-transform ${isPlaying ? 'animate-pulse' : ''}`}
                         >
                             <Volume2 size={32} />
                         </button>
@@ -169,14 +169,14 @@ const LessonView: React.FC<LessonViewProps> = ({ unit, dialect, level, onComplet
             <div className="w-full space-y-3">
                 {currentEx.options ? (
                     currentEx.options.map((opt, idx) => {
-                        let btnClass = "w-full p-4 rounded-xl border-2 text-lg font-medium transition-all hover:bg-slate-50 dark:hover:bg-slate-700";
+                        let btnClass = "w-full p-4 rounded-xl border-2 text-lg font-medium transition-all hover:bg-white/5 hover:border-amber-500/50 focus:border-amber-500/50 focus:bg-white/10";
                         
                         if (feedback && opt === currentEx.correctAnswer) {
                             btnClass = "w-full p-4 rounded-xl border-2 border-green-500 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300";
                         } else if (feedback && opt === selectedOption && opt !== currentEx.correctAnswer) {
                             btnClass = "w-full p-4 rounded-xl border-2 border-red-500 bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300";
                         } else {
-                            btnClass = "w-full p-4 rounded-xl border-slate-200 dark:border-slate-600 bg-[#0d1424]/60 backdrop-blur-xl text-slate-700 dark:text-slate-200 hover:border-indigo-400";
+                            btnClass = "w-full p-4 rounded-xl border-white/10 bg-white/5 backdrop-blur-xl text-slate-200 hover:border-amber-500/40 hover:bg-white/10";
                         }
 
                         return (
@@ -196,7 +196,7 @@ const LessonView: React.FC<LessonViewProps> = ({ unit, dialect, level, onComplet
                         {!feedback ? (
                             <button 
                                 onClick={() => checkAnswer(currentEx.correctAnswer)} // Auto-correct for flashcards
-                                className="bg-indigo-600 text-white px-8 py-3 rounded-xl font-bold shadow-lg shadow-indigo-500/30"
+                                className="bg-gradient-to-r from-amber-400 via-amber-500 to-orange-600 text-[#050B14] font-bold px-8 py-3 rounded-xl shadow-[0_0_20px_rgba(245,158,11,0.3)] hover:scale-105"
                             >
                                 הצג תשובה
                             </button>
