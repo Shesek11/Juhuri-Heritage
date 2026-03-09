@@ -19,7 +19,7 @@ const RecipesPage = lazy(() => import('./components/RecipesPage'));
 const MarketplacePage = lazy(() => import('./components/MarketplacePage').then(m => ({ default: m.MarketplacePage })));
 const CommunityGraph = lazy(() => import('./components/family/CommunityGraph').then(m => ({ default: m.CommunityGraph })));
 const AdminDashboard = lazy(() => import('./components/AdminDashboard'));
-const MobileAdminPanel = lazy(() => import('./components/admin/MobileAdminPanel'));
+// MobileAdminPanel removed — admin access only via full dashboard
 const ContributeModal = lazy(() => import('./components/ContributeModal'));
 const AboutModal = lazy(() => import('./components/AboutModal'));
 const ProfileModal = lazy(() => import('./components/ProfileModal'));
@@ -34,7 +34,7 @@ const LazyFallback = () => (
   </div>
 );
 
-import { Scroll, Sun, Moon, Plus, HeartHandshake, BookOpen, GraduationCap, Info, User as UserIcon, LogOut, Settings, LayoutDashboard, Menu, LogIn, ChevronDown, ChefHat, Store, TreeDeciduous, BarChart, Clock } from 'lucide-react';
+import { Scroll, Sun, Moon, Plus, HeartHandshake, BookOpen, GraduationCap, Info, User as UserIcon, LogOut, Settings, LayoutDashboard, LogIn, ChefHat, Store, TreeDeciduous, Clock } from 'lucide-react';
 
 // NavTab Component for Desktop Navigation using NavLink
 interface NavTabProps {
@@ -107,7 +107,7 @@ function App() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authModalReason, setAuthModalReason] = useState<string | undefined>(undefined);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
-  const [isMobileAdminOpen, setIsMobileAdminOpen] = useState(false);
+  // MobileAdminPanel removed
 
   const openAuthModal = (reason?: string) => {
     setAuthModalReason(reason);
@@ -309,54 +309,27 @@ function App() {
               <XPDisplay />
             </div>
 
-            {/* Admin Dropdown */}
-            {user && (user.role === 'admin' || user.role === 'approver') && (
-              <div className="hidden sm:block relative group">
-                <button className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-500/20 text-purple-300 rounded-lg hover:bg-purple-500/30 transition-all text-sm font-medium">
-                  <LayoutDashboard size={14} />
-                  <span className="hidden lg:inline">ניהול</span>
-                  <ChevronDown size={12} className="opacity-60 group-hover:rotate-180 transition-transform" />
-                </button>
-                <div className="absolute top-full left-0 mt-1 w-44 bg-slate-800 rounded-xl shadow-xl border border-slate-700 py-1 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
-                  <button
-                    onClick={() => setIsAdminOpen(true)}
-                    className="w-full text-right px-3 py-2 text-sm text-slate-200 hover:bg-slate-700/50 flex items-center gap-2"
-                  >
-                    <LayoutDashboard size={14} className="text-purple-400" />
-                    ממשק ניהול
-                  </button>
-                  <button
-                    onClick={() => setIsMobileAdminOpen(true)}
-                    className="w-full text-right px-3 py-2 text-sm text-slate-200 hover:bg-slate-700/50 flex items-center gap-2"
-                  >
-                    <BarChart size={14} className="text-emerald-400" />
-                    ניהול מהיר
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {/* Theme Toggle (Hidden for Premium Dark Theme) */}
-            {/* 
-            <button
-              onClick={toggleTheme}
-              className="hidden sm:flex w-8 h-8 items-center justify-center rounded-lg bg-slate-800 text-slate-400 hover:text-white transition-all"
-              title={theme === 'light' ? 'מצב כהה' : 'מצב בהיר'}
-            >
-              {theme === 'light' ? <Moon size={16} /> : <Sun size={16} />}
-            </button> 
-            */}
-
-            {/* User Menu */}
+            {/* User Menu - Pill Style */}
             <div className="relative" onClick={e => e.stopPropagation()}>
               <button
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="flex items-center gap-1 p-1 bg-slate-800 rounded-lg hover:bg-slate-700 transition-all"
+                className="flex items-center gap-2 pl-2 pr-1 py-1 bg-slate-800/80 backdrop-blur-sm rounded-full hover:bg-slate-700/80 transition-all border border-white/10"
               >
-                <div className="w-7 h-7 rounded-md bg-gradient-to-br from-slate-600 to-slate-700 flex items-center justify-center text-white">
-                  {user ? <UserIcon size={14} /> : <Menu size={14} />}
-                </div>
-                <ChevronDown size={12} className="text-slate-500 hidden sm:block" />
+                {user ? (
+                  <>
+                    <span className="text-sm text-slate-200 font-medium hidden sm:inline">{user.name}</span>
+                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white text-xs font-bold">
+                      {user.name?.charAt(0)}
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    <span className="text-sm text-slate-300 hidden sm:inline">התחברות</span>
+                    <div className="w-7 h-7 rounded-full bg-slate-700 flex items-center justify-center text-slate-400">
+                      <UserIcon size={14} />
+                    </div>
+                  </>
+                )}
               </button>
 
               {isMenuOpen && (
@@ -389,11 +362,11 @@ function App() {
                       </button>
                     )}
 
-                    {/* Mobile Admin */}
+                    {/* Admin */}
                     {user && (user.role === 'admin' || user.role === 'approver') && (
                       <button
                         onClick={() => { setIsAdminOpen(true); setIsMenuOpen(false); }}
-                        className="w-full sm:hidden text-right px-3 py-2 text-sm text-purple-300 hover:bg-purple-500/10 flex items-center gap-2"
+                        className="w-full text-right px-3 py-2 text-sm text-purple-300 hover:bg-purple-500/10 flex items-center gap-2"
                       >
                         <LayoutDashboard size={14} />
                         ממשק ניהול
@@ -588,7 +561,6 @@ function App() {
         <AboutModal isOpen={isAboutOpen} onClose={() => setIsAboutOpen(false)} />
       </Suspense>
       {isAdminOpen && user && <Suspense fallback={<LazyFallback />}><AdminDashboard user={user} onClose={() => setIsAdminOpen(false)} /></Suspense>}
-      {isMobileAdminOpen && <Suspense fallback={<LazyFallback />}><MobileAdminPanel onClose={() => setIsMobileAdminOpen(false)} /></Suspense>}
       <AuthModal
         isOpen={isAuthModalOpen}
         onClose={() => { setIsAuthModalOpen(false); setAuthModalReason(undefined); }}
