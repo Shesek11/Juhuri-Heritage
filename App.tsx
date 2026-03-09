@@ -241,11 +241,11 @@ function App() {
       <SEOHead jsonLd={[WEBSITE_JSONLD, ORGANIZATION_JSONLD]} />
 
       {/* Header / Nav */}
-      <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? 'bg-[#050B14]/90 backdrop-blur-2xl border-b border-white/10 py-1 shadow-lg' : 'bg-transparent py-4'}`}>
+      <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b ${isScrolled ? 'bg-[#050B14]/90 backdrop-blur-2xl border-white/10 py-1 shadow-lg' : 'bg-transparent border-transparent py-4'}`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
 
           {/* Right: Logo */}
-          <NavLink to="/" className={`flex items-center gap-3 transition-all duration-300 ${!isScrolled && 'bg-[#0d1424]/60 backdrop-blur-md rounded-full pr-1 pl-4 py-1 border border-white/5'}`}>
+          <NavLink to="/" className={`flex items-center gap-3 transition-all duration-300 border ${!isScrolled ? 'bg-[#0d1424]/60 backdrop-blur-md rounded-full pr-1 pl-4 py-1 border-white/5' : 'border-transparent'}`}>
             <div className="w-9 h-9 bg-gradient-to-br from-amber-400 to-orange-600 rounded-full flex items-center justify-center shadow-lg shadow-amber-500/20">
               <Scroll size={18} className="text-white" />
             </div>
@@ -254,7 +254,7 @@ function App() {
 
           {/* Center: Navigation Tabs (Desktop) */}
           <nav className="hidden md:flex items-center">
-            <div className={`flex items-center p-1 rounded-full gap-1 transition-all duration-300 ${!isScrolled ? 'bg-[#0d1424]/60 backdrop-blur-md border border-white/5 shadow-lg' : 'bg-white/5 backdrop-blur-sm'}`}>
+            <div className={`flex items-center p-1 rounded-full gap-1 transition-all duration-300 border ${!isScrolled ? 'bg-[#0d1424]/60 backdrop-blur-md border-white/5 shadow-lg' : 'bg-white/5 border-transparent backdrop-blur-sm'}`}>
               <NavTab
                 to="/"
                 icon={<BookOpen size={16} />}
@@ -298,7 +298,7 @@ function App() {
           </nav>
 
           {/* Left: Actions */}
-          <div className={`flex items-center gap-2 transition-all duration-300 ${!isScrolled ? 'bg-[#0d1424]/60 backdrop-blur-md rounded-full px-2 py-1 border border-white/5 shadow-lg' : ''}`}>
+          <div className={`flex items-center gap-2 transition-all duration-300 border ${!isScrolled ? 'bg-[#0d1424]/60 backdrop-blur-md rounded-full px-2 py-1 border-white/5 shadow-lg' : 'border-transparent'}`}>
             {/* XP Display (Desktop) */}
             <div className="hidden sm:block">
               <XPDisplay />
@@ -481,7 +481,7 @@ function App() {
 
       {/* Main Content Area */}
       <main
-        className={`w-full relative z-10 flex flex-col items-center ${location.pathname === '/' ? '' : 'pb-20 pt-14 md:pt-14'}`}
+        className={`w-full relative z-10 flex flex-col items-center min-h-screen ${location.pathname === '/' ? '' : 'pb-20 pt-[104px] md:pt-[104px]'}`}
         onClick={() => setIsMenuOpen(false)}
       >
         {/* Extra padding for mobile nav bar (not on homepage) */}
