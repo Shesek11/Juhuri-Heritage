@@ -62,29 +62,29 @@ const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-4 border border-white/10 rounded-xl bg-slate-50 dark:bg-slate-800/30">
-                  <div className="bg-white dark:bg-slate-700 w-10 h-10 rounded-lg flex items-center justify-center shadow-sm mb-3 text-amber-500">
+                <div className="p-4 border border-white/10 rounded-xl bg-white/5 backdrop-blur-sm/30">
+                  <div className="bg-white/5 backdrop-blur-sm w-10 h-10 rounded-lg flex items-center justify-center shadow-sm mb-3 text-amber-500">
                     <Book size={20} />
                   </div>
                   <h5 className="font-bold text-white mb-1">המילון החכם</h5>
                   <p className="text-sm text-slate-500">מאגר עצום של מילים וביטויים, כולל תרגום משולש (עברית, לטינית, קירילית) וזיהוי ניבים אוטומטי.</p>
                 </div>
-                <div className="p-4 border border-white/10 rounded-xl bg-slate-50 dark:bg-slate-800/30">
-                  <div className="bg-white dark:bg-slate-700 w-10 h-10 rounded-lg flex items-center justify-center shadow-sm mb-3 text-purple-500">
+                <div className="p-4 border border-white/10 rounded-xl bg-white/5 backdrop-blur-sm/30">
+                  <div className="bg-white/5 backdrop-blur-sm w-10 h-10 rounded-lg flex items-center justify-center shadow-sm mb-3 text-purple-500">
                     <GraduationCap size={20} />
                   </div>
                   <h5 className="font-bold text-white mb-1">המורה הפרטי</h5>
                   <p className="text-sm text-slate-500">מערכת למידה אינטראקטיבית המאפשרת לתרגל את השפה באמצעות שיעורים מובנים ושיחות עם דמויות AI.</p>
                 </div>
-                <div className="p-4 border border-white/10 rounded-xl bg-slate-50 dark:bg-slate-800/30">
-                  <div className="bg-white dark:bg-slate-700 w-10 h-10 rounded-lg flex items-center justify-center shadow-sm mb-3 text-rose-500">
+                <div className="p-4 border border-white/10 rounded-xl bg-white/5 backdrop-blur-sm/30">
+                  <div className="bg-white/5 backdrop-blur-sm w-10 h-10 rounded-lg flex items-center justify-center shadow-sm mb-3 text-rose-500">
                     <Mic size={20} />
                   </div>
                   <h5 className="font-bold text-white mb-1">חיפוש קולי</h5>
                   <p className="text-sm text-slate-500">ניתן לחפש מילים וביטויים פשוט על ידי דיבור אל המיקרופון, והמערכת תזהה ותתרגם בזמן אמת.</p>
                 </div>
-                <div className="p-4 border border-white/10 rounded-xl bg-slate-50 dark:bg-slate-800/30">
-                  <div className="bg-white dark:bg-slate-700 w-10 h-10 rounded-lg flex items-center justify-center shadow-sm mb-3 text-green-500">
+                <div className="p-4 border border-white/10 rounded-xl bg-white/5 backdrop-blur-sm/30">
+                  <div className="bg-white/5 backdrop-blur-sm w-10 h-10 rounded-lg flex items-center justify-center shadow-sm mb-3 text-green-500">
                     <Layout size={20} />
                   </div>
                   <h5 className="font-bold text-white mb-1">ממשק מתקדם</h5>
@@ -175,17 +175,17 @@ const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
                   מילונים מרכזיים
                 </h4>
                 <div className="space-y-3">
-                  <div className="bg-white dark:bg-slate-700/50 p-3 rounded-lg border border-slate-100 dark:border-slate-600 shadow-sm">
-                    <p className="font-bold text-slate-900 dark:text-slate-100">המילון הג'והורי-עברי הגדול</p>
+                  <div className="bg-white/5 backdrop-blur-sm/50 p-3 rounded-lg border border-slate-100 dark:border-slate-600 shadow-sm">
+                    <p className="font-bold text-slate-900 dark:text-amber-500">המילון הג'והורי-עברי הגדול</p>
                     <p className="text-xs text-slate-500 mb-2">מרדכי אגרונוב (1997) • המקור הראשי לכתיב</p>
                     <a href="https://merhav.nli.org.il/primo-explore/search?query=any,contains,מרדכי%20אגרונוב%20מילון&vid=NLI&lang=he_IL" target="_blank" rel="noopener noreferrer" className="text-[10px] text-indigo-600 dark:text-indigo-400 font-bold hover:underline flex items-center gap-1"><ExternalLink size={10} /> הספרייה הלאומית</a>
                   </div>
-                  <div className="bg-white dark:bg-slate-700/50 p-3 rounded-lg border border-slate-100 dark:border-slate-600 shadow-sm">
-                    <p className="font-bold text-slate-900 dark:text-slate-100">מילון טאטי-רוסי</p>
+                  <div className="bg-white/5 backdrop-blur-sm/50 p-3 rounded-lg border border-slate-100 dark:border-slate-600 shadow-sm">
+                    <p className="font-bold text-slate-900 dark:text-amber-500">מילון טאטי-רוסי</p>
                     <p className="text-xs text-slate-500">יעקב אגרונוב ומיכאל דדשוב</p>
                   </div>
-                  <div className="bg-white dark:bg-slate-700/50 p-3 rounded-lg border border-slate-100 dark:border-slate-600 shadow-sm">
-                    <p className="font-bold text-slate-900 dark:text-slate-100">מילון ג'והורי-עברי (פולקלור)</p>
+                  <div className="bg-white/5 backdrop-blur-sm/50 p-3 rounded-lg border border-slate-100 dark:border-slate-600 shadow-sm">
+                    <p className="font-bold text-slate-900 dark:text-amber-500">מילון ג'והורי-עברי (פולקלור)</p>
                     <p className="text-xs text-slate-500">חניל (חנה) רפאל ויוסי בן-עמי • דגש על ניב קובה</p>
                   </div>
                 </div>
@@ -198,12 +198,12 @@ const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
                   דקדוק ומחקר אקדמי
                 </h4>
                 <div className="space-y-3">
-                  <div className="bg-white dark:bg-slate-700/50 p-3 rounded-lg border border-slate-100 dark:border-slate-600 shadow-sm">
-                    <p className="font-bold text-slate-900 dark:text-slate-100">דקדוק השפה הג'והורית</p>
+                  <div className="bg-white/5 backdrop-blur-sm/50 p-3 rounded-lg border border-slate-100 dark:border-slate-600 shadow-sm">
+                    <p className="font-bold text-slate-900 dark:text-amber-500">דקדוק השפה הג'והורית</p>
                     <p className="text-xs text-slate-500">פרידה יוסופובה • סמכות עליונה להטיות פעלים</p>
                   </div>
-                  <div className="bg-white dark:bg-slate-700/50 p-3 rounded-lg border border-slate-100 dark:border-slate-600 shadow-sm">
-                    <p className="font-bold text-slate-900 dark:text-slate-100">חקר יהדות קווקז</p>
+                  <div className="bg-white/5 backdrop-blur-sm/50 p-3 rounded-lg border border-slate-100 dark:border-slate-600 shadow-sm">
+                    <p className="font-bold text-slate-900 dark:text-amber-500">חקר יהדות קווקז</p>
                     <p className="text-xs text-slate-500">גרשון בן-אורן • הקשר תרבותי ודתי</p>
                   </div>
                 </div>
@@ -215,8 +215,8 @@ const AboutModal: React.FC<AboutModalProps> = ({ isOpen, onClose }) => {
                   <History size={16} className="text-rose-600" />
                   מחקר היסטורי (ארכאי)
                 </h4>
-                <div className="bg-white dark:bg-slate-700/50 p-3 rounded-lg border border-slate-100 dark:border-slate-600 shadow-sm">
-                  <p className="font-bold text-slate-900 dark:text-slate-100">חומרים לחקר השפה היהודית-טאטית (1892)</p>
+                <div className="bg-white/5 backdrop-blur-sm/50 p-3 rounded-lg border border-slate-100 dark:border-slate-600 shadow-sm">
+                  <p className="font-bold text-slate-900 dark:text-amber-500">חומרים לחקר השפה היהודית-טאטית (1892)</p>
                   <p className="text-xs text-slate-500">וילהלם מילר (Vs. Miller) • תיעוד היסטורי מוקדם</p>
                 </div>
               </div>

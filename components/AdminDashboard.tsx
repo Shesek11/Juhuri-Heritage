@@ -23,7 +23,7 @@ const SectionInfoBar: React.FC<{ sectionId: string }> = ({ sectionId }) => {
     const desc = SECTION_DESCRIPTIONS[sectionId];
     if (!desc) return null;
     return (
-        <div className="flex items-center gap-2 px-3 py-2 bg-indigo-50 dark:bg-indigo-900/20 rounded-lg text-xs text-indigo-700 dark:text-indigo-300 mb-4">
+        <div className="flex items-center gap-2 px-3 py-2 bg-indigo-900/40 border border-indigo-500/20 rounded-lg text-xs text-indigo-300 mb-4">
             <Info size={14} className="shrink-0" />
             <span>{desc}</span>
         </div>
@@ -681,9 +681,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
     const filteredActive = entries;
 
     return (
-        <div className="fixed inset-0 z-50 bg-white/5 overflow-hidden font-rubik flex flex-col">
+        <div className="fixed inset-0 z-50 bg-[#050B14] overflow-hidden font-rubik flex flex-col">
             {/* Header */}
-            <header className="bg-slate-900 text-white p-4 shadow-md shrink-0">
+            <header className="bg-[#0d1424]/80 backdrop-blur-xl border-b border-white/10 text-white p-4 shadow-md shrink-0">
                 <div className="max-w-7xl mx-auto flex justify-between items-center">
                     <div className="flex items-center gap-3">
                         <Database className="text-amber-400" />
@@ -713,7 +713,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                         onClick={() => toggleMenu(menu.id)}
                                         className={`w-full flex items-center justify-between p-3 rounded-lg transition-colors ${
                                             hasActiveChild || isExpanded
-                                                ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400'
+                                                ? 'bg-amber-900/30 text-amber-400'
                                                 : 'text-slate-300 hover:bg-white/10'
                                         }`}
                                     >
@@ -769,7 +769,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                         {/* Dictionary: Active Table */}
                         {activeSection === 'dict_active' && (
                             <div className="flex-1 flex flex-col">
-                                <h2 className="text-2xl font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
+                                <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-2">
                                     <Database size={24} className="text-amber-500" />
                                     מאגר מילון פעיל
                                 </h2>
@@ -826,7 +826,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                                         const isEditing = editingEntryId === entryId;
 
                                                         return (
-                                                            <tr key={idx} className={`text-slate-200 ${isEditing ? 'bg-amber-50 dark:bg-amber-900/20' : 'hover:bg-white/5'}`}>
+                                                            <tr key={idx} className={`text-slate-200 ${isEditing ? 'bg-amber-900/30' : 'hover:bg-white/5'}`}>
                                                                 <td className="p-4">
                                                                     <span className={`text-[10px] px-2 py-0.5 rounded-full border ${entry.source === 'AI' ? 'bg-purple-50 text-purple-600 border-purple-200' : entry.source === 'User' ? 'bg-blue-50 text-blue-600 border-blue-200' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>{entry.source || 'Manual'}</span>
                                                                 </td>
@@ -843,7 +843,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                                                             ))}
                                                                         </select>
                                                                     ) : (
-                                                                        <span className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 px-2 py-1 rounded text-xs">{entry.translations[0]?.dialect || 'General'}</span>
+                                                                        <span className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-300 px-2 py-1 rounded text-xs">{entry.translations[0]?.dialect || 'General'}</span>
                                                                     )}
                                                                 </td>
                                                                 <td className="p-4">
@@ -1002,7 +1002,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                         {/* Dictionary: Pending Approvals */}
                         {activeSection === 'dict_pending' && (
                             <div className="flex-1 flex flex-col space-y-6">
-                                <h2 className="text-2xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                                <h2 className="text-2xl font-bold text-white flex items-center gap-2">
                                     <CheckCircle size={24} className="text-indigo-500" />
                                     אישורים ממתינים
                                 </h2>
@@ -1028,7 +1028,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                                     <tr key={idx} className="hover:bg-white/5 text-slate-200">
                                                         <td className="p-4 font-bold text-lg">{entry.term}</td>
                                                         <td className="p-4">{entry.translations[0]?.hebrew}</td>
-                                                        <td className="p-4"><span className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 px-2 py-1 rounded text-xs">{entry.translations[0]?.dialect || 'General'}</span></td>
+                                                        <td className="p-4"><span className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-300 px-2 py-1 rounded text-xs">{entry.translations[0]?.dialect || 'General'}</span></td>
                                                         <td className="p-4 text-xs text-slate-500">{entry.contributorId ? 'משתמש רשום' : 'אורח'}</td>
                                                         <td className="p-4">
                                                             <div className="flex gap-2">
@@ -1170,7 +1170,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                         {activeSection === 'dict_ai' && (
                             <div className="flex-1 flex flex-col space-y-4">
                                 <div className="flex items-center justify-between">
-                                    <h2 className="text-2xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                                    <h2 className="text-2xl font-bold text-white flex items-center gap-2">
                                         <Bot size={24} className="text-amber-500" />
                                         אישור שדות AI ({aiFieldsTotal})
                                     </h2>
@@ -1285,7 +1285,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                         {/* Dictionary: Dialects Management */}
                         {activeSection === 'dict_dialects' && isAdmin && (
                             <div className="flex-1 flex flex-col max-w-4xl">
-                                <h2 className="text-2xl font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
+                                <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-2">
                                     <MapPin size={24} className="text-rose-500" />
                                     ניהול ניבים
                                 </h2>
@@ -1348,7 +1348,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                         {/* General: Users Management */}
                         {activeSection === 'gen_users' && isAdmin && (
                             <div className="flex-1 flex flex-col">
-                                <h2 className="text-2xl font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
+                                <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-2">
                                     <UsersIcon size={24} className="text-cyan-500" />
                                     ניהול משתמשים
                                 </h2>
@@ -1425,7 +1425,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                         {/* General: System Logs */}
                         {activeSection === 'gen_logs' && isAdmin && (
                             <div className="flex-1 flex flex-col">
-                                <h2 className="text-2xl font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
+                                <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-2">
                                     <Activity size={24} className="text-slate-600" />
                                     יומן אירועים
                                 </h2>
@@ -1474,7 +1474,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                         {/* General: Feature Flags */}
                         {activeSection === 'seo_management' && isAdmin && (
                             <div className="flex-1 flex flex-col w-full">
-                                <h2 className="text-2xl font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
+                                <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-2">
                                     <Globe size={24} className="text-green-500" />
                                     ניהול SEO
                                 </h2>
@@ -1485,7 +1485,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
 
                         {activeSection === 'gen_features' && isAdmin && (
                             <div className="flex-1 flex flex-col max-w-4xl">
-                                <h2 className="text-2xl font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
+                                <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-2">
                                     <ToggleLeft size={24} className="text-purple-500" />
                                     ניהול פיצ'רים
                                 </h2>
@@ -1499,7 +1499,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                         {/* General: API Settings */}
                         {activeSection === 'gen_settings' && isAdmin && (
                             <div className="flex-1 flex flex-col max-w-4xl">
-                                <h2 className="text-2xl font-bold text-slate-800 dark:text-white mb-4 flex items-center gap-2">
+                                <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-2">
                                     <KeyRound size={24} className="text-purple-500" />
                                     מפתחות API
                                 </h2>

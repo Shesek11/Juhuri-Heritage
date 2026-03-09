@@ -310,8 +310,8 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
     return (
         <div className="fixed inset-0 z-[100] bg-black/50 flex items-center justify-center p-4 backdrop-blur-sm" onClick={onClose}>
             <div className="bg-[#0d1424]/60 backdrop-blur-xl w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden" dir="rtl" onClick={e => e.stopPropagation()}>
-                <div className="p-4 border-b border-white/10 flex justify-between items-center bg-amber-50 dark:bg-amber-900/20">
-                    <h2 className="text-xl font-bold text-slate-100 flex items-center gap-2">
+                <div className="p-4 border-b border-white/10 flex justify-between items-center bg-gradient-to-r from-amber-500/10 to-orange-500/5">
+                    <h2 className="text-xl font-bold text-amber-500 flex items-center gap-2">
                         {isEditing ? <Pencil className="text-amber-600" size={20} /> : <UserPlus className="text-amber-600" size={20} />}
                         {isEditing ? 'עריכת בן משפחה' : 'הוספת בן משפחה'}
                     </h2>
@@ -337,7 +337,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                         <div className="space-y-4">
                             {/* Profile Photo */}
                             <div className="flex items-center gap-4">
-                                <div className="w-24 h-24 rounded-full bg-white/10 overflow-hidden flex items-center justify-center border border-slate-200 dark:border-slate-600 relative group">
+                                <div className="w-24 h-24 rounded-full bg-white/10 overflow-hidden flex items-center justify-center border border-white/10 relative group">
                                     {formData.photo_url ? (
                                         <img src={formData.photo_url} alt="Preview" className="w-full h-full object-cover" />
                                     ) : (
@@ -427,7 +427,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                                                 required
                                                 value={formData.first_name}
                                                 onChange={e => setFormData({ ...formData, first_name: e.target.value })}
-                                                className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
+                                                className="w-full p-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white"
                                             />
                                         </div>
                                         <div>
@@ -436,14 +436,14 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                                                 required
                                                 value={formData.last_name}
                                                 onChange={e => setFormData({ ...formData, last_name: e.target.value })}
-                                                className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
+                                                className="w-full p-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white"
                                             />
                                         </div>
                                     </div>
 
                                     {/* Duplicate Detection Warning */}
                                     {showDuplicateWarning && duplicates.length > 0 && (
-                                        <div className="bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-400 rounded-lg p-4 space-y-3">
+                                        <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/5 border-2 border-amber-400 rounded-lg p-4 space-y-3">
                                             <div className="flex items-start gap-3">
                                                 <AlertTriangle className="text-amber-600 flex-shrink-0 mt-0.5" size={20} />
                                                 <div className="flex-1">
@@ -460,7 +460,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                                                                     {dup.photo_url ? (
                                                                         <img src={dup.photo_url} alt="" className="w-10 h-10 rounded-full object-cover" />
                                                                     ) : (
-                                                                        <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center">
+                                                                        <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
                                                                             <User size={20} className="text-slate-400" />
                                                                         </div>
                                                                     )}
@@ -503,7 +503,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                                                 value={formData.maiden_name}
                                                 onChange={e => setFormData({ ...formData, maiden_name: e.target.value })}
                                                 placeholder="שם משפחה לפני נישואין"
-                                                className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
+                                                className="w-full p-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white"
                                             />
                                         </div>
                                         <div>
@@ -512,7 +512,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                                                 value={formData.nickname}
                                                 onChange={e => setFormData({ ...formData, nickname: e.target.value })}
                                                 placeholder="כינוי משפחתי"
-                                                className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
+                                                className="w-full p-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white"
                                             />
                                         </div>
                                     </div>
@@ -524,7 +524,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                                             value={formData.previous_name}
                                             onChange={e => setFormData({ ...formData, previous_name: e.target.value })}
                                             placeholder="במקרה של שינוי שם"
-                                            className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
+                                            className="w-full p-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white"
                                         />
                                     </div>
 
@@ -535,7 +535,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                                             value={formData.title}
                                             onChange={e => setFormData({ ...formData, title: e.target.value })}
                                             placeholder="ד&quot;ר, רב, עו&quot;ד..."
-                                            className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
+                                            className="w-full p-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white"
                                         />
                                     </div>
 
@@ -546,7 +546,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                                             <select
                                                 value={formData.gender}
                                                 onChange={e => setFormData({ ...formData, gender: e.target.value as any })}
-                                                className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
+                                                className="w-full p-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white"
                                             >
                                                 <option value="male">זכר</option>
                                                 <option value="female">נקבה</option>
@@ -570,12 +570,12 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
                                             <label className="block text-sm font-medium mb-1">תאריך לידה</label>
-                                            <input type="date" value={formData.birth_date || ''} onChange={e => setFormData({ ...formData, birth_date: e.target.value })} className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600" />
+                                            <input type="date" value={formData.birth_date || ''} onChange={e => setFormData({ ...formData, birth_date: e.target.value })} className="w-full p-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white" />
                                         </div>
                                         {!formData.is_alive && (
                                             <div>
                                                 <label className="block text-sm font-medium mb-1">תאריך פטירה</label>
-                                                <input type="date" value={formData.death_date || ''} onChange={e => setFormData({ ...formData, death_date: e.target.value })} className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600" />
+                                                <input type="date" value={formData.death_date || ''} onChange={e => setFormData({ ...formData, death_date: e.target.value })} className="w-full p-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white" />
                                             </div>
                                         )}
                                     </div>
@@ -584,8 +584,8 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                                     <div>
                                         <label className="block text-sm font-medium mb-1">מקום לידה</label>
                                         <div className="grid grid-cols-2 gap-2">
-                                            <input value={formData.birth_city || ''} onChange={e => setFormData({ ...formData, birth_city: e.target.value })} placeholder="עיר" className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 text-sm" />
-                                            <input value={formData.birth_country || ''} onChange={e => setFormData({ ...formData, birth_country: e.target.value })} placeholder="מדינה" className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 text-sm" />
+                                            <input value={formData.birth_city || ''} onChange={e => setFormData({ ...formData, birth_city: e.target.value })} placeholder="עיר" className="w-full p-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white text-sm" />
+                                            <input value={formData.birth_country || ''} onChange={e => setFormData({ ...formData, birth_country: e.target.value })} placeholder="מדינה" className="w-full p-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white text-sm" />
                                         </div>
                                     </div>
 
@@ -594,8 +594,8 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                                         <div>
                                             <label className="block text-sm font-medium mb-1">מקום פטירה</label>
                                             <div className="grid grid-cols-2 gap-2">
-                                                <input value={formData.death_city || ''} onChange={e => setFormData({ ...formData, death_city: e.target.value })} placeholder="עיר" className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 text-sm" />
-                                                <input value={formData.death_country || ''} onChange={e => setFormData({ ...formData, death_country: e.target.value })} placeholder="מדינה" className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 text-sm" />
+                                                <input value={formData.death_city || ''} onChange={e => setFormData({ ...formData, death_city: e.target.value })} placeholder="עיר" className="w-full p-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white text-sm" />
+                                                <input value={formData.death_country || ''} onChange={e => setFormData({ ...formData, death_country: e.target.value })} placeholder="מדינה" className="w-full p-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white text-sm" />
                                             </div>
                                         </div>
                                     )}
@@ -605,8 +605,8 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                                         <div>
                                             <label className="block text-sm font-medium mb-1">מקום מגורים</label>
                                             <div className="grid grid-cols-2 gap-2">
-                                                <input value={formData.residence_city || ''} onChange={e => setFormData({ ...formData, residence_city: e.target.value })} placeholder="עיר" className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 text-sm" />
-                                                <input value={formData.residence_country || ''} onChange={e => setFormData({ ...formData, residence_country: e.target.value })} placeholder="מדינה" className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 text-sm" />
+                                                <input value={formData.residence_city || ''} onChange={e => setFormData({ ...formData, residence_city: e.target.value })} placeholder="עיר" className="w-full p-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white text-sm" />
+                                                <input value={formData.residence_country || ''} onChange={e => setFormData({ ...formData, residence_country: e.target.value })} placeholder="מדינה" className="w-full p-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white text-sm" />
                                             </div>
                                         </div>
                                     )}
@@ -614,7 +614,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                                     {/* Biography */}
                                     <div>
                                         <label className="block text-sm font-medium mb-1">ביוגרפיה קצרה</label>
-                                        <textarea value={formData.biography} onChange={e => setFormData({ ...formData, biography: e.target.value })} className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 h-20" placeholder="סיפור חיים קצר..." />
+                                        <textarea value={formData.biography} onChange={e => setFormData({ ...formData, biography: e.target.value })} className="w-full p-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white h-20" placeholder="סיפור חיים קצר..." />
                                     </div>
                                 </div>
                             ) : (
@@ -628,7 +628,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                                                 value={formData.first_name_ru || ''}
                                                 onChange={e => setFormData({ ...formData, first_name_ru: e.target.value })}
                                                 placeholder="Имя"
-                                                className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
+                                                className="w-full p-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white"
                                             />
                                         </div>
                                         <div>
@@ -637,7 +637,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                                                 value={formData.last_name_ru || ''}
                                                 onChange={e => setFormData({ ...formData, last_name_ru: e.target.value })}
                                                 placeholder="Фамилия"
-                                                className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
+                                                className="w-full p-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white"
                                             />
                                         </div>
                                     </div>
@@ -650,7 +650,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                                                 value={formData.maiden_name_ru || ''}
                                                 onChange={e => setFormData({ ...formData, maiden_name_ru: e.target.value })}
                                                 placeholder="Фамилия до брака"
-                                                className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
+                                                className="w-full p-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white"
                                             />
                                         </div>
                                         <div>
@@ -659,7 +659,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                                                 value={formData.nickname}
                                                 onChange={e => setFormData({ ...formData, nickname: e.target.value })}
                                                 placeholder="Семейное прозвище"
-                                                className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
+                                                className="w-full p-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white"
                                             />
                                         </div>
                                     </div>
@@ -671,7 +671,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                                             value={formData.previous_name}
                                             onChange={e => setFormData({ ...formData, previous_name: e.target.value })}
                                             placeholder="В случае смены имени"
-                                            className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
+                                            className="w-full p-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white"
                                         />
                                     </div>
 
@@ -682,7 +682,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                                             value={formData.title}
                                             onChange={e => setFormData({ ...formData, title: e.target.value })}
                                             placeholder="Д-р, Раввин, Адв..."
-                                            className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
+                                            className="w-full p-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white"
                                         />
                                     </div>
 
@@ -693,7 +693,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                                             <select
                                                 value={formData.gender}
                                                 onChange={e => setFormData({ ...formData, gender: e.target.value as any })}
-                                                className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600"
+                                                className="w-full p-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white"
                                             >
                                                 <option value="male">Мужской</option>
                                                 <option value="female">Женский</option>
@@ -717,12 +717,12 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                                     <div className="grid grid-cols-2 gap-4">
                                         <div>
                                             <label className="block text-sm font-medium mb-1">Дата рождения</label>
-                                            <input type="date" value={formData.birth_date || ''} onChange={e => setFormData({ ...formData, birth_date: e.target.value })} className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600" />
+                                            <input type="date" value={formData.birth_date || ''} onChange={e => setFormData({ ...formData, birth_date: e.target.value })} className="w-full p-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white" />
                                         </div>
                                         {!formData.is_alive && (
                                             <div>
                                                 <label className="block text-sm font-medium mb-1">Дата смерти</label>
-                                                <input type="date" value={formData.death_date || ''} onChange={e => setFormData({ ...formData, death_date: e.target.value })} className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600" />
+                                                <input type="date" value={formData.death_date || ''} onChange={e => setFormData({ ...formData, death_date: e.target.value })} className="w-full p-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white" />
                                             </div>
                                         )}
                                     </div>
@@ -731,8 +731,8 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                                     <div>
                                         <label className="block text-sm font-medium mb-1">Место рождения</label>
                                         <div className="grid grid-cols-2 gap-2">
-                                            <input value={formData.birth_city_ru || ''} onChange={e => setFormData({ ...formData, birth_city_ru: e.target.value })} placeholder="Город" className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 text-sm" />
-                                            <input value={formData.birth_country_ru || ''} onChange={e => setFormData({ ...formData, birth_country_ru: e.target.value })} placeholder="Страна" className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 text-sm" />
+                                            <input value={formData.birth_city_ru || ''} onChange={e => setFormData({ ...formData, birth_city_ru: e.target.value })} placeholder="Город" className="w-full p-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white text-sm" />
+                                            <input value={formData.birth_country_ru || ''} onChange={e => setFormData({ ...formData, birth_country_ru: e.target.value })} placeholder="Страна" className="w-full p-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white text-sm" />
                                         </div>
                                     </div>
 
@@ -741,8 +741,8 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                                         <div>
                                             <label className="block text-sm font-medium mb-1">Место смерти</label>
                                             <div className="grid grid-cols-2 gap-2">
-                                                <input value={formData.death_city_ru || ''} onChange={e => setFormData({ ...formData, death_city_ru: e.target.value })} placeholder="Город" className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 text-sm" />
-                                                <input value={formData.death_country_ru || ''} onChange={e => setFormData({ ...formData, death_country_ru: e.target.value })} placeholder="Страна" className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 text-sm" />
+                                                <input value={formData.death_city_ru || ''} onChange={e => setFormData({ ...formData, death_city_ru: e.target.value })} placeholder="Город" className="w-full p-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white text-sm" />
+                                                <input value={formData.death_country_ru || ''} onChange={e => setFormData({ ...formData, death_country_ru: e.target.value })} placeholder="Страна" className="w-full p-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white text-sm" />
                                             </div>
                                         </div>
                                     )}
@@ -752,8 +752,8 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                                         <div>
                                             <label className="block text-sm font-medium mb-1">Место проживания</label>
                                             <div className="grid grid-cols-2 gap-2">
-                                                <input value={formData.residence_city_ru || ''} onChange={e => setFormData({ ...formData, residence_city_ru: e.target.value })} placeholder="Город" className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 text-sm" />
-                                                <input value={formData.residence_country_ru || ''} onChange={e => setFormData({ ...formData, residence_country_ru: e.target.value })} placeholder="Страна" className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 text-sm" />
+                                                <input value={formData.residence_city_ru || ''} onChange={e => setFormData({ ...formData, residence_city_ru: e.target.value })} placeholder="Город" className="w-full p-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white text-sm" />
+                                                <input value={formData.residence_country_ru || ''} onChange={e => setFormData({ ...formData, residence_country_ru: e.target.value })} placeholder="Страна" className="w-full p-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white text-sm" />
                                             </div>
                                         </div>
                                     )}
@@ -761,7 +761,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                                     {/* Biography */}
                                     <div>
                                         <label className="block text-sm font-medium mb-1">Краткая биография</label>
-                                        <textarea value={formData.biography} onChange={e => setFormData({ ...formData, biography: e.target.value })} className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 h-20" placeholder="Краткая история жизни..." />
+                                        <textarea value={formData.biography} onChange={e => setFormData({ ...formData, biography: e.target.value })} className="w-full p-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white h-20" placeholder="Краткая история жизни..." />
                                     </div>
                                 </div>
                             )}
@@ -794,7 +794,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                                 <button onClick={() => setConnectMode('parent')} className="text-xs text-indigo-600 hover:underline">+ חבר הורה קיים</button>
                             </div>
                             {parents.map(p => (
-                                <div key={p.id} className="flex justify-between items-center bg-slate-50 dark:bg-slate-800 p-2 rounded border dark:border-slate-700">
+                                <div key={p.id} className="flex justify-between items-center bg-white/5 backdrop-blur-sm p-2 rounded border border-white/10">
                                     <span>{p.parent?.first_name || p.first_name} {p.parent?.last_name || p.last_name}</span>
                                     <button onClick={() => handleRemoveRelationship('parent', p.id)} className="text-red-500 hover:bg-red-50 p-1 rounded"><X size={14} /></button>
                                 </div>
@@ -811,7 +811,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                                 <button onClick={() => setConnectMode('spouse')} className="text-xs text-amber-600 hover:underline">+ חבר בן/ת זוג</button>
                             </div>
                             {partnerships.map(p => (
-                                <div key={p.id} className="bg-slate-50 dark:bg-slate-800 p-3 rounded border dark:border-slate-700">
+                                <div key={p.id} className="bg-white/5 backdrop-blur-sm p-3 rounded border border-white/10">
                                     {editingPartnership?.id === p.id ? (
                                         <div className="space-y-2">
                                             <div className="flex justify-between items-center mb-2">
@@ -890,7 +890,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                                 <button onClick={() => setConnectMode('child')} className="text-xs text-green-600 hover:underline">+ חבר ילד קיים</button>
                             </div>
                             {children.map(c => (
-                                <div key={c.id} className="flex justify-between items-center bg-slate-50 dark:bg-slate-800 p-2 rounded border dark:border-slate-700">
+                                <div key={c.id} className="flex justify-between items-center bg-white/5 backdrop-blur-sm p-2 rounded border border-white/10">
                                     <span>{c.child?.first_name || c.first_name} {c.child?.last_name || c.last_name}</span>
                                     <button onClick={() => handleRemoveRelationship('child', c.id)} className="text-red-500 hover:bg-red-50 p-1 rounded"><X size={14} /></button>
                                 </div>

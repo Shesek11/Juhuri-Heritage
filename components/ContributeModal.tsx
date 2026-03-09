@@ -286,7 +286,7 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
               required
               value={term}
               onChange={(e) => setTerm(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-[#0d1424]/60 backdrop-blur-xl text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
+              className="w-full px-4 py-2.5 rounded-lg border border-white/10 bg-[#0d1424]/60 backdrop-blur-xl text-slate-900 dark:text-amber-500 focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
               placeholder="למשל: מזל טוב"
             />
           </div>
@@ -300,7 +300,7 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
           )}
 
           {duplicateMode === 'found' && existingEntry && (
-            <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl space-y-3 animate-in fade-in slide-in-from-top-2">
+            <div className="p-4 bg-gradient-to-r from-amber-500/10 to-orange-500/5 border border-amber-200 dark:border-amber-800 rounded-xl space-y-3 animate-in fade-in slide-in-from-top-2">
               <div className="flex items-start gap-2">
                 <AlertCircle size={18} className="text-amber-600 shrink-0 mt-0.5" />
                 <div>
@@ -311,7 +311,7 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
 
               {/* Existing entry preview */}
               <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-lg p-3 border border-white/10 text-sm">
-                <div className="font-bold text-lg text-slate-100">{existingEntry.term}</div>
+                <div className="font-bold text-lg text-amber-500">{existingEntry.term}</div>
                 {existingEntry.translations?.[0]?.hebrew && (
                   <div className="text-slate-600 dark:text-slate-300">{existingEntry.translations[0].hebrew}</div>
                 )}
@@ -354,7 +354,7 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
                 <select
                   value={fieldSuggestion.fieldName}
                   onChange={e => setFieldSuggestion(prev => ({ ...prev, fieldName: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-[#0d1424]/60 backdrop-blur-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                  className="w-full px-3 py-2 rounded-lg border border-white/10 bg-[#0d1424]/60 backdrop-blur-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
                   title="בחר שדה לתיקון"
                 >
                   <option value="">בחר שדה...</option>
@@ -371,7 +371,7 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
                 value={fieldSuggestion.value}
                 onChange={e => setFieldSuggestion(prev => ({ ...prev, value: e.target.value }))}
                 placeholder="הערך המוצע..."
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-[#0d1424]/60 backdrop-blur-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                className="w-full px-3 py-2 rounded-lg border border-white/10 bg-[#0d1424]/60 backdrop-blur-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
                 dir="auto"
               />
               <input
@@ -379,7 +379,7 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
                 value={fieldSuggestion.reason}
                 onChange={e => setFieldSuggestion(prev => ({ ...prev, reason: e.target.value }))}
                 placeholder="סיבה / מקור (אופציונלי)"
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-[#0d1424]/60 backdrop-blur-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
+                className="w-full px-3 py-2 rounded-lg border border-white/10 bg-[#0d1424]/60 backdrop-blur-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
                 dir="auto"
               />
               <div className="flex gap-2">
@@ -414,7 +414,7 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
               required
               value={hebrew}
               onChange={(e) => setHebrew(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-[#0d1424]/60 backdrop-blur-xl text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
+              className="w-full px-4 py-2.5 rounded-lg border border-white/10 bg-[#0d1424]/60 backdrop-blur-xl text-slate-900 dark:text-amber-500 focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
               placeholder="מה זה אומר?"
             />
           </div>
@@ -429,7 +429,7 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
                 type="text"
                 value={latin}
                 onChange={(e) => setLatin(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-[#0d1424]/60 backdrop-blur-xl text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none text-sm"
+                className="w-full px-3 py-2 rounded-lg border border-white/10 bg-[#0d1424]/60 backdrop-blur-xl text-slate-900 dark:text-amber-500 focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none text-sm"
                 placeholder="Mazal tov"
                 dir="ltr"
               />
@@ -442,7 +442,7 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
                 type="text"
                 value={cyrillic}
                 onChange={(e) => setCyrillic(e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-600 bg-[#0d1424]/60 backdrop-blur-xl text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none text-sm"
+                className="w-full px-3 py-2 rounded-lg border border-white/10 bg-[#0d1424]/60 backdrop-blur-xl text-slate-900 dark:text-amber-500 focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none text-sm"
                 placeholder="Мазал тов"
                 dir="ltr"
               />
@@ -455,7 +455,7 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
             <select
               value={dialect}
               onChange={(e) => setDialect(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-[#0d1424]/60 backdrop-blur-xl text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
+              className="w-full px-4 py-2.5 rounded-lg border border-white/10 bg-[#0d1424]/60 backdrop-blur-xl text-slate-900 dark:text-amber-500 focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
             >
               <option value="">כללי / לא ידוע</option>
               {dialects.map(d => (
@@ -465,7 +465,7 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
           </div>
 
           {/* Audio Recording Section */}
-          <div className="bg-white/5 p-4 rounded-xl border border-slate-200 dark:border-slate-600">
+          <div className="bg-white/5 p-4 rounded-xl border border-white/10">
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
               🎙️ הקלטת הגייה (אופציונלי)
             </label>
@@ -499,7 +499,7 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
                 )}
               </div>
             ) : (
-              <div className="flex items-center justify-between bg-[#0d1424]/60 backdrop-blur-xl p-3 rounded-lg border border-slate-200 dark:border-slate-600">
+              <div className="flex items-center justify-between bg-[#0d1424]/60 backdrop-blur-xl p-3 rounded-lg border border-white/10">
                 <div className="flex items-center gap-3">
                   <button
                     type="button"
@@ -532,7 +532,7 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
 
           {/* User notice */}
           {!user && (
-            <p className="text-xs text-amber-600 bg-amber-50 dark:bg-amber-900/20 p-2.5 rounded-lg border border-amber-200 dark:border-amber-800">
+            <p className="text-xs text-amber-600 bg-gradient-to-r from-amber-500/10 to-orange-500/5 p-2.5 rounded-lg border border-amber-200 dark:border-amber-800">
               💡 אתה תורם כאורח. התחבר כדי לקבל קרדיט ולעקוב אחרי התרומות שלך.
             </p>
           )}

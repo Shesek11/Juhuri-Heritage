@@ -26,6 +26,7 @@ const ProfileModal = lazy(() => import('./components/ProfileModal'));
 const TranslationModal = lazy(() => import('./components/TranslationModal'));
 const WordListModal = lazy(() => import('./components/WordListModal'));
 import AuthModal from './components/AuthModal';
+import Footer from './components/Footer';
 
 const LazyFallback = () => (
   <div className="flex items-center justify-center p-12">
@@ -47,8 +48,8 @@ const NavTab: React.FC<NavTabProps> = ({ to, icon, label, comingSoon }) => (
   <NavLink
     to={to}
     className={({ isActive }) =>
-      `flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap ${isActive
-        ? 'bg-white/10 text-white shadow-sm'
+      `flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-all whitespace-nowrap ${isActive
+        ? 'bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-400 border border-amber-500/30 shadow-inner'
         : 'text-slate-400 hover:text-white hover:bg-white/5'
       }`
     }
@@ -138,6 +139,16 @@ function App() {
   const [isAboutOpen, setIsAboutOpen] = useState(false);
   const [isAdminOpen, setIsAdminOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
+
+  // Scroll Detection Effect
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 20);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   // Dynamic Dialects
   const [dialects, setDialects] = useState<DialectItem[]>([]);
@@ -230,12 +241,12 @@ function App() {
       <SEOHead jsonLd={[WEBSITE_JSONLD, ORGANIZATION_JSONLD]} />
 
       {/* Header / Nav */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-[#050B14]/80 backdrop-blur-2xl border-b border-white/10">
-        <div className="max-w-7xl mx-auto px-4 h-14 flex items-center justify-between">
+      <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? 'bg-[#050B14]/90 backdrop-blur-2xl border-b border-white/10 py-1 shadow-lg' : 'bg-transparent py-4'}`}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
 
           {/* Right: Logo */}
-          <NavLink to="/" className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-gradient-to-br from-amber-400 to-orange-600 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/20">
+          <NavLink to="/" className={`flex items-center gap-3 transition-all duration-300 ${!isScrolled && 'bg-[#0d1424]/60 backdrop-blur-md rounded-full pr-1 pl-4 py-1 border border-white/5'}`}>
+            <div className="w-9 h-9 bg-gradient-to-br from-amber-400 to-orange-600 rounded-full flex items-center justify-center shadow-lg shadow-amber-500/20">
               <Scroll size={18} className="text-white" />
             </div>
             <span className="text-lg font-bold text-white hidden sm:block">מורשת ג'והורי</span>
@@ -243,7 +254,7 @@ function App() {
 
           {/* Center: Navigation Tabs (Desktop) */}
           <nav className="hidden md:flex items-center">
-            <div className="flex bg-[#0d1424]/60 border border-white/5 p-1 rounded-xl gap-0.5 backdrop-blur-md">
+            <div className={`flex items-center p-1 rounded-full gap-1 transition-all duration-300 ${!isScrolled ? 'bg-[#0d1424]/60 backdrop-blur-md border border-white/5 shadow-lg' : 'bg-white/5 backdrop-blur-sm'}`}>
               <NavTab
                 to="/"
                 icon={<BookOpen size={16} />}
@@ -287,7 +298,7 @@ function App() {
           </nav>
 
           {/* Left: Actions */}
-          <div className="flex items-center gap-2">
+          <div className={`flex items-center gap-2 transition-all duration-300 ${!isScrolled ? 'bg-[#0d1424]/60 backdrop-blur-md rounded-full px-2 py-1 border border-white/5 shadow-lg' : ''}`}>
             {/* XP Display (Desktop) */}
             <div className="hidden sm:block">
               <XPDisplay />
@@ -561,8 +572,10 @@ function App() {
           {/* Catch-all redirect to home */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
-
       </main>
+
+      {/* Footer */}
+      <Footer />
 
       {/* Modals */}
       <Suspense fallback={null}>

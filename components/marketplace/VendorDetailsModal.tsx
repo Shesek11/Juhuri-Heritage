@@ -131,7 +131,7 @@ export const VendorDetailsModal: React.FC<VendorDetailsModalProps> = ({ vendor: 
                                 className="w-full h-full object-cover"
                             />
                         ) : (
-                            <div className="w-full h-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-4xl">
+                            <div className="w-full h-full bg-white/10 flex items-center justify-center text-4xl">
                                 🏪
                             </div>
                         )}
@@ -144,7 +144,7 @@ export const VendorDetailsModal: React.FC<VendorDetailsModalProps> = ({ vendor: 
                     </div>
 
                     <div className="p-6 flex-1 overflow-y-auto">
-                        <h2 className="text-2xl font-bold text-slate-100 mb-2">{vendor.name}</h2>
+                        <h2 className="text-2xl font-bold text-amber-500 mb-2">{vendor.name}</h2>
 
                         <div className="flex items-center gap-2 mb-4 flex-wrap">
                             {(() => {
@@ -281,7 +281,7 @@ export const VendorDetailsModal: React.FC<VendorDetailsModalProps> = ({ vendor: 
                                             <div className="flex-1">
                                                 <div className="flex justify-between items-start mb-1">
                                                     <div>
-                                                        <h3 className="font-bold text-slate-100">{item.name}</h3>
+                                                        <h3 className="font-bold text-amber-500">{item.name}</h3>
                                                         {item.name_hebrew && item.name_hebrew !== item.name && (
                                                             <p className="text-xs text-slate-400">{item.name_hebrew}</p>
                                                         )}
@@ -351,7 +351,7 @@ export const VendorDetailsModal: React.FC<VendorDetailsModalProps> = ({ vendor: 
                                                 <textarea
                                                     value={newReview.comment}
                                                     onChange={e => setNewReview({ ...newReview, comment: e.target.value })}
-                                                    className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 focus:ring-2 focus:ring-orange-500 outline-none"
+                                                    className="w-full p-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white focus:ring-2 focus:ring-orange-500 outline-none"
                                                     rows={3}
                                                     placeholder="שתף את החוויה שלך..."
                                                 />
@@ -385,7 +385,7 @@ export const VendorDetailsModal: React.FC<VendorDetailsModalProps> = ({ vendor: 
                                                     />
                                                     <div className="flex-1">
                                                         <div className="flex items-center gap-2 mb-1">
-                                                            <span className="font-bold text-slate-100">{review.user_name}</span>
+                                                            <span className="font-bold text-amber-500">{review.user_name}</span>
                                                             {review.is_verified && (
                                                                 <span className="text-xs px-2 py-0.5 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded">
                                                                     מאומת

@@ -428,12 +428,12 @@ export const CommunityGraph: React.FC = () => {
             n.fy = null;
         });
 
-            const years = nodes.map(n => n.birthYear).filter(y => y) as number[];
-            const minYear = years.length > 0 ? Math.min(...years) : 1940;
-            const maxYear = years.length > 0 ? Math.max(...years) : 2025;
-            const yearSpan = Math.max(maxYear - minYear, 50);
-            const padding = 80;
-            const leftPadding = 60;
+        const years = nodes.map(n => n.birthYear).filter(y => y) as number[];
+        const minYear = years.length > 0 ? Math.min(...years) : 1940;
+        const maxYear = years.length > 0 ? Math.max(...years) : 2025;
+        const yearSpan = Math.max(maxYear - minYear, 50);
+        const padding = 80;
+        const leftPadding = 60;
 
         const yearToY = (year: number) => {
             const normalized = (year - minYear) / yearSpan;
@@ -724,7 +724,7 @@ export const CommunityGraph: React.FC = () => {
             .attr('stroke-linecap', 'round')
             .style('filter', 'drop-shadow(0px 0px 2px rgba(0,0,0,0.3))')
             .style('cursor', 'pointer')
-            .on('mouseenter', function(event, d: GraphEdge) {
+            .on('mouseenter', function (event, d: GraphEdge) {
                 // Highlight the edge
                 select(this)
                     .attr('stroke-opacity', 1)
@@ -818,7 +818,7 @@ export const CommunityGraph: React.FC = () => {
                     }
                 });
             })
-            .on('mouseleave', function(event, d: GraphEdge) {
+            .on('mouseleave', function (event, d: GraphEdge) {
                 // Clear all hover intervals
                 edgeHoverIntervalsRef.current.forEach(interval => clearInterval(interval));
                 edgeHoverIntervalsRef.current = [];
@@ -837,7 +837,7 @@ export const CommunityGraph: React.FC = () => {
                     .duration(200)
                     .attr('r', 25);
             })
-            .on('click', function(event, d: GraphEdge) {
+            .on('click', function (event, d: GraphEdge) {
                 event.stopPropagation();
 
                 // Get connected nodes
@@ -1495,7 +1495,7 @@ export const CommunityGraph: React.FC = () => {
     }
 
     return (
-        <div className="fixed inset-x-0 bottom-0 top-[130px] md:top-20 flex flex-col bg-slate-900 overflow-hidden z-20">
+        <div className="relative w-full h-[calc(100vh-80px)] flex flex-col bg-[#0d1424] overflow-hidden">
             <SEOHead
                 title="שורשים - רשת קהילתית"
                 description="חקרו את עץ המשפחה והרשת הקהילתית של יהודי ההרים. גלו קשרים משפחתיים ושורשים."

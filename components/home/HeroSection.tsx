@@ -88,14 +88,17 @@ const HeroSection: React.FC<HeroSectionProps> = ({ scrollY, searchTerm, setSearc
         </p>
 
         {/* Search Bar */}
-        <form onSubmit={handleSearch} className="w-full max-w-xl pt-2">
-          <div className="relative group mx-auto">
-            <div className="absolute -inset-1 bg-gradient-to-r from-amber-500/50 to-yellow-600/50 rounded-[2rem] blur-md opacity-40 group-hover:opacity-70 transition duration-500"></div>
-            <div className="relative flex items-center bg-[#050B14]/70 border border-white/10 hover:border-amber-500/40 rounded-[2rem] p-2 pl-4 pr-2 transition-all duration-300 shadow-2xl backdrop-blur-2xl">
+        <form onSubmit={handleSearch} className="w-full max-w-xl pt-4 relative group">
+          <div className="mx-auto transform transition-all duration-500 hover:-translate-y-2">
+            {/* Massive Ambient Glow */}
+            <div className="absolute -inset-2 bg-gradient-to-r from-amber-500/40 via-orange-500/30 to-amber-500/40 rounded-full blur-2xl opacity-60 group-hover:opacity-100 transition duration-700"></div>
+
+            {/* Search Container */}
+            <div className="relative flex items-center bg-[#0d1424]/90 border border-amber-500/30 hover:border-amber-400 rounded-full p-2 pl-6 pr-2 transition-all duration-500 shadow-[0_20px_50px_-12px_rgba(245,158,11,0.4)] backdrop-blur-3xl">
               <input
                 type="text"
-                placeholder="חפשו במילון המורשת..."
-                className="w-full bg-transparent text-white placeholder-slate-400 border-none outline-none text-lg sm:text-xl px-4 h-12"
+                placeholder="חפשו שם, מאכל או פתגם בקווקזית..."
+                className="w-full bg-transparent text-white placeholder-slate-400 font-medium border-none outline-none text-lg sm:text-xl px-2 h-14"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -103,9 +106,9 @@ const HeroSection: React.FC<HeroSectionProps> = ({ scrollY, searchTerm, setSearc
                 type="submit"
                 aria-label="חיפוש במילון"
                 title="חיפוש במילון"
-                className="flex items-center justify-center min-w-[3.5rem] w-14 h-14 bg-gradient-to-br from-amber-400 to-yellow-600 text-[#050B14] rounded-3xl hover:scale-105 transition-transform duration-300 shadow-lg"
+                className="flex items-center justify-center min-w-[4rem] w-16 h-16 bg-gradient-to-br from-amber-400 via-amber-500 to-orange-600 text-[#050B14] rounded-full hover:scale-105 hover:shadow-[0_0_20px_rgba(245,158,11,0.6)] transition-all duration-300"
               >
-                <Search size={24} className="stroke-[2.5]" />
+                <Search size={26} className="stroke-[2.5]" />
               </button>
             </div>
           </div>
