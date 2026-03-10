@@ -36,6 +36,7 @@ const xpForLevel = (level) => Math.pow(level, 2) * 100;
 router.post('/award-xp', authenticate, async (req, res) => {
     try {
         const { action, amount } = req.body;
+        // userId comes from authenticated token, not request body
         const userId = req.user.id;
 
         if (!action) {
@@ -91,6 +92,7 @@ router.post('/award-xp', authenticate, async (req, res) => {
  */
 router.post('/check-login-streak', authenticate, async (req, res) => {
     try {
+        // userId comes from authenticated token
         const userId = req.user.id;
 
         const [users] = await db.query(

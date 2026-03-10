@@ -33,8 +33,8 @@ const XPDisplay: React.FC = () => {
         const fetchData = async () => {
             try {
                 const [statsRes, badgesRes] = await Promise.all([
-                    apiService.get<GamificationStats>(`/gamification/stats/${user.sub}`),
-                    apiService.get<{ badges: Badge[] }>(`/gamification/badges/${user.sub}`)
+                    apiService.get<GamificationStats>(`/gamification/stats/${user.id}`),
+                    apiService.get<{ badges: Badge[] }>(`/gamification/badges/${user.id}`)
                 ]);
                 setStats(statsRes);
                 setBadges(badgesRes.badges || []);

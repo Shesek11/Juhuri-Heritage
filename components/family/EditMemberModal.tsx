@@ -309,26 +309,26 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
 
     return (
         <div className="fixed inset-0 z-[100] bg-black/50 flex items-center justify-center p-4 backdrop-blur-sm" onClick={onClose}>
-            <div className="bg-[#0d1424]/60 backdrop-blur-xl w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden" dir="rtl" onClick={e => e.stopPropagation()}>
-                <div className="p-4 border-b border-white/10 flex justify-between items-center bg-gradient-to-r from-amber-500/10 to-orange-500/5">
-                    <h2 className="text-xl font-bold text-amber-500 flex items-center gap-2">
-                        {isEditing ? <Pencil className="text-amber-600" size={20} /> : <UserPlus className="text-amber-600" size={20} />}
+            <div className="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden" dir="rtl" onClick={e => e.stopPropagation()}>
+                <div className="p-4 border-b border-stone/50 flex justify-between items-center bg-primary/20">
+                    <h2 className="text-xl font-bold text-text-main flex items-center gap-2">
+                        {isEditing ? <Pencil className="text-primary" size={20} /> : <UserPlus className="text-primary" size={20} />}
                         {isEditing ? 'עריכת בן משפחה' : 'הוספת בן משפחה'}
                     </h2>
                     <div className="flex gap-2">
                         <button
                             onClick={() => setActiveTab('details')}
-                            className={`px-3 py-1 rounded-full text-sm ${activeTab === 'details' ? 'bg-amber-600 text-white' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'}`}
+                            className={`px-3 py-1 rounded-full text-sm ${activeTab === 'details' ? 'bg-primary-dark text-text-main' : 'text-text-muted hover:bg-bg-warm'}`}
                         >
                             פרטים
                         </button>
                         <button
                             onClick={() => setActiveTab('connections')}
-                            className={`px-3 py-1 rounded-full text-sm ${activeTab === 'connections' ? 'bg-amber-600 text-white' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'}`}
+                            className={`px-3 py-1 rounded-full text-sm ${activeTab === 'connections' ? 'bg-primary-dark text-text-main' : 'text-text-muted hover:bg-bg-warm'}`}
                         >
                             קשרי משפחה {!isEditing && <span className="text-xs opacity-75">(קשר לאדם קיים)</span>}
                         </button>
-                        <button onClick={onClose}><X className="text-slate-400 hover:text-slate-600" /></button>
+                        <button onClick={onClose}><X className="text-text-muted hover:text-text-muted" /></button>
                     </div>
                 </div>
 
@@ -337,15 +337,15 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                         <div className="space-y-4">
                             {/* Profile Photo */}
                             <div className="flex items-center gap-4">
-                                <div className="w-24 h-24 rounded-full bg-white/10 overflow-hidden flex items-center justify-center border border-white/10 relative group">
+                                <div className="w-24 h-24 rounded-full bg-white overflow-hidden flex items-center justify-center border border-stone/50 relative group">
                                     {formData.photo_url ? (
                                         <img src={formData.photo_url} alt="Preview" className="w-full h-full object-cover" />
                                     ) : (
-                                        <User size={40} className="text-slate-400" />
+                                        <User size={40} className="text-text-muted" />
                                     )}
 
                                     <label className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
-                                        <Upload className="text-white" size={24} />
+                                        <Upload className="text-text-main" size={24} />
                                         <input
                                             type="file"
                                             accept="image/*"
@@ -381,404 +381,412 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                                     </label>
                                 </div>
                                 <div className="flex-1">
-                                    <h3 className="font-bold text-slate-200">תמונת פרופיל</h3>
-                                    <p className="text-sm text-slate-500">לחץ על העיגול כדי להחליף תמונה.</p>
+                                    <h3 className="font-bold text-text-main">תמונת פרופיל</h3>
+                                    <p className="text-sm text-text-muted">לחץ על העיגול כדי להחליף תמונה.</p>
                                 </div>
                             </div>
 
-                            {/* Language Tabs: Hebrew / Russian - wraps ALL fields */}
-                            <div className="flex items-center gap-2 mb-1">
-                                <div className="flex bg-white/10 rounded-lg p-0.5">
-                                    <button
-                                        type="button"
-                                        onClick={() => setLangTab('he')}
-                                        className={`px-3 py-1 rounded-md text-sm transition-all ${langTab === 'he' ? 'bg-white dark:bg-slate-600 shadow text-amber-600 font-medium' : 'text-slate-500 dark:text-slate-400'}`}
-                                    >
-                                        עברית
-                                    </button>
-                                    <button
-                                        type="button"
-                                        onClick={() => setLangTab('ru')}
-                                        className={`px-3 py-1 rounded-md text-sm transition-all ${langTab === 'ru' ? 'bg-white dark:bg-slate-600 shadow text-amber-600 font-medium' : 'text-slate-500 dark:text-slate-400'}`}
-                                    >
-                                        Русский
-                                    </button>
+                            {/* First & Last Name */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">שם פרטי *</label>
+                                    <input
+                                        required
+                                        value={formData.first_name}
+                                        onChange={e => setFormData({ ...formData, first_name: e.target.value })}
+                                        className="w-full p-2 rounded-lg border"
+                                    />
                                 </div>
-                                <button
-                                    type="button"
-                                    onClick={handleAITranslate}
-                                    disabled={translating}
-                                    className="flex items-center gap-1 px-2.5 py-1 bg-violet-100 text-violet-700 rounded-lg text-xs font-medium hover:bg-violet-200 transition-colors disabled:opacity-50"
-                                    title={langTab === 'he' ? 'תרגם לרוסית עם AI' : 'Перевести на иврит с AI'}
-                                >
-                                    {translating ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
-                                    {langTab === 'he' ? 'תרגם → RU' : 'Перевести → HE'}
-                                </button>
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">שם משפחה *</label>
+                                    <input
+                                        required
+                                        value={formData.last_name}
+                                        onChange={e => setFormData({ ...formData, last_name: e.target.value })}
+                                        className="w-full p-2 rounded-lg border"
+                                    />
+                                </div>
                             </div>
 
-                            {langTab === 'he' ? (
-                                /* ===== HEBREW TAB ===== */
-                                <div className="space-y-4" dir="rtl">
-                                    {/* First & Last Name */}
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-sm font-medium mb-1">שם פרטי *</label>
-                                            <input
-                                                required
-                                                value={formData.first_name}
-                                                onChange={e => setFormData({ ...formData, first_name: e.target.value })}
-                                                className="w-full p-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium mb-1">שם משפחה *</label>
-                                            <input
-                                                required
-                                                value={formData.last_name}
-                                                onChange={e => setFormData({ ...formData, last_name: e.target.value })}
-                                                className="w-full p-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    {/* Duplicate Detection Warning */}
-                                    {showDuplicateWarning && duplicates.length > 0 && (
-                                        <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/5 border-2 border-amber-400 rounded-lg p-4 space-y-3">
-                                            <div className="flex items-start gap-3">
-                                                <AlertTriangle className="text-amber-600 flex-shrink-0 mt-0.5" size={20} />
-                                                <div className="flex-1">
-                                                    <h4 className="font-bold text-amber-800 dark:text-amber-200 mb-1">
-                                                        נמצאו {duplicates.length} {duplicates.length === 1 ? 'אדם דומה' : 'אנשים דומים'}
-                                                    </h4>
-                                                    <p className="text-sm text-amber-700 dark:text-amber-300 mb-3">
-                                                        האם התכוונת לאחד מהאנשים הבאים? אפשר להתחבר אליהם במקום ליצור רשומה חדשה.
-                                                    </p>
-                                                    <div className="space-y-2 max-h-40 overflow-y-auto">
-                                                        {duplicates.map(dup => (
-                                                            <div key={dup.id} className="bg-[#0d1424]/60 backdrop-blur-xl rounded-lg p-3 flex items-center justify-between border border-amber-200 dark:border-amber-700">
-                                                                <div className="flex items-center gap-3">
-                                                                    {dup.photo_url ? (
-                                                                        <img src={dup.photo_url} alt="" className="w-10 h-10 rounded-full object-cover" />
-                                                                    ) : (
-                                                                        <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center">
-                                                                            <User size={20} className="text-slate-400" />
-                                                                        </div>
-                                                                    )}
-                                                                    <div>
-                                                                        <div className="font-medium text-slate-200">
-                                                                            {dup.first_name} {dup.last_name}
-                                                                        </div>
-                                                                        <div className="text-xs text-slate-500">
-                                                                            {dup.birth_date ? `נולד ${new Date(dup.birth_date).getFullYear()}` : 'אין תאריך לידה'}
-                                                                            {dup.birth_place && ` • ${dup.birth_place}`}
-                                                                        </div>
-                                                                    </div>
+                            {/* Duplicate Detection Warning */}
+                            {showDuplicateWarning && duplicates.length > 0 && (
+                                <div className="bg-primary/20 border-2 border-primary rounded-lg p-4 space-y-3">
+                                    <div className="flex items-start gap-3">
+                                        <AlertTriangle className="text-primary flex-shrink-0 mt-0.5" size={20} />
+                                        <div className="flex-1">
+                                            <h4 className="font-bold text-primary mb-1">
+                                                נמצאו {duplicates.length} {duplicates.length === 1 ? 'אדם דומה' : 'אנשים דומים'}
+                                            </h4>
+                                            <p className="text-sm text-primary mb-3">
+                                                האם התכוונת לאחד מהאנשים הבאים? אפשר להתחבר אליהם במקום ליצור רשומה חדשה.
+                                            </p>
+                                            <div className="space-y-2 max-h-40 overflow-y-auto">
+                                                {duplicates.map(dup => (
+                                                    <div key={dup.id} className="bg-white rounded-lg p-3 flex items-center justify-between border border-primary/30">
+                                                        <div className="flex items-center gap-3">
+                                                            {dup.photo_url ? (
+                                                                <img src={dup.photo_url} alt="" className="w-10 h-10 rounded-full object-cover" />
+                                                            ) : (
+                                                                <div className="w-10 h-10 rounded-full bg-bg-warm flex items-center justify-center">
+                                                                    <User size={20} className="text-text-muted" />
                                                                 </div>
-                                                                <button
-                                                                    type="button"
-                                                                    onClick={() => { onClose(); onSuccess(); }}
-                                                                    className="flex items-center gap-1 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-sm transition-colors"
-                                                                >
-                                                                    <Link size={14} />
-                                                                    <span>עבור לאדם זה</span>
-                                                                </button>
+                                                            )}
+                                                            <div>
+                                                                <div className="font-medium text-text-main">
+                                                                    {dup.first_name} {dup.last_name}
+                                                                </div>
+                                                                <div className="text-xs text-text-muted">
+                                                                    {dup.birth_date ? `נולד ${new Date(dup.birth_date).getFullYear()}` : 'אין תאריך לידה'}
+                                                                    {dup.birth_place && ` • ${dup.birth_place}`}
+                                                                </div>
                                                             </div>
-                                                        ))}
-                                                    </div>
-                                                    <div className="mt-3 pt-3 border-t border-amber-200 dark:border-amber-700">
-                                                        <button type="button" onClick={() => setShowDuplicateWarning(false)} className="text-sm text-amber-700 dark:text-amber-300 hover:underline">
-                                                            המשך בכל זאת ליצור רשומה חדשה
+                                                        </div>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => {
+                                                                onClose();
+                                                                onSuccess();
+                                                            }}
+                                                            className="flex items-center gap-1 px-3 py-1.5 bg-primary-dark hover:bg-primary-dark text-text-main rounded-lg text-sm transition-colors"
+                                                        >
+                                                            <Link size={14} />
+                                                            <span>עבור לאדם זה</span>
                                                         </button>
                                                     </div>
-                                                </div>
+                                                ))}
                                             </div>
-                                        </div>
-                                    )}
-
-                                    {/* Maiden Name & Nickname */}
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-sm font-medium mb-1">שם נעורים</label>
-                                            <input
-                                                value={formData.maiden_name}
-                                                onChange={e => setFormData({ ...formData, maiden_name: e.target.value })}
-                                                placeholder="שם משפחה לפני נישואין"
-                                                className="w-full p-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium mb-1">כינוי</label>
-                                            <input
-                                                value={formData.nickname}
-                                                onChange={e => setFormData({ ...formData, nickname: e.target.value })}
-                                                placeholder="כינוי משפחתי"
-                                                className="w-full p-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    {/* Previous Name */}
-                                    <div>
-                                        <label className="block text-sm font-medium mb-1">שם קודם</label>
-                                        <input
-                                            value={formData.previous_name}
-                                            onChange={e => setFormData({ ...formData, previous_name: e.target.value })}
-                                            placeholder="במקרה של שינוי שם"
-                                            className="w-full p-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white"
-                                        />
-                                    </div>
-
-                                    {/* Title */}
-                                    <div>
-                                        <label className="block text-sm font-medium mb-1">תואר</label>
-                                        <input
-                                            value={formData.title}
-                                            onChange={e => setFormData({ ...formData, title: e.target.value })}
-                                            placeholder="ד&quot;ר, רב, עו&quot;ד..."
-                                            className="w-full p-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white"
-                                        />
-                                    </div>
-
-                                    {/* Gender & Is Alive */}
-                                    <div className="flex gap-4">
-                                        <div className="flex-1">
-                                            <label className="block text-sm font-medium mb-1">מין</label>
-                                            <select
-                                                value={formData.gender}
-                                                onChange={e => setFormData({ ...formData, gender: e.target.value as any })}
-                                                className="w-full p-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white"
-                                            >
-                                                <option value="male">זכר</option>
-                                                <option value="female">נקבה</option>
-                                                <option value="other">אחר</option>
-                                            </select>
-                                        </div>
-                                        <div className="flex-1">
-                                            <label className="block text-sm font-medium mb-1">חי/ה?</label>
-                                            <div className="flex bg-white/10 p-1 rounded-lg">
-                                                <button type="button" onClick={() => setFormData({ ...formData, is_alive: true })} className={`flex-1 text-sm py-1.5 rounded-md transition-all ${formData.is_alive ? 'bg-white dark:bg-slate-600 shadow text-emerald-600' : 'text-slate-500'}`}>
-                                                    כן
-                                                </button>
-                                                <button type="button" onClick={() => setFormData({ ...formData, is_alive: false })} className={`flex-1 text-sm py-1.5 rounded-md transition-all ${!formData.is_alive ? 'bg-white dark:bg-slate-600 shadow text-slate-800' : 'text-slate-500'}`}>
-                                                    לא
+                                            <div className="mt-3 pt-3 border-t border-primary/30">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setShowDuplicateWarning(false)}
+                                                    className="text-sm text-primary hover:underline"
+                                                >
+                                                    המשך בכל זאת ליצור רשומה חדשה
                                                 </button>
                                             </div>
                                         </div>
-                                    </div>
-
-                                    {/* Dates */}
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-sm font-medium mb-1">תאריך לידה</label>
-                                            <input type="date" value={formData.birth_date || ''} onChange={e => setFormData({ ...formData, birth_date: e.target.value })} className="w-full p-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white" />
-                                        </div>
-                                        {!formData.is_alive && (
-                                            <div>
-                                                <label className="block text-sm font-medium mb-1">תאריך פטירה</label>
-                                                <input type="date" value={formData.death_date || ''} onChange={e => setFormData({ ...formData, death_date: e.target.value })} className="w-full p-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white" />
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Birth Place */}
-                                    <div>
-                                        <label className="block text-sm font-medium mb-1">מקום לידה</label>
-                                        <div className="grid grid-cols-2 gap-2">
-                                            <input value={formData.birth_city || ''} onChange={e => setFormData({ ...formData, birth_city: e.target.value })} placeholder="עיר" className="w-full p-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white text-sm" />
-                                            <input value={formData.birth_country || ''} onChange={e => setFormData({ ...formData, birth_country: e.target.value })} placeholder="מדינה" className="w-full p-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white text-sm" />
-                                        </div>
-                                    </div>
-
-                                    {/* Death Place */}
-                                    {!formData.is_alive && (
-                                        <div>
-                                            <label className="block text-sm font-medium mb-1">מקום פטירה</label>
-                                            <div className="grid grid-cols-2 gap-2">
-                                                <input value={formData.death_city || ''} onChange={e => setFormData({ ...formData, death_city: e.target.value })} placeholder="עיר" className="w-full p-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white text-sm" />
-                                                <input value={formData.death_country || ''} onChange={e => setFormData({ ...formData, death_country: e.target.value })} placeholder="מדינה" className="w-full p-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white text-sm" />
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* Current Residence */}
-                                    {formData.is_alive && (
-                                        <div>
-                                            <label className="block text-sm font-medium mb-1">מקום מגורים</label>
-                                            <div className="grid grid-cols-2 gap-2">
-                                                <input value={formData.residence_city || ''} onChange={e => setFormData({ ...formData, residence_city: e.target.value })} placeholder="עיר" className="w-full p-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white text-sm" />
-                                                <input value={formData.residence_country || ''} onChange={e => setFormData({ ...formData, residence_country: e.target.value })} placeholder="מדינה" className="w-full p-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white text-sm" />
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* Biography */}
-                                    <div>
-                                        <label className="block text-sm font-medium mb-1">ביוגרפיה קצרה</label>
-                                        <textarea value={formData.biography} onChange={e => setFormData({ ...formData, biography: e.target.value })} className="w-full p-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white h-20" placeholder="סיפור חיים קצר..." />
-                                    </div>
-                                </div>
-                            ) : (
-                                /* ===== RUSSIAN TAB ===== */
-                                <div className="space-y-4" dir="ltr">
-                                    {/* First & Last Name (Russian) */}
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-sm font-medium mb-1">Имя *</label>
-                                            <input
-                                                value={formData.first_name_ru || ''}
-                                                onChange={e => setFormData({ ...formData, first_name_ru: e.target.value })}
-                                                placeholder="Имя"
-                                                className="w-full p-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium mb-1">Фамилия *</label>
-                                            <input
-                                                value={formData.last_name_ru || ''}
-                                                onChange={e => setFormData({ ...formData, last_name_ru: e.target.value })}
-                                                placeholder="Фамилия"
-                                                className="w-full p-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    {/* Maiden Name & Nickname */}
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-sm font-medium mb-1">Девичья фамилия</label>
-                                            <input
-                                                value={formData.maiden_name_ru || ''}
-                                                onChange={e => setFormData({ ...formData, maiden_name_ru: e.target.value })}
-                                                placeholder="Фамилия до брака"
-                                                className="w-full p-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white"
-                                            />
-                                        </div>
-                                        <div>
-                                            <label className="block text-sm font-medium mb-1">Прозвище</label>
-                                            <input
-                                                value={formData.nickname}
-                                                onChange={e => setFormData({ ...formData, nickname: e.target.value })}
-                                                placeholder="Семейное прозвище"
-                                                className="w-full p-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white"
-                                            />
-                                        </div>
-                                    </div>
-
-                                    {/* Previous Name */}
-                                    <div>
-                                        <label className="block text-sm font-medium mb-1">Прежнее имя</label>
-                                        <input
-                                            value={formData.previous_name}
-                                            onChange={e => setFormData({ ...formData, previous_name: e.target.value })}
-                                            placeholder="В случае смены имени"
-                                            className="w-full p-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white"
-                                        />
-                                    </div>
-
-                                    {/* Title */}
-                                    <div>
-                                        <label className="block text-sm font-medium mb-1">Звание</label>
-                                        <input
-                                            value={formData.title}
-                                            onChange={e => setFormData({ ...formData, title: e.target.value })}
-                                            placeholder="Д-р, Раввин, Адв..."
-                                            className="w-full p-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white"
-                                        />
-                                    </div>
-
-                                    {/* Gender & Is Alive */}
-                                    <div className="flex gap-4">
-                                        <div className="flex-1">
-                                            <label className="block text-sm font-medium mb-1">Пол</label>
-                                            <select
-                                                value={formData.gender}
-                                                onChange={e => setFormData({ ...formData, gender: e.target.value as any })}
-                                                className="w-full p-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white"
-                                            >
-                                                <option value="male">Мужской</option>
-                                                <option value="female">Женский</option>
-                                                <option value="other">Другой</option>
-                                            </select>
-                                        </div>
-                                        <div className="flex-1">
-                                            <label className="block text-sm font-medium mb-1">Жив/а?</label>
-                                            <div className="flex bg-white/10 p-1 rounded-lg">
-                                                <button type="button" onClick={() => setFormData({ ...formData, is_alive: true })} className={`flex-1 text-sm py-1.5 rounded-md transition-all ${formData.is_alive ? 'bg-white dark:bg-slate-600 shadow text-emerald-600' : 'text-slate-500'}`}>
-                                                    Да
-                                                </button>
-                                                <button type="button" onClick={() => setFormData({ ...formData, is_alive: false })} className={`flex-1 text-sm py-1.5 rounded-md transition-all ${!formData.is_alive ? 'bg-white dark:bg-slate-600 shadow text-slate-800' : 'text-slate-500'}`}>
-                                                    Нет
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-
-                                    {/* Dates */}
-                                    <div className="grid grid-cols-2 gap-4">
-                                        <div>
-                                            <label className="block text-sm font-medium mb-1">Дата рождения</label>
-                                            <input type="date" value={formData.birth_date || ''} onChange={e => setFormData({ ...formData, birth_date: e.target.value })} className="w-full p-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white" />
-                                        </div>
-                                        {!formData.is_alive && (
-                                            <div>
-                                                <label className="block text-sm font-medium mb-1">Дата смерти</label>
-                                                <input type="date" value={formData.death_date || ''} onChange={e => setFormData({ ...formData, death_date: e.target.value })} className="w-full p-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white" />
-                                            </div>
-                                        )}
-                                    </div>
-
-                                    {/* Birth Place */}
-                                    <div>
-                                        <label className="block text-sm font-medium mb-1">Место рождения</label>
-                                        <div className="grid grid-cols-2 gap-2">
-                                            <input value={formData.birth_city_ru || ''} onChange={e => setFormData({ ...formData, birth_city_ru: e.target.value })} placeholder="Город" className="w-full p-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white text-sm" />
-                                            <input value={formData.birth_country_ru || ''} onChange={e => setFormData({ ...formData, birth_country_ru: e.target.value })} placeholder="Страна" className="w-full p-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white text-sm" />
-                                        </div>
-                                    </div>
-
-                                    {/* Death Place */}
-                                    {!formData.is_alive && (
-                                        <div>
-                                            <label className="block text-sm font-medium mb-1">Место смерти</label>
-                                            <div className="grid grid-cols-2 gap-2">
-                                                <input value={formData.death_city_ru || ''} onChange={e => setFormData({ ...formData, death_city_ru: e.target.value })} placeholder="Город" className="w-full p-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white text-sm" />
-                                                <input value={formData.death_country_ru || ''} onChange={e => setFormData({ ...formData, death_country_ru: e.target.value })} placeholder="Страна" className="w-full p-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white text-sm" />
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* Current Residence */}
-                                    {formData.is_alive && (
-                                        <div>
-                                            <label className="block text-sm font-medium mb-1">Место проживания</label>
-                                            <div className="grid grid-cols-2 gap-2">
-                                                <input value={formData.residence_city_ru || ''} onChange={e => setFormData({ ...formData, residence_city_ru: e.target.value })} placeholder="Город" className="w-full p-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white text-sm" />
-                                                <input value={formData.residence_country_ru || ''} onChange={e => setFormData({ ...formData, residence_country_ru: e.target.value })} placeholder="Страна" className="w-full p-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white text-sm" />
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* Biography */}
-                                    <div>
-                                        <label className="block text-sm font-medium mb-1">Краткая биография</label>
-                                        <textarea value={formData.biography} onChange={e => setFormData({ ...formData, biography: e.target.value })} className="w-full p-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white h-20" placeholder="Краткая история жизни..." />
                                     </div>
                                 </div>
                             )}
+
+                            {/* Maiden Name & Nickname */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">שם נעורים</label>
+                                    <input
+                                        value={formData.maiden_name}
+                                        onChange={e => setFormData({ ...formData, maiden_name: e.target.value })}
+                                        placeholder="שם משפחה לפני נישואין"
+                                        className="w-full p-2 rounded-lg border"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">כינוי</label>
+                                    <input
+                                        value={formData.nickname}
+                                        onChange={e => setFormData({ ...formData, nickname: e.target.value })}
+                                        placeholder="כינוי משפחתי"
+                                        className="w-full p-2 rounded-lg border"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Previous Name */}
+                            <div>
+                                <label className="block text-sm font-medium mb-1">שם קודם</label>
+                                <input
+                                    value={formData.previous_name}
+                                    onChange={e => setFormData({ ...formData, previous_name: e.target.value })}
+                                    placeholder="במקרה של שינוי שם"
+                                    className="w-full p-2 rounded-lg border"
+                                />
+                            </div>
+
+                            {/* Title - moved below all name fields */}
+                            <div>
+                                <label className="block text-sm font-medium mb-1">תואר</label>
+                                <input
+                                    value={formData.title}
+                                    onChange={e => setFormData({ ...formData, title: e.target.value })}
+                                    placeholder="ד&quot;ר, רב, עו&quot;ד..."
+                                    className="w-full p-2 rounded-lg border"
+                                />
+                            </div>
+
+                            {/* Gender & Is Alive */}
+                            <div className="flex gap-4">
+                                <div className="flex-1">
+                                    <label className="block text-sm font-medium mb-1">מין</label>
+                                    <select
+                                        value={formData.gender}
+                                        onChange={e => setFormData({ ...formData, gender: e.target.value as any })}
+                                        className="w-full p-2 rounded-lg border"
+                                    >
+                                        <option value="male">זכר</option>
+                                        <option value="female">נקבה</option>
+                                        <option value="other">אחר</option>
+                                    </select>
+                                </div>
+                                <div className="flex-1">
+                                    <label className="block text-sm font-medium mb-1">חי?</label>
+                                    <div className="flex bg-white p-1 rounded-lg">
+                                        <button
+                                            type="button"
+                                            onClick={() => setFormData({ ...formData, is_alive: true })}
+                                            className={`flex-1 text-sm py-1.5 rounded-md transition-all ${formData.is_alive ? 'bg-white shadow text-primary' : 'text-text-muted'}`}
+                                        >
+                                            כן
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setFormData({ ...formData, is_alive: false })}
+                                            className={`flex-1 text-sm py-1.5 rounded-md transition-all ${!formData.is_alive ? 'bg-white shadow text-text-main' : 'text-text-muted'}`}
+                                        >
+                                            לא
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Dates */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium mb-1">תאריך לידה</label>
+                                    <input
+                                        type="date"
+                                        value={formData.birth_date || ''}
+                                        onChange={e => setFormData({ ...formData, birth_date: e.target.value })}
+                                        className="w-full p-2 rounded-lg border"
+                                    />
+                                </div>
+                                {!formData.is_alive && (
+                                    <div>
+                                        <label className="block text-sm font-medium mb-1">תאריך פטירה</label>
+                                        <input
+                                            type="date"
+                                            value={formData.death_date || ''}
+                                            onChange={e => setFormData({ ...formData, death_date: e.target.value })}
+                                            className="w-full p-2 rounded-lg border"
+                                        />
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Language Tabs: Hebrew / Russian */}
+                            <div className="border-t pt-3 mt-2">
+                                <div className="flex items-center gap-2 mb-3">
+                                    <div className="flex bg-bg-warm rounded-lg p-0.5">
+                                        <button
+                                            type="button"
+                                            onClick={() => setLangTab('he')}
+                                            className={`px-3 py-1 rounded-md text-sm transition-all ${langTab === 'he' ? 'bg-white shadow text-primary font-medium' : 'text-text-muted'}`}
+                                        >
+                                            עברית
+                                        </button>
+                                        <button
+                                            type="button"
+                                            onClick={() => setLangTab('ru')}
+                                            className={`px-3 py-1 rounded-md text-sm transition-all ${langTab === 'ru' ? 'bg-white shadow text-primary font-medium' : 'text-text-muted'}`}
+                                        >
+                                            Русский
+                                        </button>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={handleAITranslate}
+                                        disabled={translating}
+                                        className="flex items-center gap-1 px-2.5 py-1 bg-violet-100 text-violet-700 rounded-lg text-xs font-medium hover:bg-violet-200 transition-colors disabled:opacity-50"
+                                        title={langTab === 'he' ? 'תרגם לרוסית עם AI' : 'Перевести на иврит с AI'}
+                                    >
+                                        {translating ? <Loader2 size={12} className="animate-spin" /> : <Sparkles size={12} />}
+                                        {langTab === 'he' ? 'תרגם → RU' : 'Перевести → HE'}
+                                    </button>
+                                </div>
+
+                                {langTab === 'he' ? (
+                                    <div className="space-y-3">
+                                        {/* Hebrew: Birth Place */}
+                                        <div>
+                                            <label className="block text-xs font-medium text-text-muted mb-1">מקום לידה</label>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <input
+                                                    value={formData.birth_city || ''}
+                                                    onChange={e => setFormData({ ...formData, birth_city: e.target.value })}
+                                                    placeholder="עיר"
+                                                    className="w-full p-2 rounded-lg border text-sm"
+                                                />
+                                                <input
+                                                    value={formData.birth_country || ''}
+                                                    onChange={e => setFormData({ ...formData, birth_country: e.target.value })}
+                                                    placeholder="מדינה"
+                                                    className="w-full p-2 rounded-lg border text-sm"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {/* Hebrew: Death Place */}
+                                        {!formData.is_alive && (
+                                            <div>
+                                                <label className="block text-xs font-medium text-text-muted mb-1">מקום פטירה</label>
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    <input
+                                                        value={formData.death_city || ''}
+                                                        onChange={e => setFormData({ ...formData, death_city: e.target.value })}
+                                                        placeholder="עיר"
+                                                        className="w-full p-2 rounded-lg border text-sm"
+                                                    />
+                                                    <input
+                                                        value={formData.death_country || ''}
+                                                        onChange={e => setFormData({ ...formData, death_country: e.target.value })}
+                                                        placeholder="מדינה"
+                                                        className="w-full p-2 rounded-lg border text-sm"
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Hebrew: Current Residence */}
+                                        {formData.is_alive && (
+                                            <div>
+                                                <label className="block text-xs font-medium text-text-muted mb-1">מקום מגורים</label>
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    <input
+                                                        value={formData.residence_city || ''}
+                                                        onChange={e => setFormData({ ...formData, residence_city: e.target.value })}
+                                                        placeholder="עיר"
+                                                        className="w-full p-2 rounded-lg border text-sm"
+                                                    />
+                                                    <input
+                                                        value={formData.residence_country || ''}
+                                                        onChange={e => setFormData({ ...formData, residence_country: e.target.value })}
+                                                        placeholder="מדינה"
+                                                        className="w-full p-2 rounded-lg border text-sm"
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : (
+                                    <div className="space-y-3" dir="ltr">
+                                        {/* Russian Names */}
+                                        <div className="grid grid-cols-2 gap-2">
+                                            <div>
+                                                <label className="block text-xs font-medium text-text-muted mb-1">Имя</label>
+                                                <input
+                                                    value={formData.first_name_ru || ''}
+                                                    onChange={e => setFormData({ ...formData, first_name_ru: e.target.value })}
+                                                    placeholder="Имя"
+                                                    className="w-full p-2 rounded-lg border text-sm"
+                                                />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-medium text-text-muted mb-1">Фамилия</label>
+                                                <input
+                                                    value={formData.last_name_ru || ''}
+                                                    onChange={e => setFormData({ ...formData, last_name_ru: e.target.value })}
+                                                    placeholder="Фамилия"
+                                                    className="w-full p-2 rounded-lg border text-sm"
+                                                />
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-medium text-text-muted mb-1">Девичья фамилия</label>
+                                            <input
+                                                value={formData.maiden_name_ru || ''}
+                                                onChange={e => setFormData({ ...formData, maiden_name_ru: e.target.value })}
+                                                placeholder="Девичья фамилия"
+                                                className="w-full p-2 rounded-lg border text-sm"
+                                            />
+                                        </div>
+
+                                        {/* Russian: Birth Place */}
+                                        <div>
+                                            <label className="block text-xs font-medium text-text-muted mb-1">Место рождения</label>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                <input
+                                                    value={formData.birth_city_ru || ''}
+                                                    onChange={e => setFormData({ ...formData, birth_city_ru: e.target.value })}
+                                                    placeholder="Город"
+                                                    className="w-full p-2 rounded-lg border text-sm"
+                                                />
+                                                <input
+                                                    value={formData.birth_country_ru || ''}
+                                                    onChange={e => setFormData({ ...formData, birth_country_ru: e.target.value })}
+                                                    placeholder="Страна"
+                                                    className="w-full p-2 rounded-lg border text-sm"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        {/* Russian: Death Place */}
+                                        {!formData.is_alive && (
+                                            <div>
+                                                <label className="block text-xs font-medium text-text-muted mb-1">Место смерти</label>
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    <input
+                                                        value={formData.death_city_ru || ''}
+                                                        onChange={e => setFormData({ ...formData, death_city_ru: e.target.value })}
+                                                        placeholder="Город"
+                                                        className="w-full p-2 rounded-lg border text-sm"
+                                                    />
+                                                    <input
+                                                        value={formData.death_country_ru || ''}
+                                                        onChange={e => setFormData({ ...formData, death_country_ru: e.target.value })}
+                                                        placeholder="Страна"
+                                                        className="w-full p-2 rounded-lg border text-sm"
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Russian: Current Residence */}
+                                        {formData.is_alive && (
+                                            <div>
+                                                <label className="block text-xs font-medium text-text-muted mb-1">Место проживания</label>
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    <input
+                                                        value={formData.residence_city_ru || ''}
+                                                        onChange={e => setFormData({ ...formData, residence_city_ru: e.target.value })}
+                                                        placeholder="Город"
+                                                        className="w-full p-2 rounded-lg border text-sm"
+                                                    />
+                                                    <input
+                                                        value={formData.residence_country_ru || ''}
+                                                        onChange={e => setFormData({ ...formData, residence_country_ru: e.target.value })}
+                                                        placeholder="Страна"
+                                                        className="w-full p-2 rounded-lg border text-sm"
+                                                    />
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Biography */}
+                            <div>
+                                <label className="block text-sm font-medium mb-1">ביוגרפיה קצרה</label>
+                                <textarea
+                                    value={formData.biography}
+                                    onChange={e => setFormData({ ...formData, biography: e.target.value })}
+                                    className="w-full p-2 rounded-lg border h-20"
+                                    placeholder="סיפור חיים קצר..."
+                                />
+                            </div>
                         </div>
                     </form>
                 ) : (
                     <div className="p-6 space-y-6 max-h-[70vh] overflow-y-auto" dir="rtl">
                         {!isEditing ? (
                             <div className="text-center py-12">
-                                <Heart size={48} className="mx-auto text-slate-400 mb-4" />
-                                <h3 className="text-lg font-bold text-slate-700 dark:text-slate-200 mb-2">קשר אדם זה למשפחה</h3>
-                                <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
+                                <Heart size={48} className="mx-auto text-text-muted mb-4" />
+                                <h3 className="text-lg font-bold text-text-main mb-2">קשר אדם זה למשפחה</h3>
+                                <p className="text-sm text-text-muted mb-6">
                                     כדי לקשר אדם חדש למשפחה, קודם שמור את הפרטים הבסיסיים שלו.
                                 </p>
                                 <button
                                     onClick={handleSubmit}
-                                    className="bg-amber-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-amber-700"
+                                    className="bg-primary-dark text-text-main px-6 py-2 rounded-lg font-bold hover:bg-primary-dark"
                                 >
                                     שמור ועבור לקישור
                                 </button>
@@ -788,38 +796,38 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                         {/* Parents Section */}
                         <div className="space-y-3">
                             <div className="flex justify-between items-center">
-                                <h3 className="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2">
+                                <h3 className="font-bold text-text-main flex items-center gap-2">
                                     <Users size={16} /> הורים
                                 </h3>
-                                <button onClick={() => setConnectMode('parent')} className="text-xs text-indigo-600 hover:underline">+ חבר הורה קיים</button>
+                                <button onClick={() => setConnectMode('parent')} className="text-xs text-primary hover:underline">+ חבר הורה קיים</button>
                             </div>
                             {parents.map(p => (
-                                <div key={p.id} className="flex justify-between items-center bg-white/5 backdrop-blur-sm p-2 rounded border border-white/10">
+                                <div key={p.id} className="flex justify-between items-center bg-bg-light p-2 rounded border">
                                     <span>{p.parent?.first_name || p.first_name} {p.parent?.last_name || p.last_name}</span>
                                     <button onClick={() => handleRemoveRelationship('parent', p.id)} className="text-red-500 hover:bg-red-50 p-1 rounded"><X size={14} /></button>
                                 </div>
                             ))}
-                            {parents.length === 0 && <p className="text-sm text-slate-400 italic">אין הורים רשומים.</p>}
+                            {parents.length === 0 && <p className="text-sm text-text-muted italic">אין הורים רשומים.</p>}
                         </div>
 
                         {/* Spouse Section */}
                         <div className="space-y-3">
                             <div className="flex justify-between items-center">
-                                <h3 className="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2">
+                                <h3 className="font-bold text-text-main flex items-center gap-2">
                                     <Heart size={16} /> בני זוג
                                 </h3>
-                                <button onClick={() => setConnectMode('spouse')} className="text-xs text-amber-600 hover:underline">+ חבר בן/ת זוג</button>
+                                <button onClick={() => setConnectMode('spouse')} className="text-xs text-pink-600 hover:underline">+ חבר בן/ת זוג</button>
                             </div>
                             {partnerships.map(p => (
-                                <div key={p.id} className="bg-white/5 backdrop-blur-sm p-3 rounded border border-white/10">
+                                <div key={p.id} className="bg-bg-light p-3 rounded border">
                                     {editingPartnership?.id === p.id ? (
                                         <div className="space-y-2">
                                             <div className="flex justify-between items-center mb-2">
                                                 <span className="font-medium">{p.partner?.first_name || p.partner_first_name} {p.partner?.last_name || p.partner_last_name}</span>
-                                                <button onClick={() => setEditingPartnership(null)} className="text-xs text-slate-500">ביטול</button>
+                                                <button onClick={() => setEditingPartnership(null)} className="text-xs text-text-muted">ביטול</button>
                                             </div>
                                             <select
-                                                className="w-full p-2 rounded border text-sm dark:bg-slate-700"
+                                                className="w-full p-2 rounded border text-sm"
                                                 value={editingPartnership.status}
                                                 onChange={(e) => setEditingPartnership({ ...editingPartnership, status: e.target.value })}
                                             >
@@ -842,7 +850,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                                                             alert('שגיאה בעדכון סטטוס');
                                                         }
                                                     }}
-                                                    className="flex-1 bg-green-600 text-white px-3 py-1 rounded text-xs hover:bg-green-700"
+                                                    className="flex-1 bg-green-600 text-text-main px-3 py-1 rounded text-xs hover:bg-green-700"
                                                 >
                                                     <Check size={12} className="inline mr-1" /> שמור
                                                 </button>
@@ -853,7 +861,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                                         <div className="flex justify-between items-center">
                                             <div className="flex flex-col flex-1">
                                                 <span>{p.partner?.first_name || p.partner_first_name} {p.partner?.last_name || p.partner_last_name}</span>
-                                                <span className="text-xs text-slate-400">
+                                                <span className="text-xs text-text-muted">
                                                     {p.status === 'married' ? '💍 נשואים' :
                                                      p.status === 'divorced' ? '💔 גרושים' :
                                                      p.status === 'widowed' ? '🕊️ אלמן/ה' :
@@ -865,7 +873,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                                             <div className="flex gap-1">
                                                 <button
                                                     onClick={() => setEditingPartnership(p)}
-                                                    className="text-indigo-600 hover:bg-indigo-50 p-1 rounded"
+                                                    className="text-primary hover:bg-bg-light p-1 rounded"
                                                     title="ערוך סטטוס"
                                                 >
                                                     <Pencil size={14} />
@@ -878,37 +886,37 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                                     )}
                                 </div>
                             ))}
-                            {partnerships.length === 0 && <p className="text-sm text-slate-400 italic">אין בני זוג רשומים.</p>}
+                            {partnerships.length === 0 && <p className="text-sm text-text-muted italic">אין בני זוג רשומים.</p>}
                         </div>
 
                         {/* Children Section */}
                         <div className="space-y-3">
                             <div className="flex justify-between items-center">
-                                <h3 className="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2">
+                                <h3 className="font-bold text-text-main flex items-center gap-2">
                                     <Baby size={16} /> ילדים
                                 </h3>
                                 <button onClick={() => setConnectMode('child')} className="text-xs text-green-600 hover:underline">+ חבר ילד קיים</button>
                             </div>
                             {children.map(c => (
-                                <div key={c.id} className="flex justify-between items-center bg-white/5 backdrop-blur-sm p-2 rounded border border-white/10">
+                                <div key={c.id} className="flex justify-between items-center bg-bg-light p-2 rounded border">
                                     <span>{c.child?.first_name || c.first_name} {c.child?.last_name || c.last_name}</span>
                                     <button onClick={() => handleRemoveRelationship('child', c.id)} className="text-red-500 hover:bg-red-50 p-1 rounded"><X size={14} /></button>
                                 </div>
                             ))}
-                            {children.length === 0 && <p className="text-sm text-slate-400 italic">אין ילדים רשומים.</p>}
+                            {children.length === 0 && <p className="text-sm text-text-muted italic">אין ילדים רשומים.</p>}
                         </div>
 
                         {/* Connect Modal Overlay */}
                         {connectMode !== 'none' && (
-                            <div className="border-t pt-4 mt-4 bg-amber-50/50 dark:bg-amber-900/20 p-4 rounded-lg">
+                            <div className="border-t pt-4 mt-4 bg-primary/20/50 p-4 rounded-lg">
                                 <h4 className="font-bold mb-2 text-sm">
                                     {connectMode === 'parent' ? 'חיבור הורה' : connectMode === 'child' ? 'חיבור ילד' : 'חיבור בן/ת זוג'}
                                 </h4>
                                 <div className="space-y-2">
                                     <div>
-                                        <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">בחר אדם:</label>
+                                        <label className="block text-xs text-text-muted mb-1">בחר אדם:</label>
                                         <select
-                                            className="w-full p-2 rounded border text-sm dark:bg-slate-700 dark:border-slate-600"
+                                            className="w-full p-2 rounded border text-sm"
                                             value={selectedConnectId}
                                             onChange={e => setSelectedConnectId(e.target.value ? Number(e.target.value) : '')}
                                         >
@@ -925,9 +933,9 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
 
                                     {(connectMode === 'parent' || connectMode === 'child') && (
                                         <div>
-                                            <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">סוג קשר:</label>
+                                            <label className="block text-xs text-text-muted mb-1">סוג קשר:</label>
                                             <select
-                                                className="w-full p-2 rounded border text-sm dark:bg-slate-700 dark:border-slate-600"
+                                                className="w-full p-2 rounded border text-sm"
                                                 value={parentChildType}
                                                 onChange={e => setParentChildType(e.target.value)}
                                             >
@@ -941,9 +949,9 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
 
                                     {connectMode === 'spouse' && (
                                         <div>
-                                            <label className="block text-xs text-slate-600 dark:text-slate-400 mb-1">סטטוס:</label>
+                                            <label className="block text-xs text-text-muted mb-1">סטטוס:</label>
                                             <select
-                                                className="w-full p-2 rounded border text-sm dark:bg-slate-700 dark:border-slate-600"
+                                                className="w-full p-2 rounded border text-sm"
                                                 value={spouseStatus}
                                                 onChange={e => setSpouseStatus(e.target.value)}
                                             >
@@ -958,11 +966,11 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                                     )}
 
                                     <div className="flex justify-end gap-2 mt-2">
-                                        <button onClick={() => setConnectMode('none')} className="text-sm text-slate-500 px-3 py-1">ביטול</button>
+                                        <button onClick={() => setConnectMode('none')} className="text-sm text-text-muted px-3 py-1">ביטול</button>
                                         <button
                                             onClick={handleConnect}
                                             disabled={!selectedConnectId}
-                                            className="text-sm bg-amber-600 text-white px-3 py-1 rounded hover:bg-amber-700 disabled:opacity-50"
+                                            className="text-sm bg-primary-dark text-text-main px-3 py-1 rounded hover:bg-primary-dark disabled:opacity-50"
                                         >
                                             חבר
                                         </button>
@@ -975,16 +983,16 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                     </div>
                 )}
 
-                <div className="p-4 border-t border-white/10 bg-white/5/50">
+                <div className="p-4 border-t border-stone/50 bg-bg-light">
                     {/* Only show quick add relative in Details tab */}
                     {activeTab === 'details' && onAddRelative && isEditing && (
                         <div className="mb-4">
-                            <div className="text-xs font-medium text-slate-500 mb-2">הוסף קרוב משפחה:</div>
+                            <div className="text-xs font-medium text-text-muted mb-2">הוסף קרוב משפחה:</div>
                             <div className="flex gap-2 flex-wrap">
                                 <button
                                     type="button"
                                     onClick={() => { onClose(); onAddRelative('parent'); }}
-                                    className="flex items-center gap-1 px-3 py-1.5 bg-indigo-100 text-indigo-700 rounded-lg text-sm hover:bg-indigo-200"
+                                    className="flex items-center gap-1 px-3 py-1.5 bg-white text-primary rounded-lg text-sm hover:bg-bg-warm"
                                 >
                                     <Users size={14} /> הורה
                                 </button>
@@ -998,7 +1006,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                                 <button
                                     type="button"
                                     onClick={() => { onClose(); onAddRelative('spouse'); }}
-                                    className="flex items-center gap-1 px-3 py-1.5 bg-amber-100 text-amber-700 rounded-lg text-sm hover:bg-amber-200"
+                                    className="flex items-center gap-1 px-3 py-1.5 bg-pink-100 text-pink-700 rounded-lg text-sm hover:bg-pink-200"
                                 >
                                     <Heart size={14} /> בן/ת זוג
                                 </button>
@@ -1012,7 +1020,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                             <button
                                 onClick={handleDeleteMember}
                                 disabled={loading}
-                                className="px-4 py-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg flex items-center gap-2 disabled:opacity-50 transition-colors"
+                                className="px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg flex items-center gap-2 disabled:opacity-50 transition-colors"
                                 title="מחק אדם זה"
                             >
                                 <Trash2 size={16} />
@@ -1021,12 +1029,12 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                         )}
 
                         <div className="flex gap-3 mr-auto">
-                            <button onClick={onClose} className="px-4 py-2 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg">סגור</button>
+                            <button onClick={onClose} className="px-4 py-2 text-text-muted hover:bg-bg-warm rounded-lg">סגור</button>
                             {activeTab === 'details' && (
                                 <button
                                     onClick={handleSubmit}
                                     disabled={loading}
-                                    className="bg-amber-600 text-white px-6 py-2 rounded-lg font-bold flex items-center gap-2 hover:bg-amber-700 disabled:opacity-50"
+                                    className="bg-primary-dark text-text-main px-6 py-2 rounded-lg font-bold flex items-center gap-2 hover:bg-primary-dark disabled:opacity-50"
                                 >
                                     {loading ? <Loader2 className="animate-spin" /> : <Check size={18} />}
                                     {isEditing ? 'עדכן' : 'שמור'}

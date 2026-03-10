@@ -168,7 +168,7 @@ const saveToCache = async (queryHash, queryText, response) => {
  */
 async function callGemini(contentsParts, systemInstruction, responseSchema) {
     const apiKey = await getApiKey();
-    if (!apiKey) throw new Error("GEMINI_API_KEY is missing (neither DB nor .env)");
+    if (!apiKey) throw new Error("API key not configured");
 
     let lastError = null;
     const TIMEOUT_MS = 15000; // 15s timeout per model
@@ -315,7 +315,7 @@ If the field is "definition" - expand the definition in Hebrew.`;
 
     } catch (err) {
         console.error('Gemini enrich error:', err);
-        res.status(500).json({ error: 'שגיאה בהעשרת AI', details: err.message });
+        res.status(500).json({ error: 'שגיאה בהעשרת AI' });
     }
 });
 
@@ -434,39 +434,48 @@ router.post('/tts', async (req, res) => {
     }
 });
 
-// POST /api/gemini/transliterate-names - Hebrew↔Russian name transliteration
+// =====================================================
+// Family Tree: Name/Place Transliteration (Hebrew ↔ Russian)
+// =====================================================
 router.post('/transliterate-names', async (req, res) => {
     try {
         const { fields, direction } = req.body;
+        // fields: { first_name: "שלום", last_name: "כהן", birth_city: "באקו" ... }
+        // direction: "he-to-ru" or "ru-to-he"
+
         if (!fields || !direction) {
-            return res.status(400).json({ error: 'fields and direction required' });
+            return res.status(400).json({ error: 'Missing fields or direction' });
         }
 
-        const isHeToRu = direction === 'he-to-ru';
-        const fromLang = isHeToRu ? 'Hebrew' : 'Russian';
-        const toLang = isHeToRu ? 'Russian' : 'Hebrew';
+        const fromLang = direction === 'he-to-ru' ? 'Hebrew' : 'Russian';
+        const toLang = direction === 'he-to-ru' ? 'Russian' : 'Hebrew';
 
-        const fieldEntries = Object.entries(fields).filter(([, v]) => v);
+        const fieldEntries = Object.entries(fields).filter(([, v]) => v && v.trim());
         if (fieldEntries.length === 0) {
-            return res.status(400).json({ error: 'No non-empty fields provided' });
+            return res.json({});
         }
 
-        const fieldList = fieldEntries.map(([k, v]) => `${k}: "${v}"`).join('\n');
-        const prompt = `Transliterate the following ${fromLang} names and place names to ${toLang}. Return JSON with the same keys.\n\n${fieldList}`;
+        const fieldList = fieldEntries.map(([key, val]) => `"${key}": "${val}"`).join('\n');
 
-        const schema = {
-            type: "OBJECT",
-            properties: {},
-        };
-        for (const [key] of fieldEntries) {
-            schema.properties[key] = { type: "STRING" };
-        }
+        const systemInstruction = `You are a name transliteration expert for the Mountain Jewish (Juhuri) community.
+Transliterate the following personal names and place names from ${fromLang} to ${toLang}.
+For names: use standard transliteration conventions (e.g., Hebrew שלום → Russian Шалом, Hebrew כהן → Russian Коэн).
+For places: use the commonly known ${toLang} name (e.g., Hebrew באקו → Russian Баку, Hebrew ישראל → Russian Израиль).
+Return ONLY the transliterated values as a JSON object with the same keys.`;
 
-        const result = await callGemini(prompt, null, schema);
+        const result = await callGemini(
+            `Transliterate these fields from ${fromLang} to ${toLang}:\n${fieldList}`,
+            systemInstruction,
+            {
+                type: "OBJECT",
+                properties: Object.fromEntries(fieldEntries.map(([key]) => [key, { type: "STRING" }]))
+            }
+        );
+
         res.json(result);
     } catch (err) {
-        console.error('Transliterate error:', err);
-        res.status(500).json({ error: 'Translation failed', details: err.message });
+        console.error('Transliteration error:', err);
+        res.status(500).json({ error: 'שגיאה בתעתיק' });
     }
 });
 

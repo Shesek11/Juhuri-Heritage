@@ -44,6 +44,7 @@ router.get('/:entryId', async (req, res) => {
 router.post('/', optionalAuth, async (req, res) => {
     try {
         const { entryId, content, guestName } = req.body;
+        // userId comes from authenticated token, not from request body
         const userId = req.user ? req.user.id : null;
 
         if (!entryId || !content) {
@@ -73,7 +74,7 @@ router.post('/', optionalAuth, async (req, res) => {
         const [result] = await db.query(`
             INSERT INTO comments (entry_id, user_id, guest_name, content, status)
             VALUES (?, ?, ?, ?, ?)
-        `, [entryId, userId || null, guestName || null, content, status]);
+        `, [entryId, userId, guestName || null, content, status]);
 
         res.status(201).json({
             success: true,

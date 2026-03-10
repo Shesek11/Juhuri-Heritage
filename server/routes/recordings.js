@@ -4,7 +4,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const db = require('../config/db');
-const { authenticate, requireApprover, optionalAuth } = require('../middleware/auth');
+const { authenticate, optionalAuth, requireApprover } = require('../middleware/auth');
 
 // Ensure uploads directory exists
 const uploadsDir = path.join(__dirname, '../../public/uploads/recordings');
@@ -46,6 +46,7 @@ router.post('/upload', optionalAuth, upload.single('audio'), async (req, res) =>
         }
 
         const { entryId, dialectId, guestName } = req.body;
+        // userId comes from authenticated token, not from request body
         const userId = req.user ? req.user.id : null;
 
         if (!entryId) {

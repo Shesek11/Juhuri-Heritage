@@ -25,8 +25,12 @@ router.get('/vendors', async (req, res) => {
     try {
         const { lat, lng, radius_km = 50, search, status = 'active' } = req.query;
 
+        // Only select public-safe fields — never expose phone, email, or full address
         let query = `
-            SELECT v.*,
+            SELECT v.id, v.slug, v.name, v.logo_url, v.cover_url,
+                   v.about_text, v.city, v.specialty, v.category,
+                   v.delivery_available, v.kosher_certified,
+                   v.latitude, v.longitude,
                    COALESCE(vs.average_rating, 0) as avg_rating,
                    COALESCE(vs.total_reviews, 0) as review_count
             FROM marketplace_vendors v
@@ -72,8 +76,12 @@ router.get('/vendors/:slug', async (req, res) => {
     try {
         const { slug } = req.params;
 
+        // Exclude sensitive fields (email, phone) from public vendor detail
         const [vendors] = await pool.query(`
-            SELECT v.*,
+            SELECT v.id, v.slug, v.name, v.logo_url, v.cover_url,
+                   v.about_text, v.address, v.city, v.specialty, v.category,
+                   v.latitude, v.longitude, v.delivery_available, v.kosher_certified,
+                   v.status, v.created_at,
                    u.name as owner_name,
                    COALESCE((SELECT AVG(rating) FROM marketplace_reviews WHERE vendor_id = v.id), 0) as avg_rating,
                    COALESCE((SELECT COUNT(*) FROM marketplace_reviews WHERE vendor_id = v.id), 0) as review_count
