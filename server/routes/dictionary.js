@@ -22,7 +22,7 @@ router.get('/search', [
     try {
         const term = req.query.q.trim();
 
-        // Search in active entries: by term (Juhuri) OR by hebrew translation (reverse search)
+        // Search in active entries: by term (Juhuri) OR by hebrew translation (FULLTEXT) OR russian
         const [entries] = await db.query(
             `SELECT de.*, u.name as contributor_name, a.name as approver_name
              FROM dictionary_entries de
@@ -30,7 +30,7 @@ router.get('/search', [
              LEFT JOIN users a ON de.approved_by = a.id
              LEFT JOIN translations t ON de.id = t.entry_id
              WHERE de.status = 'active'
-               AND (de.term LIKE ? OR t.hebrew LIKE ? OR de.russian LIKE ?)
+               AND (de.term LIKE ? OR MATCH(t.hebrew) AGAINST(? IN BOOLEAN MODE) OR t.hebrew LIKE ? OR de.russian LIKE ?)
              GROUP BY de.id
              ORDER BY
                 CASE
@@ -42,7 +42,7 @@ router.get('/search', [
                 END,
                 de.created_at DESC
              LIMIT 10`,
-            [`%${term}%`, `%${term}%`, `%${term}%`, term, term, `${term}%`, `${term}%`]
+            [`%${term}%`, `${term}*`, `%${term}%`, `%${term}%`, term, term, `${term}%`, `${term}%`]
         );
 
         if (entries.length === 0) {
@@ -493,6 +493,7 @@ router.post('/entries', optionalAuth, [
             ]
         );
 
+        statsCache = { data: null, expiry: 0 };
         res.json({ success: true, entryId, status });
     } catch (err) {
         console.error('Add entry error:', err);
@@ -530,8 +531,14 @@ router.post('/entries/batch', authenticate, requireApprover, async (req, res) =>
                 ]
             );
 
-            const entryId = result.insertId || result.affectedRows;
-            if (!entryId) continue;
+            // ON DUPLICATE KEY UPDATE sets insertId=0 and affectedRows=0,
+            // so we need to look up the existing entry's ID
+            let entryId = result.insertId;
+            if (!entryId) {
+                const [existing] = await db.query('SELECT id FROM dictionary_entries WHERE term = ?', [entry.term]);
+                if (existing.length === 0) continue;
+                entryId = existing[0].id;
+            }
 
             // Insert translations
             if (entry.translations) {
@@ -566,6 +573,7 @@ router.post('/entries/batch', authenticate, requireApprover, async (req, res) =>
             addedCount++;
         }
 
+        statsCache = { data: null, expiry: 0 };
         res.json({ success: true, addedCount });
     } catch (err) {
         console.error('Batch add error:', err);
@@ -590,6 +598,7 @@ router.put('/entries/:term/approve', authenticate, requireApprover, async (req, 
             ['ENTRY_APPROVED', `אושרה מילה: ${term}`, req.user.id, req.user.name, JSON.stringify({ term })]
         );
 
+        statsCache = { data: null, expiry: 0 };
         res.json({ success: true });
     } catch (err) {
         console.error('Approve error:', err);
@@ -620,6 +629,7 @@ router.delete('/entries/:term', authenticate, requireApprover, async (req, res) 
             [eventType, description, req.user.id, req.user.name, JSON.stringify({ term })]
         );
 
+        statsCache = { data: null, expiry: 0 };
         res.json({ success: true });
     } catch (err) {
         console.error('Delete error:', err);
@@ -705,61 +715,7 @@ router.post('/entries/:id/comments', authenticate, [
 // ============================================
 
 // POST /api/dictionary/translations/:id/vote - Vote on a translation
-router.post('/translations/:id/vote', authenticate, async (req, res) => {
-    try {
-        const { id } = req.params;
-        const { voteType } = req.body; // 'up' or 'down'
-        const userId = req.user.id;
-
-        if (!['up', 'down'].includes(voteType)) {
-            return res.status(400).json({ error: 'סוג הצבעה לא חוקי' });
-        }
-
-        // Check if user already voted
-        const [existingVotes] = await db.query(
-            'SELECT * FROM translation_votes WHERE translation_id = ? AND user_id = ?',
-            [id, userId]
-        );
-
-        if (existingVotes.length > 0) {
-            const existing = existingVotes[0];
-            if (existing.vote_type === voteType) {
-                // Remove vote (toggle off)
-                await db.query('DELETE FROM translation_votes WHERE id = ?', [existing.id]);
-                await db.query(
-                    `UPDATE translations SET ${voteType === 'up' ? 'upvotes = upvotes - 1' : 'downvotes = downvotes - 1'} WHERE id = ?`,
-                    [id]
-                );
-                return res.json({ success: true, action: 'removed' });
-            } else {
-                // Change vote
-                await db.query('UPDATE translation_votes SET vote_type = ? WHERE id = ?', [voteType, existing.id]);
-                // Update counters: add to new, remove from old
-                const incr = voteType === 'up' ? 'upvotes = upvotes + 1, downvotes = downvotes - 1' : 'upvotes = upvotes - 1, downvotes = downvotes + 1';
-                await db.query(`UPDATE translations SET ${incr} WHERE id = ?`, [id]);
-                return res.json({ success: true, action: 'changed', voteType });
-            }
-        }
-
-        // Insert new vote
-        await db.query(
-            'INSERT INTO translation_votes (translation_id, user_id, vote_type) VALUES (?, ?, ?)',
-            [id, userId, voteType]
-        );
-        await db.query(
-            `UPDATE translations SET ${voteType === 'up' ? 'upvotes = upvotes + 1' : 'downvotes = downvotes + 1'} WHERE id = ?`,
-            [id]
-        );
-
-        // Award XP for community participation
-        await db.query('UPDATE users SET xp = xp + 5 WHERE id = ?', [userId]);
-
-        res.json({ success: true, action: 'added', voteType });
-    } catch (err) {
-        console.error('Vote error:', err);
-        res.status(500).json({ error: 'שגיאה בהצבעה' });
-    }
-});
+// (single implementation below, after PUT /translations/:id)
 
 // PUT /api/dictionary/translations/:id - Update translation (admin direct edit)
 router.put('/translations/:id', authenticate, requireApprover, async (req, res) => {
@@ -929,18 +885,29 @@ router.post('/entries/:id/suggest-field', optionalAuth, async (req, res) => {
             return res.status(400).json({ error: 'שדה לא חוקי' });
         }
 
-        // Get dialect for the suggestion record
-        const [entryRows] = await db.query('SELECT term FROM dictionary_entries WHERE id = ?', [id]);
+        // Get entry and its existing dialect
+        const [entryRows] = await db.query(
+            `SELECT de.term, COALESCE(d.name, 'General') as dialect_name
+             FROM dictionary_entries de
+             LEFT JOIN translations t ON de.id = t.entry_id
+             LEFT JOIN dialects d ON t.dialect_id = d.id
+             WHERE de.id = ?
+             LIMIT 1`,
+            [id]
+        );
         if (entryRows.length === 0) return res.status(404).json({ error: 'ערך לא נמצא' });
+
+        const dialect = req.body.dialect || entryRows[0].dialect_name || 'General';
 
         await db.query(
             `INSERT INTO translation_suggestions
              (entry_id, user_id, user_name, dialect, field_name, suggested_hebrew, suggested_latin, suggested_cyrillic, suggested_russian, reason, status)
-             VALUES (?, ?, ?, 'General', ?, ?, ?, ?, ?, ?, 'pending')`,
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
             [
                 id,
                 req.user?.id || null,
                 req.user?.name || 'אורח',
+                dialect,
                 fieldName,
                 fieldName === 'hebrew' ? suggestedValue.trim() : (currentValue || ''),
                 fieldName === 'latin' ? suggestedValue.trim() : '',
@@ -1057,10 +1024,14 @@ router.get('/missing-dialects', async (req, res) => {
     try {
         const limit = parseInt(req.query.limit) || 5;
         const offset = parseInt(req.query.offset) || 0;
+        const search = req.query.search?.trim();
 
         // Get all dialects
         const [allDialects] = await db.query('SELECT id, name FROM dialects');
         const dialectIds = allDialects.map(d => d.id);
+
+        const searchCondition = search ? 'AND de.term LIKE ?' : '';
+        const searchParams = search ? [`%${search}%`] : [];
 
         // Find entries that don't have all dialects
         const [entries] = await db.query(
@@ -1071,10 +1042,11 @@ router.get('/missing-dialects', async (req, res) => {
              JOIN translations t ON de.id = t.entry_id
              JOIN dialects d ON t.dialect_id = d.id
              WHERE de.status = 'active'
+             ${searchCondition}
              GROUP BY de.id
              HAVING dialect_count < ?
              LIMIT ? OFFSET ?`,
-            [dialectIds.length, limit, offset]
+            [...searchParams, dialectIds.length, limit, offset]
         );
 
         // Get total count
@@ -1084,10 +1056,11 @@ router.get('/missing-dialects', async (req, res) => {
                 FROM dictionary_entries de
                 JOIN translations t ON de.id = t.entry_id
                 WHERE de.status = 'active'
+                ${searchCondition}
                 GROUP BY de.id
                 HAVING dialect_count < ?
             ) sub`,
-            [dialectIds.length]
+            [...searchParams, dialectIds.length]
         );
 
         // Calculate missing dialects for each
@@ -1110,29 +1083,49 @@ router.get('/missing-dialects', async (req, res) => {
     }
 });
 
+// Stats cache (refreshed every 2 minutes)
+let statsCache = { data: null, expiry: 0 };
+const STATS_CACHE_TTL = 2 * 60 * 1000; // 2 minutes
+
 // GET /api/dictionary/stats - Get counts for all categories (for dashboard widgets)
 router.get('/stats', async (req, res) => {
     try {
-        // Hebrew-only: has Hebrew translation but missing Latin/Juhuri transliteration
-        const [[hebrewOnly]] = await db.query(`
-            SELECT COUNT(DISTINCT de.id) as count FROM dictionary_entries de
-            JOIN translations t ON de.id = t.entry_id
-            WHERE de.status = 'active'
-            AND t.hebrew IS NOT NULL AND t.hebrew != ''
-            AND (t.latin IS NULL OR t.latin = '')
-        `);
+        const now = Date.now();
+        if (statsCache.data && now < statsCache.expiry) {
+            return res.json(statsCache.data);
+        }
 
-        // Juhuri-only: detected as Juhuri but missing Hebrew translation
-        const [[juhuriOnly]] = await db.query(`
-            SELECT COUNT(DISTINCT de.id) as count FROM dictionary_entries de
-            JOIN translations t ON de.id = t.entry_id
-            WHERE de.status = 'active'
-            AND de.detected_language = 'Juhuri'
-            AND (t.hebrew IS NULL OR t.hebrew = '')
-        `);
+        // Run all count queries in parallel
+        const [
+            [[hebrewOnly]],
+            [[juhuriOnly]],
+            [[{ dialectCount }]],
+            [[totalActive]],
+            [[recentEntries]]
+        ] = await Promise.all([
+            db.query(`
+                SELECT COUNT(DISTINCT de.id) as count FROM dictionary_entries de
+                JOIN translations t ON de.id = t.entry_id
+                WHERE de.status = 'active'
+                AND t.hebrew IS NOT NULL AND t.hebrew != ''
+                AND (t.latin IS NULL OR t.latin = '')
+            `),
+            db.query(`
+                SELECT COUNT(DISTINCT de.id) as count FROM dictionary_entries de
+                JOIN translations t ON de.id = t.entry_id
+                WHERE de.status = 'active'
+                AND de.detected_language = 'Juhuri'
+                AND (t.hebrew IS NULL OR t.hebrew = '')
+            `),
+            db.query('SELECT COUNT(*) as dialectCount FROM dialects'),
+            db.query(`SELECT COUNT(*) as count FROM dictionary_entries WHERE status = 'active'`),
+            db.query(`
+                SELECT COUNT(*) as count FROM dictionary_entries
+                WHERE status = 'active' AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+            `)
+        ]);
 
-        // Missing dialects: has some translations but not all dialects
-        const [[{ dialectCount }]] = await db.query('SELECT COUNT(*) as dialectCount FROM dialects');
+        // Missing dialects (depends on dialectCount result)
         const [[missingDialects]] = await db.query(`
             SELECT COUNT(*) as count FROM (
                 SELECT de.id, COUNT(DISTINCT t.dialect_id) as dialect_count
@@ -1144,15 +1137,11 @@ router.get('/stats', async (req, res) => {
             ) sub
         `, [dialectCount]);
 
-        // Total active entries
-        const [[totalActive]] = await db.query(`
-            SELECT COUNT(*) as count FROM dictionary_entries WHERE status = 'active'
-        `);
-
-        // Recent entries (last 7 days)
-        const [[recentEntries]] = await db.query(`
-            SELECT COUNT(*) as count FROM dictionary_entries
-            WHERE status = 'active' AND created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+        // Missing audio count
+        const [[missingAudio]] = await db.query(`
+            SELECT COUNT(DISTINCT de.id) as count FROM dictionary_entries de
+            WHERE de.status = 'active'
+            AND (de.pronunciation_guide IS NOT NULL AND de.pronunciation_guide != '')
         `);
 
         // Pending suggestions
@@ -1166,15 +1155,18 @@ router.get('/stats', async (req, res) => {
             // Table might not exist
         }
 
-        res.json({
+        const data = {
             hebrewOnlyCount: hebrewOnly.count,
             juhuriOnlyCount: juhuriOnly.count,
             missingDialectsCount: missingDialects.count,
-            missingAudioCount: totalActive.count, // For now, assume all are missing audio until audio_recordings table exists
+            missingAudioCount: missingAudio.count,
             totalActiveCount: totalActive.count,
             recentCount: recentEntries.count,
             pendingCount
-        });
+        };
+
+        statsCache = { data, expiry: now + STATS_CACHE_TTL };
+        res.json(data);
     } catch (err) {
         console.error('Stats error:', err);
         res.status(500).json({ error: 'שגיאה בטעינת סטטיסטיקות' });
@@ -1186,6 +1178,10 @@ router.get('/hebrew-only', async (req, res) => {
     try {
         const limit = parseInt(req.query.limit) || 20;
         const offset = parseInt(req.query.offset) || 0;
+        const search = req.query.search?.trim();
+
+        const searchCondition = search ? 'AND (de.term LIKE ? OR t.hebrew LIKE ?)' : '';
+        const searchParams = search ? [`%${search}%`, `%${search}%`] : [];
 
         const [entries] = await db.query(`
             SELECT de.id, de.term, de.detected_language, t.hebrew
@@ -1194,10 +1190,11 @@ router.get('/hebrew-only', async (req, res) => {
             WHERE de.status = 'active'
             AND t.hebrew IS NOT NULL AND t.hebrew != ''
             AND (t.latin IS NULL OR t.latin = '')
+            ${searchCondition}
             GROUP BY de.id
             ORDER BY de.created_at DESC
             LIMIT ? OFFSET ?
-        `, [limit, offset]);
+        `, [...searchParams, limit, offset]);
 
         const [[{ total }]] = await db.query(`
             SELECT COUNT(DISTINCT de.id) as total FROM dictionary_entries de
@@ -1205,7 +1202,8 @@ router.get('/hebrew-only', async (req, res) => {
             WHERE de.status = 'active'
             AND t.hebrew IS NOT NULL AND t.hebrew != ''
             AND (t.latin IS NULL OR t.latin = '')
-        `);
+            ${searchCondition}
+        `, searchParams);
 
         res.json({ entries, total });
     } catch (err) {
@@ -1219,6 +1217,10 @@ router.get('/juhuri-only', async (req, res) => {
     try {
         const limit = parseInt(req.query.limit) || 20;
         const offset = parseInt(req.query.offset) || 0;
+        const search = req.query.search?.trim();
+
+        const searchCondition = search ? 'AND (de.term LIKE ? OR t.latin LIKE ?)' : '';
+        const searchParams = search ? [`%${search}%`, `%${search}%`] : [];
 
         const [entries] = await db.query(`
             SELECT de.id, de.term, de.detected_language, t.latin, t.cyrillic
@@ -1227,10 +1229,11 @@ router.get('/juhuri-only', async (req, res) => {
             WHERE de.status = 'active'
             AND de.detected_language = 'Juhuri'
             AND (t.hebrew IS NULL OR t.hebrew = '')
+            ${searchCondition}
             GROUP BY de.id
             ORDER BY de.created_at DESC
             LIMIT ? OFFSET ?
-        `, [limit, offset]);
+        `, [...searchParams, limit, offset]);
 
         const [[{ total }]] = await db.query(`
             SELECT COUNT(DISTINCT de.id) as total FROM dictionary_entries de
@@ -1238,7 +1241,8 @@ router.get('/juhuri-only', async (req, res) => {
             WHERE de.status = 'active'
             AND de.detected_language = 'Juhuri'
             AND (t.hebrew IS NULL OR t.hebrew = '')
-        `);
+            ${searchCondition}
+        `, searchParams);
 
         res.json({ entries, total });
     } catch (err) {
@@ -1252,22 +1256,33 @@ router.get('/missing-audio', async (req, res) => {
     try {
         const limit = parseInt(req.query.limit) || 20;
         const offset = parseInt(req.query.offset) || 0;
+        const search = req.query.search?.trim();
 
-        // For now, return all active entries since audio_recordings table might not exist
-        // When the table is added, this query can be updated to exclude entries with recordings
+        const searchCondition = search ? 'AND (de.term LIKE ? OR t.hebrew LIKE ?)' : '';
+        const searchParams = search ? [`%${search}%`, `%${search}%`] : [];
+
+        // Only return entries that have a pronunciation_guide but no audio file path,
+        // prioritizing entries with Hebrew translations (more useful to record)
         const [entries] = await db.query(`
             SELECT de.id, de.term, de.detected_language, t.hebrew, t.latin
             FROM dictionary_entries de
             LEFT JOIN translations t ON de.id = t.entry_id
             WHERE de.status = 'active'
+              AND (de.pronunciation_guide IS NOT NULL AND de.pronunciation_guide != '')
+              ${searchCondition}
             GROUP BY de.id
-            ORDER BY de.created_at DESC
+            ORDER BY CASE WHEN t.hebrew IS NOT NULL AND t.hebrew != '' THEN 0 ELSE 1 END, de.created_at DESC
             LIMIT ? OFFSET ?
-        `, [limit, offset]);
+        `, [...searchParams, limit, offset]);
 
         const [[{ total }]] = await db.query(`
-            SELECT COUNT(*) as total FROM dictionary_entries WHERE status = 'active'
-        `);
+            SELECT COUNT(DISTINCT de.id) as total
+            FROM dictionary_entries de
+            LEFT JOIN translations t ON de.id = t.entry_id
+            WHERE de.status = 'active'
+              AND (de.pronunciation_guide IS NOT NULL AND de.pronunciation_guide != '')
+              ${searchCondition}
+        `, searchParams);
 
         res.json({ entries, total });
     } catch (err) {
@@ -1377,12 +1392,16 @@ router.get('/pending-suggestions', async (req, res) => {
 
 // PUT /api/dictionary/suggestions/:id/approve - Approve a suggestion (admin)
 router.put('/suggestions/:id/approve', authenticate, requireApprover, async (req, res) => {
+    const connection = await db.getConnection();
     try {
+        await connection.beginTransaction();
         const { id } = req.params;
 
         // Get suggestion
-        const [suggestions] = await db.query('SELECT * FROM translation_suggestions WHERE id = ?', [id]);
+        const [suggestions] = await connection.query('SELECT * FROM translation_suggestions WHERE id = ?', [id]);
         if (suggestions.length === 0) {
+            await connection.rollback();
+            connection.release();
             return res.status(404).json({ error: 'הצעה לא נמצאה' });
         }
         const suggestion = suggestions[0];
@@ -1404,44 +1423,44 @@ router.put('/suggestions/:id/approve', authenticate, requireApprover, async (req
 
             // Update the appropriate table/column
             if (['hebrew', 'latin', 'cyrillic'].includes(fieldName)) {
-                await db.query(
+                await connection.query(
                     `UPDATE translations SET ${fieldName} = ? WHERE entry_id = ? LIMIT 1`,
                     [suggestedValue, entryId]
                 );
             } else if (fieldName === 'russian') {
-                await db.query('UPDATE dictionary_entries SET russian = ? WHERE id = ?', [suggestedValue, entryId]);
+                await connection.query('UPDATE dictionary_entries SET russian = ? WHERE id = ?', [suggestedValue, entryId]);
             } else if (fieldName === 'definition') {
                 // Update or insert definition
-                const [existingDefs] = await db.query('SELECT id FROM definitions WHERE entry_id = ? LIMIT 1', [entryId]);
+                const [existingDefs] = await connection.query('SELECT id FROM definitions WHERE entry_id = ? LIMIT 1', [entryId]);
                 if (existingDefs.length > 0) {
-                    await db.query('UPDATE definitions SET definition = ? WHERE id = ?', [suggestedValue, existingDefs[0].id]);
+                    await connection.query('UPDATE definitions SET definition = ? WHERE id = ?', [suggestedValue, existingDefs[0].id]);
                 } else {
-                    await db.query('INSERT INTO definitions (entry_id, definition) VALUES (?, ?)', [entryId, suggestedValue]);
+                    await connection.query('INSERT INTO definitions (entry_id, definition) VALUES (?, ?)', [entryId, suggestedValue]);
                 }
             } else if (fieldName === 'pronunciationGuide') {
-                await db.query('UPDATE dictionary_entries SET pronunciation_guide = ? WHERE id = ?', [suggestedValue, entryId]);
+                await connection.query('UPDATE dictionary_entries SET pronunciation_guide = ? WHERE id = ?', [suggestedValue, entryId]);
             } else if (fieldName === 'partOfSpeech') {
-                await db.query('UPDATE dictionary_entries SET part_of_speech = ? WHERE id = ?', [suggestedValue, entryId]);
+                await connection.query('UPDATE dictionary_entries SET part_of_speech = ? WHERE id = ?', [suggestedValue, entryId]);
             }
 
             // Update field_sources
-            await db.query(
+            await connection.query(
                 `INSERT INTO field_sources (entry_id, field_name, source_type) VALUES (?, ?, 'community')
                  ON DUPLICATE KEY UPDATE source_type = 'community'`,
                 [entryId, fieldName]
             );
         } else {
             // Full translation suggestion (original behavior)
-            const [dialects] = await db.query('SELECT id FROM dialects WHERE name = ?', [suggestion.dialect]);
+            const [dialects] = await connection.query('SELECT id FROM dialects WHERE name = ?', [suggestion.dialect]);
             const dialectId = dialects[0]?.id || 6;
 
             if (suggestion.translation_id) {
-                await db.query(
+                await connection.query(
                     `UPDATE translations SET hebrew = ?, latin = ?, cyrillic = ? WHERE id = ?`,
                     [suggestion.suggested_hebrew, suggestion.suggested_latin, suggestion.suggested_cyrillic, suggestion.translation_id]
                 );
             } else {
-                await db.query(
+                await connection.query(
                     `INSERT INTO translations (entry_id, dialect_id, hebrew, latin, cyrillic) VALUES (?, ?, ?, ?, ?)`,
                     [suggestion.entry_id, dialectId, suggestion.suggested_hebrew, suggestion.suggested_latin, suggestion.suggested_cyrillic]
                 );
@@ -1449,18 +1468,25 @@ router.put('/suggestions/:id/approve', authenticate, requireApprover, async (req
         }
 
         // Mark suggestion as approved
-        await db.query(
+        await connection.query(
             'UPDATE translation_suggestions SET status = ?, reviewed_by = ?, reviewed_at = NOW() WHERE id = ?',
             ['approved', req.user.id, id]
         );
 
         // Award XP to suggester
         if (suggestion.user_id) {
-            await db.query('UPDATE users SET xp = xp + 50 WHERE id = ?', [suggestion.user_id]);
+            await connection.query('UPDATE users SET xp = xp + 50 WHERE id = ?', [suggestion.user_id]);
         }
 
+        // Invalidate stats cache
+        statsCache = { data: null, expiry: 0 };
+
+        await connection.commit();
+        connection.release();
         res.json({ success: true });
     } catch (err) {
+        await connection.rollback();
+        connection.release();
         console.error('Approve suggestion error:', err);
         res.status(500).json({ error: 'שגיאה באישור הצעה' });
     }

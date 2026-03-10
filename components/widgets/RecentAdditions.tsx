@@ -66,9 +66,9 @@ const RecentAdditions: React.FC<RecentAdditionsProps> = ({ onSelectWord }) => {
                     </div>
                 )}
             </div>
-            <button className="w-full py-3 text-center text-xs font-medium text-slate-400 hover:text-indigo-600 transition-colors">
-                צפה בכל המילים החדשות
-            </button>
+            <div className="w-full py-2 text-center text-[10px] text-slate-500/50">
+                לחץ על מילה לצפייה
+            </div>
         </div>
     );
 };

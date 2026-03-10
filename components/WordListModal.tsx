@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { X, Search, ChevronRight, ChevronLeft, Loader2 } from 'lucide-react';
 import apiService from '../services/apiService';
 
@@ -33,23 +33,28 @@ const WordListModal: React.FC<WordListModalProps> = ({
     const [entries, setEntries] = useState<WordListEntry[]>([]);
     const [loading, setLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
+    const [debouncedSearch, setDebouncedSearch] = useState('');
     const [page, setPage] = useState(0);
+    const [serverTotal, setServerTotal] = useState(totalCount);
     const pageSize = 20;
+    const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
     const fetchEntries = useCallback(async () => {
         setLoading(true);
         try {
             const offset = page * pageSize;
+            const searchParam = debouncedSearch ? `&search=${encodeURIComponent(debouncedSearch)}` : '';
             const res = await apiService.get<{ entries: WordListEntry[], total: number }>(
-                `/dictionary/${category}?limit=${pageSize}&offset=${offset}`
+                `/dictionary/${category}?limit=${pageSize}&offset=${offset}${searchParam}`
             );
             setEntries(res.entries || []);
+            setServerTotal(res.total ?? totalCount);
         } catch (err) {
             console.error(`Failed to fetch ${category} entries:`, err);
         } finally {
             setLoading(false);
         }
-    }, [category, page]);
+    }, [category, page, debouncedSearch, totalCount]);
 
     useEffect(() => {
         if (isOpen) {
@@ -61,20 +66,23 @@ const WordListModal: React.FC<WordListModalProps> = ({
         if (isOpen) {
             setPage(0);
             setSearchTerm('');
+            setDebouncedSearch('');
         }
     }, [isOpen, category]);
 
+    // Debounce search input
+    useEffect(() => {
+        if (debounceRef.current) clearTimeout(debounceRef.current);
+        debounceRef.current = setTimeout(() => {
+            setDebouncedSearch(searchTerm);
+            setPage(0);
+        }, 350);
+        return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+    }, [searchTerm]);
+
     if (!isOpen) return null;
 
-    const totalPages = Math.ceil(totalCount / pageSize);
-
-    const filteredEntries = searchTerm
-        ? entries.filter(e =>
-            e.term.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            e.hebrew?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            e.latin?.toLowerCase().includes(searchTerm.toLowerCase())
-        )
-        : entries;
+    const totalPages = Math.ceil(serverTotal / pageSize);
 
     const getCategoryColor = () => {
         switch (category) {
@@ -120,9 +128,9 @@ const WordListModal: React.FC<WordListModalProps> = ({
                 <div className={`p-5 bg-gradient-to-r ${getCategoryColor()} text-white flex justify-between items-center shrink-0`}>
                     <div>
                         <h3 className="font-bold text-lg">{title}</h3>
-                        <p className="text-sm text-white/80">{totalCount.toLocaleString()} מילים</p>
+                        <p className="text-sm text-white/80">{serverTotal.toLocaleString()} מילים</p>
                     </div>
-                    <button onClick={onClose} className="p-2 rounded-full hover:bg-white/20 transition-colors">
+                    <button type="button" onClick={onClose} title="סגור" className="p-2 rounded-full hover:bg-white/20 transition-colors">
                         <X size={20} />
                     </button>
                 </div>
@@ -135,7 +143,7 @@ const WordListModal: React.FC<WordListModalProps> = ({
                             type="text"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            placeholder="חיפוש בתוצאות..."
+                            placeholder="חיפוש בכל התוצאות..."
                             className="w-full pr-10 pl-4 py-2 border border-white/10 rounded-xl bg-slate-50 dark:bg-slate-700 text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         />
                     </div>
@@ -147,13 +155,13 @@ const WordListModal: React.FC<WordListModalProps> = ({
                         <div className="flex items-center justify-center h-32">
                             <Loader2 className="animate-spin text-indigo-500" size={32} />
                         </div>
-                    ) : filteredEntries.length === 0 ? (
+                    ) : entries.length === 0 ? (
                         <div className="text-center text-slate-400 py-8">
                             {searchTerm ? 'לא נמצאו תוצאות' : 'אין מילים בקטגוריה זו'}
                         </div>
                     ) : (
                         <div className="space-y-2">
-                            {filteredEntries.map((entry) => (
+                            {entries.map((entry) => (
                                 <button
                                     key={entry.id}
                                     onClick={() => onSelectWord(entry.id, entry.term)}

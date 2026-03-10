@@ -11,7 +11,6 @@ interface HeroSectionProps {
 const HeroSection: React.FC<HeroSectionProps> = ({ scrollY, searchTerm, setSearchTerm, handleSearch }) => {
   return (
     <section className="relative z-10 min-h-[100vh] flex flex-col items-center justify-end overflow-hidden">
-
       {/* Mountain Background Image */}
       <div
         className="absolute inset-0 z-0"
@@ -27,7 +26,6 @@ const HeroSection: React.FC<HeroSectionProps> = ({ scrollY, searchTerm, setSearc
         {/* Warm sunset tint */}
         <div className="absolute inset-0 bg-gradient-to-t from-amber-900/20 via-transparent to-purple-900/15 mix-blend-soft-light" />
       </div>
-
       {/* Decorative Caucasian Rug Geometric Border — Top */}
       <div className="absolute top-0 left-0 right-0 z-20 h-16 flex items-center justify-center overflow-hidden opacity-40">
         <div className="flex gap-0 w-full">
@@ -36,17 +34,14 @@ const HeroSection: React.FC<HeroSectionProps> = ({ scrollY, searchTerm, setSearc
           ))}
         </div>
       </div>
-
       {/* Giant Title Text — Behind the foreground, creates layering effect */}
       <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none" style={{ transform: `translateY(${scrollY * -0.15}px)` }}>
         <h1 className="text-[6rem] sm:text-[9rem] md:text-[14rem] lg:text-[18rem] font-black text-white/[0.08] tracking-tighter leading-none select-none whitespace-nowrap" style={{ fontFamily: "'Rubik', sans-serif" }}>
           ג׳והורי
         </h1>
       </div>
-
       {/* Foreground gradient — imitates "rocks/ground" layer for depth */}
       <div className="absolute bottom-0 left-0 right-0 z-20 h-[50vh] bg-gradient-to-t from-[#050B14] via-[#050B14]/80 to-transparent pointer-events-none" />
-
       {/* Side decorative elements — Pomegranate/vine motif */}
       <div className="absolute left-2 sm:left-6 top-1/3 z-20 opacity-30 hidden sm:block" style={{ transform: `translateY(${scrollY * 0.1}px)` }}>
         <div className="space-y-4">
@@ -64,7 +59,6 @@ const HeroSection: React.FC<HeroSectionProps> = ({ scrollY, searchTerm, setSearc
           <div className="w-[2px] h-20 bg-gradient-to-b from-amber-500/40 to-transparent mx-auto" />
         </div>
       </div>
-
       {/* Main Hero Content — sits in front of everything */}
       <div className="relative z-30 w-full max-w-3xl mx-auto flex flex-col items-center text-center px-4 pb-16 sm:pb-24 space-y-6 animate-hero-fade-in">
 
@@ -78,8 +72,8 @@ const HeroSection: React.FC<HeroSectionProps> = ({ scrollY, searchTerm, setSearc
         <h1 className="text-5xl sm:text-6xl md:text-8xl font-black text-white tracking-tight leading-[1.05] drop-shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
           מורשת{' '}
           <span className="text-transparent bg-clip-text bg-gradient-to-l from-amber-200 via-amber-400 to-yellow-500">
-            ג׳והורי
-          </span>
+                                          ג'והורי
+                                        </span>
         </h1>
 
         {/* Subtitle */}
