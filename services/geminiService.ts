@@ -4,7 +4,12 @@ import { geminiApi, dictionaryApi } from "./apiService";
 
 // --- Functions ---
 
-export const searchDictionary = async (query: string): Promise<DictionaryEntry> => {
+export interface SearchResult {
+  entry: DictionaryEntry;
+  additionalResults: DictionaryEntry[];
+}
+
+export const searchDictionary = async (query: string): Promise<SearchResult> => {
   // First check if we have a local/approved entry
   try {
     const localResult = await dictionaryApi.search(query);
@@ -19,58 +24,24 @@ export const searchDictionary = async (query: string): Promise<DictionaryEntry> 
       if (!entry.examples || entry.examples.length === 0) missingFields.push('examples');
       if (!entry.pronunciationGuide) missingFields.push('pronunciationGuide');
 
-      // If there are missing fields, try to enrich with AI (non-blocking)
+      // If there are missing fields, fire-and-forget enrich (don't block search results)
       if (missingFields.length > 0) {
-        try {
-          const enrichResult = await geminiApi.enrich(entry.term, t?.hebrew || '', missingFields);
-          const enrichment = enrichResult.enrichment;
-          const fieldSources = { ...entry.fieldSources } || {};
-
-          // Merge AI data into entry
-          if (enrichment.latin && !t?.latin && entry.translations?.length) {
-            entry.translations[0].latin = enrichment.latin;
-            fieldSources.latin = 'ai';
-          }
-          if (enrichment.cyrillic && !t?.cyrillic && entry.translations?.length) {
-            entry.translations[0].cyrillic = enrichment.cyrillic;
-            fieldSources.cyrillic = 'ai';
-          }
-          if (enrichment.examples?.length && (!entry.examples || entry.examples.length === 0)) {
-            entry.examples = enrichment.examples;
-            fieldSources.examples = 'ai';
-          }
-          if (enrichment.pronunciationGuide && !entry.pronunciationGuide) {
-            entry.pronunciationGuide = enrichment.pronunciationGuide;
-            fieldSources.pronunciationGuide = 'ai';
-          }
-
-          entry.fieldSources = fieldSources;
-        } catch (enrichErr) {
-          console.log('AI enrichment failed (non-critical):', enrichErr);
-        }
+        geminiApi.enrich(entry.term, t?.hebrew || '', missingFields).catch(() => {});
       }
 
-      return entry;
+      // Additional results from the same search (server returns up to 5)
+      const additionalResults: DictionaryEntry[] = (localResult.results || [])
+        .slice(1)
+        .map((r: any) => ({ ...r, source: r.source || 'Manual' }));
+
+      return { entry, additionalResults };
     }
   } catch (err) {
     console.log('Local search failed, trying AI:', err);
   }
 
-  // Fall back to full AI search
-  const response = await geminiApi.search(query);
-  const aiFieldSources: Record<string, string> = {};
-  const aiEntry = response.entry;
-  if (aiEntry.term) aiFieldSources.term = 'ai';
-  if (aiEntry.translations?.length) {
-    aiFieldSources.hebrew = 'ai';
-    aiFieldSources.latin = 'ai';
-    aiFieldSources.cyrillic = 'ai';
-  }
-  if (aiEntry.definitions?.length) aiFieldSources.definition = 'ai';
-  if (aiEntry.pronunciationGuide) aiFieldSources.pronunciationGuide = 'ai';
-  if (aiEntry.examples?.length) aiFieldSources.examples = 'ai';
-
-  return { ...aiEntry, source: 'AI', fieldSources: aiFieldSources };
+  // No local result found — don't fall back to AI (it invents non-existent words)
+  throw new Error('NOT_FOUND');
 };
 
 export const searchByAudio = async (base64Audio: string, mimeType: string): Promise<DictionaryEntry> => {

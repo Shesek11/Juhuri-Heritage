@@ -38,6 +38,29 @@ const FIELD_LABELS: Record<string, string> = {
   partOfSpeech: 'חלק דיבר',
 };
 
+/** Map English part-of-speech to Hebrew */
+const POS_HEBREW: Record<string, string> = {
+  noun: 'שם עצם',
+  verb: 'פועל',
+  adjective: 'שם תואר',
+  adverb: 'תואר הפועל',
+  pronoun: 'כינוי גוף',
+  preposition: 'מילת יחס',
+  conjunction: 'מילת חיבור',
+  interjection: 'מילת קריאה',
+  particle: 'מילית',
+  numeral: 'שם מספר',
+  determiner: 'מילת הגדרה',
+  phrase: 'צירוף',
+  idiom: 'ניב',
+  expression: 'ביטוי',
+};
+
+const partOfSpeechHebrew = (pos: string): string => {
+  const lower = pos.toLowerCase().trim();
+  return POS_HEBREW[lower] || pos;
+};
+
 /** Inline field edit form */
 const FieldEditForm: React.FC<{
   entryId: string;
@@ -416,9 +439,9 @@ const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal, onSugge
   };
 
   return (
-    <div className="group relative w-full max-w-2xl bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-2xl overflow-hidden border border-white/10 transition-all duration-500 hover:-translate-y-1 hover:border-amber-500/40 hover:bg-[#0d1424]/90 hover:shadow-[0_20px_40px_-15px_rgba(245,158,11,0.15)] font-rubik">
+    <div className="group/card relative w-full max-w-2xl bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-2xl overflow-hidden border border-white/10 transition-all duration-500 hover:-translate-y-1 hover:border-amber-500/40 hover:bg-[#0d1424]/90 hover:shadow-[0_20px_40px_-15px_rgba(245,158,11,0.15)] font-rubik">
       {/* Subtle top gradient line */}
-      <div className="absolute z-50 top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-transparent via-amber-500/80 to-transparent scale-x-0 group-hover:scale-x-100 transition-transform duration-700" />
+      <div className="absolute z-50 top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-transparent via-amber-500/80 to-transparent scale-x-0 group-hover/card:scale-x-100 transition-transform duration-700" />
       {/* Header */}
       <div className="p-6 bg-gradient-to-br from-white/10 to-transparent border-b border-white/10 text-white relative">
         <div className="flex justify-between items-start">
@@ -444,7 +467,7 @@ const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal, onSugge
               {/* Part of Speech */}
               {entry.partOfSpeech && (
                 <span className="inline-flex items-center px-2 py-1 bg-white/20 rounded-md text-xs font-medium backdrop-blur-sm">
-                  {entry.partOfSpeech}
+                  {partOfSpeechHebrew(entry.partOfSpeech)}
                 </span>
               )}
             </div>
@@ -468,7 +491,7 @@ const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal, onSugge
                 </div>
               </div>
 
-              <button onClick={() => handlePlay(entry.term, 'main')} className={`p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors ${isPlaying === 'main' ? 'animate-pulse' : ''}`} title="השמע מקור">
+              <button onClick={() => handlePlay(entry.translations?.[0]?.cyrillic || entry.translations?.[0]?.latin || entry.term, 'main')} className={`p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors ${isPlaying === 'main' ? 'animate-pulse' : ''}`} title="השמע מקור">
                 <Volume2 size={20} />
               </button>
               <button onClick={copyToClipboard} className="p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors" title="העתק">
@@ -547,17 +570,16 @@ const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal, onSugge
               const voteData = t.id ? translationVotes[t.id] : null;
               return (
                 <div key={idx} className="relative p-4 rounded-xl bg-white/5 hover:bg-white/10 transition-colors group border border-white/10">
-                  {/* Top-left: Play button */}
-                  <div className="absolute top-3 left-3 flex gap-1">
+                  <div className="flex gap-3">
+                    {/* Play button - inline, not absolute */}
                     <button
-                      onClick={() => handlePlay(t.hebrew, `trans-${idx}`)}
-                      className={`p-2 rounded-full text-slate-400 hover:text-indigo-600 dark:text-slate-500 dark:hover:text-indigo-400 opacity-0 group-hover:opacity-100 transition-all ${isPlaying === `trans-${idx}` ? 'text-indigo-600 opacity-100 animate-pulse' : ''}`}
+                      onClick={() => handlePlay(t.cyrillic || t.latin || t.hebrew, `trans-${idx}`)}
+                      className={`p-2 rounded-full text-slate-400 hover:text-indigo-600 dark:text-slate-500 dark:hover:text-indigo-400 opacity-0 group-hover:opacity-100 transition-all self-start mt-1 shrink-0 ${isPlaying === `trans-${idx}` ? 'text-indigo-600 !opacity-100 animate-pulse' : ''}`}
                     >
                       <Volume2 size={20} />
                     </button>
-                  </div>
 
-                  <div className="flex flex-col gap-1 pr-2">
+                  <div className="flex flex-col gap-1 flex-1 min-w-0">
                     <div className="text-2xl font-bold text-slate-100 font-rubik flex items-center gap-1">
                       <FieldSourceBadge source={entry.fieldSources?.hebrew} />
                       <span className="flex-1">{t.hebrew}</span>
@@ -658,6 +680,7 @@ const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal, onSugge
                         </button>
                       )}
                     </div>
+                  </div>
                   </div>
                 </div>
               );

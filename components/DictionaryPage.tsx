@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { DictionaryEntry, HistoryItem, DialectItem } from '../types';
-import { searchDictionary, searchByAudio } from '../services/geminiService';
+import { searchDictionary, searchByAudio, SearchResult } from '../services/geminiService';
 import { blobToBase64 } from '../utils/audioUtils';
 import ResultCard from './ResultCard';
 import HistoryPanel from './HistoryPanel';
@@ -18,6 +18,14 @@ import { Mic, Search, Plus, Loader2 } from 'lucide-react';
 import { SEOHead, buildDefinedTermJsonLd } from './seo/SEOHead';
 
 const STORAGE_KEY = 'juhuri_history';
+
+const POS_HEBREW: Record<string, string> = {
+  noun: 'שם עצם', verb: 'פועל', adjective: 'שם תואר', adverb: 'תואר הפועל',
+  pronoun: 'כינוי גוף', preposition: 'מילת יחס', conjunction: 'מילת חיבור',
+  interjection: 'מילת קריאה', particle: 'מילית', numeral: 'שם מספר',
+  phrase: 'צירוף', idiom: 'ניב', expression: 'ביטוי',
+};
+const posHebrew = (pos: string) => POS_HEBREW[pos.toLowerCase().trim()] || pos;
 
 interface DictionaryPageProps {
   dialects: DialectItem[];
@@ -39,6 +47,7 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({
 
   const [query, setQuery] = useState('');
   const [result, setResult] = useState<DictionaryEntry | null>(null);
+  const [additionalResults, setAdditionalResults] = useState<DictionaryEntry[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -65,18 +74,13 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({
     }
   }, [term]);
 
-  // Loading messages
+  // Loading message
   useEffect(() => {
-    let timers: ReturnType<typeof setTimeout>[] = [];
     if (loading) {
       setLoadingMessage('מחפש במילון...');
-      timers.push(setTimeout(() => setLoadingMessage('בודק במקורות ההיסטוריים...'), 2000));
-      timers.push(setTimeout(() => setLoadingMessage('מנתח ניבים והקשרים תרבותיים...'), 4500));
-      timers.push(setTimeout(() => setLoadingMessage('כבר מסיימים, תודה על הסבלנות...'), 8000));
     } else {
       setLoadingMessage('');
     }
-    return () => timers.forEach(clearTimeout);
   }, [loading]);
 
   const addToHistory = (entry: DictionaryEntry) => {
@@ -95,18 +99,33 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({
     if (!searchTerm.trim()) return;
     setLoading(true);
     setError(null);
+    setAdditionalResults([]);
     try {
-      const data = await searchDictionary(searchTerm);
-      setResult(data);
-      addToHistory(data);
+      const { entry, additionalResults: extras } = await searchDictionary(searchTerm);
+      setResult(entry);
+      setAdditionalResults(extras);
+      addToHistory(entry);
       // Update URL to reflect the searched term
-      navigate(`/word/${encodeURIComponent(data.term)}`, { replace: true });
-    } catch (err) {
-      setError('לא הצלחנו למצוא תרגום במאגר המסורתי. נסה שוב או נסח אחרת.');
+      navigate(`/word/${encodeURIComponent(entry.term)}`, { replace: true });
+    } catch (err: any) {
+      if (err?.message === 'NOT_FOUND') {
+        setError(`המילה "${searchTerm}" לא נמצאה במילון. בדוק את האיות או הוסף אותה בעצמך!`);
+      } else {
+        setError('שגיאה בחיפוש. נסה שוב.');
+      }
+      setResult(null);
       console.error(err);
     } finally {
       setLoading(false);
     }
+  };
+
+  const selectResult = (entry: DictionaryEntry) => {
+    setResult(entry);
+    setAdditionalResults([]);
+    setQuery(entry.term);
+    addToHistory(entry);
+    navigate(`/word/${encodeURIComponent(entry.term)}`, { replace: true });
   };
 
   const handleSearch = async (e?: React.FormEvent, specificTerm?: string) => {
@@ -140,6 +159,7 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({
         try {
           const data = await searchByAudio(base64Audio, 'audio/webm');
           setResult(data);
+          setAdditionalResults([]);
           addToHistory(data);
           setQuery(data.term);
           navigate(`/word/${encodeURIComponent(data.term)}`, { replace: true });
@@ -315,7 +335,7 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({
 
         {/* Results Container */}
         <div className="w-full max-w-2xl mx-auto mt-8">
-          {/* Results */}
+          {/* Main Result */}
           {result && !loading && (
             <div className="w-full animate-in slide-in-from-bottom-8 duration-500">
               <ResultCard
@@ -335,6 +355,46 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({
                   });
                 }}
               />
+            </div>
+          )}
+
+          {/* Additional Results */}
+          {additionalResults.length > 0 && !loading && (
+            <div className="mt-6 animate-in slide-in-from-bottom-8 duration-500 delay-150">
+              <h3 className="text-sm uppercase tracking-wider text-slate-400 font-bold mb-3">תוצאות נוספות</h3>
+              <div className="space-y-2">
+                {additionalResults.map((entry) => (
+                  <button
+                    key={entry.id}
+                    type="button"
+                    onClick={() => selectResult(entry)}
+                    className="w-full text-right p-4 rounded-xl bg-[#0d1424]/60 backdrop-blur-xl border border-white/10 hover:border-amber-500/40 hover:bg-[#0d1424]/90 transition-all group cursor-pointer"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-xl font-bold text-slate-100">{entry.term}</span>
+                          {entry.partOfSpeech && (
+                            <span className="text-[10px] px-1.5 py-0.5 bg-white/10 rounded text-slate-400">{posHebrew(entry.partOfSpeech)}</span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2 mt-1 text-sm text-slate-400">
+                          {entry.translations?.[0]?.hebrew && (
+                            <span>{entry.translations[0].hebrew}</span>
+                          )}
+                          {entry.translations?.[0]?.latin && (
+                            <span className="font-mono text-xs text-slate-500">{entry.translations[0].latin}</span>
+                          )}
+                          {entry.russian && (
+                            <span className="text-xs text-slate-500" dir="ltr">{entry.russian}</span>
+                          )}
+                        </div>
+                      </div>
+                      <Search size={16} className="text-slate-500 group-hover:text-amber-500 transition-colors shrink-0" />
+                    </div>
+                  </button>
+                ))}
+              </div>
             </div>
           )}
         </div>
