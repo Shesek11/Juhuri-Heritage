@@ -13,6 +13,10 @@ node_modules
 # Build output
 dist
 dist-ssr
+.next
+
+# Deployment state
+.last-backup-path
 
 # Environment files - NEVER commit these
 .env
