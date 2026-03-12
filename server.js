@@ -1,22 +1,40 @@
 /**
- * Custom Next.js server for production deployment on xCloud.
- * Handles:
- * - Next.js standalone server on port 5000
+ * Custom Next.js standalone server for production deployment on xCloud.
+ *
+ * Based on the default standalone server.js but adds:
  * - Static file serving for /uploads/ directory
- * - Database initialization on startup
+ * - Custom port (5000)
+ * - Graceful shutdown
+ *
+ * IMPORTANT: This file replaces the auto-generated .next/standalone/server.js
+ * during deployment. It must use the standalone API (startServer), NOT the
+ * dev API (next({ dev })), because standalone mode has no source files.
  */
 
+const path = require('path');
 const { createServer } = require('http');
 const { parse } = require('url');
-const path = require('path');
 const fs = require('fs');
-const next = require('next');
 
-const dev = process.env.NODE_ENV !== 'production';
-const hostname = '0.0.0.0';
+// Set production mode and working directory
+process.env.NODE_ENV = 'production';
+process.chdir(__dirname);
+
 const port = parseInt(process.env.PORT || '5000', 10);
+const hostname = process.env.HOSTNAME || '0.0.0.0';
 
-const app = next({ dev, hostname, port });
+// Load the Next.js standalone config
+const nextConfig = require('./.next/required-server-files.json').config;
+process.env.__NEXT_PRIVATE_STANDALONE_CONFIG = JSON.stringify(nextConfig);
+
+const next = require('next');
+const app = next({
+  dev: false,
+  dir: __dirname,
+  hostname,
+  port,
+  conf: nextConfig,
+});
 const handle = app.getRequestHandler();
 
 app.prepare().then(() => {
@@ -26,7 +44,7 @@ app.prepare().then(() => {
 
       // Serve uploaded files from /uploads/ directory
       if (parsedUrl.pathname && parsedUrl.pathname.startsWith('/uploads/')) {
-        const filePath = path.join(process.cwd(), parsedUrl.pathname);
+        const filePath = path.join(__dirname, parsedUrl.pathname);
         if (fs.existsSync(filePath)) {
           const ext = path.extname(filePath).toLowerCase();
           const mimeTypes = {

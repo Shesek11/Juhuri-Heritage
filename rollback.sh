@@ -21,7 +21,7 @@ else
     echo ""
     echo "No backup path provided and .last-backup-path not found."
     echo "List available backups on server:"
-    echo "  ssh $SSH_HOST 'ls -d /var/www/jun-juhuri.com.bak-*'"
+    echo "  ssh $SSH_HOST 'ls -d /home/juhuri/backups/jun-juhuri-bak-*'"
     exit 1
 fi
 
@@ -38,7 +38,7 @@ ssh "$SSH_HOST" "test -d $BACKUP_DIR" || {
     echo "ERROR: Backup directory not found on server: $BACKUP_DIR"
     echo ""
     echo "Available backups:"
-    ssh "$SSH_HOST" "ls -d /var/www/jun-juhuri.com.bak-* 2>/dev/null || echo '  (none found)'"
+    ssh "$SSH_HOST" "ls -d /home/juhuri/backups/jun-juhuri-bak-* 2>/dev/null || echo '  (none found)'"
     exit 1
 }
 

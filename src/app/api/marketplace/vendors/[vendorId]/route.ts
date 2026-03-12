@@ -5,10 +5,10 @@ import { requireAuth } from '@/src/lib/auth';
 // GET /api/marketplace/vendors/:slug
 export async function GET(
   request: NextRequest,
-  { params }: { params: Promise<{ slug: string }> }
+  { params }: { params: Promise<{ vendorId: string }> }
 ) {
   try {
-    const { slug } = await params;
+    const { vendorId: slug } = await params;
 
     const [vendors] = await pool.query(`
       SELECT v.id, v.slug, v.name, v.logo_url, v.cover_url,
@@ -76,11 +76,11 @@ export async function GET(
 // For PUT/DELETE by id, we use the slug param but treat it as id.
 export async function PUT(
   request: NextRequest,
-  { params }: { params: Promise<{ slug: string }> }
+  { params }: { params: Promise<{ vendorId: string }> }
 ) {
   try {
     const user = await requireAuth(request);
-    const { slug: id } = await params;
+    const { vendorId: id } = await params;
 
     const [vendor] = await pool.query(
       'SELECT user_id FROM marketplace_vendors WHERE id = ?',
@@ -135,11 +135,11 @@ export async function PUT(
 // DELETE /api/marketplace/vendors/:id
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ slug: string }> }
+  { params }: { params: Promise<{ vendorId: string }> }
 ) {
   try {
     const user = await requireAuth(request);
-    const { slug: id } = await params;
+    const { vendorId: id } = await params;
 
     const [vendor] = await pool.query(
       'SELECT user_id FROM marketplace_vendors WHERE id = ?',
