@@ -2,6 +2,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Changed
+- **Next.js Migration**: Full migration from React SPA + Express to Next.js 16 App Router with native SSR.
+- **149 API Route Handlers**: All 21 Express route files ported to Next.js Route Handlers.
+- **7 SSR Pages**: Word, recipe, and vendor detail pages with `generateMetadata()` + JSON-LD structured data.
+- **Dynamic Sitemap & Robots**: `sitemap.ts` and `robots.ts` generated from MariaDB at request time.
+- **Custom Server**: `server.js` wrapper for standalone PM2 deployment with `/uploads/` static file serving.
+- **In-Memory Rate Limiting**: Replaces `express-rate-limit` with Map-based sliding window.
+- **Manual Google OAuth**: Replaces Passport.js with direct OAuth2 flow (~60 lines).
+- **JWT Auth Utilities**: Ported to `src/lib/auth.ts` with `getAuthUser()`, `requireAuth()`, `requireRole()`.
+
+### Added
+- Playwright E2E test suites: SSR output, SEO meta, JSON-LD, API smoke, navigation.
+- `deploy-nextjs.sh` deployment script for xCloud standalone output.
+
+### Removed
+- Prerender server dependency (SEO now handled natively by Next.js SSR).
+- 500+ lines of meta-injection hacks from `server/index.js`.
+
+---
+
 ## [3.1.0] - 2026-03-04
 
 ### 📖 Dictionary V2
