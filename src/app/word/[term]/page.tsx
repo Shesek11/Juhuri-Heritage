@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import pool from '@/src/lib/db';
+import { buildPageMeta } from '@/src/lib/seo-settings';
 import {
   buildJsonLdGraph,
   buildDefinedTermJsonLd,
@@ -48,23 +49,15 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 
   const meanings = [entry.russian, entry.english].filter(Boolean).join(' | ');
-  const description = meanings
+  const descOverride = meanings
     ? `${entry.term} \u2014 ${meanings}`
-    : `\u05D4\u05D2\u05D3\u05E8\u05D4 \u05D5\u05EA\u05E8\u05D2\u05D5\u05DD \u05E9\u05DC "${entry.term}" \u05D1\u05DE\u05D9\u05DC\u05D5\u05DF \u05D2'\u05D5\u05D4\u05D5\u05E8\u05D9-\u05E2\u05D1\u05E8\u05D9`;
+    : undefined;
 
-  return {
-    title: `${entry.term} \u2014 \u05EA\u05E8\u05D2\u05D5\u05DD \u05D2'\u05D5\u05D4\u05D5\u05E8\u05D9`,
-    description,
-    openGraph: {
-      title: `${entry.term} \u2014 \u05EA\u05E8\u05D2\u05D5\u05DD \u05D2'\u05D5\u05D4\u05D5\u05E8\u05D9`,
-      description,
-      type: 'article',
-      url: `${SITE_URL}/word/${encodeURIComponent(entry.term)}`,
-    },
-    alternates: {
-      canonical: `${SITE_URL}/word/${encodeURIComponent(entry.term)}`,
-    },
-  };
+  return buildPageMeta('word', { term: entry.term }, {
+    description: descOverride,
+    ogType: 'article',
+    canonicalPath: `/word/${encodeURIComponent(entry.term)}`,
+  });
 }
 
 // ---------------------------------------------------------------------------

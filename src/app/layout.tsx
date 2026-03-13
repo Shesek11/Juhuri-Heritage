@@ -2,46 +2,47 @@ import type { Metadata } from 'next';
 import Script from 'next/script';
 import './globals.css';
 import AppProviders from '../../components/providers/AppProviders';
+import { getSeoSettings } from '@/src/lib/seo-settings';
 
 const GA_MEASUREMENT_ID = process.env.GA_MEASUREMENT_ID || '';
 
-export const metadata: Metadata = {
-  metadataBase: new URL(process.env.SITE_URL || 'https://jun-juhuri.com'),
-  title: {
-    default: "מורשת ג'והורי | המילון לשימור השפה",
-    template: "%s | מורשת ג'והורי",
-  },
-  description:
-    "מילון ג'והורי-עברי אינטראקטיבי לשימור שפת יהודי ההרים (ג'והורית). חפש מילים, למד את השפה ותרום לשימור המורשת.",
-  keywords: ["ג'והורי", 'Juhuri', 'יהודי ההרים', 'מילון', 'שפה', 'מורשת', 'קווקז'],
-  alternates: { canonical: '/' },
-  openGraph: {
-    title: "מורשת ג'והורי - המילון לשימור השפה",
-    description: "מילון ג'והורי-עברי אינטראקטיבי עם מורה פרטי AI",
-    type: 'website',
-    locale: 'he_IL',
-    siteName: "מורשת ג'והורי",
-    images: [
-      {
-        url: '/images/og-default.png',
-        width: 1200,
-        height: 630,
-      },
-    ],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: "מורשת ג'והורי - המילון לשימור השפה",
-    description: "מילון ג'והורי-עברי אינטראקטיבי לשימור שפת יהודי ההרים",
-    images: ['/images/og-default.png'],
-  },
-  verification: {
-    google: 'A3yUQjWHTO2y6V4kjV3k61E43gkDr4yxavoZfyxKc4U',
-  },
-  icons: {
-    icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📜</text></svg>",
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const settings = await getSeoSettings();
+  const ogImage = settings.ogImage || '/images/og-default.png';
+  const favicon = settings.favicon;
+
+  return {
+    metadataBase: new URL(process.env.SITE_URL || 'https://jun-juhuri.com'),
+    title: {
+      default: "מורשת ג'והורי | המילון לשימור השפה",
+      template: "%s | מורשת ג'והורי",
+    },
+    description:
+      "מילון ג'והורי-עברי אינטראקטיבי לשימור שפת יהודי ההרים (ג'והורית). חפש מילים, למד את השפה ותרום לשימור המורשת.",
+    keywords: ["ג'והורי", 'Juhuri', 'יהודי ההרים', 'מילון', 'שפה', 'מורשת', 'קווקז'],
+    alternates: { canonical: '/' },
+    openGraph: {
+      title: "מורשת ג'והורי - המילון לשימור השפה",
+      description: "מילון ג'והורי-עברי אינטראקטיבי עם מורה פרטי AI",
+      type: 'website',
+      locale: 'he_IL',
+      siteName: "מורשת ג'והורי",
+      images: [{ url: ogImage, width: 1200, height: 630 }],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: "מורשת ג'והורי - המילון לשימור השפה",
+      description: "מילון ג'והורי-עברי אינטראקטיבי לשימור שפת יהודי ההרים",
+      images: [ogImage],
+    },
+    verification: {
+      google: 'A3yUQjWHTO2y6V4kjV3k61E43gkDr4yxavoZfyxKc4U',
+    },
+    icons: favicon
+      ? { icon: favicon }
+      : { icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📜</text></svg>" },
+  };
+}
 
 const SITE_URL = process.env.SITE_URL || 'https://jun-juhuri.com';
 

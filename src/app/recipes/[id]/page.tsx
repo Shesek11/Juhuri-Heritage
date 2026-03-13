@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import pool from '@/src/lib/db';
+import { buildPageMeta } from '@/src/lib/seo-settings';
 import {
   buildJsonLdGraph,
   buildRecipeJsonLd,
@@ -43,25 +44,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const recipe = (rows as RecipeRow[])[0];
   if (!recipe) return { title: '\u05DE\u05EA\u05DB\u05D5\u05DF \u05DC\u05D0 \u05E0\u05DE\u05E6\u05D0' };
 
-  const description =
-    recipe.description || `\u05DE\u05EA\u05DB\u05D5\u05DF "${recipe.title}" \u2014 \u05DE\u05D8\u05D1\u05D7 \u05D2'\u05D5\u05D4\u05D5\u05E8\u05D9 \u05DE\u05E1\u05D5\u05E8\u05EA\u05D9`;
-
-  return {
-    title: recipe.title,
-    description,
-    openGraph: {
-      title: recipe.title,
-      description,
-      type: 'article',
-      url: `${SITE_URL}/recipes/${recipe.id}`,
-      ...(recipe.photo_url && {
-        images: [{ url: recipe.photo_url, alt: recipe.alt_text || recipe.title }],
-      }),
-    },
-    alternates: {
-      canonical: `${SITE_URL}/recipes/${recipe.id}`,
-    },
-  };
+  return buildPageMeta('recipe', { title: recipe.title }, {
+    description: recipe.description || undefined,
+    ogImage: recipe.photo_url || undefined,
+    ogType: 'article',
+    canonicalPath: `/recipes/${recipe.id}`,
+  });
 }
 
 /**
