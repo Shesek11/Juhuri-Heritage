@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
-import pool from '@/src/lib/db';
 
 // ---------------------------------------------------------------------------
 // In-memory redirect cache (2-minute TTL)
+// Middleware runs on Edge Runtime — cannot import mysql2 directly.
+// Instead we fetch redirects from our own API route.
 // ---------------------------------------------------------------------------
 
 interface RedirectEntry {
+  from_path: string;
   to_path: string;
   status_code: number;
 }
@@ -14,42 +16,37 @@ let redirectCache: Map<string, RedirectEntry> | null = null;
 let cacheTimestamp = 0;
 const CACHE_TTL = 2 * 60 * 1000; // 2 minutes
 
-async function getRedirects(): Promise<Map<string, RedirectEntry>> {
+async function getRedirects(origin: string): Promise<Map<string, RedirectEntry>> {
   const now = Date.now();
   if (redirectCache && now - cacheTimestamp < CACHE_TTL) {
     return redirectCache;
   }
 
   try {
-    const [rows] = await pool.query(
-      `SELECT from_path, to_path, status_code FROM seo_redirects WHERE is_active = 1`
-    ) as [any[], any];
+    const res = await fetch(`${origin}/api/seo/redirects`, {
+      headers: { 'x-middleware-secret': process.env.MIDDLEWARE_SECRET || '__internal__' },
+    });
+    if (!res.ok) {
+      return redirectCache || new Map();
+    }
+    const rows: RedirectEntry[] = await res.json();
 
     const map = new Map<string, RedirectEntry>();
     for (const row of rows) {
-      map.set(row.from_path, {
-        to_path: row.to_path,
-        status_code: row.status_code || 301,
-      });
+      map.set(row.from_path, row);
     }
 
     redirectCache = map;
     cacheTimestamp = now;
     return map;
-  } catch (error: any) {
-    // Table doesn't exist yet — no redirects
-    if (error?.code === 'ER_NO_SUCH_TABLE') {
-      redirectCache = new Map();
-      cacheTimestamp = now;
-      return redirectCache;
-    }
-    // On error, return empty map rather than crashing
-    return new Map();
+  } catch {
+    // On error, return existing cache or empty map
+    return redirectCache || new Map();
   }
 }
 
 // ---------------------------------------------------------------------------
-// Middleware: apply DB-managed redirects + increment hit counter
+// Middleware: apply DB-managed redirects
 // ---------------------------------------------------------------------------
 
 export async function middleware(request: NextRequest) {
@@ -66,23 +63,18 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  const redirects = await getRedirects();
+  const origin = request.nextUrl.origin;
+  const redirects = await getRedirects(origin);
   const match = redirects.get(pathname);
 
   if (match) {
-    // Fire-and-forget hit counter update
-    pool.query(
-      `UPDATE seo_redirects SET hits = hits + 1 WHERE from_path = ?`,
-      [pathname]
-    ).catch(() => {});
-
     const url = request.nextUrl.clone();
     // Support both relative and absolute redirect targets
     if (match.to_path.startsWith('http')) {
-      return NextResponse.redirect(match.to_path, match.status_code);
+      return NextResponse.redirect(match.to_path, match.status_code || 301);
     }
     url.pathname = match.to_path;
-    return NextResponse.redirect(url, match.status_code);
+    return NextResponse.redirect(url, match.status_code || 301);
   }
 
   return NextResponse.next();
