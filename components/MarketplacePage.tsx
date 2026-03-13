@@ -1,5 +1,7 @@
+'use client';
+
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useRouter } from 'next/navigation';
 import { marketplaceService, Vendor } from '../services/marketplaceService';
 import { VendorMap } from './marketplace/VendorMap';
 import { VendorCard } from './marketplace/VendorCard';
@@ -12,8 +14,9 @@ import { NotificationBell } from './marketplace/NotificationBell';
 import { SEOHead } from './seo/SEOHead';
 
 export const MarketplacePage: React.FC = () => {
-    const { slug: routeSlug } = useParams<{ slug?: string }>();
-    const navigate = useNavigate();
+    const params = useParams();
+    const routeSlug = params?.slug as string | undefined;
+    const router = useRouter();
     const [vendors, setVendors] = useState<Vendor[]>([]);
     const [loading, setLoading] = useState(true);
     const [viewMode, setViewMode] = useState<'map' | 'list'>('map');
@@ -47,7 +50,7 @@ export const MarketplacePage: React.FC = () => {
                 .then(vendor => setSelectedVendor(vendor))
                 .catch(err => {
                     console.error('Failed to load vendor:', err);
-                    navigate('/marketplace', { replace: true });
+                    router.replace('/marketplace');
                 });
         }
     }, [routeSlug]);
@@ -180,7 +183,7 @@ export const MarketplacePage: React.FC = () => {
                                     vendor={vendor}
                                     onClick={() => {
                                         setSelectedVendor(vendor);
-                                        navigate(`/marketplace/${vendor.slug}`);
+                                        router.push(`/marketplace/${vendor.slug}`);
                                     }}
                                 />
                             ))
@@ -195,7 +198,7 @@ export const MarketplacePage: React.FC = () => {
                         userLocation={userLocation}
                         onVendorClick={(v) => {
                             setSelectedVendor(v);
-                            navigate(`/marketplace/${v.slug}`);
+                            router.push(`/marketplace/${v.slug}`);
                         }}
                     />
 
@@ -219,7 +222,7 @@ export const MarketplacePage: React.FC = () => {
                     vendor={selectedVendor}
                     onClose={() => {
                         setSelectedVendor(null);
-                        navigate('/marketplace');
+                        router.push('/marketplace');
                     }}
                     onCartUpdated={loadCartCount}
                 />

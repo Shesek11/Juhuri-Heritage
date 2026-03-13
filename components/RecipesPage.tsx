@@ -1,8 +1,10 @@
+'use client';
+
 // RecipesPage Component
 // Main page for browsing recipes
 
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useRouter } from 'next/navigation';
 import { Search, ChefHat, Plus, Filter, Grid, List, Loader2, RefreshCw } from 'lucide-react';
 import { recipesService, Recipe, RecipeTag, RecipesResponse } from '../services/recipesService';
 import { RecipeCard } from './recipes/RecipeCard';
@@ -16,8 +18,9 @@ type SortOption = 'newest' | 'popular' | 'likes' | 'oldest';
 type ViewMode = 'grid' | 'list';
 
 export const RecipesPage: React.FC = () => {
-    const { id: routeRecipeId } = useParams<{ id?: string }>();
-    const navigate = useNavigate();
+    const params = useParams();
+    const routeRecipeId = params?.id as string | undefined;
+    const router = useRouter();
     const selectedRecipeId = routeRecipeId ? Number(routeRecipeId) : null;
     const [recipes, setRecipes] = useState<Recipe[]>([]);
     const [tags, setTags] = useState<RecipeTag[]>([]);
@@ -79,7 +82,7 @@ export const RecipesPage: React.FC = () => {
     };
 
     const handleRecipeClick = (recipe: Recipe) => {
-        navigate(`/recipes/${recipe.id}`);
+        router.push(`/recipes/${recipe.id}`);
     };
 
     const handleTagToggle = (tagId: number) => {
@@ -116,13 +119,13 @@ export const RecipesPage: React.FC = () => {
         return (
             <RecipeDetailPage
                 recipeId={selectedRecipeId}
-                onClose={() => navigate('/recipes')}
+                onClose={() => router.push('/recipes')}
             />
         );
     }
 
     return (
-        <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="max-w-5xl mx-auto px-4 py-8">
             <SEOHead
                 title="מתכונים קווקזיים מסורתיים"
                 description="אוסף מתכונים אותנטיים מהמטבח הג'והורי והקווקזי-יהודי. שמרו את המסורת הקולינרית של הקהילה."

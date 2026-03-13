@@ -113,7 +113,7 @@ const TutorMode: React.FC = () => {
 
     if (!config) {
         return (
-            <div className="w-full max-w-2xl mx-auto mt-8 bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-xl p-8 border border-white/10 font-rubik">
+            <div className="w-full max-w-4xl mx-auto mt-8 bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-xl p-8 border border-white/10 font-rubik">
                 <SEOHead
                     title="מורה פרטי AI - לימוד ג'והורי"
                     description="למד ג'והורי עם מורה פרטי AI אינטראקטיבי. בחר ניב, רמה, והתחל את המסע במפת הלימוד."
@@ -152,7 +152,7 @@ const TutorMode: React.FC = () => {
     // Free Chat View
     if (mode === 'chat') {
         return (
-            <div className="w-full max-w-2xl mx-auto mt-8 h-[600px] flex flex-col bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-xl overflow-hidden border border-white/10 font-rubik">
+            <div className="w-full max-w-4xl mx-auto mt-8 h-[600px] flex flex-col bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-xl overflow-hidden border border-white/10 font-rubik">
                 <div className="bg-white/5 border-b border-white/10 backdrop-blur-md p-4 flex text-amber-500 justify-between items-center text-white shadow-md z-10">
                     <div className="flex items-center gap-3">
                         <MessageCircle />
@@ -185,7 +185,7 @@ const TutorMode: React.FC = () => {
 
     // Default: Map View
     return (
-        <div className="w-full max-w-2xl mx-auto mt-8 bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-xl overflow-hidden border border-white/10 font-rubik flex flex-col h-[600px]">
+        <div className="w-full max-w-4xl mx-auto mt-8 bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-xl overflow-hidden border border-white/10 font-rubik flex flex-col h-[600px]">
             {/* Header Stats */}
             <div className="bg-white/5 border-b border-white/10 backdrop-blur-md text-white p-4 shadow-md z-10 flex justify-between items-center">
                 <div className="flex items-center gap-3">

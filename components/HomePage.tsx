@@ -1,5 +1,7 @@
+'use client';
+
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useRouter } from 'next/navigation';
 import HeroSection from './home/HeroSection';
 import FeaturesSection from './home/FeaturesSection';
 import StatsSection from './home/StatsSection';
@@ -12,7 +14,7 @@ interface HomePageProps {
 }
 
 const HomePage: React.FC<HomePageProps> = ({ featureFlags, onOpenAuthModal, isAdmin }) => {
-  const navigate = useNavigate();
+  const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
   const [scrollY, setScrollY] = useState(0);
 
@@ -25,7 +27,7 @@ const HomePage: React.FC<HomePageProps> = ({ featureFlags, onOpenAuthModal, isAd
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchTerm.trim()) {
-      navigate(`/dictionary?q=${encodeURIComponent(searchTerm.trim())}`);
+      router.push(`/dictionary?q=${encodeURIComponent(searchTerm.trim())}`);
     }
   };
 

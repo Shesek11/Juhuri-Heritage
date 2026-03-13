@@ -20,7 +20,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ children, dialects = [], show
     }, []);
 
     return (
-        <div className="relative w-full min-h-[40dvh] flex flex-col items-center justify-start pt-24 pb-8 overflow-hidden font-rubik bg-[#050B14]">
+        <div className="relative w-full min-h-[40dvh] flex flex-col items-center justify-start pt-24 pb-8 overflow-hidden font-rubik">
 
             {/* --- PREMIUM BACKGROUND LAYERS --- */}
             {/* Background Pattern */}
@@ -33,7 +33,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ children, dialects = [], show
             <div className="absolute top-1/4 right-[-10%] w-[400px] h-[400px] bg-blue-900/20 rounded-full blur-[120px] pointer-events-none" />
 
             {/* Mist Overlay at bottom to blend content */}
-            <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-[#050B14] to-transparent z-10 pointer-events-none" />
+            <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-[#050B14]/80 to-transparent z-10 pointer-events-none" />
 
             {/* --- MAIN CONTENT --- */}
             <div className="relative z-20 w-full max-w-4xl px-4 flex flex-col items-center text-center space-y-6 mt-10">

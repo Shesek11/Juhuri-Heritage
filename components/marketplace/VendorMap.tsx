@@ -1,3 +1,5 @@
+'use client';
+
 import React, { useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -11,8 +13,8 @@ import icon from 'leaflet/dist/images/marker-icon.png';
 import iconShadow from 'leaflet/dist/images/marker-shadow.png';
 
 let DefaultIcon = L.icon({
-    iconUrl: icon,
-    shadowUrl: iconShadow,
+    iconUrl: icon as unknown as string,
+    shadowUrl: iconShadow as unknown as string,
     iconSize: [25, 41],
     iconAnchor: [12, 41]
 });

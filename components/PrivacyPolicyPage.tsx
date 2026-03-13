@@ -1,10 +1,12 @@
+'use client';
+
 import React from 'react';
-import { Link } from 'react-router-dom';
+import Link from 'next/link';
 import { Home } from 'lucide-react';
 
 const PrivacyPolicyPage: React.FC = () => {
   return (
-    <div className="w-full max-w-3xl mx-auto px-4 py-12">
+    <div className="w-full max-w-5xl mx-auto px-4 py-12">
       <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-lg p-8 md:p-12 border border-white/10">
         <h1 className="text-3xl md:text-4xl font-bold text-center mb-4 text-slate-900 dark:text-slate-50">
           מדיניות פרטיות
@@ -62,7 +64,7 @@ const PrivacyPolicyPage: React.FC = () => {
         <section className="mb-8">
           <h2 className="text-xl font-bold mb-3 text-slate-100">6. זכויותיכם</h2>
           <p className="text-slate-600 dark:text-slate-300 leading-relaxed">
-            יש לכם זכות לדרוש גישה למידע האישי שלכם, לתקן אותו, למחוק אותו או להגביל את עיבודו. לבקשות כאלה, אנא פנו אלינו דרך <Link to="/contact" className="text-amber-600 dark:text-amber-400 hover:underline">עמוד צור קשר</Link>.
+            יש לכם זכות לדרוש גישה למידע האישי שלכם, לתקן אותו, למחוק אותו או להגביל את עיבודו. לבקשות כאלה, אנא פנו אלינו דרך <Link href="/contact" className="text-amber-600 dark:text-amber-400 hover:underline">עמוד צור קשר</Link>.
           </p>
         </section>
 
@@ -74,7 +76,7 @@ const PrivacyPolicyPage: React.FC = () => {
         </section>
 
         <div className="text-center mt-10">
-          <Link to="/" className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-bold rounded-xl shadow-lg hover:scale-105 transition-all duration-300">
+          <Link href="/" className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-bold rounded-xl shadow-lg hover:scale-105 transition-all duration-300">
             <Home size={18} />
             חזרה לדף הבית
           </Link>

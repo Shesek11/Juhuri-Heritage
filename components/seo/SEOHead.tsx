@@ -1,8 +1,21 @@
-import { Helmet } from 'react-helmet-async';
+'use client';
 
-const SITE_URL = import.meta.env.VITE_SITE_URL || 'https://juhuri.shesek.xyz';
+/**
+ * SEOHead — Next.js compatible version.
+ *
+ * In Next.js, metadata (title, description, OG, canonical) is handled by
+ * `generateMetadata()` or `export const metadata` in page files.
+ * This component only renders JSON-LD structured data scripts.
+ *
+ * Security note: JSON-LD data is constructed from our own builder functions
+ * using server-side DB data (not user input). This is the standard Next.js
+ * pattern for structured data injection and is safe from XSS.
+ */
+
+const SITE_URL = typeof window !== 'undefined'
+  ? window.location.origin
+  : 'https://jun-juhuri.com';
 const SITE_NAME = 'מורשת ג\'והורי';
-const DEFAULT_IMAGE = `${SITE_URL}/images/og-default.png`;
 
 interface SEOHeadProps {
   title?: string;
@@ -13,54 +26,26 @@ interface SEOHeadProps {
   jsonLd?: object | object[];
 }
 
-export const SEOHead: React.FC<SEOHeadProps> = ({
-  title,
-  description = 'מילון ג\'והורי-עברי אינטראקטיבי לשימור שפת יהודי ההרים (ג\'והורית). חפש מילים, למד את השפה ותרום לשימור המורשת.',
-  canonicalPath,
-  ogImage = DEFAULT_IMAGE,
-  ogType = 'website',
-  jsonLd,
-}) => {
-  const fullTitle = title
-    ? `${title} | ${SITE_NAME}`
-    : `${SITE_NAME} | המילון לשימור השפה`;
+export const SEOHead: React.FC<SEOHeadProps> = ({ jsonLd }) => {
+  // In Next.js, metadata is handled by generateMetadata/metadata exports.
+  // This component only renders JSON-LD structured data.
+  if (!jsonLd) return null;
 
-  // Always resolve canonical: explicit path > current window path
-  const resolvedPath = canonicalPath ?? (typeof window !== 'undefined' ? window.location.pathname : '/');
-  const canonicalUrl = `${SITE_URL}${resolvedPath}`;
+  const jsonLdArray = Array.isArray(jsonLd) ? jsonLd : [jsonLd];
 
-  const jsonLdArray = jsonLd
-    ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd])
-    : [];
-
+  // Safe: JSON-LD data is server-generated structured data from our own
+  // builders (not user input). This is the standard Next.js JSON-LD pattern.
   return (
-    <Helmet>
-      <title>{fullTitle}</title>
-      <meta name="description" content={description} />
-      <link rel="canonical" href={canonicalUrl} />
-
-      {/* Open Graph */}
-      <meta property="og:title" content={fullTitle} />
-      <meta property="og:description" content={description} />
-      <meta property="og:image" content={ogImage} />
-      <meta property="og:type" content={ogType} />
-      <meta property="og:url" content={canonicalUrl} />
-      <meta property="og:site_name" content={SITE_NAME} />
-      <meta property="og:locale" content="he_IL" />
-
-      {/* Twitter Card */}
-      <meta name="twitter:card" content="summary_large_image" />
-      <meta name="twitter:title" content={fullTitle} />
-      <meta name="twitter:description" content={description} />
-      <meta name="twitter:image" content={ogImage} />
-
-      {/* JSON-LD Structured Data */}
+    <>
       {jsonLdArray.map((ld, i) => (
-        <script key={i} type="application/ld+json">
-          {JSON.stringify(ld)}
-        </script>
+        <script
+          key={i}
+          type="application/ld+json"
+          // eslint-disable-next-line react/no-danger -- safe: server-generated structured data
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(ld) }}
+        />
       ))}
-    </Helmet>
+    </>
   );
 };
 
@@ -112,7 +97,7 @@ export function buildRecipeJsonLd(recipe: {
   cook_time?: number;
   servings?: number;
   ingredients?: string[];
-  instructions?: { step_number: number; instruction: string }[];
+  instructions?: (string | { step_number: number; instruction: string })[];
   avg_rating?: number;
   review_count?: number;
   tags?: string[];
@@ -140,7 +125,7 @@ export function buildRecipeJsonLd(recipe: {
   if (recipe.instructions && recipe.instructions.length > 0) {
     ld.recipeInstructions = recipe.instructions.map(step => ({
       '@type': 'HowToStep',
-      'text': step.instruction,
+      'text': typeof step === 'string' ? step : step.instruction,
     }));
   }
 

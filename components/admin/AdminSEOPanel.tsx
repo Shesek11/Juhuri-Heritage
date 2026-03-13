@@ -5,6 +5,7 @@ import {
     AlertTriangle, Bot, Map, Upload, Image, Palette, Cpu
 } from 'lucide-react';
 import apiService from '../../services/apiService';
+import AdminGSCPanel from './AdminGSCPanel';
 
 // ============================================
 // TYPES
@@ -35,7 +36,7 @@ interface Redirect {
     created_at: string;
 }
 
-type SEOTab = 'overview' | 'meta' | 'robots' | 'llms' | 'branding' | 'redirects' | 'preview';
+type SEOTab = 'overview' | 'gsc' | 'meta' | 'robots' | 'llms' | 'branding' | 'redirects' | 'preview';
 
 const PAGE_TYPE_LABELS: Record<string, string> = {
     home: 'דף הבית',
@@ -90,6 +91,7 @@ export const AdminSEOPanel: React.FC = () => {
 
     const tabs: { id: SEOTab; label: string; icon: React.ReactNode }[] = [
         { id: 'overview', label: 'סקירה', icon: <BarChart3 size={16} /> },
+        { id: 'gsc', label: 'Search Console', icon: <Search size={16} /> },
         { id: 'branding', label: 'מיתוג', icon: <Palette size={16} /> },
         { id: 'meta', label: 'Meta תבניות', icon: <FileText size={16} /> },
         { id: 'robots', label: 'robots.txt', icon: <Bot size={16} /> },
@@ -390,7 +392,7 @@ export const AdminSEOPanel: React.FC = () => {
                     ].map(link => (
                         <a
                             key={link.label}
-                            href={link.url.startsWith('/') ? `https://juhuri.shesek.xyz${link.url}` : link.url}
+                            href={link.url.startsWith('/') ? `https://jun-juhuri.com${link.url}` : link.url}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white/10 text-slate-300 rounded-lg text-sm hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
@@ -474,7 +476,7 @@ export const AdminSEOPanel: React.FC = () => {
                                 {meta.titleTemplate || 'ללא כותרת'}
                             </div>
                             <div className="text-green-700 dark:text-green-500 text-xs truncate">
-                                juhuri.shesek.xyz/{pageType === 'home' ? '' : pageType}
+                                jun-juhuri.com/{pageType === 'home' ? '' : pageType}
                             </div>
                             <div className="text-slate-400 text-xs line-clamp-2 mt-0.5">
                                 {meta.description || 'ללא תיאור'}
@@ -686,7 +688,7 @@ export const AdminSEOPanel: React.FC = () => {
         recommended?: string;
     }> = ({ type, label, desc, currentUrl, accept, recommended }) => {
         const fileInputRef = React.useRef<HTMLInputElement>(null);
-        const siteUrl = 'https://juhuri.shesek.xyz';
+        const siteUrl = 'https://jun-juhuri.com';
 
         return (
             <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-xl border border-white/10 p-5">
@@ -773,7 +775,7 @@ export const AdminSEOPanel: React.FC = () => {
     );
 
     const renderPreview = () => {
-        const siteUrl = 'https://juhuri.shesek.xyz';
+        const siteUrl = 'https://jun-juhuri.com';
         const testUrls = [
             { label: 'דף הבית', path: '/' },
             { label: 'מילה (דוגמה)', path: '/word/%D7%A9%D7%9C%D7%95%D7%9D' },
@@ -810,7 +812,7 @@ export const AdminSEOPanel: React.FC = () => {
                         type="text"
                         value={previewUrl}
                         onChange={(e) => setPreviewUrl(e.target.value)}
-                        placeholder="https://juhuri.shesek.xyz/word/שלום"
+                        placeholder="https://jun-juhuri.com/word/שלום"
                         className="flex-1 px-3 py-2 rounded-lg border border-white/10 bg-white dark:bg-slate-700 text-sm"
                         dir="ltr"
                     />
@@ -920,6 +922,7 @@ export const AdminSEOPanel: React.FC = () => {
 
             {/* Tab Content */}
             {activeTab === 'overview' && renderOverview()}
+            {activeTab === 'gsc' && <AdminGSCPanel />}
             {activeTab === 'branding' && renderBranding()}
             {activeTab === 'meta' && renderMeta()}
             {activeTab === 'robots' && renderRobots()}

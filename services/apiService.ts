@@ -211,10 +211,24 @@ export const logsApi = {
 
 const apiService = {
     setToken: (token: string) => { authToken = token; },
-    get: <T>(endpoint: string) => request(endpoint) as Promise<T>,
-    post: <T>(endpoint: string, body?: any) => request(endpoint, { method: 'POST', body: JSON.stringify(body) }) as Promise<T>,
-    put: <T>(endpoint: string, body?: any) => request(endpoint, { method: 'PUT', body: JSON.stringify(body) }) as Promise<T>,
-    delete: <T>(endpoint: string, body?: any) => request(endpoint, { method: 'DELETE', body: body ? JSON.stringify(body) : undefined }) as Promise<T>,
+    get: <T = any>(endpoint: string) => request(endpoint) as Promise<T>,
+    post: <T = any>(endpoint: string, body?: any) => request(endpoint, { method: 'POST', body: JSON.stringify(body) }) as Promise<T>,
+    put: <T = any>(endpoint: string, body?: any) => request(endpoint, { method: 'PUT', body: JSON.stringify(body) }) as Promise<T>,
+    delete: <T = any>(endpoint: string, body?: any) => request(endpoint, { method: 'DELETE', body: body ? JSON.stringify(body) : undefined }) as Promise<T>,
+    postFormData: async <T = any>(endpoint: string, formData: FormData): Promise<T> => {
+        const url = `${API_BASE}${endpoint}`;
+        const response = await fetch(url, {
+            method: 'POST',
+            body: formData,
+            headers: authToken ? { 'Authorization': `Bearer ${authToken}` } : {},
+            credentials: 'include',
+        });
+        if (!response.ok) {
+            const error = await response.json().catch(() => ({ error: 'שגיאת שרת' }));
+            throw new Error(error.error || `HTTP ${response.status}`);
+        }
+        return response.json();
+    },
     baseURL: API_BASE
 };
 

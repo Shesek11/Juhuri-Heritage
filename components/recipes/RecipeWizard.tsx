@@ -2,7 +2,7 @@
 // Multi-step modal for adding a new recipe
 
 import React, { useState, useRef } from 'react';
-import { X, ChefHat, Upload, Camera, Sparkles, ChevronLeft, ChevronRight, Check, Trash2, Image as ImageIcon } from 'lucide-react';
+import { X, ChefHat, Upload, Camera, Sparkles, ChevronLeft, ChevronRight, Check, Trash2, Image as ImageIcon, Plus } from 'lucide-react';
 import { RecipeInput, recipesService, RecipeTag } from '../../services/recipesService';
 import { uploadService } from '../../services/uploadService';
 import { useAuth } from '../../contexts/AuthContext';
@@ -411,7 +411,7 @@ export const RecipeWizard: React.FC<RecipeWizardProps> = ({ isOpen, onClose, onS
                             <p className="text-amber-700 dark:text-amber-300/80 text-sm mt-1">{formData.description}</p>
 
                             <div className="flex gap-4 mt-3 text-xs text-amber-600 dark:text-amber-400">
-                                <span>⏱️ {formData.prep_time + formData.cook_time} דקות</span>
+                                <span>⏱️ {(formData.prep_time || 0) + (formData.cook_time || 0)} דקות</span>
                                 <span>🍽️ {formData.servings} מנות</span>
                                 <span>📊 {formData.difficulty}</span>
                             </div>

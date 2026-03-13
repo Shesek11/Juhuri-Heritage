@@ -13,6 +13,15 @@ node_modules
 # Build output
 dist
 dist-ssr
+.next
+
+# Deployment state
+.last-backup-path
+
+# Server-only files (not in repo, persist across deploys)
+uploads/
+gsc-service-account.json
+schema.sql
 
 # Environment files - NEVER commit these
 .env
@@ -54,11 +63,17 @@ data/raw/
 # Temporary files
 tmp-stitch-designs/
 screenshot-*.png
+*.png
+!public/**/*.png
 
 # One-off scripts
 scripts/fetch.py
 scripts/fetch_fresh.js
 scripts/download_stitch.js
+
+# Build artifacts
+tsconfig.tsbuildinfo
+.playwright-mcp/
 
 # Miscellaneous
 ssh-copy-id
