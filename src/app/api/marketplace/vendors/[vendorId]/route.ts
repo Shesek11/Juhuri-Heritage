@@ -11,9 +11,10 @@ export async function GET(
     const { vendorId: slug } = await params;
 
     const [vendors] = await pool.query(`
-      SELECT v.id, v.slug, v.name, v.logo_url, v.cover_url,
-             v.about_text, v.address, v.city, v.specialty, v.category,
-             v.latitude, v.longitude, v.delivery_available, v.kosher_certified,
+      SELECT v.id, v.slug, v.name, v.logo_url,
+             v.about_text, v.address, v.city,
+             v.phone, v.email, v.website,
+             v.latitude, v.longitude,
              v.status, v.created_at,
              u.name as owner_name,
              COALESCE((SELECT AVG(rating) FROM marketplace_reviews WHERE vendor_id = v.id), 0) as avg_rating,

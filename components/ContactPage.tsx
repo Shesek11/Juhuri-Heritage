@@ -1,5 +1,7 @@
+'use client';
+
 import React, { useState } from 'react';
-import { Link } from 'react-router-dom';
+import Link from 'next/link';
 import { Home, Mail, Phone, MapPin } from 'lucide-react';
 
 const ContactPage: React.FC = () => {
@@ -26,7 +28,7 @@ const ContactPage: React.FC = () => {
   const inputClasses = "w-full px-4 py-3 rounded-xl bg-white/10 border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-slate-50 focus:outline-none focus:ring-2 focus:ring-amber-500 transition-colors";
 
   return (
-    <div className="w-full max-w-4xl mx-auto px-4 py-12">
+    <div className="w-full max-w-5xl mx-auto px-4 py-12">
       <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-lg p-8 md:p-12 border border-white/10">
         <h1 className="text-3xl md:text-4xl font-bold text-center mb-10 text-slate-900 dark:text-slate-50">
           צור קשר
@@ -104,7 +106,7 @@ const ContactPage: React.FC = () => {
         </div>
 
         <div className="text-center mt-10">
-          <Link to="/" className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-bold rounded-xl shadow-lg hover:scale-105 transition-all duration-300">
+          <Link href="/" className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-bold rounded-xl shadow-lg hover:scale-105 transition-all duration-300">
             <Home size={18} />
             חזרה לדף הבית
           </Link>

@@ -14,9 +14,8 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status') || 'active';
 
     let query = `
-      SELECT v.id, v.slug, v.name, v.logo_url, v.cover_url,
-             v.about_text, v.city, v.specialty, v.category,
-             v.delivery_available, v.kosher_certified,
+      SELECT v.id, v.slug, v.name, v.logo_url,
+             v.about_text, v.city,
              v.latitude, v.longitude,
              COALESCE(vs.average_rating, 0) as avg_rating,
              COALESCE(vs.total_reviews, 0) as review_count

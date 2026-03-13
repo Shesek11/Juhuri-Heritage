@@ -2,18 +2,56 @@ import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/src/lib/db';
 import { requireAuth } from '@/src/lib/auth';
 
+// Build shared WHERE clause for recipe filters
+function buildRecipeFilters(searchParams: URLSearchParams) {
+  let where = '';
+  const params: (string | number)[] = [];
+  const region = searchParams.get('region');
+  const tag = searchParams.get('tag');
+  const tags = searchParams.get('tags');
+  const search = searchParams.get('search');
+
+  if (region) {
+    where += ' AND r.region_id = ?';
+    params.push(region);
+  }
+
+  if (search) {
+    where += ' AND (r.title LIKE ? OR r.description LIKE ? OR r.title_juhuri LIKE ?)';
+    const searchPattern = `%${search}%`;
+    params.push(searchPattern, searchPattern, searchPattern);
+  }
+
+  if (tags) {
+    const tagIds = tags.split(',').map(id => parseInt(id)).filter(id => !isNaN(id));
+    if (tagIds.length > 0) {
+      where += ` AND r.id IN (
+        SELECT recipe_id
+        FROM recipe_tag_map
+        WHERE tag_id IN (${tagIds.map(() => '?').join(',')})
+        GROUP BY recipe_id
+        HAVING COUNT(DISTINCT tag_id) = ?
+      )`;
+      params.push(...tagIds, tagIds.length);
+    }
+  } else if (tag) {
+    where += ` AND r.id IN (SELECT recipe_id FROM recipe_tag_map WHERE tag_id = ?)`;
+    params.push(tag);
+  }
+
+  return { where, params };
+}
+
 // GET /api/recipes - Get all approved recipes (public)
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
-    const region = searchParams.get('region');
-    const tag = searchParams.get('tag');
-    const tags = searchParams.get('tags');
-    const search = searchParams.get('search');
     const sort = searchParams.get('sort') || 'newest';
     const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '12');
+    const limit = Math.min(parseInt(searchParams.get('limit') || '12') || 12, 100);
     const offset = (page - 1) * limit;
+
+    const { where, params: filterParams } = buildRecipeFilters(searchParams);
 
     let query = `
       SELECT r.*,
@@ -26,39 +64,10 @@ export async function GET(request: NextRequest) {
       FROM recipes r
       LEFT JOIN users u ON r.user_id = u.id
       LEFT JOIN dialects d ON r.region_id = d.id
-      WHERE r.is_approved = 1
+      WHERE r.is_approved = 1${where}
     `;
 
-    const params: (string | number)[] = [];
-
-    if (region) {
-      query += ' AND r.region_id = ?';
-      params.push(region);
-    }
-
-    if (search) {
-      query += ' AND (r.title LIKE ? OR r.description LIKE ? OR r.title_juhuri LIKE ?)';
-      const searchPattern = `%${search}%`;
-      params.push(searchPattern, searchPattern, searchPattern);
-    }
-
-    // Multi-tag filtering (recipes must have ALL selected tags)
-    if (tags) {
-      const tagIds = tags.split(',').map(id => parseInt(id)).filter(id => !isNaN(id));
-      if (tagIds.length > 0) {
-        query += ` AND r.id IN (
-          SELECT recipe_id
-          FROM recipe_tag_map
-          WHERE tag_id IN (${tagIds.map(() => '?').join(',')})
-          GROUP BY recipe_id
-          HAVING COUNT(DISTINCT tag_id) = ?
-        )`;
-        params.push(...tagIds, tagIds.length);
-      }
-    } else if (tag) {
-      query += ` AND r.id IN (SELECT recipe_id FROM recipe_tag_map WHERE tag_id = ?)`;
-      params.push(tag);
-    }
+    const params: (string | number)[] = [...filterParams];
 
     // Sorting
     switch (sort) {
@@ -98,39 +107,11 @@ export async function GET(request: NextRequest) {
       }
     });
 
-    // Get total count for pagination with same filters
-    let countQuery = 'SELECT COUNT(*) as total FROM recipes r WHERE r.is_approved = 1';
-    const countParams: (string | number)[] = [];
-
-    if (region) {
-      countQuery += ' AND r.region_id = ?';
-      countParams.push(region);
-    }
-
-    if (search) {
-      countQuery += ' AND (r.title LIKE ? OR r.description LIKE ? OR r.title_juhuri LIKE ?)';
-      const searchPattern = `%${search}%`;
-      countParams.push(searchPattern, searchPattern, searchPattern);
-    }
-
-    if (tags) {
-      const tagIds = tags.split(',').map(id => parseInt(id)).filter(id => !isNaN(id));
-      if (tagIds.length > 0) {
-        countQuery += ` AND r.id IN (
-          SELECT recipe_id
-          FROM recipe_tag_map
-          WHERE tag_id IN (${tagIds.map(() => '?').join(',')})
-          GROUP BY recipe_id
-          HAVING COUNT(DISTINCT tag_id) = ?
-        )`;
-        countParams.push(...tagIds, tagIds.length);
-      }
-    } else if (tag) {
-      countQuery += ` AND r.id IN (SELECT recipe_id FROM recipe_tag_map WHERE tag_id = ?)`;
-      countParams.push(tag);
-    }
-
-    const [countResult] = await pool.query(countQuery, countParams) as [any[], any];
+    // Get total count using same filters
+    const [countResult] = await pool.query(
+      `SELECT COUNT(*) as total FROM recipes r WHERE r.is_approved = 1${where}`,
+      filterParams
+    ) as [any[], any];
 
     return NextResponse.json({
       recipes,
@@ -189,8 +170,8 @@ export async function POST(request: NextRequest) {
         servings || null,
         difficulty || 'medium',
         region_id || null,
-        (user as any).id,
-        (user as any).role === 'admin' ? 1 : 0,
+        user.id,
+        user.role === 'admin' ? 1 : 0,
       ]
     ) as [any, any];
 
@@ -209,7 +190,7 @@ export async function POST(request: NextRequest) {
       {
         success: true,
         recipe_id: recipeId,
-        message: (user as any).role === 'admin' ? 'המתכון נוצר ואושר' : 'המתכון נשלח לאישור',
+        message: user.role === 'admin' ? 'המתכון נוצר ואושר' : 'המתכון נשלח לאישור',
       },
       { status: 201 }
     );

@@ -1495,22 +1495,22 @@ export const CommunityGraph: React.FC = () => {
     }
 
     return (
-        <div className="relative w-full h-[calc(100vh-80px)] flex flex-col bg-[#0d1424] overflow-hidden">
+        <div className="relative w-full h-[calc(100vh-180px)] flex flex-col bg-[#0d1424] overflow-hidden">
             <SEOHead
                 title="שורשים - רשת קהילתית"
                 description="חקרו את עץ המשפחה והרשת הקהילתית של יהודי ההרים. גלו קשרים משפחתיים ושורשים."
                 canonicalPath="/family"
             />
             {/* Header */}
-            <div className="bg-slate-800/80 backdrop-blur px-4 py-3 flex items-center justify-between border-b border-slate-700 relative z-[100]">
-                <div className="flex items-center gap-3">
-                    <h1 className="text-xl font-bold text-white">🌐 רשת קהילתית</h1>
-                    <span className="text-sm text-slate-400">
+            <div className="bg-slate-800/80 backdrop-blur px-3 py-2 md:px-4 md:py-3 flex flex-wrap items-center justify-between gap-2 border-b border-slate-700 relative z-[100]">
+                <div className="flex items-center gap-2 md:gap-3">
+                    <h1 className="text-base md:text-xl font-bold text-white whitespace-nowrap">🌐 רשת קהילתית</h1>
+                    <span className="text-xs md:text-sm text-slate-400 whitespace-nowrap">
                         {nodes.length} בני משפחה • {edges.length} קשרים
                     </span>
                 </div>
 
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 md:gap-3 flex-wrap">
                     {/* Search Bar - with fixed z-index */}
                     <div className="relative z-[9999]">
                         <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
@@ -1532,15 +1532,14 @@ export const CommunityGraph: React.FC = () => {
                                     setSearchResults([]);
                                 }
                             }}
-                            className="pr-9 pl-3 py-1.5 bg-slate-700 border border-slate-600 rounded-lg text-white text-sm placeholder-slate-400 focus:outline-none focus:border-amber-500 w-48 relative z-10"
+                            className="pr-9 pl-3 py-1.5 bg-slate-700 border border-slate-600 rounded-lg text-white text-sm placeholder-slate-400 focus:outline-none focus:border-amber-500 w-36 md:w-48 relative z-10"
                         />
                         {searchResults.length > 0 && (
-                            <div className="absolute top-full mt-1 right-0 w-80 bg-slate-800 border border-slate-600 rounded-lg shadow-2xl max-h-80 overflow-y-auto">
+                            <div className="absolute top-full mt-1 right-0 w-72 md:w-80 bg-slate-800 border border-slate-600 rounded-lg shadow-2xl max-h-80 overflow-y-auto">
                                 {searchResults.map(result => (
                                     <button
                                         key={result.id}
                                         onClick={() => {
-                                            // Focus on the node with zoom and highlight
                                             focusOnNode(result.id);
                                             setSearchQuery('');
                                             setSearchResults([]);
@@ -1565,7 +1564,7 @@ export const CommunityGraph: React.FC = () => {
                         )}
                     </div>
 
-                    <div className="w-px h-6 bg-slate-600" />
+                    <div className="hidden md:block w-px h-6 bg-slate-600" />
 
                     {/* Add Person Button */}
                     <button
@@ -1573,40 +1572,39 @@ export const CommunityGraph: React.FC = () => {
                             setSelectedMember(null);
                             setIsEditModalOpen(true);
                         }}
-                        className="flex items-center gap-2 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 rounded-lg text-white text-sm font-medium transition-colors"
+                        className="flex items-center gap-1.5 md:gap-2 px-2.5 md:px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 rounded-lg text-white text-xs md:text-sm font-medium transition-colors"
                     >
-                        <UserPlus size={16} />
-                        <span>הוסף אדם</span>
+                        <UserPlus size={14} />
+                        <span className="hidden sm:inline">הוסף אדם</span>
                     </button>
 
                     {/* Connection Mode Button */}
                     {connectionMode === 'none' ? (
                         <button
                             onClick={startConnectionMode}
-                            className="flex items-center gap-2 px-3 py-1.5 bg-amber-600 hover:bg-amber-700 rounded-lg text-white text-sm font-medium transition-colors"
+                            className="flex items-center gap-1.5 md:gap-2 px-2.5 md:px-3 py-1.5 bg-amber-600 hover:bg-amber-700 rounded-lg text-white text-xs md:text-sm font-medium transition-colors"
                         >
-                            <Link2 size={16} />
-                            <span>חבר אנשים</span>
+                            <Link2 size={14} />
+                            <span className="hidden sm:inline">חבר אנשים</span>
                         </button>
                     ) : (
                         <button
                             onClick={cancelConnection}
-                            className="flex items-center gap-2 px-3 py-1.5 bg-red-600 hover:bg-red-700 rounded-lg text-white text-sm font-medium transition-colors"
+                            className="flex items-center gap-1.5 md:gap-2 px-2.5 md:px-3 py-1.5 bg-red-600 hover:bg-red-700 rounded-lg text-white text-xs md:text-sm font-medium transition-colors"
                         >
-                            <X size={16} />
-                            <span>ביטול</span>
+                            <X size={14} />
+                            <span className="hidden sm:inline">ביטול</span>
                         </button>
                     )}
-
 
                     {/* Legend - as popup button */}
                     <div className="relative">
                         <button
                             onClick={() => setShowLegend(!showLegend)}
-                            className="flex items-center gap-2 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-slate-300 text-sm transition-colors"
+                            className="flex items-center gap-1.5 md:gap-2 px-2.5 md:px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-slate-300 text-xs md:text-sm transition-colors"
                         >
                             <Info size={14} />
-                            <span>מקרא</span>
+                            <span className="hidden sm:inline">מקרא</span>
                         </button>
 
                         {showLegend && (
@@ -1618,7 +1616,7 @@ export const CommunityGraph: React.FC = () => {
                                 />
 
                                 {/* Legend popup */}
-                                <div className="absolute left-0 top-full mt-2 bg-slate-800 border border-slate-600 rounded-lg shadow-2xl p-4 z-[9999] w-80">
+                                <div className="absolute left-0 top-full mt-2 bg-slate-800 border border-slate-600 rounded-lg shadow-2xl p-4 z-[9999] w-64 md:w-80">
                                     <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
                                         <Info size={14} />
                                         מקרא סימנים

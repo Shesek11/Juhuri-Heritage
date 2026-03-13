@@ -1,11 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/src/lib/db';
-import { generateToken } from '@/src/lib/auth';
+import { generateToken, requireAuth } from '@/src/lib/auth';
 
-// POST /api/users/sync - Sync Auth0 user with local DB
+// POST /api/users/sync - Sync authenticated user with local DB
 export async function POST(request: NextRequest) {
   try {
+    const authUser = await requireAuth(request);
     const { id, email, name, picture } = await request.json();
+
+    // Only allow syncing the authenticated user's own data
+    if (String(id) !== String(authUser.id)) {
+      return NextResponse.json({ error: 'Cannot sync another user' }, { status: 403 });
+    }
 
     if (!id || !email) {
       return NextResponse.json({ error: 'Missing required user fields' }, { status: 400 });

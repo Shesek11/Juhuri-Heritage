@@ -135,6 +135,8 @@ app.use('/api/gamification', gamificationLimiter, require('./routes/gamification
 app.use('/api/admin/features', require('./routes/features'));
 app.use('/api/admin/settings', require('./routes/settings'));
 app.use('/api/admin/seo', require('./routes/seo'));
+app.use('/api/admin/gsc', require('./routes/gsc'));
+app.use('/api/admin/analytics', require('./routes/analytics'));
 app.use('/api/recipes', require('./routes/recipes'));
 app.use('/api/marketplace', require('./routes/marketplace'));
 app.use('/api/family', require('./routes/familyTree'));
@@ -167,7 +169,7 @@ app.get('/api/health', async (req, res) => {
 });
 
 // --- Dynamic Sitemap ---
-const SITE_URL = process.env.SITE_URL || 'https://juhuri.shesek.xyz';
+const SITE_URL = process.env.SITE_URL || 'https://jun-juhuri.com';
 
 // Helper to generate a single <urlset> XML
 const buildUrlsetXml = (urls) => {
@@ -179,19 +181,22 @@ const buildUrlsetXml = (urls) => {
 
 const toDate = (d) => d ? new Date(d).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
 
-// Sitemap index (root)
+// Sitemap index (root) — only includes sitemaps that have entries
 app.get('/sitemap.xml', async (req, res) => {
     try {
         res.header('Content-Type', 'application/xml');
         res.header('Cache-Control', 'public, max-age=3600');
         const today = new Date().toISOString().split('T')[0];
 
+        const [[{rc}]] = await db.query(`SELECT COUNT(*) as rc FROM recipes WHERE is_approved = 1`);
+        const [[{vc}]] = await db.query(`SELECT COUNT(*) as vc FROM marketplace_vendors WHERE status = 'active'`);
+
         const sitemaps = [
             { loc: `${SITE_URL}/sitemap-pages.xml`, lastmod: today },
             { loc: `${SITE_URL}/sitemap-words.xml`, lastmod: today },
-            { loc: `${SITE_URL}/sitemap-recipes.xml`, lastmod: today },
-            { loc: `${SITE_URL}/sitemap-marketplace.xml`, lastmod: today },
         ];
+        if (rc > 0) sitemaps.push({ loc: `${SITE_URL}/sitemap-recipes.xml`, lastmod: today });
+        if (vc > 0) sitemaps.push({ loc: `${SITE_URL}/sitemap-marketplace.xml`, lastmod: today });
 
         const items = sitemaps.map(s =>
             `  <sitemap>\n    <loc>${s.loc}</loc>\n    <lastmod>${s.lastmod}</lastmod>\n  </sitemap>`
@@ -211,6 +216,7 @@ app.get('/sitemap-pages.xml', (req, res) => {
     const today = new Date().toISOString().split('T')[0];
     res.send(buildUrlsetXml([
         { loc: `${SITE_URL}/`, lastmod: today, priority: '1.0', changefreq: 'daily' },
+        { loc: `${SITE_URL}/dictionary`, lastmod: today, priority: '0.9', changefreq: 'daily' },
         { loc: `${SITE_URL}/tutor`, lastmod: today, priority: '0.8', changefreq: 'weekly' },
         { loc: `${SITE_URL}/recipes`, lastmod: today, priority: '0.8', changefreq: 'weekly' },
         { loc: `${SITE_URL}/marketplace`, lastmod: today, priority: '0.7', changefreq: 'weekly' },
@@ -241,11 +247,12 @@ app.get('/sitemap-words.xml', async (req, res) => {
 // Recipes sitemap
 app.get('/sitemap-recipes.xml', async (req, res) => {
     try {
-        res.header('Content-Type', 'application/xml');
-        res.header('Cache-Control', 'public, max-age=3600');
         const [recipes] = await db.query(
             `SELECT id, updated_at FROM recipes WHERE is_approved = 1`
         );
+        if (recipes.length === 0) return res.status(404).send('No recipes sitemap available');
+        res.header('Content-Type', 'application/xml');
+        res.header('Cache-Control', 'public, max-age=3600');
         res.send(buildUrlsetXml(recipes.map(r => ({
             loc: `${SITE_URL}/recipes/${r.id}`,
             lastmod: toDate(r.updated_at),
@@ -278,11 +285,30 @@ app.get('/sitemap-marketplace.xml', async (req, res) => {
     }
 });
 
+// --- SPA Prerender (serves fully-rendered HTML to crawlers) ---
+const PRERENDER_URL = process.env.PRERENDER_URL || 'http://127.0.0.1:3333';
+
+async function fetchPrerender(url) {
+    try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 8000);
+        const res = await fetch(`${PRERENDER_URL}/render?url=${encodeURIComponent(url)}`, {
+            signal: controller.signal,
+        });
+        clearTimeout(timeout);
+        if (!res.ok) throw new Error(`Prerender returned ${res.status}`);
+        return await res.text();
+    } catch (err) {
+        console.error('Prerender fetch failed:', err.message);
+        return null;
+    }
+}
+
 // --- Crawler Meta Injection (SEO + social sharing) ---
 const CRAWLER_UA = /googlebot|bingbot|yandex|facebookexternalhit|twitterbot|telegrambot|linkedinbot|slackbot|whatsapp|pinterest|discordbot|applebot|duckduckbot|petalbot/i;
 
 // Known valid static routes
-const VALID_ROUTES = new Set(['/', '/tutor', '/recipes', '/marketplace', '/family', '/about']);
+const VALID_ROUTES = new Set(['/', '/dictionary', '/tutor', '/recipes', '/marketplace', '/family']);
 
 const injectMetaTags = async (req, res, indexHtml) => {
     let title = 'מורשת ג\'והורי | המילון לשימור השפה';
@@ -409,6 +435,11 @@ const injectMetaTags = async (req, res, indexHtml) => {
                 }
             });
             bodyContent = `<h1>מורשת ג'והורי - המילון לשימור השפה</h1><p>${description}</p>`;
+        } else if (req.path === '/dictionary') {
+            isValidPage = true;
+            title = 'מילון ג\'והורי-עברי | מורשת ג\'והורי';
+            description = 'מילון ג\'והורי-עברי מקיף. חפשו מילים בשפת יהודי ההרים עם תרגום לעברית, רוסית ותעתיק לטיני.';
+            bodyContent = `<h1>מילון ג'והורי-עברי</h1><p>${description}</p><p>חפשו מילים בג'והורית, עברית או רוסית. המילון כולל הגיית מילים, דוגמאות שימוש ותרגומים.</p>`;
         } else if (req.path === '/tutor') {
             isValidPage = true;
             title = 'מורה פרטי AI לג\'והורית | מורשת ג\'והורי';
@@ -439,16 +470,34 @@ const injectMetaTags = async (req, res, indexHtml) => {
     // For body content - less aggressive escaping (we control the template)
     const escBody = (s) => s.replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
-    let html = indexHtml
-        .replace(/<title>.*?<\/title>/, `<title>${esc(title)}</title>`)
-        .replace(/<meta name="description"[^>]*>/, `<meta name="description" content="${esc(description)}">`)
-        .replace(/<link rel="canonical"[^>]*>/, `<link rel="canonical" href="${esc(url)}">`)
-        .replace(/<meta property="og:title"[^>]*>/, `<meta property="og:title" content="${esc(title)}">`)
-        .replace(/<meta property="og:description"[^>]*>/, `<meta property="og:description" content="${esc(description)}">`)
-        .replace(/<meta property="og:image"[^>]*>/, `<meta property="og:image" content="${esc(image)}">`)
-        .replace(/<meta property="og:url"[^>]*>/, `<meta property="og:url" content="${esc(url)}">`)
-        .replace(/<meta name="twitter:title"[^>]*>/, `<meta name="twitter:title" content="${esc(title)}">`)
-        .replace(/<meta name="twitter:description"[^>]*>/, `<meta name="twitter:description" content="${esc(description)}">`);
+    // Strip duplicate tags that prerender/React Helmet may have added
+    let cleaned = indexHtml
+        .replace(/<title>.*?<\/title>/g, '')                          // remove ALL title tags
+        .replace(/<meta name="description"[^>]*>/g, '')               // remove ALL description metas
+        .replace(/<link rel="canonical"[^>]*>/g, '')                  // remove ALL canonical links
+        .replace(/<meta property="og:[^"]*"[^>]*>/g, '')              // remove ALL og: tags
+        .replace(/<meta name="twitter:[^"]*"[^>]*>/g, '')             // remove ALL twitter: tags
+        .replace(/<script type="application\/ld\+json">[\s\S]*?<\/script>/g, '');  // remove ALL JSON-LD
+
+    // Inject authoritative meta tags
+    const metaBlock = `<title>${esc(title)}</title>
+  <meta name="description" content="${esc(description)}">
+  <link rel="canonical" href="${esc(url)}">
+  <meta property="og:title" content="${esc(title)}">
+  <meta property="og:description" content="${esc(description)}">
+  <meta property="og:type" content="website">
+  <meta property="og:locale" content="he_IL">
+  <meta property="og:url" content="${esc(url)}">
+  <meta property="og:image" content="${esc(image)}">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:site_name" content="מורשת ג'והורי">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="${esc(title)}">
+  <meta name="twitter:description" content="${esc(description)}">
+  <meta name="twitter:image" content="${esc(image)}">`;
+
+    let html = cleaned.replace(/<meta charset="UTF-8"[^>]*>/, `<meta charset="UTF-8">\n  ${metaBlock}`);
 
     // Build @graph with Organization + BreadcrumbList + page-specific schema
     const graph = [{
@@ -541,7 +590,7 @@ app.get('/robots.txt', async (req, res) => {
     } else if (fs.existsSync(publicPath)) {
         res.type('text/plain').sendFile(publicPath);
     } else {
-        res.type('text/plain').send('User-agent: *\nAllow: /\nDisallow: /api/\nSitemap: https://juhuri.shesek.xyz/sitemap.xml\n');
+        res.type('text/plain').send('User-agent: *\nAllow: /\nDisallow: /api/\nSitemap: https://jun-juhuri.com/sitemap.xml\n');
     }
 });
 
@@ -581,6 +630,10 @@ if (process.env.NODE_ENV === 'production') {
         }
     }));
 
+    // Inject GA Measurement ID into HTML
+    const GA_ID = process.env.GA_MEASUREMENT_ID || '';
+    const injectGA = (html) => GA_ID ? html.replace(/GA_MEASUREMENT_ID/g, GA_ID) : html.replace(/<script[^>]*gtag[^>]*><\/script>\s*<script>[^<]*<\/script>\s*/g, '');
+
     // Crawler-aware SPA fallback with proper 404 handling
     app.get('*', async (req, res) => {
         if (req.path.startsWith('/api')) return;
@@ -590,19 +643,25 @@ if (process.env.NODE_ENV === 'production') {
 
         if (isCrawler) {
             try {
-                const rawHtml = fs.readFileSync(indexPath, 'utf8');
-                const { html, isValidPage } = await injectMetaTags(req, res, rawHtml);
+                // Try prerender first — returns fully-rendered HTML with all content
+                const prerenderHtml = await fetchPrerender(`${SITE_URL}${req.originalUrl}`);
+                const baseHtml = prerenderHtml || fs.readFileSync(indexPath, 'utf8');
+
+                // Apply SEO meta tags (title, OG, JSON-LD) on top of whichever HTML we got
+                const { html, isValidPage } = await injectMetaTags(req, res, baseHtml);
                 if (!isValidPage) {
-                    res.status(404).send(html);
+                    res.status(404).send(injectGA(html));
                 } else {
-                    res.send(html);
+                    res.send(injectGA(html));
                 }
             } catch (err) {
                 console.error('Crawler injection error:', err);
-                res.sendFile(indexPath);
+                const html = fs.readFileSync(indexPath, 'utf8');
+                res.send(injectGA(html));
             }
         } else {
-            res.sendFile(indexPath);
+            const html = fs.readFileSync(indexPath, 'utf8');
+            res.send(injectGA(html));
         }
     });
 }

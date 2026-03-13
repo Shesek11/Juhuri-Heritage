@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { callGemini } from '../_shared';
+import { applyRateLimit, RATE_LIMITS } from '@/src/lib/rate-limit';
 
 export async function POST(request: NextRequest) {
+  const limited = applyRateLimit(request, RATE_LIMITS.gemini);
+  if (limited) return limited;
+
   try {
     const { fields, direction } = await request.json();
 

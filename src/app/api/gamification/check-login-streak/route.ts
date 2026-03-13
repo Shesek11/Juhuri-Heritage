@@ -1,17 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/src/lib/db';
 import { requireAuth } from '@/src/lib/auth';
-import { checkAndAwardBadges, calculateLevel, XP_REWARDS } from '../_lib/gamification';
+import { checkAndAwardBadges, calculateLevel, XP_REWARDS, ensureSchema } from '../_lib/gamification';
 
 // POST /api/gamification/check-login-streak - Check and update login streak, award daily XP
 export async function POST(request: NextRequest) {
   try {
+    await ensureSchema();
     const authUser = await requireAuth(request);
     const userId = authUser.id;
 
     const [users]: any = await pool.query(
-      'SELECT id, xp, level, current_streak, last_login_date FROM users WHERE id = ? OR auth0_id = ?',
-      [userId, userId]
+      'SELECT id, xp, level, current_streak, last_login_date FROM users WHERE id = ?',
+      [userId]
     );
 
     if (users.length === 0) {

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
 import pool from '@/src/lib/db';
-import { getAuthUser } from '@/src/lib/auth';
+import { requireAuth } from '@/src/lib/auth';
 
 const UPLOADS_DIR = path.join(process.cwd(), 'public/uploads/recordings');
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -11,8 +11,8 @@ const ALLOWED_TYPES = ['audio/webm', 'audio/mp3', 'audio/mpeg', 'audio/wav', 'au
 // POST /api/recordings/upload - Upload a new audio recording for an entry
 export async function POST(request: NextRequest) {
   try {
-    const user = await getAuthUser(request);
-    const userId = user ? user.id : null;
+    const user = await requireAuth(request);
+    const userId = user.id;
 
     const formData = await request.formData();
     const audio = formData.get('audio') as File | null;
@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
     await writeFile(filePath, Buffer.from(bytes));
 
     const fileUrl = `/uploads/recordings/${filename}`;
-    const status = userId ? 'approved' : 'pending'; // Guests need approval
+    const status = 'approved';
 
     const [result]: any = await pool.query(`
       INSERT INTO audio_recordings (entry_id, dialect_id, user_id, file_url, status, duration_seconds)

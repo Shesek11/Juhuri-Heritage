@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/src/lib/db';
+import { applyRateLimit, RATE_LIMITS } from '@/src/lib/rate-limit';
 
 // POST /api/feedback - Submit feedback (public - no auth required)
 export async function POST(request: NextRequest) {
+  const limited = applyRateLimit(request, RATE_LIMITS.comments);
+  if (limited) return limited;
+
   try {
     const { category, message, userName, userEmail, pageUrl } = await request.json();
 

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/src/lib/db';
-import { BADGES } from '../../_lib/gamification';
+import { BADGES, ensureSchema } from '../../_lib/gamification';
 
 // GET /api/gamification/badges/:userId - Get user's earned badges
 export async function GET(
@@ -8,14 +8,15 @@ export async function GET(
   { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
+    await ensureSchema();
     const { userId } = await params;
 
     const [badges]: any = await pool.query(`
       SELECT badge_id, earned_at
       FROM user_badges ub
       JOIN users u ON ub.user_id = u.id
-      WHERE u.id = ? OR u.auth0_id = ?
-    `, [userId, userId]);
+      WHERE u.id = ?
+    `, [userId]);
 
     const earnedBadgeIds = badges.map((b: any) => b.badge_id);
 

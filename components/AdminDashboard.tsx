@@ -16,6 +16,7 @@ const SECTION_DESCRIPTIONS: Record<string, string> = {
     market_vendors: 'ניהול חנויות בשוק: אישור, חסימה, תלונות.',
     family_suggestions: 'בקשות מיזוג ושיוך באילן היוחסין.',
     seo_management: 'ניהול SEO: תבניות meta, robots.txt, הפניות, סקירת מצב.',
+    seo_analytics: 'נתוני Google Analytics: משתמשים, צפיות, מקורות תנועה ומכשירים.',
 };
 
 /** Small info bar showing section description */
@@ -35,6 +36,7 @@ import AdminTagsPanel from './admin/AdminTagsPanel';
 import AdminFamilyPanel from './admin/AdminFamilyPanel';
 import AdminMarketplacePanel from './admin/AdminMarketplacePanel';
 import AdminSEOPanel from './admin/AdminSEOPanel';
+import AdminAnalyticsPanel from './admin/AdminAnalyticsPanel';
 import { getCustomEntries, addCustomEntry, deleteCustomEntry, approveEntry, downloadTemplate, getDialects, addDialect, deleteDialect, getSystemLogs } from '../services/storageService';
 import { generateBatchEntries } from '../services/geminiService';
 import { getAllUsers, updateUserRole, deleteUser, updateUser } from '../services/authService';
@@ -99,7 +101,26 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
     const isAdmin = user.role === 'admin';
 
     const [entries, setEntries] = useState<DictionaryEntry[]>([]);
-    const [activeSection, setActiveSection] = useState<string>('dict_active');
+    const [activeSection, setActiveSectionState] = useState<string>(() => {
+        if (typeof window !== 'undefined' && window.location.hash) {
+            return window.location.hash.slice(1) || 'dict_active';
+        }
+        return 'dict_active';
+    });
+
+    const setActiveSection = (section: string) => {
+        setActiveSectionState(section);
+        window.history.pushState(null, '', `#${section}`);
+    };
+
+    useEffect(() => {
+        const onPopState = () => {
+            const hash = window.location.hash.slice(1);
+            if (hash) setActiveSectionState(hash);
+        };
+        window.addEventListener('popstate', onPopState);
+        return () => window.removeEventListener('popstate', onPopState);
+    }, []);
     const [searchFilter, setSearchFilter] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
@@ -334,7 +355,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
             label: 'SEO',
             icon: <Globe size={20} />,
             children: [
-                { id: 'seo_management', label: 'ניהול SEO' }
+                { id: 'seo_management', label: 'ניהול SEO' },
+                { id: 'seo_analytics', label: 'Analytics' }
             ]
         },
         {
@@ -764,7 +786,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                 {/* Main Content Area */}
                 <main className="flex-1 overflow-y-auto p-6">
                     <div className="max-w-7xl mx-auto">
-                        <SectionInfoBar sectionId={activeSection} />
 
                         {/* Dictionary: Active Table */}
                         {activeSection === 'dict_active' && (
@@ -1480,6 +1501,17 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                 </h2>
                                 <SectionInfoBar sectionId="seo_management" />
                                 <AdminSEOPanel />
+                            </div>
+                        )}
+
+                        {activeSection === 'seo_analytics' && isAdmin && (
+                            <div className="flex-1 flex flex-col w-full">
+                                <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-2">
+                                    <Activity size={24} className="text-amber-500" />
+                                    Google Analytics
+                                </h2>
+                                <SectionInfoBar sectionId="seo_analytics" />
+                                <AdminAnalyticsPanel />
                             </div>
                         )}
 

@@ -18,7 +18,7 @@
 
 ```bash
 # עבור לתיקיית הפרויקט
-cd /var/www/juhuri.shesek.xyz
+cd /var/www/jun-juhuri.com
 
 # ודא שקובץ .env קיים ומכיל את פרטי ההתחברות ל-DB
 nano .env

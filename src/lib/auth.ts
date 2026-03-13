@@ -1,8 +1,15 @@
 import jwt from 'jsonwebtoken';
-import { cookies } from 'next/headers';
 import { NextRequest } from 'next/server';
 
-const JWT_SECRET = process.env.JWT_SECRET || '';
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+  console.error('FATAL: JWT_SECRET environment variable is not set');
+}
+
+function getSecret(): string {
+  if (!JWT_SECRET) throw new Error('JWT_SECRET is not configured');
+  return JWT_SECRET;
+}
 
 export interface AuthUser {
   id: number;
@@ -24,7 +31,7 @@ export async function getAuthUser(request: NextRequest): Promise<AuthUser | null
   if (!token) return null;
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET) as AuthUser;
+    const decoded = jwt.verify(token, getSecret()) as AuthUser;
     return decoded;
   } catch {
     return null;
@@ -99,7 +106,7 @@ export function generateToken(user: {
       name: user.name,
       role: user.role,
     },
-    JWT_SECRET,
+    getSecret(),
     { expiresIn: '7d' }
   );
 }

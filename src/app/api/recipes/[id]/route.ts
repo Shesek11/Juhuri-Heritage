@@ -11,9 +11,6 @@ export async function GET(
     const { id } = await params;
     const user = await getAuthUser(request);
 
-    // Increment view count
-    await pool.query('UPDATE recipes SET view_count = view_count + 1 WHERE id = ?', [id]);
-
     // Get recipe details
     const [recipes] = await pool.query(
       `SELECT r.*,
@@ -30,6 +27,9 @@ export async function GET(
     if (!recipes.length) {
       return NextResponse.json({ error: 'מתכון לא נמצא' }, { status: 404 });
     }
+
+    // Increment view count only after confirming recipe exists
+    await pool.query('UPDATE recipes SET view_count = view_count + 1 WHERE id = ?', [id]);
 
     const recipe = recipes[0];
 
@@ -119,7 +119,7 @@ export async function PUT(
       return NextResponse.json({ error: 'מתכון לא נמצא' }, { status: 404 });
     }
 
-    if (existing[0].user_id !== (user as any).id && (user as any).role !== 'admin') {
+    if (existing[0].user_id !== user.id && user.role !== 'admin') {
       return NextResponse.json({ error: 'אין הרשאה לערוך מתכון זה' }, { status: 403 });
     }
 
@@ -207,7 +207,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'מתכון לא נמצא' }, { status: 404 });
     }
 
-    if (existing[0].user_id !== (user as any).id && (user as any).role !== 'admin') {
+    if (existing[0].user_id !== user.id && user.role !== 'admin') {
       return NextResponse.json({ error: 'אין הרשאה למחוק מתכון זה' }, { status: 403 });
     }
 

@@ -5,6 +5,7 @@ export const metadata: Metadata = {
   title: "מילון ג'והורי-עברי",
   description:
     "מילון ג'והורי-עברי אינטראקטיבי — חפש מילים בג'והורית, עברית, רוסית ואנגלית. שמע הגייה, צפה בתרגומים ולמד את שפת יהודי ההרים.",
+  alternates: { canonical: '/dictionary' },
 };
 
 export default function DictionaryPage() {

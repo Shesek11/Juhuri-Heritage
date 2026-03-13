@@ -1,10 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/src/lib/db';
 import { getAuthUser } from '@/src/lib/auth';
+import { applyRateLimit, RATE_LIMITS } from '@/src/lib/rate-limit';
 
 // POST /api/comments - Add a new comment
 // Auth users: status = 'approved', Guests: status = 'pending', requires name
 export async function POST(request: NextRequest) {
+  const limited = applyRateLimit(request, RATE_LIMITS.comments);
+  if (limited) return limited;
+
   try {
     const user = await getAuthUser(request);
     const { entryId, content, guestName } = await request.json();

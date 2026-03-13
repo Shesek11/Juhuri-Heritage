@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/src/lib/db';
-import { xpForLevel } from '../../_lib/gamification';
+import { xpForLevel, ensureSchema } from '../../_lib/gamification';
 
 // GET /api/gamification/stats/:userId - Get user's gamification stats
 export async function GET(
@@ -8,13 +8,14 @@ export async function GET(
   { params }: { params: Promise<{ userId: string }> }
 ) {
   try {
+    await ensureSchema();
     const { userId } = await params;
 
     const [users]: any = await pool.query(`
       SELECT xp, level, current_streak, contributions_count
       FROM users
-      WHERE id = ? OR auth0_id = ?
-    `, [userId, userId]);
+      WHERE id = ?
+    `, [userId]);
 
     if (users.length === 0) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });

@@ -569,7 +569,7 @@ const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal, onSugge
             {entry.translations.map((t, idx) => {
               const voteData = t.id ? translationVotes[t.id] : null;
               return (
-                <div key={idx} className="relative p-4 rounded-xl bg-white/5 hover:bg-white/10 transition-colors group border border-white/10">
+                <div key={t.id || idx} className="relative p-4 rounded-xl bg-white/5 hover:bg-white/10 transition-colors group border border-white/10">
                   <div className="flex gap-3">
                     {/* Play button - inline, not absolute */}
                     <button

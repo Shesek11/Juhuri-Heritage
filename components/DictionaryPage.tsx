@@ -1,5 +1,7 @@
+'use client';
+
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useRouter } from 'next/navigation';
 import { useAuth } from '../contexts/AuthContext';
 import { DictionaryEntry, HistoryItem, DialectItem } from '../types';
 import { searchDictionary, searchByAudio, SearchResult } from '../services/geminiService';
@@ -42,8 +44,9 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({
   onOpenTranslationModal,
   onOpenWordListModal,
 }) => {
-  const { term } = useParams<{ term?: string }>();
-  const navigate = useNavigate();
+  const params = useParams();
+  const term = params?.term as string | undefined;
+  const router = useRouter();
 
   const [query, setQuery] = useState('');
   const [result, setResult] = useState<DictionaryEntry | null>(null);
@@ -106,7 +109,7 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({
       setAdditionalResults(extras);
       addToHistory(entry);
       // Update URL to reflect the searched term
-      navigate(`/word/${encodeURIComponent(entry.term)}`, { replace: true });
+      router.replace(`/word/${encodeURIComponent(entry.term)}`);
     } catch (err: any) {
       if (err?.message === 'NOT_FOUND') {
         setError(`המילה "${searchTerm}" לא נמצאה במילון. בדוק את האיות או הוסף אותה בעצמך!`);
@@ -125,7 +128,7 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({
     setAdditionalResults([]);
     setQuery(entry.term);
     addToHistory(entry);
-    navigate(`/word/${encodeURIComponent(entry.term)}`, { replace: true });
+    router.replace(`/word/${encodeURIComponent(entry.term)}`);
   };
 
   const handleSearch = async (e?: React.FormEvent, specificTerm?: string) => {
@@ -162,7 +165,7 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({
           setAdditionalResults([]);
           addToHistory(data);
           setQuery(data.term);
-          navigate(`/word/${encodeURIComponent(data.term)}`, { replace: true });
+          router.replace(`/word/${encodeURIComponent(data.term)}`);
         } catch (err) {
           setError('לא הצלחנו לזהות את הדיבור. נסה שוב, בקול ברור.');
           console.error(err);
@@ -274,7 +277,7 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({
         )}
       </HeroSection>
 
-      <div className="w-full max-w-6xl mx-auto px-4 mt-0 relative z-20">
+      <div className="w-full max-w-5xl mx-auto px-4 mt-0 relative z-20">
 
         {/* Floating CTA: Add Word Button */}
         <button

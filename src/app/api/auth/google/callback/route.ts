@@ -8,6 +8,11 @@ const CALLBACK_URL = `${process.env.SITE_URL || 'https://jun-juhuri.com'}/api/au
 
 export async function GET(request: NextRequest) {
   try {
+    if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
+      console.error('Google OAuth not configured: missing GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET');
+      return NextResponse.redirect(new URL('/login?error=oauth_not_configured', request.url));
+    }
+
     const code = request.nextUrl.searchParams.get('code');
     if (!code) {
       return NextResponse.redirect(new URL('/login?error=no_code', request.url));
@@ -19,8 +24,8 @@ export async function GET(request: NextRequest) {
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: new URLSearchParams({
         code,
-        client_id: GOOGLE_CLIENT_ID!,
-        client_secret: GOOGLE_CLIENT_SECRET!,
+        client_id: GOOGLE_CLIENT_ID,
+        client_secret: GOOGLE_CLIENT_SECRET,
         redirect_uri: CALLBACK_URL,
         grant_type: 'authorization_code',
       }),

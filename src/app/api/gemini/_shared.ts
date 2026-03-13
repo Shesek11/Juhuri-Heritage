@@ -27,7 +27,7 @@ async function getApiKey(): Promise<string | null> {
     if (rows.length > 0) {
       // Try to decrypt
       try {
-        const { decrypt } = await import('@/server/utils/encryption');
+        const { decrypt } = await import('@/src/lib/encryption');
         const key = decrypt(rows[0].encrypted_value, rows[0].iv, rows[0].auth_tag);
         if (key) {
           cachedApiKey = key;

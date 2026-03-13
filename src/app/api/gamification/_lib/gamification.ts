@@ -1,5 +1,38 @@
 import pool from '@/src/lib/db';
 
+// Auto-migrate: add gamification columns/tables if missing
+let schemaReady = false;
+async function ensureSchema() {
+  if (schemaReady) return;
+  try {
+    // Add missing columns to users (IF NOT EXISTS not supported for columns, use ALTER IGNORE)
+    const cols = ['xp INT DEFAULT 0', 'level INT DEFAULT 1', 'current_streak INT DEFAULT 0',
+      'last_login_date DATETIME NULL', 'contributions_count INT DEFAULT 0'];
+    for (const col of cols) {
+      const name = col.split(' ')[0];
+      try {
+        await pool.query(`ALTER TABLE users ADD COLUMN ${col}`);
+      } catch (e: any) {
+        if (!e.message?.includes('Duplicate column')) throw e;
+      }
+    }
+    // Create user_badges table
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS user_badges (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        user_id INT NOT NULL,
+        badge_id VARCHAR(50) NOT NULL,
+        earned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        UNIQUE KEY unique_badge (user_id, badge_id),
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      )
+    `);
+    schemaReady = true;
+  } catch (err) {
+    console.error('Gamification schema migration error:', err);
+  }
+}
+
 // XP Award Values
 export const XP_REWARDS = {
   DAILY_LOGIN: 10,
@@ -29,18 +62,26 @@ export const xpForLevel = (level: number): number => Math.pow(level, 2) * 100;
 /**
  * Check and award badges based on user stats.
  */
+export { ensureSchema };
+
 export async function checkAndAwardBadges(userId: number | string): Promise<any[]> {
   const newBadges: any[] = [];
 
   try {
-    // Get user stats
+    await ensureSchema();
+    // Get user stats (audio_recordings may not exist yet)
+    let recordingsCount = 0;
+    try {
+      const [rc]: any = await pool.query('SELECT COUNT(*) as cnt FROM audio_recordings WHERE user_id = ?', [userId]);
+      recordingsCount = rc[0]?.cnt || 0;
+    } catch { /* table doesn't exist yet */ }
+
     const [users]: any = await pool.query(`
       SELECT u.id, u.level, u.current_streak, u.contributions_count,
-             (SELECT COUNT(*) FROM comments c WHERE c.user_id = u.id) as comments_count,
-             (SELECT COUNT(*) FROM audio_recordings ar WHERE ar.user_id = u.id) as recordings_count
+             (SELECT COUNT(*) FROM comments c WHERE c.user_id = u.id) as comments_count
       FROM users u
-      WHERE u.id = ? OR u.auth0_id = ?
-    `, [userId, userId]);
+      WHERE u.id = ?
+    `, [userId]);
 
     if (users.length === 0) return newBadges;
 
@@ -64,7 +105,7 @@ export async function checkAndAwardBadges(userId: number | string): Promise<any[
       badgesToAward.push('commenter');
     }
 
-    if (!earnedIds.includes('voice') && user.recordings_count >= 1) {
+    if (!earnedIds.includes('voice') && recordingsCount >= 1) {
       badgesToAward.push('voice');
     }
 

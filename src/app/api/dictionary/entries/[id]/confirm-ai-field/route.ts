@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/src/lib/db';
-import { getAuthUser } from '@/src/lib/auth';
+import { requireAuth } from '@/src/lib/auth';
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const user = await getAuthUser(request);
+    const user = await requireAuth(request);
     const { id } = await params;
     const { fieldName, value } = await request.json();
 
@@ -47,9 +47,7 @@ export async function POST(
       [id, fieldName]
     );
 
-    if (user?.id) {
-      await pool.query('UPDATE users SET xp = xp + 10 WHERE id = ?', [user.id]);
-    }
+    await pool.query('UPDATE users SET xp = xp + 10 WHERE id = ?', [user.id]);
 
     return NextResponse.json({ success: true, message: 'השדה אושר ונשמר. תודה!' });
   } catch (error) {

@@ -366,7 +366,7 @@ async function main() {
         log(colors.blue, `  • Updates/promotions`);
         log(colors.blue, `  • Customer reviews`);
         console.log('');
-        log(colors.yellow, 'Next step: Visit https://juhuri.shesek.xyz/marketplace');
+        log(colors.yellow, 'Next step: Visit https://jun-juhuri.com/marketplace');
         console.log('');
 
     } catch (error) {

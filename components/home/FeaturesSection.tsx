@@ -1,5 +1,7 @@
+'use client';
+
 import React from 'react';
-import { Link } from 'react-router-dom';
+import Link from 'next/link';
 import {
   BookOpen, GraduationCap, ChefHat, Store, TreeDeciduous, Compass
 } from 'lucide-react';
@@ -102,7 +104,7 @@ const FeaturesSection: React.FC<FeaturesSectionProps> = ({ featureFlags, isAdmin
             );
 
             return clickable ? (
-              <Link key={card.title} to={card.link} className="block h-full">
+              <Link key={card.title} href={card.link} className="block h-full">
                 {cardContent}
               </Link>
             ) : (

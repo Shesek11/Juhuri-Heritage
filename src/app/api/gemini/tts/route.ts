@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { applyRateLimit, RATE_LIMITS } from '@/src/lib/rate-limit';
 
 export async function POST(request: NextRequest) {
+  const limited = applyRateLimit(request, RATE_LIMITS.gemini);
+  if (limited) return limited;
+
   try {
     const { text } = await request.json();
     if (!text) return NextResponse.json({ error: 'Text required' }, { status: 400 });

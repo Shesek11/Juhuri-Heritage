@@ -7,21 +7,21 @@ import { checkAndAwardBadges, calculateLevel, XP_REWARDS } from '../_lib/gamific
 export async function POST(request: NextRequest) {
   try {
     const user = await requireAuth(request);
-    const { action, amount } = await request.json();
+    const { action } = await request.json();
     const userId = user.id;
 
     if (!action) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    const xpAmount = amount || XP_REWARDS[action.toUpperCase() as keyof typeof XP_REWARDS] || 0;
+    const xpAmount = XP_REWARDS[action.toUpperCase() as keyof typeof XP_REWARDS];
 
-    if (xpAmount === 0) {
+    if (!xpAmount) {
       return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     }
 
     // Get current user XP
-    const [users]: any = await pool.query('SELECT xp, level FROM users WHERE id = ? OR auth0_id = ?', [userId, userId]);
+    const [users]: any = await pool.query('SELECT xp, level FROM users WHERE id = ?', [userId]);
 
     if (users.length === 0) {
       return NextResponse.json({ error: 'User not found' }, { status: 404 });
@@ -35,8 +35,8 @@ export async function POST(request: NextRequest) {
 
     // Update user XP and level
     await pool.query(
-      'UPDATE users SET xp = ?, level = ? WHERE id = ? OR auth0_id = ?',
-      [newXp, newLevel, userId, userId]
+      'UPDATE users SET xp = ?, level = ? WHERE id = ?',
+      [newXp, newLevel, userId]
     );
 
     // Check for new badges

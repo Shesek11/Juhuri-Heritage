@@ -1,5 +1,7 @@
+'use client';
+
 import React from 'react';
-import { NavLink } from 'react-router-dom';
+import Link from 'next/link';
 import { Scroll, Facebook, Instagram, Youtube, HeartHandshake } from 'lucide-react';
 
 const Footer: React.FC = () => {
@@ -13,12 +15,12 @@ const Footer: React.FC = () => {
       <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-10 relative z-10">
         {/* Brand */}
         <div className="flex flex-col items-center md:items-start text-center md:text-right">
-          <NavLink to="/" className="flex items-center gap-3 mb-3 group">
+          <Link href="/" className="flex items-center gap-3 mb-3 group">
             <div className="w-9 h-9 bg-gradient-to-br from-amber-400 to-orange-600 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/20 group-hover:shadow-amber-500/40 transition-shadow duration-500">
               <Scroll size={18} className="text-[#050B14]" />
             </div>
             <span className="text-xl font-bold text-white group-hover:text-amber-400 transition-colors duration-300">מורשת ג׳והורי</span>
-          </NavLink>
+          </Link>
           <p className="text-slate-400 text-sm leading-relaxed max-w-xs mb-4">
             משמרים את שפת הג׳והורי, מסורותיה ותרבותם העשירה של יהודי ההרים, למען הדורות הבאים.
           </p>
@@ -33,10 +35,10 @@ const Footer: React.FC = () => {
         <div>
           <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-4 drop-shadow-md">קישורים</h3>
           <ul className="space-y-2">
-            <li><NavLink to="/" className={linkClass}>בית</NavLink></li>
-            <li><NavLink to="/dictionary" className={linkClass}>מילון</NavLink></li>
-            <li><NavLink to="/tutor" className={linkClass}>מורה פרטי</NavLink></li>
-            <li><NavLink to="/about" className={linkClass}>אודות</NavLink></li>
+            <li><Link href="/" className={linkClass}>בית</Link></li>
+            <li><Link href="/dictionary" className={linkClass}>מילון</Link></li>
+            <li><Link href="/tutor" className={linkClass}>מורה פרטי</Link></li>
+            <li><Link href="/about" className={linkClass}>אודות</Link></li>
           </ul>
         </div>
 
@@ -44,9 +46,9 @@ const Footer: React.FC = () => {
         <div>
           <h3 className="text-sm font-bold text-white uppercase tracking-wider mb-4 drop-shadow-md">מידע משפטי</h3>
           <ul className="space-y-2">
-            <li><NavLink to="/privacy" className={linkClass}>מדיניות פרטיות</NavLink></li>
-            <li><NavLink to="/accessibility" className={linkClass}>הצהרת נגישות</NavLink></li>
-            <li><NavLink to="/contact" className={linkClass}>צור קשר</NavLink></li>
+            <li><Link href="/privacy" className={linkClass}>מדיניות פרטיות</Link></li>
+            <li><Link href="/accessibility" className={linkClass}>הצהרת נגישות</Link></li>
+            <li><Link href="/contact" className={linkClass}>צור קשר</Link></li>
           </ul>
         </div>
       </div>

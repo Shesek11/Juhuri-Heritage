@@ -275,6 +275,8 @@ export interface OrderItem {
     item_name_hebrew?: string;
     item_description?: string;
     item_price: number;
+    menu_item_name?: string;
+    price_at_order?: number;
     quantity: number;
     notes?: string;
 }

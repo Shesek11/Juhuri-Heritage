@@ -1,7 +1,16 @@
-import React from 'react';
-import { Navigate } from 'react-router-dom';
+'use client';
+
+import React, { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '../../contexts/AuthContext';
+import { useAppContext } from '../shell/AppContext';
 import { Clock, ChefHat, Store, TreeDeciduous } from 'lucide-react';
+
+function RedirectHome() {
+  const router = useRouter();
+  useEffect(() => { router.replace('/'); }, [router]);
+  return null;
+}
 
 interface FeatureRouteProps {
   feature: string;
@@ -11,7 +20,7 @@ interface FeatureRouteProps {
   comingSoonDescription?: string;
 }
 
-const featureFlags: Record<string, { icon: React.ReactNode; title: string; description: string; gradient: string }> = {
+const featureMeta: Record<string, { icon: React.ReactNode; title: string; description: string; gradient: string }> = {
   recipes_module: {
     icon: <ChefHat className="w-12 h-12 text-white" />,
     title: 'מתכונים - בקרוב! \u{1F372}',
@@ -34,23 +43,19 @@ const featureFlags: Record<string, { icon: React.ReactNode; title: string; descr
 
 export const FeatureRoute: React.FC<FeatureRouteProps> = ({ feature, children }) => {
   const { user } = useAuth();
+  const { featureFlags: flags, featureFlagsLoaded } = useAppContext();
   const isAdmin = user?.role === 'admin' || user?.role === 'approver';
 
-  // We read feature flags from a global state that's loaded in App.tsx
-  // and passed via context. For now, we use a simpler approach:
-  // the FeatureRoute checks window.__featureFlags which App.tsx sets.
-  const flagsLoaded = (window as any).__featureFlagsLoaded || false;
-  const flags = (window as any).__featureFlags || {};
   const status = flags[feature];
 
   // Wait for flags to load before deciding — prevents redirect on refresh
-  if (!flagsLoaded) return null;
+  if (!featureFlagsLoaded) return null;
 
-  if (!status || status === 'disabled') return <Navigate to="/" replace />;
+  if (!status || status === 'disabled') return <RedirectHome />;
 
   if (status === 'coming_soon' && !isAdmin) {
-    const meta = featureFlags[feature];
-    if (!meta) return <Navigate to="/" replace />;
+    const meta = featureMeta[feature];
+    if (!meta) return <RedirectHome />;
 
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center text-center p-8">
@@ -71,7 +76,7 @@ export const FeatureRoute: React.FC<FeatureRouteProps> = ({ feature, children })
     );
   }
 
-  if (status === 'admin_only' && !isAdmin) return <Navigate to="/" replace />;
+  if (status === 'admin_only' && !isAdmin) return <RedirectHome />;
 
   return <>{children}</>;
 };

@@ -22,12 +22,12 @@ Juhuri Heritage is an open community platform dedicated to preserving the Juhuri
 
 ## Key URLs
 
-- Homepage: https://juhuri.shesek.xyz/
-- Dictionary search: https://juhuri.shesek.xyz/word/{term}
-- Recipes: https://juhuri.shesek.xyz/recipes
-- Marketplace: https://juhuri.shesek.xyz/marketplace
-- AI Tutor: https://juhuri.shesek.xyz/tutor
-- Sitemap: https://juhuri.shesek.xyz/sitemap.xml
+- Homepage: https://jun-juhuri.com/
+- Dictionary search: https://jun-juhuri.com/word/{term}
+- Recipes: https://jun-juhuri.com/recipes
+- Marketplace: https://jun-juhuri.com/marketplace
+- AI Tutor: https://jun-juhuri.com/tutor
+- Sitemap: https://jun-juhuri.com/sitemap.xml
 
 ## API
 
@@ -37,4 +37,4 @@ Juhuri Heritage is an open community platform dedicated to preserving the Juhuri
 ## Contact
 
 This project is maintained by the Juhuri Heritage community.
-Website: https://juhuri.shesek.xyz
+Website: https://jun-juhuri.com

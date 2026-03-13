@@ -228,7 +228,7 @@ export const RecipeDetailPage: React.FC<RecipeDetailPageProps> = ({ recipeId, on
             />
             {/* Breadcrumb */}
             <div className="bg-[#0d1424]/60 backdrop-blur-xl border-b border-white/10 print:hidden">
-                <div className="max-w-7xl mx-auto px-4 py-3">
+                <div className="max-w-5xl mx-auto px-4 py-3">
                     <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
                         <button
                             onClick={() => onClose()}
@@ -259,7 +259,7 @@ export const RecipeDetailPage: React.FC<RecipeDetailPageProps> = ({ recipeId, on
 
                 {/* Recipe Title Overlay */}
                 <div className="absolute bottom-0 left-0 right-0 p-8">
-                    <div className="max-w-7xl mx-auto">
+                    <div className="max-w-5xl mx-auto">
                         <div className="flex flex-wrap gap-2 mb-4">
                             {recipe.is_featured && (
                                 <span className="px-3 py-1 bg-amber-500 text-white text-sm font-bold rounded-full flex items-center gap-1">
@@ -312,7 +312,7 @@ export const RecipeDetailPage: React.FC<RecipeDetailPageProps> = ({ recipeId, on
             </div>
 
             {/* Main Content */}
-            <div className="max-w-7xl mx-auto px-4 py-8">
+            <div className="max-w-5xl mx-auto px-4 py-8">
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                     {/* Left Column - Main Content */}
                     <div className="lg:col-span-2 space-y-8">

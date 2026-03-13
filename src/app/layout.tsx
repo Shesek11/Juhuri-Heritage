@@ -1,6 +1,9 @@
 import type { Metadata } from 'next';
+import Script from 'next/script';
 import './globals.css';
-import AppProviders from '../components/providers/AppProviders';
+import AppProviders from '../../components/providers/AppProviders';
+
+const GA_MEASUREMENT_ID = process.env.GA_MEASUREMENT_ID || '';
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.SITE_URL || 'https://jun-juhuri.com'),
@@ -11,12 +14,12 @@ export const metadata: Metadata = {
   description:
     "מילון ג'והורי-עברי אינטראקטיבי לשימור שפת יהודי ההרים (ג'והורית). חפש מילים, למד את השפה ותרום לשימור המורשת.",
   keywords: ["ג'והורי", 'Juhuri', 'יהודי ההרים', 'מילון', 'שפה', 'מורשת', 'קווקז'],
+  alternates: { canonical: '/' },
   openGraph: {
     title: "מורשת ג'והורי - המילון לשימור השפה",
     description: "מילון ג'והורי-עברי אינטראקטיבי עם מורה פרטי AI",
     type: 'website',
     locale: 'he_IL',
-    url: '/',
     siteName: "מורשת ג'והורי",
     images: [
       {
@@ -40,14 +43,74 @@ export const metadata: Metadata = {
   },
 };
 
+const SITE_URL = process.env.SITE_URL || 'https://jun-juhuri.com';
+
+const jsonLd = {
+  '@context': 'https://schema.org',
+  '@graph': [
+    {
+      '@type': 'WebSite',
+      '@id': `${SITE_URL}/#website`,
+      url: SITE_URL,
+      name: "מורשת ג'והורי",
+      description: "מילון ג'והורי-עברי אינטראקטיבי לשימור שפת יהודי ההרים",
+      inLanguage: 'he',
+      potentialAction: {
+        '@type': 'SearchAction',
+        target: {
+          '@type': 'EntryPoint',
+          urlTemplate: `${SITE_URL}/dictionary?q={search_term_string}`,
+        },
+        'query-input': 'required name=search_term_string',
+      },
+    },
+    {
+      '@type': 'Organization',
+      '@id': `${SITE_URL}/#organization`,
+      name: "מורשת ג'והורי",
+      url: SITE_URL,
+      logo: {
+        '@type': 'ImageObject',
+        url: `${SITE_URL}/images/og-default.png`,
+      },
+      description: "פרויקט לשימור שפת ג'והורית — שפת יהודי ההרים מהקווקז",
+    },
+  ],
+};
+
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // JSON-LD is a hardcoded server-side object, safe to inject
+  const jsonLdHtml = JSON.stringify(jsonLd);
+
   return (
     <html lang="he" dir="rtl" suppressHydrationWarning>
-      <body className="bg-slate-50 text-slate-900 dark:bg-slate-900 dark:text-slate-100 transition-colors duration-300">
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: jsonLdHtml }}
+        />
+      </head>
+      <body className="font-rubik">
+        {GA_MEASUREMENT_ID && (
+          <>
+            <Script
+              src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
+              strategy="afterInteractive"
+            />
+            <Script id="google-analytics" strategy="afterInteractive">
+              {`
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                gtag('config', '${GA_MEASUREMENT_ID}');
+              `}
+            </Script>
+          </>
+        )}
         <AppProviders>{children}</AppProviders>
       </body>
     </html>
