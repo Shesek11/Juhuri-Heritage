@@ -1,9 +1,13 @@
+const path = require('path');
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
 
-  // Allow importing from root-level dirs (components/, contexts/, services/, etc.)
-  // until they are fully moved into src/
+  turbopack: {
+    root: path.resolve(__dirname),
+  },
+
   experimental: {
     serverActions: {
       bodySizeLimit: '10mb',
