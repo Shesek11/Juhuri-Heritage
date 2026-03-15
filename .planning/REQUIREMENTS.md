@@ -104,13 +104,59 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| — | — | — |
+| DATA-01 | Phase 1 | Pending |
+| DATA-02 | Phase 1 | Pending |
+| DATA-03 | Phase 1 | Pending |
+| DATA-04 | Phase 1 | Pending |
+| DATA-05 | Phase 1 | Pending |
+| DATA-06 | Phase 1 | Pending |
+| DATA-07 | Phase 1 | Pending |
+| ENGN-01 | Phase 1 | Pending |
+| ENGN-02 | Phase 1 | Pending |
+| CURR-07 | Phase 1 | Pending |
+| ENGN-05 | Phase 2 | Pending |
+| ENGN-06 | Phase 2 | Pending |
+| ENGN-07 | Phase 2 | Pending |
+| ENGN-08 | Phase 2 | Pending |
+| EXER-01 | Phase 3 | Pending |
+| EXER-02 | Phase 3 | Pending |
+| EXER-03 | Phase 3 | Pending |
+| EXER-04 | Phase 3 | Pending |
+| EXER-05 | Phase 3 | Pending |
+| EXER-06 | Phase 3 | Pending |
+| EXER-07 | Phase 3 | Pending |
+| EXER-08 | Phase 3 | Pending |
+| EXER-09 | Phase 3 | Pending |
+| EXER-10 | Phase 3 | Pending |
+| EXER-11 | Phase 3 | Pending |
+| EXER-12 | Phase 3 | Pending |
+| ENGN-03 | Phase 3 | Pending |
+| ENGN-04 | Phase 3 | Pending |
+| ENGN-09 | Phase 3 | Pending |
+| ENGN-10 | Phase 3 | Pending |
+| CURR-01 | Phase 4 | Pending |
+| CURR-02 | Phase 4 | Pending |
+| CURR-03 | Phase 4 | Pending |
+| CURR-04 | Phase 4 | Pending |
+| CURR-05 | Phase 4 | Pending |
+| CURR-06 | Phase 4 | Pending |
+| CULT-01 | Phase 4 | Pending |
+| CULT-02 | Phase 4 | Pending |
+| CULT-03 | Phase 4 | Pending |
+| GAME-01 | Phase 4 | Pending |
+| GAME-02 | Phase 4 | Pending |
+| GAME-04 | Phase 4 | Pending |
+| GAME-03 | Phase 5 | Pending |
+| GAME-05 | Phase 5 | Pending |
+| GAME-06 | Phase 5 | Pending |
 
 **Coverage:**
 - v1 requirements: 38 total
-- Mapped to phases: 0
-- Unmapped: 38
+- Mapped to phases: 38
+- Unmapped: 0
+
+Note: CURR-02 and DATA-07 appear in both Phase 1 (infrastructure) and Phase 6 (content population execution). Phase 6 covers the execution/QA aspect; Phase 1 covers the schema/service/script creation. Each requirement is counted once at its primary delivery phase.
 
 ---
 *Requirements defined: 2026-03-15*
-*Last updated: 2026-03-15 after initial definition*
+*Last updated: 2026-03-15 after roadmap creation*
