@@ -23,16 +23,17 @@ export default function WeeklySummary({ stats, totals, streak, totalWordsLearned
   const maxXp = Math.max(...stats.map(s => s.xp_earned), 1);
 
   return (
-    <div className="w-full bg-[#0d1424]/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/10 p-5 sm:p-7 lg:p-10 font-rubik">
-      <div className="flex justify-between items-center mb-6">
-        <h3 className="text-base sm:text-lg font-bold text-slate-100">סיכום שבועי</h3>
-        <button type="button" onClick={onClose} className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-white/5 transition-colors" title="סגור">
-          <X size={18} />
+    <div className="w-full bg-[#0d1424]/70 backdrop-blur-xl rounded-2xl shadow-2xl border border-white/10 p-6 sm:p-8 lg:p-10 font-rubik">
+      {/* Header */}
+      <div className="flex justify-between items-center mb-8">
+        <h3 className="text-lg sm:text-xl font-bold text-slate-100">סיכום שבועי</h3>
+        <button type="button" onClick={onClose} className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-white/10 transition-colors" title="סגור" aria-label="סגור">
+          <X size={20} />
         </button>
       </div>
 
       {/* Bar chart */}
-      <div className="flex items-end gap-1.5 sm:gap-2 lg:gap-3 h-28 sm:h-32 lg:h-40 mb-6 lg:mb-8">
+      <div className="flex items-end gap-2 sm:gap-3 lg:gap-4 h-32 sm:h-36 lg:h-44 mb-8 lg:mb-10">
         {Array.from({ length: 7 }).map((_, i) => {
           const date = new Date();
           date.setDate(date.getDate() - (6 - i));
@@ -43,14 +44,14 @@ export default function WeeklySummary({ stats, totals, streak, totalWordsLearned
           const isToday = i === 6;
 
           return (
-            <div key={i} className="flex-1 flex flex-col items-center gap-1.5">
-              <div className="w-full flex items-end justify-center h-24 sm:h-28">
+            <div key={i} className="flex-1 flex flex-col items-center gap-2">
+              <div className="w-full flex items-end justify-center h-28 sm:h-32 lg:h-40">
                 <div
-                  className={`w-5 sm:w-7 rounded-t-md transition-all ${isToday ? 'bg-amber-500' : xp > 0 ? 'bg-amber-500/40' : 'bg-white/[0.06]'}`}
+                  className={`w-full max-w-[36px] lg:max-w-[44px] rounded-t-lg transition-all ${isToday ? 'bg-amber-500' : xp > 0 ? 'bg-amber-500/40' : 'bg-white/[0.04]'}`}
                   style={{ height: `${Math.max(height, 6)}%` }}
                 />
               </div>
-              <span className={`text-[10px] sm:text-xs ${isToday ? 'text-amber-400 font-bold' : 'text-slate-600'}`}>
+              <span className={`text-xs sm:text-sm ${isToday ? 'text-amber-400 font-bold' : 'text-slate-600'}`}>
                 {DAY_NAMES[date.getDay()]}
               </span>
             </div>
@@ -58,49 +59,37 @@ export default function WeeklySummary({ stats, totals, streak, totalWordsLearned
         })}
       </div>
 
-      {/* Stats grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3 lg:gap-4">
-        <div className="bg-white/[0.04] rounded-xl p-3 sm:p-4 flex items-center gap-3">
-          <TrendingUp size={18} className="text-amber-400 shrink-0" />
-          <div>
-            <p className="text-base sm:text-lg font-bold text-slate-100">{totals.xpEarned}</p>
-            <p className="text-[10px] sm:text-xs text-slate-500">XP השבוע</p>
-          </div>
-        </div>
-        <div className="bg-white/[0.04] rounded-xl p-3 sm:p-4 flex items-center gap-3">
-          <BookOpen size={18} className="text-green-400 shrink-0" />
-          <div>
-            <p className="text-base sm:text-lg font-bold text-slate-100">{totals.wordsLearned}</p>
-            <p className="text-[10px] sm:text-xs text-slate-500">מילים חדשות</p>
-          </div>
-        </div>
-        <div className="bg-white/[0.04] rounded-xl p-3 sm:p-4 flex items-center gap-3">
-          <RotateCcw size={18} className="text-blue-400 shrink-0" />
-          <div>
-            <p className="text-base sm:text-lg font-bold text-slate-100">{totals.wordsReviewed}</p>
-            <p className="text-[10px] sm:text-xs text-slate-500">מילים חזרו</p>
-          </div>
-        </div>
-        <div className="bg-white/[0.04] rounded-xl p-3 sm:p-4 flex items-center gap-3">
-          <GraduationCap size={18} className="text-purple-400 shrink-0" />
-          <div>
-            <p className="text-base sm:text-lg font-bold text-slate-100">{totals.lessonsCompleted}</p>
-            <p className="text-[10px] sm:text-xs text-slate-500">שיעורים</p>
-          </div>
-        </div>
+      {/* Stats grid — always 4 columns on desktop */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 lg:gap-4">
+        <StatCard icon={<TrendingUp size={20} className="text-amber-400" />} value={totals.xpEarned} label="XP השבוע" />
+        <StatCard icon={<BookOpen size={20} className="text-green-400" />} value={totals.wordsLearned} label="מילים חדשות" />
+        <StatCard icon={<RotateCcw size={20} className="text-blue-400" />} value={totals.wordsReviewed} label="מילים חזרו" />
+        <StatCard icon={<GraduationCap size={20} className="text-purple-400" />} value={totals.lessonsCompleted} label="שיעורים" />
       </div>
 
       {/* Total words + streak */}
-      <div className="mt-4 pt-4 border-t border-white/[0.06] flex justify-between items-center">
-        <div className="text-xs sm:text-sm text-slate-400">
+      <div className="mt-6 pt-5 border-t border-white/[0.06] flex justify-between items-center">
+        <div className="text-sm text-slate-400">
           סה&quot;כ: <span className="font-bold text-slate-200">{totalWordsLearned} מילים</span>
         </div>
         {streak > 0 && (
-          <div className="flex items-center gap-1 text-orange-400">
-            <Flame size={14} fill="currentColor" />
-            <span className="text-xs sm:text-sm font-bold">{streak} ימים</span>
+          <div className="flex items-center gap-1.5 text-orange-400">
+            <Flame size={16} fill="currentColor" />
+            <span className="text-sm font-bold">{streak} ימים</span>
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+function StatCard({ icon, value, label }: { icon: React.ReactNode; value: number; label: string }) {
+  return (
+    <div className="bg-white/[0.04] rounded-xl p-4 lg:p-5 flex items-center gap-3">
+      <div className="shrink-0">{icon}</div>
+      <div>
+        <p className="text-lg lg:text-xl font-bold text-slate-100">{value}</p>
+        <p className="text-xs text-slate-500">{label}</p>
       </div>
     </div>
   );

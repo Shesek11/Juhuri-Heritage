@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { CurriculumSection, LessonUnit, UnitMasteryInfo } from '../../types';
+import React, { useState, useEffect, useRef } from 'react';
+import { LessonUnit, UnitMasteryInfo } from '../../types';
 import { CURRICULUM_SECTIONS } from '../../services/curriculumService';
 import { Lock, CheckCircle, Star, ShieldCheck, Hand, Hash, Palette, Users, Apple, Home, HeartPulse, Shirt, Flame, Coffee, TreePine, MessageSquare, Scroll, Music, GraduationCap, Sparkles } from 'lucide-react';
 import CulturalNote from './CulturalNote';
@@ -38,7 +38,16 @@ function isCheckpointPassed(sectionOrder: number, unitMastery: Record<string, Un
   return prevSection.units.every(u => (unitMastery[u.id]?.masteryLevel || 0) >= 1);
 }
 
-const masteryBg: Record<number, string> = {
+const MASTERY_RING: Record<number, string> = {
+  0: 'ring-slate-600/50',
+  1: 'ring-amber-500/60',
+  2: 'ring-slate-300/60',
+  3: 'ring-yellow-400/60',
+  4: 'ring-cyan-400/60',
+  5: 'ring-purple-400/60',
+};
+
+const MASTERY_BG: Record<number, string> = {
   0: 'from-slate-600 to-slate-700',
   1: 'from-amber-600 to-amber-700',
   2: 'from-slate-300 to-slate-400',
@@ -48,12 +57,13 @@ const masteryBg: Record<number, string> = {
 };
 
 export default function LearningPath({ unitMastery, completedUnits, onUnitClick, onReviewClick, wordsDueForReview }: Props) {
-  const [isDesktop, setIsDesktop] = useState(false);
+  const activeRef = useRef<HTMLDivElement>(null);
+
+  // Scroll to active unit on mount
   useEffect(() => {
-    const check = () => setIsDesktop(window.innerWidth >= 1024);
-    check();
-    window.addEventListener('resize', check);
-    return () => window.removeEventListener('resize', check);
+    if (activeRef.current) {
+      activeRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
   }, []);
 
   // Find the first active (unlocked + not completed) unit for cultural note
@@ -69,139 +79,160 @@ export default function LearningPath({ unitMastery, completedUnits, onUnitClick,
   })?.id;
 
   return (
-    <div className="flex-1 overflow-y-auto px-4 py-8 sm:px-6 sm:py-10 lg:px-10 lg:py-12">
-      {/* Review button */}
-      {wordsDueForReview > 0 && (
-        <button
-          type="button"
-          onClick={onReviewClick}
-          className="w-full max-w-sm lg:max-w-md mx-auto mb-10 p-4 lg:p-5 bg-blue-500/10 border border-blue-500/20 rounded-2xl flex items-center justify-between hover:bg-blue-500/20 transition-colors group"
-        >
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-full bg-blue-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
-              <GraduationCap size={22} className="text-blue-400" />
-            </div>
-            <div className="text-right">
-              <p className="font-bold text-blue-300 text-sm">חזרה על מילים</p>
-              <p className="text-xs text-blue-400/70">{wordsDueForReview} מילים ממתינות</p>
-            </div>
-          </div>
-          <span className="text-xl opacity-60 group-hover:opacity-100 transition-opacity">🔄</span>
-        </button>
-      )}
+    <div className="flex-1 overflow-y-auto">
+      <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14 lg:py-16">
 
-      {/* Sections */}
-      {CURRICULUM_SECTIONS.map((section) => {
-        const sectionUnlocked = isCheckpointPassed(section.order, unitMastery);
-
-        return (
-          <div key={section.id} className="mb-12 last:mb-4">
-            {/* Section Header */}
-            <div className="flex items-center gap-4 mb-8 lg:mb-10 max-w-sm lg:max-w-md mx-auto">
-              <div className={`h-px flex-1 ${sectionUnlocked ? 'bg-gradient-to-l from-amber-500/40 to-transparent' : 'bg-white/5'}`} />
-              <div className="text-center px-2">
-                <h3 className={`text-lg font-bold ${sectionUnlocked ? 'text-amber-400' : 'text-slate-600'}`}>
-                  {section.title}
-                </h3>
-                <p className={`text-xs mt-1 ${sectionUnlocked ? 'text-slate-500' : 'text-slate-700'}`}>
-                  {section.description}
-                </p>
+        {/* ===== Review Button ===== */}
+        {wordsDueForReview > 0 && (
+          <div className="flex justify-center mb-12 lg:mb-16">
+            <button
+              type="button"
+              onClick={onReviewClick}
+              className="px-6 py-4 sm:px-8 sm:py-5 bg-blue-500/8 border border-blue-500/20 rounded-2xl flex items-center gap-4 hover:bg-blue-500/15 hover:border-blue-500/30 transition-all group"
+            >
+              <div className="w-12 h-12 rounded-full bg-blue-500/15 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <GraduationCap size={24} className="text-blue-400" />
               </div>
-              <div className={`h-px flex-1 ${sectionUnlocked ? 'bg-gradient-to-r from-amber-500/40 to-transparent' : 'bg-white/5'}`} />
-            </div>
+              <div className="text-right">
+                <p className="font-bold text-blue-300 text-sm sm:text-base">חזרה על מילים</p>
+                <p className="text-xs sm:text-sm text-blue-400/60">{wordsDueForReview} מילים ממתינות לחזרה</p>
+              </div>
+            </button>
+          </div>
+        )}
 
-            {/* Checkpoint Gate */}
-            {section.order > 1 && !sectionUnlocked && (
-              <div className="flex justify-center mb-8">
-                <div className="px-5 py-2.5 bg-white/5 border border-white/10 rounded-full flex items-center gap-2 text-slate-500 text-xs sm:text-sm">
-                  <ShieldCheck size={16} />
-                  <span>השלם את כל היחידות הקודמות</span>
+        {/* ===== Sections ===== */}
+        {CURRICULUM_SECTIONS.map((section) => {
+          const sectionUnlocked = isCheckpointPassed(section.order, unitMastery);
+
+          return (
+            <div key={section.id} className="mb-16 lg:mb-20 last:mb-8">
+
+              {/* Section Header — full width with gradient lines */}
+              <div className="flex items-center gap-5 mb-10 lg:mb-14">
+                <div className={`h-px flex-1 ${sectionUnlocked ? 'bg-gradient-to-l from-amber-500/30 to-transparent' : 'bg-white/5'}`} />
+                <div className="text-center px-4">
+                  <h3 className={`text-xl sm:text-2xl font-bold ${sectionUnlocked ? 'text-amber-400' : 'text-slate-600'}`}>
+                    {section.title}
+                  </h3>
+                  <p className={`text-sm mt-1.5 ${sectionUnlocked ? 'text-slate-500' : 'text-slate-700'}`}>
+                    {section.description}
+                  </p>
                 </div>
+                <div className={`h-px flex-1 ${sectionUnlocked ? 'bg-gradient-to-r from-amber-500/30 to-transparent' : 'bg-white/5'}`} />
               </div>
-            )}
 
-            {/* Units — Duolingo-style snaking path */}
-            <div className="flex flex-col items-center">
-              {section.units.map((unit, idx) => {
-                const mastery = unitMastery[unit.id];
-                const level = mastery?.masteryLevel || 0;
-                const locked = !sectionUnlocked || !isUnitUnlocked(unit, unitMastery);
-                const completed = level >= 1;
-                const isActive = !locked && !completed;
-                const showCulturalNote = isActive && unit.culturalNote && unit.id === activeUnitId;
+              {/* Checkpoint Gate */}
+              {section.order > 1 && !sectionUnlocked && (
+                <div className="flex justify-center mb-10">
+                  <div className="px-6 py-3 bg-white/5 border border-white/10 rounded-full flex items-center gap-2.5 text-slate-500 text-sm">
+                    <ShieldCheck size={18} />
+                    <span>השלם את כל היחידות הקודמות</span>
+                  </div>
+                </div>
+              )}
 
-                // Duolingo S-curve offset — wider on desktop
-                const mobileOffsets = [0, -70, -90, -50, 0, 50, 90, 70];
-                const desktopOffsets = [0, -110, -150, -80, 0, 80, 150, 110];
-                const offset = (isDesktop ? desktopOffsets : mobileOffsets)[idx % mobileOffsets.length];
+              {/* Units — S-curve path */}
+              <div className="flex flex-col items-center gap-0">
+                {section.units.map((unit, idx) => {
+                  const mastery = unitMastery[unit.id];
+                  const level = mastery?.masteryLevel || 0;
+                  const locked = !sectionUnlocked || !isUnitUnlocked(unit, unitMastery);
+                  const completed = level >= 1;
+                  const isActive = !locked && !completed;
+                  const showCulturalNote = isActive && unit.culturalNote && unit.id === activeUnitId;
 
-                return (
-                  <React.Fragment key={unit.id}>
-                    {/* Connector dots between units */}
-                    {idx > 0 && (
-                      <div className="flex flex-col items-center gap-1.5 lg:gap-2 py-1 lg:py-2">
-                        <div className={`w-1 h-1 rounded-full ${completed || isActive ? 'bg-amber-500/40' : 'bg-white/10'}`} />
-                        <div className={`w-1 h-1 rounded-full ${completed || isActive ? 'bg-amber-500/30' : 'bg-white/[0.06]'}`} />
-                        <div className={`w-1 h-1 rounded-full ${completed || isActive ? 'bg-amber-500/20' : 'bg-white/[0.04]'}`} />
-                      </div>
-                    )}
+                  // S-curve: alternating offsets for Duolingo-style zigzag
+                  // Pattern repeats every 8 units with varying amplitudes
+                  const zigzagPattern = [0, -0.5, -0.85, -0.55, 0, 0.55, 0.85, 0.5];
+                  const zigzagValue = zigzagPattern[idx % zigzagPattern.length];
+                  // Use CSS clamp to scale: 60px mobile, 130px tablet, 200px desktop
+                  const maxOffset = 200;
+                  const offset = Math.round(zigzagValue * maxOffset);
 
-                    <div
-                      className="relative flex flex-col items-center"
-                      style={{ transform: `translateX(${offset}px)` }}
-                    >
-                      {/* Unit Circle */}
-                      <button
-                        type="button"
-                        onClick={() => !locked && onUnitClick(unit)}
-                        disabled={locked}
-                        className={`relative w-[72px] h-[72px] sm:w-20 sm:h-20 lg:w-24 lg:h-24 rounded-full flex items-center justify-center transition-all duration-200 ${
-                          locked
-                            ? 'bg-white/[0.03] border-2 border-dashed border-white/10 text-white/15 cursor-not-allowed'
-                            : completed
-                              ? `bg-gradient-to-br ${masteryBg[level]} border-[3px] border-black/10 text-white hover:scale-110 shadow-lg`
-                              : 'bg-gradient-to-br from-amber-400 to-orange-500 border-[3px] border-orange-600/40 text-[#050B14] hover:scale-110 shadow-lg shadow-amber-500/40 animate-pulse'
-                        }`}
+                  return (
+                    <React.Fragment key={unit.id}>
+                      {/* Connector line between units */}
+                      {idx > 0 && (
+                        <div className="flex flex-col items-center py-2 sm:py-3 lg:py-4">
+                          <div className={`w-0.5 h-4 sm:h-5 lg:h-7 rounded-full ${completed || isActive ? 'bg-gradient-to-b from-amber-500/40 to-amber-500/10' : 'bg-white/[0.06]'}`} />
+                        </div>
+                      )}
+
+                      <div
+                        ref={isActive ? activeRef : undefined}
+                        className="relative flex flex-col items-center transition-transform duration-500"
+                        style={{
+                          transform: offset !== 0
+                            ? `translateX(calc(${offset > 0 ? '' : '-'}min(${Math.abs(offset)}px, 12vw)))`
+                            : undefined,
+                        }}
                       >
-                        {locked ? (
-                          <Lock size={18} className="opacity-30" />
-                        ) : completed ? (
-                          <CheckCircle size={28} strokeWidth={2.5} />
-                        ) : (
-                          getIcon(unit.icon, 28)
+                        {/* Glow ring for active unit */}
+                        {isActive && (
+                          <div className="absolute inset-0 rounded-full bg-amber-500/15 animate-ping-slow" />
                         )}
 
-                        {/* Mastery stars */}
-                        {level > 0 && (
-                          <div className="absolute -bottom-2 flex gap-0.5 bg-[#0d1424] px-1.5 py-0.5 rounded-full border border-white/5">
-                            {Array.from({ length: Math.min(level, 5) }).map((_, i) => (
-                              <Star key={i} size={10} className="text-yellow-300" fill="currentColor" />
-                            ))}
-                          </div>
-                        )}
-                      </button>
+                        {/* Unit Circle */}
+                        <button
+                          type="button"
+                          onClick={() => !locked && onUnitClick(unit)}
+                          disabled={locked}
+                          aria-label={`${unit.title}${locked ? ' - נעול' : completed ? ` - רמה ${level}` : ' - התחל'}`}
+                          className={`
+                            relative z-10 rounded-full flex items-center justify-center transition-all duration-300
+                            w-[72px] h-[72px] sm:w-20 sm:h-20 lg:w-24 lg:h-24
+                            ${locked
+                              ? 'bg-white/[0.03] border-2 border-dashed border-white/10 text-white/20 cursor-not-allowed'
+                              : completed
+                                ? `bg-gradient-to-br ${MASTERY_BG[level]} ring-4 ${MASTERY_RING[level]} text-white shadow-lg hover:scale-110 active:scale-95`
+                                : 'bg-gradient-to-br from-amber-400 to-orange-500 ring-4 ring-amber-500/30 text-[#050B14] shadow-xl shadow-amber-500/25 hover:scale-110 active:scale-95 hover:shadow-amber-500/40'
+                            }
+                          `}
+                        >
+                          {locked ? (
+                            <Lock size={20} className="opacity-40" />
+                          ) : completed ? (
+                            <CheckCircle size={30} strokeWidth={2.5} className="lg:w-9 lg:h-9" />
+                          ) : (
+                            <span className="lg:scale-125">{getIcon(unit.icon, 28)}</span>
+                          )}
 
-                      {/* Label */}
-                      <p className={`mt-3 lg:mt-4 text-sm lg:text-base font-bold text-center max-w-[140px] lg:max-w-[180px] leading-snug ${
-                        locked ? 'text-slate-700' : completed ? 'text-slate-400' : 'text-slate-200'
-                      }`}>
-                        {unit.title}
-                      </p>
-                    </div>
+                          {/* Mastery stars */}
+                          {level > 0 && (
+                            <div className="absolute -bottom-2.5 flex gap-0.5 bg-[#050B14] px-2 py-0.5 rounded-full border border-white/10 shadow-sm">
+                              {Array.from({ length: Math.min(level, 5) }).map((_, i) => (
+                                <Star key={i} size={10} className="text-yellow-300" fill="currentColor" />
+                              ))}
+                            </div>
+                          )}
+                        </button>
 
-                    {/* Cultural Note — shown BELOW the unit, centered, only for the first active unit */}
-                    {showCulturalNote && (
-                      <div className="mt-4 mb-2 w-full max-w-[280px] sm:max-w-xs mx-auto">
-                        <CulturalNote note={unit.culturalNote!} link={unit.culturalLink} />
+                        {/* Label */}
+                        <p className={`
+                          mt-4 lg:mt-5 text-sm lg:text-base font-bold text-center leading-snug
+                          max-w-[140px] lg:max-w-[180px]
+                          ${locked ? 'text-slate-700' : completed ? 'text-slate-400' : 'text-slate-100'}
+                        `}>
+                          {unit.title}
+                        </p>
                       </div>
-                    )}
-                  </React.Fragment>
-                );
-              })}
+
+                      {/* Cultural Note */}
+                      {showCulturalNote && (
+                        <div className="mt-5 mb-3 w-full max-w-xs sm:max-w-sm mx-auto">
+                          <CulturalNote note={unit.culturalNote!} link={unit.culturalLink} />
+                        </div>
+                      )}
+                    </React.Fragment>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        );
-      })}
+          );
+        })}
+      </div>
+
     </div>
   );
 }

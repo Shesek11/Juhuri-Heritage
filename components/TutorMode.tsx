@@ -12,7 +12,7 @@ import LearningPath from './tutor/LearningPath';
 import DailyGoalRing from './tutor/DailyGoalRing';
 import CelebrationScreen from './tutor/CelebrationScreen';
 import WeeklySummary from './tutor/WeeklySummary';
-import { Send, Volume2, Sparkles, GraduationCap, Settings2, MessageCircle, Play, BarChart3, Target } from 'lucide-react';
+import { Send, Volume2, Sparkles, GraduationCap, Settings2, MessageCircle, Play, BarChart3, Target, X } from 'lucide-react';
 import { SEOHead } from './seo/SEOHead';
 
 const TutorMode: React.FC = () => {
@@ -218,30 +218,34 @@ const TutorMode: React.FC = () => {
     } catch (e) { console.error(e); } finally { setIsPlaying(null); }
   };
 
-  // --- VIEWS ---
+  // ==========================================
+  // VIEWS — each is a full-page takeover
+  // ==========================================
 
-  // Setup
+  // Setup — centered card (only screen that uses card layout)
   if (!config) {
     return (
-      <div className="w-full max-w-lg mx-auto mt-6 sm:mt-10 bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-xl p-6 sm:p-10 border border-white/10 font-rubik">
+      <div className="min-h-[60vh] flex items-center justify-center px-4 py-10 font-rubik">
         <SEOHead
           title="מורה פרטי - לימוד ג'והורי"
           description="למד ג'והורי עם מורה פרטי אינטראקטיבי. 15 יחידות לימוד, 12 סוגי תרגילים, מערכת חזרה חכמה."
           canonicalPath="/tutor"
         />
-        <div className="text-center mb-8">
-          <div className="inline-block p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl mb-4 text-amber-500 shadow-lg shadow-amber-500/10">
-            <GraduationCap size={44} />
-          </div>
-          <h2 className="text-2xl sm:text-3xl font-bold text-slate-100 mb-2">שיעור פרטי בג'והורי</h2>
-          <p className="text-sm sm:text-base text-slate-400">15 יחידות לימוד · 12 סוגי תרגילים · חזרה חכמה</p>
-          {!user && (
-            <div className="mt-4 p-3 bg-amber-500/10 border border-amber-500/20 text-amber-400 text-sm rounded-lg inline-block">
-              מומלץ להתחבר כדי לשמור את ההתקדמות שלך!
+        <div className="w-full max-w-md bg-[#0d1424]/70 backdrop-blur-xl rounded-2xl shadow-2xl p-8 sm:p-10 border border-white/10">
+          <div className="text-center mb-8">
+            <div className="inline-block p-5 bg-amber-500/10 border border-amber-500/20 rounded-2xl mb-5 text-amber-500">
+              <GraduationCap size={48} />
             </div>
-          )}
+            <h2 className="text-2xl sm:text-3xl font-bold text-slate-100 mb-2">שיעור פרטי בג'והורי</h2>
+            <p className="text-sm text-slate-400">15 יחידות לימוד · 12 סוגי תרגילים · חזרה חכמה</p>
+            {!user && (
+              <div className="mt-4 p-3 bg-amber-500/10 border border-amber-500/20 text-amber-400 text-sm rounded-lg inline-block">
+                מומלץ להתחבר כדי לשמור את ההתקדמות שלך!
+              </div>
+            )}
+          </div>
+          <SetupForm onStart={(dialect, level) => { setConfig({ dialect, level }); setMode('map'); }} />
         </div>
-        <SetupForm onStart={(dialect, level) => { setConfig({ dialect, level }); setMode('map'); }} />
       </div>
     );
   }
@@ -249,18 +253,18 @@ const TutorMode: React.FC = () => {
   // Loading
   if (loadingLesson) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-[400px] sm:min-h-[500px] text-center p-8">
-        <Sparkles className="text-amber-500 animate-pulse mb-4" size={48} />
+      <div className="min-h-[60vh] flex flex-col items-center justify-center text-center p-8 font-rubik">
+        <Sparkles className="text-amber-500 animate-pulse mb-4" size={56} />
         <h3 className="text-xl font-bold text-slate-100 mb-2">מכין את השיעור...</h3>
         <p className="text-sm text-slate-500">טוען מילים ותרגילים</p>
       </div>
     );
   }
 
-  // Lesson
+  // Lesson — full-page exercise
   if (mode === 'lesson' && activeUnit && exercises.length > 0) {
     return (
-      <div className="w-full max-w-2xl lg:max-w-3xl xl:max-w-4xl mx-auto mt-4 sm:mt-6 lg:mt-8 px-2 sm:px-4 lg:px-0">
+      <div className="font-rubik">
         <LessonEngine
           exercises={exercises}
           unitTitle={activeUnit.title}
@@ -278,10 +282,10 @@ const TutorMode: React.FC = () => {
     );
   }
 
-  // Celebration
+  // Celebration — full-page
   if (mode === 'celebration' && celebrationData) {
     return (
-      <div className="w-full max-w-lg lg:max-w-2xl mx-auto mt-4 sm:mt-6 lg:mt-8 px-2 sm:px-4 lg:px-0">
+      <div className="min-h-[60vh] flex items-center justify-center px-4 py-10 font-rubik">
         <CelebrationScreen
           {...celebrationData}
           onContinue={() => { setCelebrationData(null); setMode('map'); }}
@@ -290,84 +294,90 @@ const TutorMode: React.FC = () => {
     );
   }
 
-  // Weekly Summary
+  // Weekly Summary — modal overlay
   if (mode === 'weekly') {
     return (
-      <div className="w-full max-w-md lg:max-w-2xl mx-auto mt-4 sm:mt-6 lg:mt-8 px-2 sm:px-4 lg:px-0">
-        <WeeklySummary
-          stats={progress.weeklyStats as any}
-          totals={progress.weeklyStats.reduce((acc: any, s: any) => ({
-            xpEarned: (acc.xpEarned || 0) + (s.xp_earned || 0),
-            wordsLearned: (acc.wordsLearned || 0) + (s.words_learned || 0),
-            wordsReviewed: (acc.wordsReviewed || 0) + (s.words_reviewed || 0),
-            lessonsCompleted: (acc.lessonsCompleted || 0) + (s.lessons_completed || 0),
-          }), { xpEarned: 0, wordsLearned: 0, wordsReviewed: 0, lessonsCompleted: 0 })}
-          streak={user?.currentStreak || 0}
-          totalWordsLearned={progress.totalWordsLearned}
-          onClose={() => setMode('map')}
-        />
+      <div className="min-h-[60vh] flex items-center justify-center px-4 py-10 font-rubik">
+        <div className="w-full max-w-2xl">
+          <WeeklySummary
+            stats={progress.weeklyStats as any}
+            totals={progress.weeklyStats.reduce((acc: any, s: any) => ({
+              xpEarned: (acc.xpEarned || 0) + (s.xp_earned || 0),
+              wordsLearned: (acc.wordsLearned || 0) + (s.words_learned || 0),
+              wordsReviewed: (acc.wordsReviewed || 0) + (s.words_reviewed || 0),
+              lessonsCompleted: (acc.lessonsCompleted || 0) + (s.lessons_completed || 0),
+            }), { xpEarned: 0, wordsLearned: 0, wordsReviewed: 0, lessonsCompleted: 0 })}
+            streak={user?.currentStreak || 0}
+            totalWordsLearned={progress.totalWordsLearned}
+            onClose={() => setMode('map')}
+          />
+        </div>
       </div>
     );
   }
 
-  // Daily Goal Selector
+  // Daily Goal Selector — centered modal
   if (mode === 'goal') {
     return (
-      <div className="w-full max-w-sm mx-auto mt-6 sm:mt-10 bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-xl p-6 sm:p-8 border border-white/10 font-rubik">
-        <div className="text-center mb-6">
-          <Target size={36} className="text-amber-500 mx-auto mb-3" />
-          <h3 className="text-xl font-bold text-slate-100">בחר יעד יומי</h3>
-          <p className="text-sm text-slate-400 mt-1">כמה XP ביום?</p>
+      <div className="min-h-[60vh] flex items-center justify-center px-4 py-10 font-rubik">
+        <div className="w-full max-w-sm bg-[#0d1424]/70 backdrop-blur-xl rounded-2xl shadow-2xl p-8 border border-white/10">
+          <div className="text-center mb-6">
+            <Target size={40} className="text-amber-500 mx-auto mb-3" />
+            <h3 className="text-xl font-bold text-slate-100">בחר יעד יומי</h3>
+            <p className="text-sm text-slate-400 mt-1">כמה XP ביום?</p>
+          </div>
+          <div className="space-y-3">
+            {[
+              { xp: 5, label: 'קליל', desc: '~2 דקות ביום' },
+              { xp: 10, label: 'רגיל', desc: '~5 דקות ביום' },
+              { xp: 15, label: 'רציני', desc: '~8 דקות ביום' },
+              { xp: 20, label: 'אינטנסיבי', desc: '~10 דקות ביום' },
+            ].map(opt => (
+              <button
+                type="button"
+                key={opt.xp}
+                onClick={() => handleSetGoal(opt.xp)}
+                className={`w-full p-4 rounded-xl border-2 flex justify-between items-center transition-all ${
+                  progress.dailyXpGoal === opt.xp
+                    ? 'border-amber-500 bg-amber-500/10 text-amber-400'
+                    : 'border-white/10 bg-white/5 text-slate-200 hover:border-amber-500/30'
+                }`}
+              >
+                <div>
+                  <span className="font-bold">{opt.label}</span>
+                  <span className="text-xs text-slate-500 mr-2"> — {opt.desc}</span>
+                </div>
+                <span className="text-lg font-bold">{opt.xp} XP</span>
+              </button>
+            ))}
+          </div>
+          <button type="button" onClick={() => setMode('map')} className="w-full mt-5 py-2.5 text-sm text-slate-500 hover:text-slate-300 transition-colors">ביטול</button>
         </div>
-        <div className="space-y-3">
-          {[
-            { xp: 5, label: 'קליל', desc: '~2 דקות ביום' },
-            { xp: 10, label: 'רגיל', desc: '~5 דקות ביום' },
-            { xp: 15, label: 'רציני', desc: '~8 דקות ביום' },
-            { xp: 20, label: 'אינטנסיבי', desc: '~10 דקות ביום' },
-          ].map(opt => (
-            <button
-              type="button"
-              key={opt.xp}
-              onClick={() => handleSetGoal(opt.xp)}
-              className={`w-full p-4 rounded-xl border-2 flex justify-between items-center transition-all ${
-                progress.dailyXpGoal === opt.xp
-                  ? 'border-amber-500 bg-amber-500/10 text-amber-400'
-                  : 'border-white/10 bg-white/5 text-slate-200 hover:border-amber-500/30'
-              }`}
-            >
-              <div>
-                <span className="font-bold">{opt.label}</span>
-                <span className="text-xs text-slate-500 mr-2"> — {opt.desc}</span>
-              </div>
-              <span className="text-lg font-bold">{opt.xp} XP</span>
-            </button>
-          ))}
-        </div>
-        <button type="button" onClick={() => setMode('map')} className="w-full mt-4 py-2.5 text-sm text-slate-500 hover:text-slate-300 transition-colors">ביטול</button>
       </div>
     );
   }
 
-  // Chat View
+  // Chat View — full-page chat
   if (mode === 'chat') {
     return (
-      <div className="w-full max-w-2xl lg:max-w-3xl xl:max-w-4xl mx-auto mt-4 sm:mt-6 lg:mt-8 h-[70vh] sm:h-[600px] lg:h-[700px] flex flex-col bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-xl overflow-hidden border border-white/10 font-rubik mx-2 sm:mx-auto">
-        <div className="bg-white/5 border-b border-white/10 backdrop-blur-md px-4 py-3 sm:p-4 flex justify-between items-center shadow-md z-10">
-          <div className="flex items-center gap-2 sm:gap-3 text-amber-500">
-            <MessageCircle size={20} />
-            <h3 className="font-bold text-sm sm:text-base">שיחה חופשית עם סבא מרדכי</h3>
+      <div className="flex flex-col h-[calc(100vh-80px)] max-h-[800px] font-rubik mx-auto w-full max-w-3xl px-4">
+        <div className="bg-[#0d1424]/70 backdrop-blur-xl rounded-t-2xl border border-white/10 border-b-0 px-5 py-4 flex justify-between items-center">
+          <div className="flex items-center gap-3 text-amber-500">
+            <MessageCircle size={22} />
+            <h3 className="font-bold text-base">שיחה חופשית עם סבא מרדכי</h3>
           </div>
-          <button type="button" onClick={() => setMode('map')} className="text-xs sm:text-sm bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 border border-amber-500/20 px-3 py-1.5 rounded-lg transition-colors">חזרה</button>
+          <button type="button" onClick={() => setMode('map')} className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-white/10 transition-colors">
+            <X size={20} />
+          </button>
         </div>
-        <div className="flex-1 overflow-y-auto p-4 space-y-4 scroll-smooth">
-          {messages.length === 0 && <p className="text-center text-slate-400 mt-10 text-sm">התחל שיחה... נסה להגיד &quot;שלום&quot;</p>}
+        <div className="flex-1 overflow-y-auto bg-[#0d1424]/40 border-x border-white/10 p-5 space-y-4 scroll-smooth">
+          {messages.length === 0 && <p className="text-center text-slate-400 mt-16 text-sm">התחל שיחה... נסה להגיד &quot;שלום&quot;</p>}
           {messages.map(msg => (
             <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[85%] sm:max-w-[75%] rounded-2xl px-4 py-3 shadow-sm text-sm sm:text-base ${msg.role === 'user' ? 'bg-gradient-to-br from-amber-400 to-orange-500 text-[#050B14] font-medium rounded-br-none' : 'bg-white/10 backdrop-blur-md text-white border border-white/10 rounded-bl-none'}`}>
+              <div className={`max-w-[80%] sm:max-w-[65%] rounded-2xl px-5 py-3.5 shadow-sm text-sm sm:text-base ${msg.role === 'user' ? 'bg-gradient-to-br from-amber-400 to-orange-500 text-[#050B14] font-medium rounded-br-none' : 'bg-white/10 backdrop-blur-md text-white border border-white/10 rounded-bl-none'}`}>
                 {msg.content}
                 {msg.audioText && (
-                  <button type="button" onClick={() => handlePlayAudio(msg.audioText!, msg.id)} className={`mt-2 flex items-center gap-2 text-xs font-bold px-3 py-1.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20 ${isPlaying === msg.id ? 'animate-pulse' : ''}`}>
+                  <button type="button" onClick={() => handlePlayAudio(msg.audioText!, msg.id)} className={`mt-2.5 flex items-center gap-2 text-xs font-bold px-3 py-1.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20 ${isPlaying === msg.id ? 'animate-pulse' : ''}`}>
                     <Volume2 size={14} /> השמע
                   </button>
                 )}
@@ -375,45 +385,60 @@ const TutorMode: React.FC = () => {
             </div>
           ))}
         </div>
-        <form onSubmit={handleSendMessage} className="p-3 sm:p-4 bg-[#0d1424]/60 backdrop-blur-xl border-t border-white/10 flex gap-2">
-          <input type="text" value={input} onChange={e => setInput(e.target.value)} placeholder="כתוב הודעה..." className="flex-1 px-4 py-3 bg-white/5 border border-white/10 rounded-xl outline-none text-white text-sm sm:text-base focus:border-amber-500/30 transition-colors" disabled={chatLoading} />
-          <button type="submit" disabled={chatLoading || !input.trim()} className="p-3 bg-gradient-to-br from-amber-400 to-orange-600 text-[#050B14] rounded-xl hover:shadow-[0_0_15px_rgba(245,158,11,0.4)] disabled:opacity-50 transition-all" title="שלח"><Send size={20} /></button>
+        <form onSubmit={handleSendMessage} className="bg-[#0d1424]/70 backdrop-blur-xl rounded-b-2xl border border-white/10 border-t-0 p-4 flex gap-3">
+          <input type="text" value={input} onChange={e => setInput(e.target.value)} placeholder="כתוב הודעה..." className="flex-1 px-5 py-3 bg-white/5 border border-white/10 rounded-xl outline-none text-white text-sm sm:text-base focus:border-amber-500/30 transition-colors" disabled={chatLoading} />
+          <button type="submit" disabled={chatLoading || !input.trim()} className="px-5 py-3 bg-gradient-to-br from-amber-400 to-orange-600 text-[#050B14] rounded-xl hover:shadow-[0_0_15px_rgba(245,158,11,0.4)] disabled:opacity-50 transition-all font-bold" title="שלח" aria-label="שלח הודעה"><Send size={20} /></button>
         </form>
       </div>
     );
   }
 
-  // Default: Map View
+  // ==========================================
+  // DEFAULT: Learning Path — FULL PAGE layout
+  // ==========================================
   return (
-    <div className="w-full max-w-2xl lg:max-w-4xl xl:max-w-5xl mx-auto mt-4 sm:mt-6 lg:mt-8 bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-xl overflow-hidden border border-white/10 font-rubik flex flex-col min-h-[500px] sm:min-h-[650px] lg:min-h-[720px] max-h-[90vh]">
-      {/* Header — compact, well-spaced */}
-      <div className="bg-white/5 border-b border-white/10 backdrop-blur-md text-white px-4 py-3 sm:px-6 sm:py-4 lg:px-8 lg:py-5 shadow-md z-10 flex justify-between items-center">
-        <DailyGoalRing
-          earned={progress.dailyXpEarned}
-          goal={progress.dailyXpGoal}
-          streak={user?.currentStreak || 0}
-        />
+    <div className="font-rubik flex flex-col min-h-[60vh]">
+      {/* ===== STICKY HEADER ===== */}
+      <div className="sticky top-0 z-30 bg-[#050B14]/90 backdrop-blur-xl border-b border-white/[0.06]">
+        <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4 flex items-center justify-between">
+          {/* Left: Daily Goal Ring */}
+          <DailyGoalRing
+            earned={progress.dailyXpEarned}
+            goal={progress.dailyXpGoal}
+            streak={user?.currentStreak || 0}
+          />
 
-        <div className="flex items-center gap-2 sm:gap-3">
-          <div className="text-right">
-            <h3 className="font-bold text-xs sm:text-sm leading-tight">רמה {user?.level || 1}</h3>
-            <p className="text-[10px] sm:text-xs text-slate-500">{user?.xp || 0} XP</p>
+          {/* Center: Total words learned (desktop only) */}
+          <div className="hidden md:flex items-center gap-3 text-slate-400">
+            <div className="text-center">
+              <span className="text-lg font-bold text-slate-200">{progress.totalWordsLearned}</span>
+              <span className="text-xs mr-1.5">מילים נלמדו</span>
+            </div>
           </div>
-          <div className="flex gap-0.5">
-            <button type="button" onClick={() => setMode('goal')} className="p-1.5 sm:p-2 text-slate-500 hover:text-amber-400 transition-colors rounded-lg hover:bg-white/5" title="יעד יומי">
-              <Target size={16} />
-            </button>
-            <button type="button" onClick={() => setMode('weekly')} className="p-1.5 sm:p-2 text-slate-500 hover:text-amber-400 transition-colors rounded-lg hover:bg-white/5" title="סיכום שבועי">
-              <BarChart3 size={16} />
-            </button>
-            <button type="button" onClick={() => setConfig(null)} className="p-1.5 sm:p-2 text-slate-500 hover:text-white transition-colors rounded-lg hover:bg-white/5" title="הגדרות">
-              <Settings2 size={16} />
-            </button>
+
+          {/* Right: Level + Actions */}
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="text-right">
+              <h3 className="font-bold text-sm sm:text-base text-slate-100 leading-tight">רמה {user?.level || 1}</h3>
+              <p className="text-xs text-slate-500">{user?.xp || 0} XP</p>
+            </div>
+            <div className="h-6 w-px bg-white/10" />
+            <div className="flex gap-1">
+              <button type="button" onClick={() => setMode('goal')} className="p-2 text-slate-500 hover:text-amber-400 transition-colors rounded-lg hover:bg-white/5" title="יעד יומי">
+                <Target size={18} />
+              </button>
+              <button type="button" onClick={() => setMode('weekly')} className="p-2 text-slate-500 hover:text-amber-400 transition-colors rounded-lg hover:bg-white/5" title="סיכום שבועי">
+                <BarChart3 size={18} />
+              </button>
+              <button type="button" onClick={() => setConfig(null)} className="p-2 text-slate-500 hover:text-white transition-colors rounded-lg hover:bg-white/5" title="הגדרות">
+                <Settings2 size={18} />
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Learning Path — takes remaining space */}
+      {/* ===== LEARNING PATH — fills viewport ===== */}
       <LearningPath
         unitMastery={progress.unitMastery}
         completedUnits={Object.keys(progress.unitMastery).filter(k => (progress.unitMastery[k]?.masteryLevel || 0) >= 1)}
@@ -422,16 +447,18 @@ const TutorMode: React.FC = () => {
         wordsDueForReview={progress.wordsDueForReview}
       />
 
-      {/* Bottom Action Bar */}
-      <div className="px-4 py-3 sm:px-6 sm:py-4 bg-[#0d1424]/80 backdrop-blur-xl border-t border-white/10 flex justify-center">
-        <button
-          type="button"
-          onClick={() => setMode('chat')}
-          className="flex items-center gap-2 bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 text-amber-500 px-5 py-2.5 sm:py-3 rounded-xl font-bold text-sm sm:text-base hover:bg-amber-500/20 transition-colors"
-        >
-          <MessageCircle size={18} />
-          צ'אט עם סבא מרדכי
-        </button>
+      {/* ===== STICKY BOTTOM BAR ===== */}
+      <div className="sticky bottom-0 z-30 bg-[#050B14]/90 backdrop-blur-xl border-t border-white/[0.06]">
+        <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4 flex justify-center">
+          <button
+            type="button"
+            onClick={() => setMode('chat')}
+            className="flex items-center gap-2.5 bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 text-amber-500 px-6 py-3 rounded-xl font-bold text-sm sm:text-base hover:bg-amber-500/20 hover:border-amber-500/30 transition-all"
+          >
+            <MessageCircle size={20} />
+            צ'אט עם סבא מרדכי
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -458,7 +485,7 @@ const SetupForm: React.FC<{ onStart: (d: Dialect, l: ProficiencyLevel) => void }
         <label className="block text-sm font-medium text-slate-300 mb-2">בחר ניב ללימוד</label>
         <div className="grid grid-cols-2 gap-3">
           {dialects.map(d => (
-            <button type="button" key={d.id} onClick={() => setDialect(d.name)} className={`p-3 rounded-xl border text-sm font-medium transition-all text-right ${dialect === d.name ? 'border-amber-500/50 bg-amber-500/10 text-amber-500' : 'border-white/10 hover:border-amber-500/30 text-slate-300'}`}>
+            <button type="button" key={d.id} onClick={() => setDialect(d.name)} className={`p-3.5 rounded-xl border text-sm font-medium transition-all text-right ${dialect === d.name ? 'border-amber-500/50 bg-amber-500/10 text-amber-500' : 'border-white/10 hover:border-amber-500/30 text-slate-300'}`}>
               {d.description}
             </button>
           ))}
@@ -468,7 +495,7 @@ const SetupForm: React.FC<{ onStart: (d: Dialect, l: ProficiencyLevel) => void }
         <label className="block text-sm font-medium text-slate-300 mb-2">רמת ידע נוכחית</label>
         <div className="flex gap-3">
           {[{ val: 'Beginner', label: 'מתחיל' }, { val: 'Intermediate', label: 'בינוני' }, { val: 'Advanced', label: 'מתקדם' }].map(opt => (
-            <button type="button" key={opt.val} onClick={() => setLevel(opt.val as ProficiencyLevel)} className={`flex-1 p-3 rounded-xl border text-sm font-medium transition-all ${level === opt.val ? 'border-amber-500/50 bg-amber-500/10 text-amber-500' : 'border-white/10 hover:border-amber-500/30 text-slate-300'}`}>
+            <button type="button" key={opt.val} onClick={() => setLevel(opt.val as ProficiencyLevel)} className={`flex-1 p-3.5 rounded-xl border text-sm font-medium transition-all ${level === opt.val ? 'border-amber-500/50 bg-amber-500/10 text-amber-500' : 'border-white/10 hover:border-amber-500/30 text-slate-300'}`}>
               {opt.label}
             </button>
           ))}

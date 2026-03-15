@@ -132,42 +132,44 @@ const LessonEngine: React.FC<LessonEngineProps> = ({ exercises, unitTitle, onCom
   };
 
   return (
-    <div className="flex flex-col min-h-[500px] sm:min-h-[600px] lg:min-h-[650px] max-h-[90vh] bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-xl overflow-hidden font-rubik relative border border-white/10">
-      {/* Header with progress bar */}
-      <div className="p-3 sm:p-4 lg:px-6 lg:py-5 bg-white/5 border-b border-white/10 flex items-center gap-3">
-        <button type="button" onClick={onBack} className="p-2 hover:bg-white/10 text-slate-400 hover:text-white rounded-full transition-colors shrink-0" title="חזרה">
-          <ArrowLeft size={18} />
-        </button>
-        <div className="flex-1">
-          <div className="h-3 bg-white/10 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-gradient-to-r from-amber-500 to-orange-500 transition-all duration-500 rounded-full"
-              style={{ width: `${progress}%` }}
-            />
+    <div className="flex flex-col min-h-[60vh]">
+      {/* ===== Top bar with progress ===== */}
+      <div className="sticky top-0 z-20 bg-[#050B14]/90 backdrop-blur-xl border-b border-white/[0.06]">
+        <div className="w-full max-w-3xl mx-auto px-4 sm:px-6 py-4 sm:py-5 flex items-center gap-4">
+          <button type="button" onClick={onBack} className="p-2 hover:bg-white/10 text-slate-400 hover:text-white rounded-full transition-colors shrink-0" title="חזרה" aria-label="חזרה">
+            <ArrowLeft size={20} />
+          </button>
+          <div className="flex-1">
+            <div className="h-3 sm:h-3.5 bg-white/[0.06] rounded-full overflow-hidden">
+              <div
+                className="h-full bg-gradient-to-r from-amber-500 to-orange-500 transition-all duration-500 rounded-full"
+                style={{ width: `${progress}%` }}
+              />
+            </div>
           </div>
+          <span className="text-sm text-slate-400 font-bold min-w-[44px] text-left tabular-nums">
+            {currentIndex + 1}/{exercises.length}
+          </span>
         </div>
-        <span className="text-xs sm:text-sm text-slate-400 font-bold min-w-[40px] text-left tabular-nums">
-          {currentIndex + 1}/{exercises.length}
-        </span>
       </div>
 
-      {/* Exercise Content — centered with proper padding */}
-      <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-8 sm:py-10 lg:px-12 lg:py-12 flex flex-col items-center justify-center w-full">
-        <div className="w-full max-w-lg lg:max-w-xl">
+      {/* ===== Exercise Content — centered in viewport ===== */}
+      <div className="flex-1 flex items-center justify-center px-4 sm:px-6 py-8 sm:py-12 lg:py-16">
+        <div className="w-full max-w-xl lg:max-w-2xl">
           {renderExercise()}
         </div>
       </div>
 
-      {/* Feedback Bar */}
+      {/* ===== Feedback Bar — sticky bottom ===== */}
       {feedback && (
-        <div className={`p-4 sm:p-5 ${feedback === 'correct' ? 'bg-green-900/50 border-t-green-500' : 'bg-red-900/50 border-t-red-500'} border-t-4`}>
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 max-w-lg lg:max-w-xl mx-auto">
+        <div className={`sticky bottom-0 z-20 ${feedback === 'correct' ? 'bg-green-900/70' : 'bg-red-900/70'} backdrop-blur-xl border-t-4 ${feedback === 'correct' ? 'border-t-green-500' : 'border-t-red-500'}`}>
+          <div className="w-full max-w-3xl mx-auto px-4 sm:px-6 py-4 sm:py-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
             <div className="flex items-center gap-3">
-              <div className={`p-2 rounded-full shrink-0 ${feedback === 'correct' ? 'bg-green-800 text-green-300' : 'bg-red-800 text-red-300'}`}>
-                {feedback === 'correct' ? <CheckCircle size={22} /> : <XCircle size={22} />}
+              <div className={`p-2.5 rounded-full shrink-0 ${feedback === 'correct' ? 'bg-green-800 text-green-300' : 'bg-red-800 text-red-300'}`}>
+                {feedback === 'correct' ? <CheckCircle size={24} /> : <XCircle size={24} />}
               </div>
               <div>
-                <p className={`font-bold text-base sm:text-lg ${feedback === 'correct' ? 'text-green-200' : 'text-red-200'}`}>
+                <p className={`font-bold text-lg ${feedback === 'correct' ? 'text-green-200' : 'text-red-200'}`}>
                   {feedback === 'correct' ? 'מצוין!' : 'לא נורא...'}
                 </p>
                 {feedback === 'incorrect' && currentExercise.correctAnswer && currentExercise.type !== 'matching_pairs' && currentExercise.type !== 'speed_match' && (
@@ -181,7 +183,7 @@ const LessonEngine: React.FC<LessonEngineProps> = ({ exercises, unitTitle, onCom
             <button
               type="button"
               onClick={handleNext}
-              className={`w-full sm:w-auto px-8 py-2.5 rounded-xl font-bold text-white shadow-md transition-transform hover:scale-105 text-sm sm:text-base ${
+              className={`w-full sm:w-auto px-10 py-3 rounded-xl font-bold text-white shadow-md transition-transform hover:scale-105 text-base ${
                 feedback === 'correct' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'
               }`}
             >
