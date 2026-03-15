@@ -128,23 +128,98 @@ export interface ChatMessage {
 
 // --- Interactive Lesson Types ---
 
-export type ExerciseType = 'multiple_choice' | 'flashcard' | 'translate_he_to_ju' | 'translate_ju_to_he';
+export type ExerciseType =
+  | 'multiple_choice'
+  | 'matching_pairs'
+  | 'audio_recognition'
+  | 'context_association'
+  | 'word_bank_he_to_ju'
+  | 'word_bank_ju_to_he'
+  | 'fill_blank'
+  | 'spelling_challenge'
+  | 'listen_select'
+  | 'dictation'
+  | 'speed_match'
+  | 'true_false_flash';
 
 export interface Exercise {
   id: string;
   type: ExerciseType;
-  question: string; // The prompt text
-  options?: string[]; // For multiple choice
+  question: string;
+  options?: string[];
   correctAnswer: string;
-  audioText?: string; // Text to speak for this exercise
-  explanation?: string; // Why is this the answer?
+  audioText?: string;
+  explanation?: string;
+  pairs?: { term: string; translation: string }[];
+  tiles?: string[];
+  sentence?: string;
+  blank?: string;
+  isCorrect?: boolean; // For true/false flash
 }
 
 export interface LessonUnit {
   id: string;
   title: string;
   description: string;
-  icon: string; // Lucide icon name or emoji
+  icon: string;
   order: number;
-  requiredLevel: number; // Minimum user level to unlock
+  sectionId: string;
+  culturalNote?: string;
+  culturalLink?: string;
+}
+
+export interface CurriculumSection {
+  id: string;
+  title: string;
+  description: string;
+  order: number;
+  units: LessonUnit[];
+}
+
+// --- Word Mastery (SRS) ---
+
+export interface WordMastery {
+  entryId: number;
+  term: string;
+  hebrewTranslation: string;
+  box: number; // 1-5 Leitner box
+  nextReview: string;
+  timesCorrect: number;
+  timesIncorrect: number;
+}
+
+export interface UnitMasteryInfo {
+  unitId: string;
+  masteryLevel: number; // 0-5
+  bestScore: number;
+  attempts: number;
+}
+
+export interface DailyProgressInfo {
+  date: string;
+  xpEarned: number;
+  wordsLearned: number;
+  wordsReviewed: number;
+  lessonsCompleted: number;
+}
+
+export interface TutorProgress {
+  unitMastery: Record<string, UnitMasteryInfo>;
+  totalWordsLearned: number;
+  wordsDueForReview: number;
+  dailyXpEarned: number;
+  dailyXpGoal: number;
+  weeklyStats: DailyProgressInfo[];
+}
+
+// --- Tutor Word (dictionary entry for exercises) ---
+
+export interface TutorWord {
+  id: number;
+  term: string;
+  hebrew: string;
+  latin?: string;
+  pronunciation?: string;
+  example?: string;
+  exampleTranslation?: string;
 }
