@@ -1,5 +1,5 @@
 import React, { useState, useCallback } from 'react';
-import { Exercise, TutorWord } from '../../types';
+import { Exercise } from '../../types';
 import { generateSpeech } from '../../services/geminiService';
 import { playBase64Audio } from '../../utils/audioUtils';
 import { ArrowLeft, CheckCircle, XCircle } from 'lucide-react';
@@ -53,7 +53,6 @@ const LessonEngine: React.FC<LessonEngineProps> = ({ exercises, unitTitle, onCom
     const ex = exercises[currentIndex];
     let isCorrect = false;
 
-    // Special handling for pair-based exercises
     if (ex.type === 'matching_pairs' || ex.type === 'speed_match') {
       isCorrect = answer === 'correct';
     } else if (ex.type === 'true_false_flash') {
@@ -70,7 +69,6 @@ const LessonEngine: React.FC<LessonEngineProps> = ({ exercises, unitTitle, onCom
       setCorrectCount(prev => prev + 1);
     }
 
-    // Play sound
     try {
       const sfx = new Audio(isCorrect
         ? 'data:audio/wav;base64,UklGRl9vT19teleXRlbXQBAAAAABAAEARKwAAESsAAABAAgAZGF0YQ=='
@@ -79,12 +77,7 @@ const LessonEngine: React.FC<LessonEngineProps> = ({ exercises, unitTitle, onCom
       sfx.volume = 0.15;
       sfx.play().catch(() => {});
     } catch {}
-
-    // SRS update if applicable
-    if (onSrsUpdate && ex.audioText) {
-      // We'll pass the correct/incorrect status - the parent handles the API call
-    }
-  }, [feedback, currentIndex, exercises, onSrsUpdate]);
+  }, [feedback, currentIndex, exercises]);
 
   const handleNext = useCallback(() => {
     if (currentIndex < exercises.length - 1) {
@@ -99,8 +92,7 @@ const LessonEngine: React.FC<LessonEngineProps> = ({ exercises, unitTitle, onCom
   }, [currentIndex, exercises.length, correctCount, score, onComplete]);
 
   if (isFinished || !currentExercise) {
-    const accuracy = exercises.length > 0 ? Math.round((correctCount / exercises.length) * 100) : 0;
-    return null; // Parent handles the celebration screen
+    return null;
   }
 
   const renderExercise = () => {
@@ -140,53 +132,56 @@ const LessonEngine: React.FC<LessonEngineProps> = ({ exercises, unitTitle, onCom
   };
 
   return (
-    <div className="flex flex-col h-[650px] bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-xl overflow-hidden font-rubik relative">
-      {/* Header */}
-      <div className="p-4 bg-white/5 border-b border-white/10 flex items-center gap-3">
-        <button onClick={onBack} className="p-2 hover:bg-white/10 text-slate-300 hover:text-white rounded-full transition-colors">
-          <ArrowLeft size={20} />
+    <div className="flex flex-col min-h-[500px] sm:min-h-[600px] max-h-[90vh] bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-xl overflow-hidden font-rubik relative border border-white/10">
+      {/* Header with progress bar */}
+      <div className="p-3 sm:p-4 bg-white/5 border-b border-white/10 flex items-center gap-3">
+        <button type="button" onClick={onBack} className="p-2 hover:bg-white/10 text-slate-400 hover:text-white rounded-full transition-colors shrink-0" title="חזרה">
+          <ArrowLeft size={18} />
         </button>
         <div className="flex-1">
-          <div className="h-2.5 bg-white/10 rounded-full overflow-hidden">
+          <div className="h-3 bg-white/10 rounded-full overflow-hidden">
             <div
               className="h-full bg-gradient-to-r from-amber-500 to-orange-500 transition-all duration-500 rounded-full"
               style={{ width: `${progress}%` }}
             />
           </div>
         </div>
-        <span className="text-sm text-slate-400 font-medium min-w-[40px] text-left">
+        <span className="text-xs sm:text-sm text-slate-400 font-bold min-w-[40px] text-left tabular-nums">
           {currentIndex + 1}/{exercises.length}
         </span>
       </div>
 
-      {/* Exercise Content */}
-      <div className="flex-1 overflow-y-auto p-6 flex flex-col items-center max-w-lg mx-auto w-full">
-        {renderExercise()}
+      {/* Exercise Content — centered with proper padding */}
+      <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-8 sm:py-10 flex flex-col items-center justify-center w-full">
+        <div className="w-full max-w-lg">
+          {renderExercise()}
+        </div>
       </div>
 
       {/* Feedback Bar */}
       {feedback && (
-        <div className={`p-4 ${feedback === 'correct' ? 'bg-green-900/40 border-t-green-500' : 'bg-red-900/40 border-t-red-500'} border-t-4 animate-in slide-in-from-bottom duration-300`}>
-          <div className="flex justify-between items-center max-w-lg mx-auto">
+        <div className={`p-4 sm:p-5 ${feedback === 'correct' ? 'bg-green-900/50 border-t-green-500' : 'bg-red-900/50 border-t-red-500'} border-t-4`}>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 max-w-lg mx-auto">
             <div className="flex items-center gap-3">
-              <div className={`p-2 rounded-full ${feedback === 'correct' ? 'bg-green-800 text-green-300' : 'bg-red-800 text-red-300'}`}>
-                {feedback === 'correct' ? <CheckCircle size={24} /> : <XCircle size={24} />}
+              <div className={`p-2 rounded-full shrink-0 ${feedback === 'correct' ? 'bg-green-800 text-green-300' : 'bg-red-800 text-red-300'}`}>
+                {feedback === 'correct' ? <CheckCircle size={22} /> : <XCircle size={22} />}
               </div>
               <div>
-                <p className={`font-bold text-lg ${feedback === 'correct' ? 'text-green-200' : 'text-red-200'}`}>
+                <p className={`font-bold text-base sm:text-lg ${feedback === 'correct' ? 'text-green-200' : 'text-red-200'}`}>
                   {feedback === 'correct' ? 'מצוין!' : 'לא נורא...'}
                 </p>
                 {feedback === 'incorrect' && currentExercise.correctAnswer && currentExercise.type !== 'matching_pairs' && currentExercise.type !== 'speed_match' && (
-                  <p className="text-sm text-red-300">התשובה: {currentExercise.correctAnswer}</p>
+                  <p className="text-sm text-red-300/80">התשובה: {currentExercise.correctAnswer}</p>
                 )}
                 {currentExercise.explanation && (
-                  <p className="text-xs text-slate-400 mt-1">{currentExercise.explanation}</p>
+                  <p className="text-xs text-slate-400 mt-0.5">{currentExercise.explanation}</p>
                 )}
               </div>
             </div>
             <button
+              type="button"
               onClick={handleNext}
-              className={`px-6 py-2.5 rounded-lg font-bold text-white shadow-md transition-transform hover:scale-105 ${
+              className={`w-full sm:w-auto px-8 py-2.5 rounded-xl font-bold text-white shadow-md transition-transform hover:scale-105 text-sm sm:text-base ${
                 feedback === 'correct' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'
               }`}
             >

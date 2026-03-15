@@ -69,16 +69,11 @@ const TutorMode: React.FC = () => {
     setActiveUnit(unit);
     setLoadingLesson(true);
     try {
-      // Fetch words for this unit
       const res = await fetch(`/api/tutor/words?unitId=${unit.id}`);
       const data = await res.json();
       const words: TutorWord[] = (data.words || []).map((w: any) => ({
-        id: w.id,
-        term: w.term,
-        hebrew: w.hebrew || '',
-        latin: w.latin || '',
-        pronunciation: w.pronunciation || '',
-        example: w.example || '',
+        id: w.id, term: w.term, hebrew: w.hebrew || '', latin: w.latin || '',
+        pronunciation: w.pronunciation || '', example: w.example || '',
         exampleTranslation: w.exampleTranslation || '',
       }));
 
@@ -88,12 +83,10 @@ const TutorMode: React.FC = () => {
         return;
       }
 
-      // Get mastery level for exercise type selection
       const mastery = progress.unitMastery[unit.id];
-      const currentLevel = (mastery?.masteryLevel || 0) + 1; // Next level to achieve
+      const currentLevel = (mastery?.masteryLevel || 0) + 1;
       const exerciseTypes = EXERCISES_BY_MASTERY[Math.min(currentLevel, 5)] || EXERCISES_BY_MASTERY[1];
 
-      // Get review words (SRS)
       let reviewWords: TutorWord[] = [];
       try {
         const srsRes = await fetch('/api/tutor/srs');
@@ -120,44 +113,29 @@ const TutorMode: React.FC = () => {
   // --- Lesson Complete ---
   const handleLessonComplete = async (score: number, accuracy: number, wordsLearned: number) => {
     if (!activeUnit) return;
-
     try {
       const res = await fetch('/api/tutor/mastery', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          unitId: activeUnit.id,
-          score,
-          accuracy,
-          wordsLearned,
-          wordsReviewed: 0,
-        }),
+        body: JSON.stringify({ unitId: activeUnit.id, score, accuracy, wordsLearned, wordsReviewed: 0 }),
       });
-
       const result = await res.json();
 
-      // Check for word count milestones
       const totalAfter = progress.totalWordsLearned + wordsLearned;
       const milestones = [25, 50, 100, 200, 300, 500];
       let milestone = null;
       for (const m of milestones) {
         if (progress.totalWordsLearned < m && totalAfter >= m) {
-          milestone = { count: m, label: `${m} מילים! 🎉` };
+          milestone = { count: m, label: `${m} מילים!` };
           break;
         }
       }
 
       setCelebrationData({
-        score,
-        accuracy,
-        xpEarned: result.xpEarned || 10,
-        masteryLevel: result.newMasteryLevel || 1,
-        wordsLearned,
-        milestone,
+        score, accuracy, xpEarned: result.xpEarned || 10,
+        masteryLevel: result.newMasteryLevel || 1, wordsLearned, milestone,
       });
       setMode('celebration');
-
-      // Reload progress
       await loadProgress();
       setUser(getCurrentUser());
     } catch (e) {
@@ -184,7 +162,7 @@ const TutorMode: React.FC = () => {
         return;
       }
 
-      const reviewTypes = EXERCISES_BY_MASTERY[2]; // Mixed types for review
+      const reviewTypes = EXERCISES_BY_MASTERY[2];
       const generatedExercises = generateLesson(words, reviewTypes, Math.min(words.length * 2, 12));
       setExercises(generatedExercises);
       setActiveUnit({ id: 'review', title: 'חזרה על מילים', description: '', icon: 'RotateCcw', order: 0, sectionId: '' });
@@ -245,18 +223,18 @@ const TutorMode: React.FC = () => {
   // Setup
   if (!config) {
     return (
-      <div className="w-full max-w-4xl mx-auto mt-8 bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-xl p-8 border border-white/10 font-rubik">
+      <div className="w-full max-w-lg mx-auto mt-6 sm:mt-10 bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-xl p-6 sm:p-10 border border-white/10 font-rubik">
         <SEOHead
           title="מורה פרטי - לימוד ג'והורי"
           description="למד ג'והורי עם מורה פרטי אינטראקטיבי. 15 יחידות לימוד, 12 סוגי תרגילים, מערכת חזרה חכמה."
           canonicalPath="/tutor"
         />
         <div className="text-center mb-8">
-          <div className="inline-block p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl mb-4 text-amber-500 shadow-lg shadow-amber-500/20">
-            <GraduationCap size={48} />
+          <div className="inline-block p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl mb-4 text-amber-500 shadow-lg shadow-amber-500/10">
+            <GraduationCap size={44} />
           </div>
-          <h2 className="text-3xl font-bold text-slate-100 mb-2">שיעור פרטי בג'והורי</h2>
-          <p className="text-slate-400">15 יחידות לימוד, 12 סוגי תרגילים, מערכת חזרה חכמה</p>
+          <h2 className="text-2xl sm:text-3xl font-bold text-slate-100 mb-2">שיעור פרטי בג'והורי</h2>
+          <p className="text-sm sm:text-base text-slate-400">15 יחידות לימוד · 12 סוגי תרגילים · חזרה חכמה</p>
           {!user && (
             <div className="mt-4 p-3 bg-amber-500/10 border border-amber-500/20 text-amber-400 text-sm rounded-lg inline-block">
               מומלץ להתחבר כדי לשמור את ההתקדמות שלך!
@@ -271,10 +249,10 @@ const TutorMode: React.FC = () => {
   // Loading
   if (loadingLesson) {
     return (
-      <div className="flex flex-col items-center justify-center h-[500px] text-center p-8">
+      <div className="flex flex-col items-center justify-center min-h-[400px] sm:min-h-[500px] text-center p-8">
         <Sparkles className="text-amber-500 animate-pulse mb-4" size={48} />
         <h3 className="text-xl font-bold text-slate-100 mb-2">מכין את השיעור...</h3>
-        <p className="text-slate-500">טוען מילים ותרגילים</p>
+        <p className="text-sm text-slate-500">טוען מילים ותרגילים</p>
       </div>
     );
   }
@@ -282,13 +260,12 @@ const TutorMode: React.FC = () => {
   // Lesson
   if (mode === 'lesson' && activeUnit && exercises.length > 0) {
     return (
-      <div className="w-full max-w-4xl mx-auto mt-8">
+      <div className="w-full max-w-2xl mx-auto mt-4 sm:mt-8 px-2 sm:px-0">
         <LessonEngine
           exercises={exercises}
           unitTitle={activeUnit.title}
           onComplete={(score, accuracy, wordsLearned) => {
             if (activeUnit.id === 'review') {
-              // Review mode — just go back to map
               setMode('map');
               loadProgress();
             } else {
@@ -304,7 +281,7 @@ const TutorMode: React.FC = () => {
   // Celebration
   if (mode === 'celebration' && celebrationData) {
     return (
-      <div className="w-full max-w-4xl mx-auto mt-8">
+      <div className="w-full max-w-lg mx-auto mt-4 sm:mt-8 px-2 sm:px-0">
         <CelebrationScreen
           {...celebrationData}
           onContinue={() => { setCelebrationData(null); setMode('map'); }}
@@ -316,7 +293,7 @@ const TutorMode: React.FC = () => {
   // Weekly Summary
   if (mode === 'weekly') {
     return (
-      <div className="w-full max-w-4xl mx-auto mt-8">
+      <div className="w-full max-w-md mx-auto mt-4 sm:mt-8 px-2 sm:px-0">
         <WeeklySummary
           stats={progress.weeklyStats as any}
           totals={progress.weeklyStats.reduce((acc: any, s: any) => ({
@@ -336,11 +313,11 @@ const TutorMode: React.FC = () => {
   // Daily Goal Selector
   if (mode === 'goal') {
     return (
-      <div className="w-full max-w-md mx-auto mt-8 bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-xl p-8 border border-white/10 font-rubik">
+      <div className="w-full max-w-sm mx-auto mt-6 sm:mt-10 bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-xl p-6 sm:p-8 border border-white/10 font-rubik">
         <div className="text-center mb-6">
-          <Target size={40} className="text-amber-500 mx-auto mb-3" />
+          <Target size={36} className="text-amber-500 mx-auto mb-3" />
           <h3 className="text-xl font-bold text-slate-100">בחר יעד יומי</h3>
-          <p className="text-sm text-slate-400">כמה XP ביום?</p>
+          <p className="text-sm text-slate-400 mt-1">כמה XP ביום?</p>
         </div>
         <div className="space-y-3">
           {[
@@ -367,7 +344,7 @@ const TutorMode: React.FC = () => {
             </button>
           ))}
         </div>
-        <button type="button" onClick={() => setMode('map')} className="w-full mt-4 py-2 text-sm text-slate-500 hover:text-slate-300">ביטול</button>
+        <button type="button" onClick={() => setMode('map')} className="w-full mt-4 py-2.5 text-sm text-slate-500 hover:text-slate-300 transition-colors">ביטול</button>
       </div>
     );
   }
@@ -375,22 +352,22 @@ const TutorMode: React.FC = () => {
   // Chat View
   if (mode === 'chat') {
     return (
-      <div className="w-full max-w-4xl mx-auto mt-8 h-[600px] flex flex-col bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-xl overflow-hidden border border-white/10 font-rubik">
-        <div className="bg-white/5 border-b border-white/10 backdrop-blur-md p-4 flex justify-between items-center shadow-md z-10">
-          <div className="flex items-center gap-3 text-amber-500">
-            <MessageCircle />
-            <h3 className="font-bold">שיחה חופשית עם סבא מרדכי</h3>
+      <div className="w-full max-w-2xl mx-auto mt-4 sm:mt-8 h-[70vh] sm:h-[600px] flex flex-col bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-xl overflow-hidden border border-white/10 font-rubik mx-2 sm:mx-auto">
+        <div className="bg-white/5 border-b border-white/10 backdrop-blur-md px-4 py-3 sm:p-4 flex justify-between items-center shadow-md z-10">
+          <div className="flex items-center gap-2 sm:gap-3 text-amber-500">
+            <MessageCircle size={20} />
+            <h3 className="font-bold text-sm sm:text-base">שיחה חופשית עם סבא מרדכי</h3>
           </div>
-          <button type="button" onClick={() => setMode('map')} className="text-sm bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 border border-amber-500/20 px-3 py-1 rounded">חזרה למפה</button>
+          <button type="button" onClick={() => setMode('map')} className="text-xs sm:text-sm bg-amber-500/10 hover:bg-amber-500/20 text-amber-500 border border-amber-500/20 px-3 py-1.5 rounded-lg transition-colors">חזרה</button>
         </div>
         <div className="flex-1 overflow-y-auto p-4 space-y-4 scroll-smooth">
-          {messages.length === 0 && <p className="text-center text-slate-400 mt-10">התחל שיחה... נסה להגיד "שלום"</p>}
+          {messages.length === 0 && <p className="text-center text-slate-400 mt-10 text-sm">התחל שיחה... נסה להגיד &quot;שלום&quot;</p>}
           {messages.map(msg => (
             <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-              <div className={`max-w-[80%] rounded-2xl p-4 shadow-sm ${msg.role === 'user' ? 'bg-gradient-to-br from-amber-400 to-orange-500 text-[#050B14] font-medium rounded-br-none' : 'bg-white/10 backdrop-blur-md text-white border border-white/10 rounded-bl-none'}`}>
+              <div className={`max-w-[85%] sm:max-w-[75%] rounded-2xl px-4 py-3 shadow-sm text-sm sm:text-base ${msg.role === 'user' ? 'bg-gradient-to-br from-amber-400 to-orange-500 text-[#050B14] font-medium rounded-br-none' : 'bg-white/10 backdrop-blur-md text-white border border-white/10 rounded-bl-none'}`}>
                 {msg.content}
                 {msg.audioText && (
-                  <button onClick={() => handlePlayAudio(msg.audioText!, msg.id)} className={`mt-2 flex items-center gap-2 text-xs font-bold px-3 py-1.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20 ${isPlaying === msg.id ? 'animate-pulse' : ''}`}>
+                  <button type="button" onClick={() => handlePlayAudio(msg.audioText!, msg.id)} className={`mt-2 flex items-center gap-2 text-xs font-bold px-3 py-1.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20 ${isPlaying === msg.id ? 'animate-pulse' : ''}`}>
                     <Volume2 size={14} /> השמע
                   </button>
                 )}
@@ -398,9 +375,9 @@ const TutorMode: React.FC = () => {
             </div>
           ))}
         </div>
-        <form onSubmit={handleSendMessage} className="p-4 bg-[#0d1424]/60 backdrop-blur-xl border-t border-white/10 flex gap-2">
-          <input type="text" value={input} onChange={e => setInput(e.target.value)} placeholder="כתוב הודעה..." className="flex-1 px-4 py-3 bg-white/5 border border-white/10 rounded-xl outline-none text-white" disabled={chatLoading} />
-          <button type="submit" disabled={chatLoading || !input.trim()} className="p-3 bg-gradient-to-br from-amber-400 to-orange-600 text-[#050B14] rounded-xl hover:shadow-[0_0_15px_rgba(245,158,11,0.4)]" title="שלח"><Send size={20} /></button>
+        <form onSubmit={handleSendMessage} className="p-3 sm:p-4 bg-[#0d1424]/60 backdrop-blur-xl border-t border-white/10 flex gap-2">
+          <input type="text" value={input} onChange={e => setInput(e.target.value)} placeholder="כתוב הודעה..." className="flex-1 px-4 py-3 bg-white/5 border border-white/10 rounded-xl outline-none text-white text-sm sm:text-base focus:border-amber-500/30 transition-colors" disabled={chatLoading} />
+          <button type="submit" disabled={chatLoading || !input.trim()} className="p-3 bg-gradient-to-br from-amber-400 to-orange-600 text-[#050B14] rounded-xl hover:shadow-[0_0_15px_rgba(245,158,11,0.4)] disabled:opacity-50 transition-all" title="שלח"><Send size={20} /></button>
         </form>
       </div>
     );
@@ -408,35 +385,35 @@ const TutorMode: React.FC = () => {
 
   // Default: Map View
   return (
-    <div className="w-full max-w-4xl mx-auto mt-8 bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-xl overflow-hidden border border-white/10 font-rubik flex flex-col min-h-[600px] max-h-[85vh]">
-      {/* Header */}
-      <div className="bg-white/5 border-b border-white/10 backdrop-blur-md text-white p-4 shadow-md z-10 flex justify-between items-center">
+    <div className="w-full max-w-2xl mx-auto mt-4 sm:mt-8 bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-xl overflow-hidden border border-white/10 font-rubik flex flex-col min-h-[500px] sm:min-h-[600px] max-h-[85vh]">
+      {/* Header — compact, well-spaced */}
+      <div className="bg-white/5 border-b border-white/10 backdrop-blur-md text-white px-4 py-3 sm:px-6 sm:py-4 shadow-md z-10 flex justify-between items-center">
         <DailyGoalRing
           earned={progress.dailyXpEarned}
           goal={progress.dailyXpGoal}
           streak={user?.currentStreak || 0}
         />
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-3">
           <div className="text-right">
-            <h3 className="font-bold text-sm">רמה {user?.level || 1}</h3>
-            <p className="text-xs text-slate-400">{user?.xp || 0} XP</p>
+            <h3 className="font-bold text-xs sm:text-sm leading-tight">רמה {user?.level || 1}</h3>
+            <p className="text-[10px] sm:text-xs text-slate-500">{user?.xp || 0} XP</p>
           </div>
-          <div className="flex gap-1">
-            <button type="button" onClick={() => setMode('goal')} className="p-2 text-slate-400 hover:text-amber-400 transition-colors" title="יעד יומי">
-              <Target size={18} />
+          <div className="flex gap-0.5">
+            <button type="button" onClick={() => setMode('goal')} className="p-1.5 sm:p-2 text-slate-500 hover:text-amber-400 transition-colors rounded-lg hover:bg-white/5" title="יעד יומי">
+              <Target size={16} />
             </button>
-            <button type="button" onClick={() => setMode('weekly')} className="p-2 text-slate-400 hover:text-amber-400 transition-colors" title="סיכום שבועי">
-              <BarChart3 size={18} />
+            <button type="button" onClick={() => setMode('weekly')} className="p-1.5 sm:p-2 text-slate-500 hover:text-amber-400 transition-colors rounded-lg hover:bg-white/5" title="סיכום שבועי">
+              <BarChart3 size={16} />
             </button>
-            <button type="button" onClick={() => setConfig(null)} className="p-2 text-slate-400 hover:text-white transition-colors" title="הגדרות">
-              <Settings2 size={18} />
+            <button type="button" onClick={() => setConfig(null)} className="p-1.5 sm:p-2 text-slate-500 hover:text-white transition-colors rounded-lg hover:bg-white/5" title="הגדרות">
+              <Settings2 size={16} />
             </button>
           </div>
         </div>
       </div>
 
-      {/* Learning Path */}
+      {/* Learning Path — takes remaining space */}
       <LearningPath
         unitMastery={progress.unitMastery}
         completedUnits={Object.keys(progress.unitMastery).filter(k => (progress.unitMastery[k]?.masteryLevel || 0) >= 1)}
@@ -446,11 +423,11 @@ const TutorMode: React.FC = () => {
       />
 
       {/* Bottom Action Bar */}
-      <div className="p-4 bg-[#0d1424]/60 backdrop-blur-xl border-t border-white/10 flex justify-center gap-3">
+      <div className="px-4 py-3 sm:px-6 sm:py-4 bg-[#0d1424]/80 backdrop-blur-xl border-t border-white/10 flex justify-center">
         <button
           type="button"
           onClick={() => setMode('chat')}
-          className="flex items-center gap-2 bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 text-amber-500 px-5 py-3 rounded-xl font-bold hover:bg-amber-500/20 transition-colors"
+          className="flex items-center gap-2 bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 text-amber-500 px-5 py-2.5 sm:py-3 rounded-xl font-bold text-sm sm:text-base hover:bg-amber-500/20 transition-colors"
         >
           <MessageCircle size={18} />
           צ'אט עם סבא מרדכי
@@ -481,7 +458,7 @@ const SetupForm: React.FC<{ onStart: (d: Dialect, l: ProficiencyLevel) => void }
         <label className="block text-sm font-medium text-slate-300 mb-2">בחר ניב ללימוד</label>
         <div className="grid grid-cols-2 gap-3">
           {dialects.map(d => (
-            <button key={d.id} onClick={() => setDialect(d.name)} className={`p-3 rounded-lg border text-sm font-medium transition-all text-right ${dialect === d.name ? 'border-amber-500/50 bg-amber-500/10 text-amber-500' : 'border-white/10 hover:border-amber-500/50 text-slate-300'}`}>
+            <button type="button" key={d.id} onClick={() => setDialect(d.name)} className={`p-3 rounded-xl border text-sm font-medium transition-all text-right ${dialect === d.name ? 'border-amber-500/50 bg-amber-500/10 text-amber-500' : 'border-white/10 hover:border-amber-500/30 text-slate-300'}`}>
               {d.description}
             </button>
           ))}
@@ -491,13 +468,13 @@ const SetupForm: React.FC<{ onStart: (d: Dialect, l: ProficiencyLevel) => void }
         <label className="block text-sm font-medium text-slate-300 mb-2">רמת ידע נוכחית</label>
         <div className="flex gap-3">
           {[{ val: 'Beginner', label: 'מתחיל' }, { val: 'Intermediate', label: 'בינוני' }, { val: 'Advanced', label: 'מתקדם' }].map(opt => (
-            <button key={opt.val} onClick={() => setLevel(opt.val as ProficiencyLevel)} className={`flex-1 p-3 rounded-lg border text-sm font-medium transition-all ${level === opt.val ? 'border-amber-500/50 bg-amber-500/10 text-amber-500' : 'border-white/10 hover:border-amber-500/50 text-slate-300'}`}>
+            <button type="button" key={opt.val} onClick={() => setLevel(opt.val as ProficiencyLevel)} className={`flex-1 p-3 rounded-xl border text-sm font-medium transition-all ${level === opt.val ? 'border-amber-500/50 bg-amber-500/10 text-amber-500' : 'border-white/10 hover:border-amber-500/30 text-slate-300'}`}>
               {opt.label}
             </button>
           ))}
         </div>
       </div>
-      <button onClick={() => onStart(dialect, level)} className="w-full py-4 bg-gradient-to-r from-amber-400 via-amber-500 to-orange-600 text-[#050B14] font-bold text-lg rounded-xl shadow-[0_0_30px_rgba(245,158,11,0.3)] hover:shadow-[0_0_40px_rgba(245,158,11,0.5)] transition-all flex items-center justify-center gap-2">
+      <button type="button" onClick={() => onStart(dialect, level)} className="w-full py-4 bg-gradient-to-r from-amber-400 via-amber-500 to-orange-600 text-[#050B14] font-bold text-lg rounded-xl shadow-[0_0_30px_rgba(245,158,11,0.3)] hover:shadow-[0_0_40px_rgba(245,158,11,0.5)] transition-all flex items-center justify-center gap-2">
         <Play size={24} />
         התחל מסע
       </button>
