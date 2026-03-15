@@ -132,9 +132,9 @@ const LessonEngine: React.FC<LessonEngineProps> = ({ exercises, unitTitle, onCom
   };
 
   return (
-    <div className="flex flex-col min-h-[60vh]">
-      {/* ===== Top bar with progress ===== */}
-      <div className="sticky top-0 z-20 bg-[#050B14]/90 backdrop-blur-xl border-b border-white/[0.06]">
+    <div className="flex flex-col h-[calc(100dvh-152px)] md:h-[calc(100dvh-104px)]">
+      {/* ===== Top bar with progress (non-scrolling) ===== */}
+      <div className="shrink-0 bg-[#050B14]/90 backdrop-blur-xl border-b border-white/[0.06]">
         <div className="w-full max-w-3xl mx-auto px-4 sm:px-6 py-4 sm:py-5 flex items-center gap-4">
           <button type="button" onClick={onBack} className="p-2 hover:bg-white/10 text-slate-400 hover:text-white rounded-full transition-colors shrink-0" title="חזרה" aria-label="חזרה">
             <ArrowLeft size={20} />
@@ -153,16 +153,16 @@ const LessonEngine: React.FC<LessonEngineProps> = ({ exercises, unitTitle, onCom
         </div>
       </div>
 
-      {/* ===== Exercise Content — centered in viewport ===== */}
-      <div className="flex-1 flex items-center justify-center px-4 sm:px-6 py-8 sm:py-12 lg:py-16">
+      {/* ===== Exercise Content — scrollable middle area ===== */}
+      <div className="flex-1 min-h-0 overflow-y-auto flex items-center justify-center px-4 sm:px-6 py-8 sm:py-12 lg:py-16">
         <div className="w-full max-w-xl lg:max-w-2xl">
           {renderExercise()}
         </div>
       </div>
 
-      {/* ===== Feedback Bar — sticky bottom ===== */}
+      {/* ===== Feedback Bar — non-scrolling bottom ===== */}
       {feedback && (
-        <div className={`sticky bottom-0 z-20 ${feedback === 'correct' ? 'bg-green-900/70' : 'bg-red-900/70'} backdrop-blur-xl border-t-4 ${feedback === 'correct' ? 'border-t-green-500' : 'border-t-red-500'}`}>
+        <div className={`shrink-0 ${feedback === 'correct' ? 'bg-green-900/70' : 'bg-red-900/70'} backdrop-blur-xl border-t-4 ${feedback === 'correct' ? 'border-t-green-500' : 'border-t-red-500'}`}>
           <div className="w-full max-w-3xl mx-auto px-4 sm:px-6 py-4 sm:py-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
             <div className="flex items-center gap-3">
               <div className={`p-2.5 rounded-full shrink-0 ${feedback === 'correct' ? 'bg-green-800 text-green-300' : 'bg-red-800 text-red-300'}`}>

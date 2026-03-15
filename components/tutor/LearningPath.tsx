@@ -79,7 +79,7 @@ export default function LearningPath({ unitMastery, completedUnits, onUnitClick,
   })?.id;
 
   return (
-    <div className="flex-1 overflow-y-auto">
+    <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
       <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14 lg:py-16">
 
         {/* ===== Review Button ===== */}
@@ -159,9 +159,10 @@ export default function LearningPath({ unitMastery, completedUnits, onUnitClick,
                         ref={isActive ? activeRef : undefined}
                         className="relative flex flex-col items-center transition-transform duration-500"
                         style={{
-                          // 13vw scales naturally: ~49px on 375px, ~130px on 1000px, ~195px on 1500px
+                          // 8vw scales: ~30px mobile, ~62px tablet, ~112px desktop
+                          // Capped so units don't overflow container
                           transform: zigzagValue !== 0
-                            ? `translateX(${(zigzagValue * 13).toFixed(1)}vw)`
+                            ? `translateX(${(zigzagValue * 8).toFixed(1)}vw)`
                             : undefined,
                         }}
                       >

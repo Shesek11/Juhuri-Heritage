@@ -395,11 +395,16 @@ const TutorMode: React.FC = () => {
 
   // ==========================================
   // DEFAULT: Learning Path — FULL PAGE layout
+  // Uses flex layout with fixed height so header/footer stay in place
+  // and only the learning path scrolls. No sticky needed.
+  // Heights account for AppShell's fixed navbar:
+  //   Mobile: 104px padding + 48px mobile-nav spacer = 152px
+  //   Desktop (md+): 104px padding only
   // ==========================================
   return (
-    <div className="font-rubik flex flex-col min-h-[60vh]">
-      {/* ===== STICKY HEADER ===== */}
-      <div className="sticky top-0 z-30 bg-[#050B14]/90 backdrop-blur-xl border-b border-white/[0.06]">
+    <div className="font-rubik flex flex-col h-[calc(100dvh-152px)] md:h-[calc(100dvh-104px)]">
+      {/* ===== FIXED HEADER (non-scrolling) ===== */}
+      <div className="shrink-0 bg-[#050B14]/90 backdrop-blur-xl border-b border-white/[0.06]">
         <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4 flex items-center justify-between">
           {/* Left: Daily Goal Ring */}
           <DailyGoalRing
@@ -447,8 +452,8 @@ const TutorMode: React.FC = () => {
         wordsDueForReview={progress.wordsDueForReview}
       />
 
-      {/* ===== STICKY BOTTOM BAR ===== */}
-      <div className="sticky bottom-0 z-30 bg-[#050B14]/90 backdrop-blur-xl border-t border-white/[0.06]">
+      {/* ===== FIXED BOTTOM BAR (non-scrolling) ===== */}
+      <div className="shrink-0 bg-[#050B14]/90 backdrop-blur-xl border-t border-white/[0.06]">
         <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-3 sm:py-4 flex justify-center">
           <button
             type="button"

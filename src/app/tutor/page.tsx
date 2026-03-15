@@ -9,9 +9,5 @@ export const metadata: Metadata = {
 };
 
 export default function TutorPage() {
-  return (
-    <main className="min-h-screen flex flex-col">
-      <TutorClient />
-    </main>
-  );
+  return <TutorClient />;
 }
