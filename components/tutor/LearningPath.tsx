@@ -143,12 +143,8 @@ export default function LearningPath({ unitMastery, completedUnits, onUnitClick,
                   const showCulturalNote = isActive && unit.culturalNote && unit.id === activeUnitId;
 
                   // S-curve: alternating offsets for Duolingo-style zigzag
-                  // Pattern repeats every 8 units with varying amplitudes
                   const zigzagPattern = [0, -0.5, -0.85, -0.55, 0, 0.55, 0.85, 0.5];
                   const zigzagValue = zigzagPattern[idx % zigzagPattern.length];
-                  // Use CSS clamp to scale: 60px mobile, 130px tablet, 200px desktop
-                  const maxOffset = 200;
-                  const offset = Math.round(zigzagValue * maxOffset);
 
                   return (
                     <React.Fragment key={unit.id}>
@@ -163,8 +159,9 @@ export default function LearningPath({ unitMastery, completedUnits, onUnitClick,
                         ref={isActive ? activeRef : undefined}
                         className="relative flex flex-col items-center transition-transform duration-500"
                         style={{
-                          transform: offset !== 0
-                            ? `translateX(calc(${offset > 0 ? '' : '-'}min(${Math.abs(offset)}px, 12vw)))`
+                          // 13vw scales naturally: ~49px on 375px, ~130px on 1000px, ~195px on 1500px
+                          transform: zigzagValue !== 0
+                            ? `translateX(${(zigzagValue * 13).toFixed(1)}vw)`
                             : undefined,
                         }}
                       >
