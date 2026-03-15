@@ -24,7 +24,7 @@ export default function CelebrationScreen({ score, accuracy, xpEarned, masteryLe
   const masteryColors = ['', 'text-amber-600', 'text-slate-300', 'text-yellow-400', 'text-cyan-300', 'text-purple-400'];
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[450px] sm:min-h-[500px] text-center p-6 sm:p-10 bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl border border-white/10 relative overflow-hidden">
+    <div className="flex flex-col items-center justify-center min-h-[450px] sm:min-h-[500px] lg:min-h-[550px] text-center p-6 sm:p-10 lg:p-14 bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl border border-white/10 relative overflow-hidden">
       {/* Confetti particles */}
       {showConfetti && (
         <div className="absolute inset-0 pointer-events-none">
@@ -55,7 +55,7 @@ export default function CelebrationScreen({ score, accuracy, xpEarned, masteryLe
           <p className="text-sm text-slate-500 mb-6">סיימת את השיעור בהצלחה</p>
 
           {/* Stats */}
-          <div className="grid grid-cols-3 gap-4 sm:gap-8 w-full max-w-xs sm:max-w-sm mb-6">
+          <div className="grid grid-cols-3 gap-4 sm:gap-8 lg:gap-12 w-full max-w-xs sm:max-w-sm lg:max-w-lg mb-6 lg:mb-8">
             <div className="flex flex-col items-center gap-1">
               <span className="text-2xl sm:text-3xl font-bold text-amber-400">+{xpEarned}</span>
               <span className="text-[10px] sm:text-xs text-slate-500 font-medium">XP</span>

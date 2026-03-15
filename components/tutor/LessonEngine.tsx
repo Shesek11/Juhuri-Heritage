@@ -132,9 +132,9 @@ const LessonEngine: React.FC<LessonEngineProps> = ({ exercises, unitTitle, onCom
   };
 
   return (
-    <div className="flex flex-col min-h-[500px] sm:min-h-[600px] max-h-[90vh] bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-xl overflow-hidden font-rubik relative border border-white/10">
+    <div className="flex flex-col min-h-[500px] sm:min-h-[600px] lg:min-h-[650px] max-h-[90vh] bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-xl overflow-hidden font-rubik relative border border-white/10">
       {/* Header with progress bar */}
-      <div className="p-3 sm:p-4 bg-white/5 border-b border-white/10 flex items-center gap-3">
+      <div className="p-3 sm:p-4 lg:px-6 lg:py-5 bg-white/5 border-b border-white/10 flex items-center gap-3">
         <button type="button" onClick={onBack} className="p-2 hover:bg-white/10 text-slate-400 hover:text-white rounded-full transition-colors shrink-0" title="חזרה">
           <ArrowLeft size={18} />
         </button>
@@ -152,8 +152,8 @@ const LessonEngine: React.FC<LessonEngineProps> = ({ exercises, unitTitle, onCom
       </div>
 
       {/* Exercise Content — centered with proper padding */}
-      <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-8 sm:py-10 flex flex-col items-center justify-center w-full">
-        <div className="w-full max-w-lg">
+      <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-8 sm:py-10 lg:px-12 lg:py-12 flex flex-col items-center justify-center w-full">
+        <div className="w-full max-w-lg lg:max-w-xl">
           {renderExercise()}
         </div>
       </div>
@@ -161,7 +161,7 @@ const LessonEngine: React.FC<LessonEngineProps> = ({ exercises, unitTitle, onCom
       {/* Feedback Bar */}
       {feedback && (
         <div className={`p-4 sm:p-5 ${feedback === 'correct' ? 'bg-green-900/50 border-t-green-500' : 'bg-red-900/50 border-t-red-500'} border-t-4`}>
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 max-w-lg mx-auto">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 max-w-lg lg:max-w-xl mx-auto">
             <div className="flex items-center gap-3">
               <div className={`p-2 rounded-full shrink-0 ${feedback === 'correct' ? 'bg-green-800 text-green-300' : 'bg-red-800 text-red-300'}`}>
                 {feedback === 'correct' ? <CheckCircle size={22} /> : <XCircle size={22} />}

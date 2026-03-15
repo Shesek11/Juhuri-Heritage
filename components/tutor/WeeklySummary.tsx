@@ -23,7 +23,7 @@ export default function WeeklySummary({ stats, totals, streak, totalWordsLearned
   const maxXp = Math.max(...stats.map(s => s.xp_earned), 1);
 
   return (
-    <div className="w-full bg-[#0d1424]/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/10 p-5 sm:p-7 font-rubik">
+    <div className="w-full bg-[#0d1424]/80 backdrop-blur-xl rounded-2xl shadow-xl border border-white/10 p-5 sm:p-7 lg:p-10 font-rubik">
       <div className="flex justify-between items-center mb-6">
         <h3 className="text-base sm:text-lg font-bold text-slate-100">סיכום שבועי</h3>
         <button type="button" onClick={onClose} className="p-1.5 text-slate-400 hover:text-white rounded-lg hover:bg-white/5 transition-colors" title="סגור">
@@ -32,7 +32,7 @@ export default function WeeklySummary({ stats, totals, streak, totalWordsLearned
       </div>
 
       {/* Bar chart */}
-      <div className="flex items-end gap-1.5 sm:gap-2 h-28 sm:h-32 mb-6">
+      <div className="flex items-end gap-1.5 sm:gap-2 lg:gap-3 h-28 sm:h-32 lg:h-40 mb-6 lg:mb-8">
         {Array.from({ length: 7 }).map((_, i) => {
           const date = new Date();
           date.setDate(date.getDate() - (6 - i));
@@ -59,7 +59,7 @@ export default function WeeklySummary({ stats, totals, streak, totalWordsLearned
       </div>
 
       {/* Stats grid */}
-      <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-3 lg:gap-4">
         <div className="bg-white/[0.04] rounded-xl p-3 sm:p-4 flex items-center gap-3">
           <TrendingUp size={18} className="text-amber-400 shrink-0" />
           <div>

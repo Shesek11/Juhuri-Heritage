@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { CurriculumSection, LessonUnit, UnitMasteryInfo } from '../../types';
 import { CURRICULUM_SECTIONS } from '../../services/curriculumService';
 import { Lock, CheckCircle, Star, ShieldCheck, Hand, Hash, Palette, Users, Apple, Home, HeartPulse, Shirt, Flame, Coffee, TreePine, MessageSquare, Scroll, Music, GraduationCap, Sparkles } from 'lucide-react';
@@ -48,6 +48,14 @@ const masteryBg: Record<number, string> = {
 };
 
 export default function LearningPath({ unitMastery, completedUnits, onUnitClick, onReviewClick, wordsDueForReview }: Props) {
+  const [isDesktop, setIsDesktop] = useState(false);
+  useEffect(() => {
+    const check = () => setIsDesktop(window.innerWidth >= 1024);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+
   // Find the first active (unlocked + not completed) unit for cultural note
   const allUnits = CURRICULUM_SECTIONS.flatMap(s => s.units);
   const activeUnitId = allUnits.find(u => {
@@ -61,13 +69,13 @@ export default function LearningPath({ unitMastery, completedUnits, onUnitClick,
   })?.id;
 
   return (
-    <div className="flex-1 overflow-y-auto px-4 py-8 sm:px-6 sm:py-10">
+    <div className="flex-1 overflow-y-auto px-4 py-8 sm:px-6 sm:py-10 lg:px-10 lg:py-12">
       {/* Review button */}
       {wordsDueForReview > 0 && (
         <button
           type="button"
           onClick={onReviewClick}
-          className="w-full max-w-sm mx-auto mb-10 p-4 bg-blue-500/10 border border-blue-500/20 rounded-2xl flex items-center justify-between hover:bg-blue-500/20 transition-colors group"
+          className="w-full max-w-sm lg:max-w-md mx-auto mb-10 p-4 lg:p-5 bg-blue-500/10 border border-blue-500/20 rounded-2xl flex items-center justify-between hover:bg-blue-500/20 transition-colors group"
         >
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-full bg-blue-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
@@ -89,7 +97,7 @@ export default function LearningPath({ unitMastery, completedUnits, onUnitClick,
         return (
           <div key={section.id} className="mb-12 last:mb-4">
             {/* Section Header */}
-            <div className="flex items-center gap-4 mb-8 max-w-sm mx-auto">
+            <div className="flex items-center gap-4 mb-8 lg:mb-10 max-w-sm lg:max-w-md mx-auto">
               <div className={`h-px flex-1 ${sectionUnlocked ? 'bg-gradient-to-l from-amber-500/40 to-transparent' : 'bg-white/5'}`} />
               <div className="text-center px-2">
                 <h3 className={`text-lg font-bold ${sectionUnlocked ? 'text-amber-400' : 'text-slate-600'}`}>
@@ -122,15 +130,16 @@ export default function LearningPath({ unitMastery, completedUnits, onUnitClick,
                 const isActive = !locked && !completed;
                 const showCulturalNote = isActive && unit.culturalNote && unit.id === activeUnitId;
 
-                // Duolingo S-curve offset — exaggerated for visibility
-                const offsets = [0, -70, -90, -50, 0, 50, 90, 70];
-                const offset = offsets[idx % offsets.length];
+                // Duolingo S-curve offset — wider on desktop
+                const mobileOffsets = [0, -70, -90, -50, 0, 50, 90, 70];
+                const desktopOffsets = [0, -110, -150, -80, 0, 80, 150, 110];
+                const offset = (isDesktop ? desktopOffsets : mobileOffsets)[idx % mobileOffsets.length];
 
                 return (
                   <React.Fragment key={unit.id}>
                     {/* Connector dots between units */}
                     {idx > 0 && (
-                      <div className="flex flex-col items-center gap-1.5 py-1">
+                      <div className="flex flex-col items-center gap-1.5 lg:gap-2 py-1 lg:py-2">
                         <div className={`w-1 h-1 rounded-full ${completed || isActive ? 'bg-amber-500/40' : 'bg-white/10'}`} />
                         <div className={`w-1 h-1 rounded-full ${completed || isActive ? 'bg-amber-500/30' : 'bg-white/[0.06]'}`} />
                         <div className={`w-1 h-1 rounded-full ${completed || isActive ? 'bg-amber-500/20' : 'bg-white/[0.04]'}`} />
@@ -146,7 +155,7 @@ export default function LearningPath({ unitMastery, completedUnits, onUnitClick,
                         type="button"
                         onClick={() => !locked && onUnitClick(unit)}
                         disabled={locked}
-                        className={`relative w-[72px] h-[72px] sm:w-20 sm:h-20 rounded-full flex items-center justify-center transition-all duration-200 ${
+                        className={`relative w-[72px] h-[72px] sm:w-20 sm:h-20 lg:w-24 lg:h-24 rounded-full flex items-center justify-center transition-all duration-200 ${
                           locked
                             ? 'bg-white/[0.03] border-2 border-dashed border-white/10 text-white/15 cursor-not-allowed'
                             : completed
@@ -173,7 +182,7 @@ export default function LearningPath({ unitMastery, completedUnits, onUnitClick,
                       </button>
 
                       {/* Label */}
-                      <p className={`mt-3 text-sm font-bold text-center max-w-[140px] leading-snug ${
+                      <p className={`mt-3 lg:mt-4 text-sm lg:text-base font-bold text-center max-w-[140px] lg:max-w-[180px] leading-snug ${
                         locked ? 'text-slate-700' : completed ? 'text-slate-400' : 'text-slate-200'
                       }`}>
                         {unit.title}
