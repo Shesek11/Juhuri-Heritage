@@ -159,10 +159,9 @@ export default function LearningPath({ unitMastery, completedUnits, onUnitClick,
                         ref={isActive ? activeRef : undefined}
                         className="relative flex flex-col items-center transition-transform duration-500"
                         style={{
-                          // 8vw scales: ~30px mobile, ~62px tablet, ~112px desktop
-                          // Capped so units don't overflow container
+                          // clamp: 6vw min (~24px mobile), 12vw preferred (~170px desktop), 200px max
                           transform: zigzagValue !== 0
-                            ? `translateX(${(zigzagValue * 8).toFixed(1)}vw)`
+                            ? `translateX(calc(${zigzagValue.toFixed(2)} * clamp(6vw, 12vw, 200px)))`
                             : undefined,
                         }}
                       >

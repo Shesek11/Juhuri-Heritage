@@ -231,7 +231,7 @@ const TutorMode: React.FC = () => {
           description="למד ג'והורי עם מורה פרטי אינטראקטיבי. 15 יחידות לימוד, 12 סוגי תרגילים, מערכת חזרה חכמה."
           canonicalPath="/tutor"
         />
-        <div className="w-full max-w-md bg-[#0d1424]/70 backdrop-blur-xl rounded-2xl shadow-2xl p-8 sm:p-10 border border-white/10">
+        <div className="w-full max-w-md lg:max-w-2xl bg-[#0d1424]/70 backdrop-blur-xl rounded-2xl shadow-2xl p-8 sm:p-10 lg:p-14 border border-white/10">
           <div className="text-center mb-8">
             <div className="inline-block p-5 bg-amber-500/10 border border-amber-500/20 rounded-2xl mb-5 text-amber-500">
               <GraduationCap size={48} />
@@ -488,9 +488,9 @@ const SetupForm: React.FC<{ onStart: (d: Dialect, l: ProficiencyLevel) => void }
     <div className="space-y-6">
       <div>
         <label className="block text-sm font-medium text-slate-300 mb-2">בחר ניב ללימוד</label>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
           {dialects.map(d => (
-            <button type="button" key={d.id} onClick={() => setDialect(d.name)} className={`p-3.5 rounded-xl border text-sm font-medium transition-all text-right ${dialect === d.name ? 'border-amber-500/50 bg-amber-500/10 text-amber-500' : 'border-white/10 hover:border-amber-500/30 text-slate-300'}`}>
+            <button type="button" key={d.id} onClick={() => setDialect(d.name)} className={`p-3.5 lg:p-4 rounded-xl border text-sm lg:text-base font-medium transition-all text-right ${dialect === d.name ? 'border-amber-500/50 bg-amber-500/10 text-amber-500' : 'border-white/10 hover:border-amber-500/30 text-slate-300'}`}>
               {d.description}
             </button>
           ))}
