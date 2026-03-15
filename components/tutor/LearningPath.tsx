@@ -38,7 +38,7 @@ function isCheckpointPassed(sectionOrder: number, unitMastery: Record<string, Un
   return prevSection.units.every(u => (unitMastery[u.id]?.masteryLevel || 0) >= 1);
 }
 
-const masteryColors: Record<number, string> = {
+const masteryBg: Record<number, string> = {
   0: 'from-slate-600 to-slate-700',
   1: 'from-amber-600 to-amber-700',
   2: 'from-slate-300 to-slate-400',
@@ -47,31 +47,34 @@ const masteryColors: Record<number, string> = {
   5: 'from-purple-400 to-pink-500',
 };
 
-const masteryGlow: Record<number, string> = {
-  0: '',
-  1: 'shadow-amber-500/20',
-  2: 'shadow-slate-300/20',
-  3: 'shadow-yellow-400/30',
-  4: 'shadow-cyan-300/30',
-  5: 'shadow-purple-400/30',
-};
-
 export default function LearningPath({ unitMastery, completedUnits, onUnitClick, onReviewClick, wordsDueForReview }: Props) {
+  // Find the first active (unlocked + not completed) unit for cultural note
+  const allUnits = CURRICULUM_SECTIONS.flatMap(s => s.units);
+  const activeUnitId = allUnits.find(u => {
+    const sectionUnlocked = isCheckpointPassed(
+      CURRICULUM_SECTIONS.find(s => s.units.some(su => su.id === u.id))?.order || 1,
+      unitMastery
+    );
+    const unlocked = sectionUnlocked && isUnitUnlocked(u, unitMastery);
+    const completed = (unitMastery[u.id]?.masteryLevel || 0) >= 1;
+    return unlocked && !completed;
+  })?.id;
+
   return (
-    <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-8 sm:py-8">
+    <div className="flex-1 overflow-y-auto px-4 py-8 sm:px-6 sm:py-10">
       {/* Review button */}
       {wordsDueForReview > 0 && (
         <button
           type="button"
           onClick={onReviewClick}
-          className="w-full max-w-md mx-auto mb-8 p-4 bg-blue-500/10 border border-blue-500/20 rounded-2xl flex items-center justify-between hover:bg-blue-500/20 transition-colors group"
+          className="w-full max-w-sm mx-auto mb-10 p-4 bg-blue-500/10 border border-blue-500/20 rounded-2xl flex items-center justify-between hover:bg-blue-500/20 transition-colors group"
         >
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-full bg-blue-500/20 flex items-center justify-center group-hover:scale-110 transition-transform">
               <GraduationCap size={22} className="text-blue-400" />
             </div>
             <div className="text-right">
-              <p className="font-bold text-blue-300 text-sm sm:text-base">חזרה על מילים</p>
+              <p className="font-bold text-blue-300 text-sm">חזרה על מילים</p>
               <p className="text-xs text-blue-400/70">{wordsDueForReview} מילים ממתינות</p>
             </div>
           </div>
@@ -84,15 +87,15 @@ export default function LearningPath({ unitMastery, completedUnits, onUnitClick,
         const sectionUnlocked = isCheckpointPassed(section.order, unitMastery);
 
         return (
-          <div key={section.id} className="mb-10 last:mb-4">
+          <div key={section.id} className="mb-12 last:mb-4">
             {/* Section Header */}
-            <div className="flex items-center gap-4 mb-6 max-w-md mx-auto">
+            <div className="flex items-center gap-4 mb-8 max-w-sm mx-auto">
               <div className={`h-px flex-1 ${sectionUnlocked ? 'bg-gradient-to-l from-amber-500/40 to-transparent' : 'bg-white/5'}`} />
-              <div className="text-center">
-                <h3 className={`text-base sm:text-lg font-bold ${sectionUnlocked ? 'text-amber-400' : 'text-slate-600'}`}>
+              <div className="text-center px-2">
+                <h3 className={`text-lg font-bold ${sectionUnlocked ? 'text-amber-400' : 'text-slate-600'}`}>
                   {section.title}
                 </h3>
-                <p className={`text-[11px] sm:text-xs mt-0.5 ${sectionUnlocked ? 'text-slate-500' : 'text-slate-700'}`}>
+                <p className={`text-xs mt-1 ${sectionUnlocked ? 'text-slate-500' : 'text-slate-700'}`}>
                   {section.description}
                 </p>
               </div>
@@ -101,7 +104,7 @@ export default function LearningPath({ unitMastery, completedUnits, onUnitClick,
 
             {/* Checkpoint Gate */}
             {section.order > 1 && !sectionUnlocked && (
-              <div className="flex justify-center mb-6">
+              <div className="flex justify-center mb-8">
                 <div className="px-5 py-2.5 bg-white/5 border border-white/10 rounded-full flex items-center gap-2 text-slate-500 text-xs sm:text-sm">
                   <ShieldCheck size={16} />
                   <span>השלם את כל היחידות הקודמות</span>
@@ -109,74 +112,81 @@ export default function LearningPath({ unitMastery, completedUnits, onUnitClick,
               </div>
             )}
 
-            {/* Units — Duolingo-style path */}
-            <div className="flex flex-col items-center gap-1">
+            {/* Units — Duolingo-style snaking path */}
+            <div className="flex flex-col items-center">
               {section.units.map((unit, idx) => {
                 const mastery = unitMastery[unit.id];
                 const level = mastery?.masteryLevel || 0;
                 const locked = !sectionUnlocked || !isUnitUnlocked(unit, unitMastery);
                 const completed = level >= 1;
                 const isActive = !locked && !completed;
+                const showCulturalNote = isActive && unit.culturalNote && unit.id === activeUnitId;
 
-                // Duolingo zigzag — wider on larger screens
-                const offsets = [0, -40, -55, -40, 0, 40, 55, 40];
+                // Duolingo S-curve offset — exaggerated for visibility
+                const offsets = [0, -70, -90, -50, 0, 50, 90, 70];
                 const offset = offsets[idx % offsets.length];
 
                 return (
-                  <div key={unit.id} className="relative flex flex-col items-center py-2" style={{ transform: `translateX(${offset}px)` }}>
-                    {/* Connector line */}
+                  <React.Fragment key={unit.id}>
+                    {/* Connector dots between units */}
                     {idx > 0 && (
-                      <div
-                        className={`absolute w-0.5 h-5 -top-3 ${completed ? 'bg-amber-500/30' : locked ? 'bg-white/5' : 'bg-amber-500/20'}`}
-                        style={{ left: '50%', transform: 'translateX(-50%)' }}
-                      />
-                    )}
-
-                    {/* Unit Circle */}
-                    <button
-                      type="button"
-                      onClick={() => !locked && onUnitClick(unit)}
-                      disabled={locked}
-                      className={`relative w-16 h-16 sm:w-[76px] sm:h-[76px] rounded-full flex items-center justify-center shadow-lg transition-all duration-200 ${
-                        locked
-                          ? 'bg-white/[0.04] border-2 border-white/[0.08] text-white/20 cursor-not-allowed'
-                          : completed
-                            ? `bg-gradient-to-br ${masteryColors[level]} border-2 border-black/10 text-white hover:scale-110 shadow-xl ${masteryGlow[level]}`
-                            : 'bg-gradient-to-br from-amber-400 to-orange-500 border-2 border-orange-600/50 text-[#050B14] hover:scale-110 shadow-xl shadow-amber-500/30 animate-pulse'
-                      }`}
-                    >
-                      {locked ? (
-                        <Lock size={20} className="opacity-40" />
-                      ) : completed ? (
-                        <CheckCircle size={26} strokeWidth={2.5} />
-                      ) : (
-                        getIcon(unit.icon, 26)
-                      )}
-
-                      {/* Mastery stars — below the circle */}
-                      {level > 0 && (
-                        <div className="absolute -bottom-1.5 flex gap-px bg-[#0d1424] px-1.5 py-0.5 rounded-full">
-                          {Array.from({ length: Math.min(level, 5) }).map((_, i) => (
-                            <Star key={i} size={9} className="text-yellow-300" fill="currentColor" />
-                          ))}
-                        </div>
-                      )}
-                    </button>
-
-                    {/* Label */}
-                    <p className={`mt-3 text-xs sm:text-sm font-bold text-center max-w-[130px] leading-tight ${
-                      locked ? 'text-slate-700' : completed ? 'text-slate-400' : 'text-slate-200'
-                    }`}>
-                      {unit.title}
-                    </p>
-
-                    {/* Cultural Note — only for the active unit */}
-                    {isActive && unit.culturalNote && (
-                      <div className="mt-3 max-w-xs">
-                        <CulturalNote note={unit.culturalNote} link={unit.culturalLink} />
+                      <div className="flex flex-col items-center gap-1.5 py-1">
+                        <div className={`w-1 h-1 rounded-full ${completed || isActive ? 'bg-amber-500/40' : 'bg-white/10'}`} />
+                        <div className={`w-1 h-1 rounded-full ${completed || isActive ? 'bg-amber-500/30' : 'bg-white/[0.06]'}`} />
+                        <div className={`w-1 h-1 rounded-full ${completed || isActive ? 'bg-amber-500/20' : 'bg-white/[0.04]'}`} />
                       </div>
                     )}
-                  </div>
+
+                    <div
+                      className="relative flex flex-col items-center"
+                      style={{ transform: `translateX(${offset}px)` }}
+                    >
+                      {/* Unit Circle */}
+                      <button
+                        type="button"
+                        onClick={() => !locked && onUnitClick(unit)}
+                        disabled={locked}
+                        className={`relative w-[72px] h-[72px] sm:w-20 sm:h-20 rounded-full flex items-center justify-center transition-all duration-200 ${
+                          locked
+                            ? 'bg-white/[0.03] border-2 border-dashed border-white/10 text-white/15 cursor-not-allowed'
+                            : completed
+                              ? `bg-gradient-to-br ${masteryBg[level]} border-[3px] border-black/10 text-white hover:scale-110 shadow-lg`
+                              : 'bg-gradient-to-br from-amber-400 to-orange-500 border-[3px] border-orange-600/40 text-[#050B14] hover:scale-110 shadow-lg shadow-amber-500/40 animate-pulse'
+                        }`}
+                      >
+                        {locked ? (
+                          <Lock size={18} className="opacity-30" />
+                        ) : completed ? (
+                          <CheckCircle size={28} strokeWidth={2.5} />
+                        ) : (
+                          getIcon(unit.icon, 28)
+                        )}
+
+                        {/* Mastery stars */}
+                        {level > 0 && (
+                          <div className="absolute -bottom-2 flex gap-0.5 bg-[#0d1424] px-1.5 py-0.5 rounded-full border border-white/5">
+                            {Array.from({ length: Math.min(level, 5) }).map((_, i) => (
+                              <Star key={i} size={10} className="text-yellow-300" fill="currentColor" />
+                            ))}
+                          </div>
+                        )}
+                      </button>
+
+                      {/* Label */}
+                      <p className={`mt-3 text-sm font-bold text-center max-w-[140px] leading-snug ${
+                        locked ? 'text-slate-700' : completed ? 'text-slate-400' : 'text-slate-200'
+                      }`}>
+                        {unit.title}
+                      </p>
+                    </div>
+
+                    {/* Cultural Note — shown BELOW the unit, centered, only for the first active unit */}
+                    {showCulturalNote && (
+                      <div className="mt-4 mb-2 w-full max-w-[280px] sm:max-w-xs mx-auto">
+                        <CulturalNote note={unit.culturalNote!} link={unit.culturalLink} />
+                      </div>
+                    )}
+                  </React.Fragment>
                 );
               })}
             </div>

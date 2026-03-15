@@ -385,7 +385,7 @@ const TutorMode: React.FC = () => {
 
   // Default: Map View
   return (
-    <div className="w-full max-w-2xl mx-auto mt-4 sm:mt-8 bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-xl overflow-hidden border border-white/10 font-rubik flex flex-col min-h-[500px] sm:min-h-[600px] max-h-[85vh]">
+    <div className="w-full max-w-2xl lg:max-w-3xl mx-auto mt-4 sm:mt-8 bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-xl overflow-hidden border border-white/10 font-rubik flex flex-col min-h-[500px] sm:min-h-[650px] max-h-[88vh]">
       {/* Header — compact, well-spaced */}
       <div className="bg-white/5 border-b border-white/10 backdrop-blur-md text-white px-4 py-3 sm:px-6 sm:py-4 shadow-md z-10 flex justify-between items-center">
         <DailyGoalRing
