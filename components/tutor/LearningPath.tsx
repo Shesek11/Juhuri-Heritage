@@ -142,10 +142,6 @@ export default function LearningPath({ unitMastery, completedUnits, onUnitClick,
                   const isActive = !locked && !completed;
                   const showCulturalNote = isActive && unit.culturalNote && unit.id === activeUnitId;
 
-                  // S-curve: alternating offsets for Duolingo-style zigzag
-                  const zigzagPattern = [0, -0.5, -0.85, -0.55, 0, 0.55, 0.85, 0.5];
-                  const zigzagValue = zigzagPattern[idx % zigzagPattern.length];
-
                   return (
                     <React.Fragment key={unit.id}>
                       {/* Connector line between units */}
@@ -157,13 +153,7 @@ export default function LearningPath({ unitMastery, completedUnits, onUnitClick,
 
                       <div
                         ref={isActive ? activeRef : undefined}
-                        className="relative flex flex-col items-center transition-transform duration-500"
-                        style={{
-                          // clamp: 6vw min (~24px mobile), 12vw preferred (~170px desktop), 200px max
-                          transform: zigzagValue !== 0
-                            ? `translateX(calc(${zigzagValue.toFixed(2)} * clamp(6vw, 12vw, 200px)))`
-                            : undefined,
-                        }}
+                        className="relative flex flex-col items-center"
                       >
                         {/* Glow ring for active unit */}
                         {isActive && (
