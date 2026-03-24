@@ -4,7 +4,7 @@ import { DictionaryEntry } from '../../types';
 import apiService from '../../services/apiService';
 
 interface RecentAdditionsProps {
-    onSelectWord: (term: string) => void;
+    onSelectWord: (term: string, id?: number) => void;
 }
 
 const RecentAdditions: React.FC<RecentAdditionsProps> = ({ onSelectWord }) => {
@@ -50,7 +50,7 @@ const RecentAdditions: React.FC<RecentAdditionsProps> = ({ onSelectWord }) => {
                             <button
                                 type="button"
                                 key={idx}
-                                onClick={() => onSelectWord(term.term)}
+                                onClick={() => onSelectWord(term.term, (term as any).id)}
                                 className="w-full text-right flex items-center justify-between px-3 py-2 rounded-lg hover:bg-white/[0.03] transition-all group/item cursor-pointer"
                             >
                                 <div className="min-w-0">

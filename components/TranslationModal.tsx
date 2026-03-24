@@ -62,8 +62,9 @@ const TranslationModal: React.FC<TranslationModalProps> = ({ entryId, term, onCl
     useEffect(() => {
         const fetchData = async () => {
             try {
+                // Fetch by ID (more reliable — some entries have empty term)
                 const [entryRes, dialectRes] = await Promise.all([
-                    apiService.get<{ entry: EntryDetails }>(`/dictionary/entry/${encodeURIComponent(term)}`),
+                    apiService.get<{ entry: EntryDetails }>(`/dictionary/entry/${entryId}`),
                     apiService.get<{ dialects: { id: number; name: string; description?: string }[] }>('/dialects'),
                 ]);
 
