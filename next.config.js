@@ -59,7 +59,7 @@ const nextConfig = {
               "img-src 'self' data: blob: https://images.unsplash.com https://ui-avatars.com https://*.tile.openstreetmap.org https://www.google-analytics.com https://lh3.googleusercontent.com",
               "connect-src 'self' https://www.google-analytics.com https://generativelanguage.googleapis.com https://accounts.google.com",
               "frame-src https://accounts.google.com",
-              "media-src 'self' blob:",
+              "media-src 'self' blob: data:",
               "object-src 'none'",
               "base-uri 'self'",
               "form-action 'self'",
