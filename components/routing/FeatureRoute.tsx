@@ -4,7 +4,7 @@ import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAppContext } from '../shell/AppContext';
-import { Clock, ChefHat, Store, TreeDeciduous } from 'lucide-react';
+import { Clock, ChefHat, Store, TreeDeciduous, GraduationCap } from 'lucide-react';
 
 function RedirectHome() {
   const router = useRouter();
@@ -21,6 +21,12 @@ interface FeatureRouteProps {
 }
 
 const featureMeta: Record<string, { icon: React.ReactNode; title: string; description: string; gradient: string }> = {
+  tutor_module: {
+    icon: <GraduationCap className="w-12 h-12 text-white" />,
+    title: 'מורה פרטי - בקרוב! 🎓',
+    description: 'שיעורי שפה מונחי בינה מלאכותית בפיתוח. בקרוב תוכלו ללמוד ג׳והורית בקצב שלכם!',
+    gradient: 'from-amber-300 to-amber-500',
+  },
   recipes_module: {
     icon: <ChefHat className="w-12 h-12 text-white" />,
     title: 'מתכונים - בקרוב! \u{1F372}',

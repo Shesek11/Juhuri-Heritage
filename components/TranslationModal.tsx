@@ -199,11 +199,11 @@ const TranslationModal: React.FC<TranslationModalProps> = ({ entryId, term, onCl
     };
 
     // Build display info from entry details
-    const displayTerm = entryDetails?.term || term;
     const firstTrans = entryDetails?.translations?.[0];
+    const displayTerm = entryDetails?.term || firstTrans?.hebrew || term;
     const displayLatin = firstTrans?.latin;
     const displayCyrillic = firstTrans?.cyrillic;
-    const displayHebrew = firstTrans?.hebrew;
+    const displayHebrew = entryDetails?.term ? firstTrans?.hebrew : undefined; // Don't duplicate if term IS hebrew
     const pos = entryDetails?.partOfSpeech;
 
     return (

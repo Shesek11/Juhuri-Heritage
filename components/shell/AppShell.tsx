@@ -297,7 +297,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               <div className={`flex items-center p-1 rounded-full gap-1 transition-all duration-300 border ${!isScrolled ? 'bg-[#0d1424]/60 backdrop-blur-md border-white/5 shadow-lg' : 'bg-white/5 border-transparent backdrop-blur-sm'}`}>
                 <NavTab href="/" icon={<BookOpen size={16} />} label="בית" isActive={isActive('/')} />
                 <NavTab href="/dictionary" icon={<BookOpen size={16} />} label="מילון" isActive={isActive('/dictionary') || pathname.startsWith('/word/')} />
-                <NavTab href="/tutor" icon={<GraduationCap size={16} />} label="מורה פרטי" isActive={isActive('/tutor')} />
+                {isFeatureVisible('tutor_module') && (
+                  <NavTab href="/tutor" icon={<GraduationCap size={16} />} label="מורה פרטי" isActive={isActive('/tutor')} comingSoon={isComingSoon('tutor_module')} />
+                )}
                 {isFeatureVisible('recipes_module') && (
                   <NavTab href="/recipes" icon={<ChefHat size={16} />} label="מתכונים" isActive={isActive('/recipes')} comingSoon={isComingSoon('recipes_module')} />
                 )}
@@ -421,7 +423,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             <div className="flex justify-around overflow-x-auto py-1 px-1 gap-0 scrollbar-hide">
               <MobileNavTab href="/" icon={<BookOpen size={18} />} label="בית" isActive={isActive('/')} />
               <MobileNavTab href="/dictionary" icon={<BookOpen size={18} />} label="מילון" isActive={isActive('/dictionary') || pathname.startsWith('/word/')} />
-              <MobileNavTab href="/tutor" icon={<GraduationCap size={18} />} label="מורה" isActive={isActive('/tutor')} />
+              {isFeatureVisible('tutor_module') && (
+                <MobileNavTab href="/tutor" icon={<GraduationCap size={18} />} label="מורה" isActive={isActive('/tutor')} comingSoon={isComingSoon('tutor_module')} />
+              )}
               {isFeatureVisible('recipes_module') && (
                 <MobileNavTab href="/recipes" icon={<ChefHat size={18} />} label="מתכונים" isActive={isActive('/recipes')} comingSoon={isComingSoon('recipes_module')} />
               )}

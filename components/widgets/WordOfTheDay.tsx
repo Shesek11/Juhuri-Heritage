@@ -42,9 +42,12 @@ const WordOfTheDay: React.FC<WordOfTheDayProps> = ({ onSelectWord }) => {
     const handlePlay = async (e: React.MouseEvent) => {
         e.stopPropagation();
         if (isPlaying) return;
+        // Use term, or fall back to latin transliteration, or hebrew translation
+        const ttsText = displayWord.term || displayWord.translations[0]?.latin || displayWord.translations[0]?.hebrew;
+        if (!ttsText) return;
         setIsPlaying(true);
         try {
-            const audioData = await generateSpeech(displayWord.term, 'Zephyr');
+            const audioData = await generateSpeech(ttsText, 'Zephyr');
             await playBase64Audio(audioData);
         } catch (err) {
             console.error("TTS Failed", err);

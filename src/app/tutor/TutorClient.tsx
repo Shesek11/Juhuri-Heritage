@@ -1,6 +1,7 @@
 'use client';
 
 import { Suspense, lazy } from 'react';
+import { FeatureRoute } from '../../../components/routing/FeatureRoute';
 
 const TutorMode = lazy(() => import('../../../components/TutorMode'));
 
@@ -12,10 +13,12 @@ const LazyFallback = () => (
 
 export default function TutorClient() {
   return (
-    <div className="w-full animate-in slide-in-from-right duration-300">
-      <Suspense fallback={<LazyFallback />}>
-        <TutorMode />
-      </Suspense>
-    </div>
+    <FeatureRoute feature="tutor_module">
+      <div className="w-full animate-in slide-in-from-right duration-300">
+        <Suspense fallback={<LazyFallback />}>
+          <TutorMode />
+        </Suspense>
+      </div>
+    </FeatureRoute>
   );
 }

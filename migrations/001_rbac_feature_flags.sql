@@ -43,9 +43,7 @@ CREATE TABLE IF NOT EXISTS feature_flags (
 
 -- Insert default feature flags for planned features
 INSERT IGNORE INTO feature_flags (feature_key, name, description, status) VALUES
+    ('tutor_module', 'מורה פרטי', 'שיעורים מונחי בינה מלאכותית', 'coming_soon'),
     ('recipes_module', 'מתכונים', 'אזור מתכונים קהילתי', 'disabled'),
     ('marketplace_module', 'אוכל באזור שלך', 'מרקטפלייס אוכל קווקזי', 'disabled'),
-    ('family_tree_module', 'אילן יוחסין', 'מערכת אילן יוחסין קהילתי', 'disabled'),
-    ('community_widgets', 'ווידג''טים קהילתיים', 'מילה יומית, טיקר קהילתי', 'active'),
-    ('gamification', 'גיימיפיקציה', 'מערכת XP ותגים', 'active'),
-    ('audio_recordings', 'הקלטות קוליות', 'העלאת הקלטות למילון', 'admin_only');
+    ('family_tree_module', 'אילן יוחסין', 'מערכת אילן יוחסין קהילתי', 'disabled');

@@ -3,10 +3,13 @@ import pool from '@/src/lib/db';
 
 export async function GET() {
   try {
+    // Only pick entries with a non-empty Hebrew term AND Hebrew translation
     const [[{ total }]] = await pool.query(
       `SELECT COUNT(*) as total FROM dictionary_entries de
        JOIN translations t ON de.id = t.entry_id
-       WHERE de.status = 'active' AND t.hebrew IS NOT NULL AND TRIM(t.hebrew) != ''`
+       WHERE de.status = 'active'
+       AND de.term REGEXP '^[א-ת]'
+       AND t.hebrew IS NOT NULL AND TRIM(t.hebrew) != ''`
     ) as any[];
 
     if (total === 0) {
@@ -24,7 +27,7 @@ export async function GET() {
        FROM dictionary_entries de
        JOIN translations t ON de.id = t.entry_id
        LEFT JOIN dialects d ON t.dialect_id = d.id
-       WHERE de.status = 'active' AND t.hebrew IS NOT NULL AND t.hebrew != ''
+       WHERE de.status = 'active' AND de.term REGEXP '^[א-ת]' AND t.hebrew IS NOT NULL AND t.hebrew != ''
        ORDER BY de.id
        LIMIT 1 OFFSET ?`,
       [offset]

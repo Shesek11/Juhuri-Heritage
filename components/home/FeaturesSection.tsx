@@ -21,7 +21,7 @@ const featureCards = [
     gradient: 'from-amber-400 to-yellow-600',
   },
   {
-    key: null,
+    key: 'tutor_module',
     icon: GraduationCap,
     title: 'מורה פרטי',
     description: 'למדו בקצב שלכם עם שיעורים מונחי בינה מלאכותית.',

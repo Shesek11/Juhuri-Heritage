@@ -50,16 +50,23 @@ const RecentAdditions: React.FC<RecentAdditionsProps> = ({ onSelectWord }) => {
                             <button
                                 type="button"
                                 key={idx}
-                                onClick={() => onSelectWord(term.term, (term as any).id)}
+                                onClick={() => onSelectWord(term.term || '', (term as any).id)}
                                 className="w-full text-right flex items-center justify-between px-3 py-2 rounded-lg hover:bg-white/[0.03] transition-all group/item cursor-pointer"
                             >
                                 <div className="min-w-0">
                                     <div className="font-semibold text-[0.8rem] text-slate-200 group-hover/item:text-amber-400 transition-colors truncate">
-                                        {term.term}
+                                        {term.term || (term as any).hebrew || (term as any).latin || '—'}
                                     </div>
-                                    <div className="text-[0.65rem] text-slate-500 truncate">
-                                        {(term as any).hebrew || term.translations?.[0]?.hebrew || ''}
-                                    </div>
+                                    {term.term && (term as any).hebrew && (
+                                        <div className="text-[0.65rem] text-slate-500 truncate">
+                                            {(term as any).hebrew}
+                                        </div>
+                                    )}
+                                    {!term.term && (term as any).latin && (
+                                        <div className="text-[0.65rem] text-slate-500 truncate font-mono" dir="ltr">
+                                            {(term as any).latin}
+                                        </div>
+                                    )}
                                 </div>
                                 <ArrowLeft size={14} className="text-slate-600 group-hover/item:text-amber-500 opacity-0 group-hover/item:opacity-100 transition-all shrink-0 mr-1" />
                             </button>
