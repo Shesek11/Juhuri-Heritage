@@ -67,11 +67,14 @@ const ContributionGrid: React.FC<ContributionGridProps> = ({ onOpenWordList }) =
         const res = await apiService.get<{ entries: any[]; total: number }>(
           `/dictionary/${config.category}?limit=5`
         );
-        const words: RotatingWord[] = (res.entries || []).map((e: any) => ({
-          id: e.id,
-          term: e.term,
-          subHint: config.buildSubHint?.(e) || undefined,
-        }));
+        const words: RotatingWord[] = (res.entries || [])
+          .map((e: any) => ({
+            id: e.id,
+            // Use term if Hebrew, otherwise fall back to latin/cyrillic/hebrew translation
+            term: (e.term && /^[\u0590-\u05FF]/.test(e.term)) ? e.term : (e.latin || e.cyrillic || e.hebrew || e.term || ''),
+            subHint: config.buildSubHint?.(e) || undefined,
+          }))
+          .filter((w: RotatingWord) => w.term && w.term.length <= 25);
         return { words, total: res.total || 0 };
       } catch {
         return { words: [], total: 0 };
