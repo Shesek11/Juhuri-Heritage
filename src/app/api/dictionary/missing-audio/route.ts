@@ -14,11 +14,13 @@ export async function GET(request: NextRequest) {
       SELECT de.id, de.term, de.detected_language, t.hebrew, t.latin
       FROM dictionary_entries de
       LEFT JOIN translations t ON de.id = t.entry_id
+      LEFT JOIN recordings r ON de.id = r.entry_id AND r.status = 'approved'
       WHERE de.status = 'active'
-        AND (de.pronunciation_guide IS NOT NULL AND de.pronunciation_guide != '')
+        AND r.id IS NULL
+        AND de.term REGEXP '^[\u0590-\u05FF]'
         ${searchCondition}
       GROUP BY de.id
-      ORDER BY CASE WHEN t.hebrew IS NOT NULL AND t.hebrew != '' THEN 0 ELSE 1 END, de.created_at DESC
+      ORDER BY de.created_at DESC
       LIMIT ? OFFSET ?
     `, [...searchParams, limit, offset]) as any[];
 
@@ -26,8 +28,10 @@ export async function GET(request: NextRequest) {
       SELECT COUNT(DISTINCT de.id) as total
       FROM dictionary_entries de
       LEFT JOIN translations t ON de.id = t.entry_id
+      LEFT JOIN recordings r ON de.id = r.entry_id AND r.status = 'approved'
       WHERE de.status = 'active'
-        AND (de.pronunciation_guide IS NOT NULL AND de.pronunciation_guide != '')
+        AND r.id IS NULL
+        AND de.term REGEXP '^[\u0590-\u05FF]'
         ${searchCondition}
     `, searchParams) as any[];
 

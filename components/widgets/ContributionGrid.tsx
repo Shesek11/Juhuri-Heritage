@@ -1,21 +1,24 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Languages, BookText, Globe, Mic, Loader2 } from 'lucide-react';
+
+// Shared amber icon style — matches the site's HeartHandshake icon
+const ICON_CLASS = 'from-amber-500 to-orange-600';
+const ACCENT_HOVER = 'hover:border-amber-500/30 hover:shadow-[0_12px_30px_-10px_rgba(245,158,11,0.12)]';
+const HIGHLIGHT = 'text-amber-400';
 import apiService from '../../services/apiService';
 
 interface RotatingWord {
   id: number;
   term: string;
-  hint: string;  // e.g. "יודעים איך אומרים?"
+  subHint?: string; // optional extra info (e.g. "חסר: קובאי")
 }
 
 interface CardConfig {
   category: 'hebrew-only' | 'juhuri-only' | 'missing-dialects' | 'missing-audio';
   label: string;
   icon: React.ReactNode;
-  accentClass: string;   // border/glow color on hover
-  highlightClass: string; // text color for the rotating word
-  iconBgClass: string;
-  buildHint: (entry: any) => string;
+  staticHint: string;  // fixed text that stays, only the word rotates
+  buildSubHint?: (entry: any) => string | null; // optional extra info (e.g. dialect name)
 }
 
 const CARD_CONFIGS: CardConfig[] = [
@@ -23,40 +26,29 @@ const CARD_CONFIGS: CardConfig[] = [
     category: 'hebrew-only',
     label: 'הוסף ג\'והורי',
     icon: <Languages size={20} />,
-    accentClass: 'hover:border-amber-500/30 hover:shadow-[0_12px_30px_-10px_rgba(245,158,11,0.12)]',
-    highlightClass: 'text-amber-400',
-    iconBgClass: 'from-amber-500 to-orange-600',
-    buildHint: () => 'יודעים איך אומרים?',
+    staticHint: 'יודעים איך אומרים?',
   },
   {
     category: 'juhuri-only',
     label: 'תרגם לעברית',
     icon: <BookText size={20} />,
-    accentClass: 'hover:border-emerald-500/30 hover:shadow-[0_12px_30px_-10px_rgba(52,211,153,0.12)]',
-    highlightClass: 'text-emerald-400',
-    iconBgClass: 'from-emerald-500 to-teal-600',
-    buildHint: () => 'מה זה בעברית?',
+    staticHint: 'מה זה בעברית?',
   },
   {
     category: 'missing-dialects',
     label: 'השלם ניבים',
     icon: <Globe size={20} />,
-    accentClass: 'hover:border-blue-500/30 hover:shadow-[0_12px_30px_-10px_rgba(96,165,250,0.12)]',
-    highlightClass: 'text-blue-400',
-    iconBgClass: 'from-blue-500 to-indigo-600',
-    buildHint: (entry: any) => {
+    staticHint: 'באיזה ניב זה?',
+    buildSubHint: (entry: any) => {
       const missing = entry.missingDialects?.[0];
-      return missing ? `חסר בניב ה${missing}` : 'חסרים ניבים';
+      return missing ? `חסר: ${missing}` : null;
     },
   },
   {
     category: 'missing-audio',
     label: 'הקלט הגייה',
     icon: <Mic size={20} />,
-    accentClass: 'hover:border-purple-500/30 hover:shadow-[0_12px_30px_-10px_rgba(192,132,252,0.12)]',
-    highlightClass: 'text-purple-400',
-    iconBgClass: 'from-purple-500 to-violet-600',
-    buildHint: () => 'הקליטו את ההגייה',
+    staticHint: 'הקליטו את ההגייה',
   },
 ];
 
@@ -85,7 +77,7 @@ const ContributionGrid: React.FC<ContributionGridProps> = ({ onOpenWordList }) =
         const words: RotatingWord[] = (res.entries || []).map((e: any) => ({
           id: e.id,
           term: e.term,
-          hint: config.buildHint(e),
+          subHint: config.buildSubHint?.(e) || undefined,
         }));
         return { words, total: res.total || 0 };
       } catch {
@@ -164,10 +156,10 @@ const ContributionGrid: React.FC<ContributionGridProps> = ({ onOpenWordList }) =
             key={config.category}
             type="button"
             onClick={() => handleCardClick(i)}
-            className={`group relative bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl border border-white/[0.06] p-5 text-center transition-all duration-300 hover:-translate-y-1 ${config.accentClass} font-rubik cursor-pointer`}
+            className={`group relative bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl border border-white/[0.06] p-5 text-center transition-all duration-300 hover:-translate-y-1 ${ACCENT_HOVER} font-rubik cursor-pointer`}
           >
-            {/* Icon */}
-            <div className={`w-10 h-10 mx-auto mb-3 rounded-xl bg-gradient-to-br ${config.iconBgClass} flex items-center justify-center text-white shadow-lg`}>
+            {/* Icon — uniform amber style */}
+            <div className={`w-10 h-10 mx-auto mb-3 rounded-xl bg-gradient-to-br ${ICON_CLASS} flex items-center justify-center text-white shadow-lg shadow-amber-500/20`}>
               {config.icon}
             </div>
 
@@ -179,16 +171,26 @@ const ContributionGrid: React.FC<ContributionGridProps> = ({ onOpenWordList }) =
               {data.total > 0 ? `${data.total.toLocaleString()} מילים מחכות` : 'אין מילים'}
             </div>
 
-            {/* Rotating word */}
+            {/* Rotating word area — fixed height to prevent jumps */}
             {currentWord && (
-              <div className="pt-3 border-t border-white/[0.05]">
-                <div
-                  className={`text-[0.8rem] text-slate-400 leading-relaxed transition-opacity duration-300 ${fading[i] ? 'opacity-0' : 'opacity-100'}`}
-                >
-                  <span className={`font-bold ${config.highlightClass}`}>{currentWord.term}</span>
+              <div className="pt-3 border-t border-white/[0.05] min-h-[3.5rem] flex flex-col items-center justify-center">
+                {/* Only the word fades/rotates, the static text stays */}
+                <div className="text-[0.8rem] text-slate-400 leading-relaxed">
+                  <span
+                    className={`font-bold ${HIGHLIGHT} inline-block transition-opacity duration-300 ${fading[i] ? 'opacity-0' : 'opacity-100'}`}
+                  >
+                    {currentWord.term}
+                  </span>
                   <span className="mx-1 text-slate-600">&mdash;</span>
-                  <span>{currentWord.hint}</span>
+                  <span>{config.staticHint}</span>
                 </div>
+
+                {/* Sub-hint (e.g. "חסר: קובאי") */}
+                {currentWord.subHint && (
+                  <div className={`text-[0.65rem] text-amber-500/60 mt-1 transition-opacity duration-300 ${fading[i] ? 'opacity-0' : 'opacity-100'}`}>
+                    {currentWord.subHint}
+                  </div>
+                )}
 
                 {/* Dots */}
                 {data.words.length > 1 && (
@@ -198,7 +200,7 @@ const ContributionGrid: React.FC<ContributionGridProps> = ({ onOpenWordList }) =
                         key={dotIdx}
                         className={`h-1 rounded-full transition-all duration-300 ${
                           dotIdx === data.currentIndex
-                            ? `w-2.5 ${config.highlightClass.replace('text-', 'bg-')}`
+                            ? 'w-2.5 bg-amber-400'
                             : 'w-1 bg-white/10'
                         }`}
                       />
