@@ -5,7 +5,9 @@ import FieldSourceBadge from '../dictionary/FieldSourceBadge';
 import ConfirmAiButton from '../dictionary/ConfirmAiButton';
 import FieldEditForm from '../dictionary/FieldEditForm';
 import MissingFieldPlaceholder from '../dictionary/MissingFieldPlaceholder';
+import AIValueBadge from '../dictionary/AIValueBadge';
 interface EnrichmentData {
+  hebrew?: string;
   latin?: string;
   cyrillic?: string;
 }
@@ -90,27 +92,31 @@ const DialectComparison: React.FC<DialectComparisonProps> = ({
                       {/* Latin */}
                       <td className="py-3 px-3">
                         {d.displayLatin ? (
-                          <div className={`flex items-center gap-1 font-mono text-slate-300 ${d.isLatinFromAI ? 'animate-in fade-in duration-500' : ''}`}>
-                            <FieldSourceBadge source={d.isLatinFromAI ? 'ai' : entry.fieldSources?.latin} />
-                            <span>{d.displayLatin}</span>
-                            {d.isLatinFromAI ? (
-                              <ConfirmAiButton entryId={entry.id} fieldName="latin" value={d.displayLatin} source="ai" />
-                            ) : (
-                              <>
-                                <ConfirmAiButton entryId={entry.id} fieldName="latin" value={d.displayLatin} source={entry.fieldSources?.latin} />
-                                {entry.id && (
-                                  <button
-                                    type="button"
-                                    onClick={() => setEditingField(`latin-${d.idx}`)}
-                                    className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-200 dark:hover:bg-indigo-800/40 transition-colors"
-                                    title="ערוך לטיני"
-                                  >
-                                    <Pencil size={10} />
-                                  </button>
-                                )}
-                              </>
-                            )}
-                          </div>
+                          d.isLatinFromAI ? (
+                            <AIValueBadge
+                              value={d.displayLatin}
+                              entryId={entry.id}
+                              fieldName="latin"
+                              valueClassName="font-mono text-slate-300"
+                              inline
+                            />
+                          ) : (
+                            <div className="flex items-center gap-1 font-mono text-slate-300">
+                              <FieldSourceBadge source={entry.fieldSources?.latin} />
+                              <span>{d.displayLatin}</span>
+                              <ConfirmAiButton entryId={entry.id} fieldName="latin" value={d.displayLatin} source={entry.fieldSources?.latin} />
+                              {entry.id && (
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingField(`latin-${d.idx}`)}
+                                  className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-200 dark:hover:bg-indigo-800/40 transition-colors"
+                                  title="ערוך לטיני"
+                                >
+                                  <Pencil size={10} />
+                                </button>
+                              )}
+                            </div>
+                          )
                         ) : (
                           <MissingFieldPlaceholder
                             fieldName="latin"
@@ -128,27 +134,31 @@ const DialectComparison: React.FC<DialectComparisonProps> = ({
                       {/* Cyrillic */}
                       <td className="py-3 px-3">
                         {d.displayCyrillic ? (
-                          <div className={`flex items-center gap-1 font-serif text-slate-400 ${d.isCyrillicFromAI ? 'animate-in fade-in duration-500' : ''}`}>
-                            <FieldSourceBadge source={d.isCyrillicFromAI ? 'ai' : entry.fieldSources?.cyrillic} />
-                            <span>{d.displayCyrillic}</span>
-                            {d.isCyrillicFromAI ? (
-                              <ConfirmAiButton entryId={entry.id} fieldName="cyrillic" value={d.displayCyrillic} source="ai" />
-                            ) : (
-                              <>
-                                <ConfirmAiButton entryId={entry.id} fieldName="cyrillic" value={d.displayCyrillic} source={entry.fieldSources?.cyrillic} />
-                                {entry.id && (
-                                  <button
-                                    type="button"
-                                    onClick={() => setEditingField(`cyrillic-${d.idx}`)}
-                                    className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-200 dark:hover:bg-indigo-800/40 transition-colors"
-                                    title="ערוך קירילי"
-                                  >
-                                    <Pencil size={10} />
-                                  </button>
-                                )}
-                              </>
-                            )}
-                          </div>
+                          d.isCyrillicFromAI ? (
+                            <AIValueBadge
+                              value={d.displayCyrillic}
+                              entryId={entry.id}
+                              fieldName="cyrillic"
+                              valueClassName="font-serif text-slate-400"
+                              inline
+                            />
+                          ) : (
+                            <div className="flex items-center gap-1 font-serif text-slate-400">
+                              <FieldSourceBadge source={entry.fieldSources?.cyrillic} />
+                              <span>{d.displayCyrillic}</span>
+                              <ConfirmAiButton entryId={entry.id} fieldName="cyrillic" value={d.displayCyrillic} source={entry.fieldSources?.cyrillic} />
+                              {entry.id && (
+                                <button
+                                  type="button"
+                                  onClick={() => setEditingField(`cyrillic-${d.idx}`)}
+                                  className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-200 dark:hover:bg-indigo-800/40 transition-colors"
+                                  title="ערוך קירילי"
+                                >
+                                  <Pencil size={10} />
+                                </button>
+                              )}
+                            </div>
+                          )
                         ) : (
                           <MissingFieldPlaceholder
                             fieldName="cyrillic"

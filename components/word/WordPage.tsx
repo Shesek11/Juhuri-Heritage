@@ -12,11 +12,14 @@ import ExamplesSection from '../dictionary/ExamplesSection';
 import CommunityActions from '../dictionary/CommunityActions';
 
 export interface EnrichmentData {
+  hebrewTransliteration?: string;
+  hebrew?: string;
   latin?: string;
   cyrillic?: string;
-  examples?: Example[];
+  russian?: string;
   pronunciationGuide?: string;
   definition?: string;
+  partOfSpeech?: string;
 }
 
 interface WordPageProps {
@@ -148,6 +151,8 @@ const WordPage: React.FC<WordPageProps> = ({
           pendingSuggestions={pendingSuggestions}
           enrichmentLoading={enrichmentLoading}
           enrichedPronunciation={enrichmentData?.pronunciationGuide}
+          enrichedPartOfSpeech={enrichmentData?.partOfSpeech}
+          enrichedHebrewTransliteration={enrichmentData?.hebrewTransliteration}
         />
       </div>
 
@@ -165,6 +170,7 @@ const WordPage: React.FC<WordPageProps> = ({
               pendingSuggestions={pendingSuggestions}
               enrichmentLoading={enrichmentLoading}
               enrichedDefinition={enrichmentData?.definition}
+              enrichedRussian={enrichmentData?.russian}
             />
           </div>
 
@@ -173,7 +179,7 @@ const WordPage: React.FC<WordPageProps> = ({
             <DialectComparison
               translations={entry.translations}
               entry={entry}
-              enrichmentData={enrichmentData ? { latin: enrichmentData.latin, cyrillic: enrichmentData.cyrillic } : null}
+              enrichmentData={enrichmentData ? { hebrew: enrichmentData.hebrew, latin: enrichmentData.latin, cyrillic: enrichmentData.cyrillic } : null}
               enrichmentLoading={enrichmentLoading}
               pendingSuggestions={pendingSuggestions}
               onVote={handleTranslationVote}
@@ -190,8 +196,6 @@ const WordPage: React.FC<WordPageProps> = ({
               entry={entry}
               isPlaying={isPlaying}
               onPlay={handlePlay}
-              enrichmentLoading={enrichmentLoading}
-              enrichedExamples={enrichmentData?.examples}
             />
           </div>
 

@@ -10,14 +10,15 @@ export async function GET(request: NextRequest) {
     const searchCondition = search ? 'AND (de.term LIKE ? OR t.hebrew LIKE ?)' : '';
     const searchParams = search ? [`%${search}%`, `%${search}%`] : [];
 
+    // Entries with Hebrew term that have no approved audio recording
     const [entries] = await pool.query(`
       SELECT de.id, de.term, de.detected_language, t.hebrew, t.latin
       FROM dictionary_entries de
       LEFT JOIN translations t ON de.id = t.entry_id
-      LEFT JOIN recordings r ON de.id = r.entry_id AND r.status = 'approved'
+      LEFT JOIN audio_recordings ar ON de.id = ar.entry_id AND ar.status = 'approved'
       WHERE de.status = 'active'
-        AND r.id IS NULL
-        AND de.term REGEXP '^[\u0590-\u05FF]'
+        AND ar.id IS NULL
+        AND de.term REGEXP '^[א-ת]'
         ${searchCondition}
       GROUP BY de.id
       ORDER BY de.created_at DESC
@@ -28,10 +29,10 @@ export async function GET(request: NextRequest) {
       SELECT COUNT(DISTINCT de.id) as total
       FROM dictionary_entries de
       LEFT JOIN translations t ON de.id = t.entry_id
-      LEFT JOIN recordings r ON de.id = r.entry_id AND r.status = 'approved'
+      LEFT JOIN audio_recordings ar ON de.id = ar.entry_id AND ar.status = 'approved'
       WHERE de.status = 'active'
-        AND r.id IS NULL
-        AND de.term REGEXP '^[\u0590-\u05FF]'
+        AND ar.id IS NULL
+        AND de.term REGEXP '^[א-ת]'
         ${searchCondition}
     `, searchParams) as any[];
 

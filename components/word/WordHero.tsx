@@ -6,12 +6,15 @@ import { generateSpeech } from '../../services/geminiService';
 import { playBase64Audio } from '../../utils/audioUtils';
 import MissingFieldPlaceholder from '../dictionary/MissingFieldPlaceholder';
 import FieldEditForm from '../dictionary/FieldEditForm';
+import AIValueBadge from '../dictionary/AIValueBadge';
 
 interface WordHeroProps {
   entry: DictionaryEntry;
   pendingSuggestions?: PendingSuggestion[];
   enrichmentLoading?: boolean;
   enrichedPronunciation?: string;
+  enrichedPartOfSpeech?: string;
+  enrichedHebrewTransliteration?: string;
 }
 
 const WordHero: React.FC<WordHeroProps> = ({
@@ -19,6 +22,8 @@ const WordHero: React.FC<WordHeroProps> = ({
   pendingSuggestions = [],
   enrichmentLoading = false,
   enrichedPronunciation,
+  enrichedPartOfSpeech,
+  enrichedHebrewTransliteration,
 }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -105,6 +110,9 @@ const WordHero: React.FC<WordHeroProps> = ({
   };
 
   const pronunciation = entry.pronunciationGuide || enrichedPronunciation;
+  const isPronunciationFromAI = !entry.pronunciationGuide && !!enrichedPronunciation;
+  const displayPOS = entry.partOfSpeech || enrichedPartOfSpeech;
+  const isPOSFromAI = !entry.partOfSpeech && !!enrichedPartOfSpeech;
   const pronSuggestion = pendingSuggestions.find(s => s.fieldName === 'pronunciationGuide');
 
   // Trust signals
@@ -145,10 +153,20 @@ const WordHero: React.FC<WordHeroProps> = ({
               <Check size={12} /> מאגר קהילתי
             </span>
           )}
-          {entry.partOfSpeech ? (
-            <span className="inline-flex items-center px-2 py-1 bg-white/20 rounded-md text-xs font-medium backdrop-blur-sm">
-              {partOfSpeechHebrew(entry.partOfSpeech)}
-            </span>
+          {displayPOS ? (
+            isPOSFromAI ? (
+              <AIValueBadge
+                value={partOfSpeechHebrew(displayPOS)}
+                entryId={entry.id}
+                fieldName="partOfSpeech"
+                valueClassName="text-xs font-medium"
+                inline
+              />
+            ) : (
+              <span className="inline-flex items-center px-2 py-1 bg-white/20 rounded-md text-xs font-medium backdrop-blur-sm">
+                {partOfSpeechHebrew(displayPOS)}
+              </span>
+            )
           ) : (
             !editingPOS && entry.id && (
               <button
@@ -238,6 +256,13 @@ const WordHero: React.FC<WordHeroProps> = ({
         {/* Term - Hebrew script is primary */}
         {/^[\u0590-\u05FF]/.test(entry.term) ? (
           <h1 className="text-5xl md:text-6xl font-bold tracking-tight leading-tight">{entry.term}</h1>
+        ) : enrichedHebrewTransliteration ? (
+          <AIValueBadge
+            value={enrichedHebrewTransliteration}
+            entryId={entry.id}
+            fieldName="hebrewTransliteration"
+            valueClassName="text-5xl md:text-6xl font-bold tracking-tight leading-tight"
+          />
         ) : (
           /* Term is NOT in Hebrew — single CTA to add Hebrew transliteration */
           <div>
@@ -245,13 +270,15 @@ const WordHero: React.FC<WordHeroProps> = ({
               <MissingFieldPlaceholder
                 fieldName="hebrewTransliteration"
                 entryId={entry.id}
+                isEnriching={enrichmentLoading}
                 compact
               />
             )}
-            {/* Show the original term (Cyrillic/other) below as secondary */}
-            <h1 className="text-4xl md:text-5xl font-bold tracking-tight leading-tight font-serif text-slate-200 mt-2" dir="ltr">
-              {entry.term}
-            </h1>
+            {entry.term && (
+              <h1 className="text-4xl md:text-5xl font-bold tracking-tight leading-tight font-serif text-slate-200 mt-2" dir="ltr">
+                {entry.term}
+              </h1>
+            )}
           </div>
         )}
 
@@ -278,7 +305,17 @@ const WordHero: React.FC<WordHeroProps> = ({
         {pronunciation ? (
           <div className="flex items-center gap-1.5">
             <span className="text-indigo-400/60 text-xs">הגייה:</span>
-            <span className="text-indigo-100 font-mono text-sm opacity-90" dir="ltr">{pronunciation}</span>
+            {isPronunciationFromAI ? (
+              <AIValueBadge
+                value={pronunciation}
+                entryId={entry.id}
+                fieldName="pronunciationGuide"
+                valueClassName="text-indigo-100 font-mono text-sm opacity-90"
+                inline
+              />
+            ) : (
+              <span className="text-indigo-100 font-mono text-sm opacity-90" dir="ltr">{pronunciation}</span>
+            )}
           </div>
         ) : (
           !editingPronunciation && (

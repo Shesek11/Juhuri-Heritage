@@ -10,13 +10,15 @@ export async function GET(
     const term = decodeURIComponent(rawTerm).trim();
     if (!term) return NextResponse.json({ error: 'נדרש מונח' }, { status: 400 });
 
+    // Support lookup by numeric ID (for entries with empty term)
+    const isNumericId = /^\d+$/.test(term);
     const [entries] = await pool.query(
       `SELECT de.*, u.name as contributor_name
        FROM dictionary_entries de
        LEFT JOIN users u ON de.contributor_id = u.id
-       WHERE de.status = 'active' AND de.term = ?
+       WHERE de.status = 'active' AND ${isNumericId ? '(de.id = ? OR de.term = ?)' : 'de.term = ?'}
        LIMIT 1`,
-      [term]
+      isNumericId ? [term, term] : [term]
     ) as any[];
 
     if (entries.length === 0) {

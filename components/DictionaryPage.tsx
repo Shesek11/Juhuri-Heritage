@@ -384,7 +384,7 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({
                   isBestMatch
                   searchQuery={query}
                   onReport={() => setReportEntry(result)}
-                  onNavigate={() => router.push(`/word/${encodeURIComponent(result.term)}`)}
+                  onNavigate={() => router.push(`/word/${encodeURIComponent(result.term || result.id || '')}`)}
                 />
 
                 {/* Additional results */}
@@ -394,7 +394,7 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({
                     entry={entry}
                     searchQuery={query}
                     onReport={() => setReportEntry(entry)}
-                    onNavigate={() => router.push(`/word/${encodeURIComponent(entry.term)}`)}
+                    onNavigate={() => router.push(`/word/${encodeURIComponent(entry.term || entry.id || '')}`)}
                   />
                 ))}
               </div>

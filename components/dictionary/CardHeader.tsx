@@ -6,6 +6,7 @@ import { generateSpeech } from '../../services/geminiService';
 import { playBase64Audio } from '../../utils/audioUtils';
 import MissingFieldPlaceholder from './MissingFieldPlaceholder';
 import FieldEditForm from './FieldEditForm';
+import AIValueBadge from './AIValueBadge';
 import type { PendingSuggestion } from '../../types';
 
 interface CardHeaderProps {
@@ -13,6 +14,7 @@ interface CardHeaderProps {
   pendingSuggestions?: PendingSuggestion[];
   enrichmentLoading?: boolean;
   enrichedPronunciation?: string;
+  enrichedPartOfSpeech?: string;
 }
 
 const CardHeader: React.FC<CardHeaderProps> = ({
@@ -20,6 +22,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
   pendingSuggestions = [],
   enrichmentLoading = false,
   enrichedPronunciation,
+  enrichedPartOfSpeech,
 }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -54,6 +57,9 @@ const CardHeader: React.FC<CardHeaderProps> = ({
   };
 
   const pronunciation = entry.pronunciationGuide || enrichedPronunciation;
+  const isPronunciationFromAI = !entry.pronunciationGuide && !!enrichedPronunciation;
+  const displayPOS = entry.partOfSpeech || enrichedPartOfSpeech;
+  const isPOSFromAI = !entry.partOfSpeech && !!enrichedPartOfSpeech;
   const posSuggestion = pendingSuggestions.find(s => s.fieldName === 'partOfSpeech');
   const pronSuggestion = pendingSuggestions.find(s => s.fieldName === 'pronunciationGuide');
 
@@ -81,10 +87,20 @@ const CardHeader: React.FC<CardHeaderProps> = ({
               </span>
             )}
             {/* Part of speech */}
-            {entry.partOfSpeech ? (
-              <span className="inline-flex items-center px-2 py-1 bg-white/20 rounded-md text-xs font-medium backdrop-blur-sm">
-                {partOfSpeechHebrew(entry.partOfSpeech)}
-              </span>
+            {displayPOS ? (
+              isPOSFromAI ? (
+                <AIValueBadge
+                  value={partOfSpeechHebrew(displayPOS)}
+                  entryId={entry.id}
+                  fieldName="partOfSpeech"
+                  valueClassName="text-xs font-medium"
+                  inline
+                />
+              ) : (
+                <span className="inline-flex items-center px-2 py-1 bg-white/20 rounded-md text-xs font-medium backdrop-blur-sm">
+                  {partOfSpeechHebrew(displayPOS)}
+                </span>
+              )
             ) : (
               !editingPOS && entry.id && (
                 <button
@@ -122,9 +138,19 @@ const CardHeader: React.FC<CardHeaderProps> = ({
 
           {/* Pronunciation */}
           {pronunciation ? (
-            <p className="text-indigo-100 font-mono text-sm opacity-90" dir="ltr" style={{ textAlign: 'right' }}>
-              {pronunciation}
-            </p>
+            isPronunciationFromAI ? (
+              <AIValueBadge
+                value={pronunciation}
+                entryId={entry.id}
+                fieldName="pronunciationGuide"
+                valueClassName="text-indigo-100 font-mono text-sm opacity-90"
+                inline
+              />
+            ) : (
+              <p className="text-indigo-100 font-mono text-sm opacity-90" dir="ltr" style={{ textAlign: 'right' }}>
+                {pronunciation}
+              </p>
+            )
           ) : (
             <div className="max-w-xs">
               <MissingFieldPlaceholder

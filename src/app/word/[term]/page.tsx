@@ -39,9 +39,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { term } = await params;
   const decodedTerm = decodeURIComponent(term);
 
+  const isNumericId = /^\d+$/.test(decodedTerm);
   const [rows] = await pool.query<DictionaryRow[] & any>(
-    'SELECT * FROM dictionary_entries WHERE term = ? LIMIT 1',
-    [decodedTerm],
+    `SELECT * FROM dictionary_entries WHERE ${isNumericId ? '(id = ? OR term = ?)' : 'term = ?'} LIMIT 1`,
+    isNumericId ? [decodedTerm, decodedTerm] : [decodedTerm],
   );
   const entry = (rows as DictionaryRow[])[0];
   if (!entry) {
@@ -84,9 +85,10 @@ export default async function WordPage({ params }: Props) {
   const decodedTerm = decodeURIComponent(term);
 
   // Fetch entry for JSON-LD structured data
+  const isId = /^\d+$/.test(decodedTerm);
   const [entryRows] = await pool.query<DictionaryRow[] & any>(
-    'SELECT * FROM dictionary_entries WHERE term = ? LIMIT 1',
-    [decodedTerm],
+    `SELECT * FROM dictionary_entries WHERE ${isId ? '(id = ? OR term = ?)' : 'term = ?'} LIMIT 1`,
+    isId ? [decodedTerm, decodedTerm] : [decodedTerm],
   );
   const entry = (entryRows as DictionaryRow[])[0];
 

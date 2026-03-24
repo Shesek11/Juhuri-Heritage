@@ -10,13 +10,18 @@ export async function GET(request: NextRequest) {
     const searchCondition = search ? 'AND (de.term LIKE ? OR t.hebrew LIKE ?)' : '';
     const searchParams = search ? [`%${search}%`, `%${search}%`] : [];
 
+    // "הוסף ג'והורי" = entries where:
+    // 1. Term is NOT in Hebrew script (missing Hebrew transliteration), OR
+    // 2. Has Hebrew translation but no Juhuri latin transliteration
     const [entries] = await pool.query(`
       SELECT de.id, de.term, de.detected_language, t.hebrew
       FROM dictionary_entries de
-      JOIN translations t ON de.id = t.entry_id
+      LEFT JOIN translations t ON de.id = t.entry_id
       WHERE de.status = 'active'
-      AND t.hebrew IS NOT NULL AND t.hebrew != ''
-      AND (t.latin IS NULL OR t.latin = '')
+      AND (
+        de.term NOT REGEXP '^[א-ת]'
+        OR (t.hebrew IS NOT NULL AND t.hebrew != '' AND (t.latin IS NULL OR t.latin = ''))
+      )
       ${searchCondition}
       GROUP BY de.id
       ORDER BY de.created_at DESC
@@ -25,10 +30,12 @@ export async function GET(request: NextRequest) {
 
     const [[{ total }]] = await pool.query(`
       SELECT COUNT(DISTINCT de.id) as total FROM dictionary_entries de
-      JOIN translations t ON de.id = t.entry_id
+      LEFT JOIN translations t ON de.id = t.entry_id
       WHERE de.status = 'active'
-      AND t.hebrew IS NOT NULL AND t.hebrew != ''
-      AND (t.latin IS NULL OR t.latin = '')
+      AND (
+        de.term NOT REGEXP '^[א-ת]'
+        OR (t.hebrew IS NOT NULL AND t.hebrew != '' AND (t.latin IS NULL OR t.latin = ''))
+      )
       ${searchCondition}
     `, searchParams) as any[];
 

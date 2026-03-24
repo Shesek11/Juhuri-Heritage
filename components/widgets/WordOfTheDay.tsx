@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Volume2, ArrowLeft } from 'lucide-react';
+import { Volume2, ArrowLeft, Sun } from 'lucide-react';
 import { DictionaryEntry } from '../../types';
 import { generateSpeech } from '../../services/geminiService';
 import { playBase64Audio } from '../../utils/audioUtils';
@@ -17,28 +17,22 @@ const WordOfTheDay: React.FC<WordOfTheDayProps> = ({ onSelectWord }) => {
     useEffect(() => {
         const fetchWord = async () => {
             try {
-                // Fetch word of the day from dedicated endpoint (deterministic per date)
                 const res = await apiService.get<{ word: DictionaryEntry | null }>('/dictionary/word-of-day');
-
-                if (res.word) {
-                    setWord(res.word);
-                }
+                if (res.word) setWord(res.word);
             } catch (err) {
                 console.error("Failed to fetch word of the day", err);
             } finally {
                 setIsLoading(false);
             }
         };
-
         fetchWord();
     }, []);
 
-    // Fallback if fetch failed or no word
     const displayWord = word || {
         term: 'ג׳והורי',
         phonetic: 'Juhuri',
         pronunciationGuide: 'Joo-hoo-ree',
-        translations: [{ hebrew: 'שפת יהודי ההרים', english: 'Mountain Jewish Language' }],
+        translations: [{ hebrew: 'שפת יהודי ההרים', latin: 'Juhuri' }],
         category: 'General',
         variations: [],
         relatedTerms: [],
@@ -46,9 +40,8 @@ const WordOfTheDay: React.FC<WordOfTheDayProps> = ({ onSelectWord }) => {
     };
 
     const handlePlay = async (e: React.MouseEvent) => {
-        e.stopPropagation(); // Prevent card click
+        e.stopPropagation();
         if (isPlaying) return;
-
         setIsPlaying(true);
         try {
             const audioData = await generateSpeech(displayWord.term, 'Zephyr');
@@ -62,53 +55,56 @@ const WordOfTheDay: React.FC<WordOfTheDayProps> = ({ onSelectWord }) => {
 
     if (isLoading) return <div className="h-full bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl animate-pulse min-h-[16rem]" />;
 
-
+    const latin = displayWord.translations[0]?.latin;
+    const hebrew = displayWord.translations[0]?.hebrew;
 
     return (
         <div
-            className="relative bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-lg border border-white/10 overflow-hidden font-rubik h-full flex flex-col group transition-all duration-500 hover:-translate-y-2 hover:border-amber-500/40 hover:bg-[#0d1424]/90 hover:shadow-[0_20px_40px_-15px_rgba(245,158,11,0.15)] cursor-pointer"
+            className="relative bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-lg border border-white/[0.06] overflow-hidden font-rubik h-full flex flex-col group transition-all duration-300 hover:-translate-y-1 hover:border-amber-500/30 cursor-pointer"
             onClick={() => onSelectWord(displayWord.term)}
         >
-            <div className="p-6 border-b border-white/10 flex flex-col items-center justify-center text-center h-40 bg-[#0d1424]/40 relative group-hover:bg-[#0d1424]/60 transition-colors">
-                <div className="absolute top-4 left-4 text-[10px] bg-white/10 px-2 py-0.5 rounded-full text-white/80">
-                    {new Date().toLocaleDateString('he-IL')}
+            {/* Header */}
+            <div className="px-5 pt-5 pb-3 flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.15)]">
+                    <Sun size={20} />
                 </div>
-                <div className="w-12 h-12 bg-gradient-to-br from-amber-400 to-orange-600 rounded-2xl flex items-center justify-center shadow-lg shadow-amber-500/20 mb-3 text-white">
-                    <span className="text-2xl drop-shadow-md">☀️</span>
-                </div>
-                <h3 className="font-bold text-lg text-white">המילה היומית</h3>
-                <p className="text-xs text-white/50 mt-1 line-clamp-1">למד מילה ביום</p>
-            </div>
-
-            <div className="p-6 flex-1 flex flex-col justify-center items-center text-center space-y-4">
-                <div className="space-y-1">
-                    <h4 className="text-4xl font-bold text-slate-100 group-hover:text-amber-600 transition-colors">
-                        {displayWord.term}
-                    </h4>
-                    <p className="text-sm text-slate-400 font-mono">{displayWord.pronunciationGuide}</p>
-                </div>
-
-                <div className="text-lg text-slate-600 dark:text-slate-300 font-medium">
-                    {displayWord.translations[0]?.hebrew}
-                </div>
-
-                <div className="pt-2">
-                    <button
-                        onClick={handlePlay}
-                        className={`p-3 rounded-full bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-900/40 transition-colors ${isPlaying ? 'animate-pulse' : ''}`}
-                    >
-                        <Volume2 size={24} />
-                    </button>
+                <div>
+                    <h3 className="font-bold text-sm text-white">המילה היומית</h3>
+                    <span className="text-[0.6rem] text-slate-500">{new Date().toLocaleDateString('he-IL')}</span>
                 </div>
             </div>
 
-            <button
-                // onClick removed from here because the parent div handles it, preventing double trigger or bubbling issues
-                className="w-full pt-3 pb-8 bg-white/5 text-slate-500 dark:text-slate-400 text-sm font-medium hover:bg-white/10 transition-colors flex items-center justify-center gap-2 border-t border-white/10 mt-auto"
+            {/* Word content */}
+            <div className="flex-1 flex flex-col items-center justify-center text-center px-5 pb-4">
+                <h4 className="text-3xl font-bold text-white group-hover:text-amber-400 transition-colors mb-1">
+                    {displayWord.term}
+                </h4>
+                {latin && (
+                    <p className="text-sm text-slate-400 font-mono mb-1" dir="ltr">{latin}</p>
+                )}
+                {displayWord.pronunciationGuide && (
+                    <p className="text-xs text-slate-500 font-mono mb-2" dir="ltr">{displayWord.pronunciationGuide}</p>
+                )}
+                <div className="text-base text-slate-300 font-medium mb-3">
+                    {hebrew}
+                </div>
+                <button
+                    type="button"
+                    onClick={handlePlay}
+                    title="השמע הגייה"
+                    className={`p-2.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 hover:bg-amber-500/20 transition-colors ${isPlaying ? 'animate-pulse' : ''}`}
+                >
+                    <Volume2 size={20} />
+                </button>
+            </div>
+
+            {/* Footer */}
+            <div
+                className="px-5 py-3 bg-white/[0.03] border-t border-white/[0.05] text-slate-500 text-xs font-medium flex items-center justify-center gap-1.5"
             >
                 לכרטיס המלא
-                <ArrowLeft size={16} />
-            </button>
+                <ArrowLeft size={14} />
+            </div>
         </div>
     );
 };

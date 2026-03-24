@@ -1,10 +1,11 @@
 import React from 'react';
-import { Pencil, Bot, Loader2 } from 'lucide-react';
+import { Pencil, Loader2 } from 'lucide-react';
 import { DictionaryEntry, PendingSuggestion } from '../../types';
 import FieldSourceBadge from '../dictionary/FieldSourceBadge';
 import ConfirmAiButton from '../dictionary/ConfirmAiButton';
 import FieldEditForm from '../dictionary/FieldEditForm';
 import MissingFieldPlaceholder from '../dictionary/MissingFieldPlaceholder';
+import AIValueBadge from '../dictionary/AIValueBadge';
 
 interface MeaningSectionProps {
   entry: DictionaryEntry;
@@ -14,6 +15,7 @@ interface MeaningSectionProps {
   pendingSuggestions?: PendingSuggestion[];
   enrichmentLoading?: boolean;
   enrichedDefinition?: string;
+  enrichedRussian?: string;
 }
 
 const EditBtn: React.FC<{ onClick: () => void }> = ({ onClick }) => (
@@ -34,9 +36,11 @@ const MeaningSection: React.FC<MeaningSectionProps> = ({
   pendingSuggestions = [],
   enrichmentLoading = false,
   enrichedDefinition,
+  enrichedRussian,
 }) => {
   const hebrewSuggestion = pendingSuggestions.find(s => s.fieldName === 'hebrew');
   const defSuggestion = pendingSuggestions.find(s => s.fieldName === 'definition');
+  const rusSuggestion = pendingSuggestions.find(s => s.fieldName === 'russian');
 
   const primaryHebrew = entry.translations?.[0]?.hebrew;
 
@@ -46,6 +50,10 @@ const MeaningSection: React.FC<MeaningSectionProps> = ({
   const isDefinitionFromAI = !defText && !!enrichedDefinition;
   // Show definition only if it adds info beyond the Hebrew translation
   const showDefinition = displayDefinition && displayDefinition !== primaryHebrew;
+
+  // Russian from DB or AI enrichment
+  const displayRussian = entry.russian || enrichedRussian;
+  const isRussianFromAI = !entry.russian && !!enrichedRussian;
 
   return (
     <div className="space-y-3">
@@ -82,34 +90,59 @@ const MeaningSection: React.FC<MeaningSectionProps> = ({
       )}
 
       {/* Russian translation */}
-      {entry.russian && (
+      {displayRussian ? (
         <div className="flex items-start gap-2 group">
           <span className="text-sm text-slate-500 mt-0.5 shrink-0 min-w-[100px]">רוסית:</span>
-          <span className="text-lg text-slate-300 font-serif flex-1 text-right">{entry.russian}</span>
-          {entry.id && <EditBtn onClick={() => onStartEdit('russian')} />}
+          {isRussianFromAI ? (
+            <AIValueBadge
+              value={displayRussian}
+              entryId={entry.id}
+              fieldName="russian"
+              valueClassName="text-lg text-slate-300 font-serif"
+              inline
+            />
+          ) : (
+            <>
+              <span className="text-lg text-slate-300 font-serif flex-1 text-right">{displayRussian}</span>
+              {entry.id && <EditBtn onClick={() => onStartEdit('russian')} />}
+            </>
+          )}
+        </div>
+      ) : (
+        <div className="flex items-start gap-2">
+          <span className="text-sm text-slate-500 mt-0.5 shrink-0 min-w-[100px]">רוסית:</span>
+          <div className="flex-1">
+            <MissingFieldPlaceholder
+              fieldName="russian"
+              entryId={entry.id}
+              pendingSuggestion={rusSuggestion}
+              isEnriching={enrichmentLoading}
+            />
+          </div>
         </div>
       )}
       {editingField === 'russian' && entry.id && (
         <FieldEditForm entryId={entry.id} fieldName="russian" currentValue={entry.russian || ''} onClose={onCloseEdit} onSuccess={() => {}} />
       )}
 
-      {/* Expanded definition — smaller, with AI badge if from enrichment */}
+      {/* Expanded definition — with AIValueBadge if from enrichment */}
       {showDefinition && (
-        <div className={`flex items-start gap-2 ${isDefinitionFromAI ? 'animate-in fade-in duration-500' : ''}`}>
+        <div className="flex items-start gap-2">
           <span className="text-sm text-slate-500 mt-0.5 shrink-0 min-w-[100px]">תרגום (עברית):</span>
-          <div className="flex items-start gap-1.5 flex-1 group">
-            {isDefinitionFromAI && (
-              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-amber-900/30 text-amber-300 shrink-0 mt-0.5">
-                <Bot size={10} /> AI
-              </span>
-            )}
-            {!isDefinitionFromAI && <FieldSourceBadge source={entry.fieldSources?.definition} />}
-            <span className="text-sm text-slate-400 leading-relaxed flex-1">{displayDefinition}</span>
-            {isDefinitionFromAI && entry.id && (
-              <ConfirmAiButton entryId={entry.id} fieldName="definition" value={displayDefinition!} source="ai" />
-            )}
-            {!isDefinitionFromAI && entry.id && <EditBtn onClick={() => onStartEdit('definition')} />}
-          </div>
+          {isDefinitionFromAI ? (
+            <AIValueBadge
+              value={displayDefinition!}
+              entryId={entry.id}
+              fieldName="definition"
+              valueClassName="text-sm text-slate-400 leading-relaxed"
+            />
+          ) : (
+            <div className="flex items-start gap-1.5 flex-1 group">
+              <FieldSourceBadge source={entry.fieldSources?.definition} />
+              <span className="text-sm text-slate-400 leading-relaxed flex-1">{displayDefinition}</span>
+              {entry.id && <EditBtn onClick={() => onStartEdit('definition')} />}
+            </div>
+          )}
         </div>
       )}
       {editingField === 'definition' && entry.id && (
