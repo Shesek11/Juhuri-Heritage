@@ -1,8 +1,16 @@
 import type { Metadata } from 'next';
 import Script from 'next/script';
+import { Rubik } from 'next/font/google';
 import './globals.css';
 import AppProviders from '../../components/providers/AppProviders';
 import { getSeoSettings } from '@/src/lib/seo-settings';
+
+const rubik = Rubik({
+  subsets: ['latin', 'hebrew'],
+  weight: ['300', '400', '500', '600', '700', '800'],
+  display: 'swap',
+  variable: '--font-rubik',
+});
 
 const GA_MEASUREMENT_ID = process.env.GA_MEASUREMENT_ID || '';
 
@@ -95,14 +103,14 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: jsonLdHtml }}
         />
       </head>
-      <body className="font-rubik">
+      <body className={`${rubik.variable} font-rubik`}>
         {GA_MEASUREMENT_ID && (
           <>
             <Script
               src={`https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}`}
-              strategy="afterInteractive"
+              strategy="lazyOnload"
             />
-            <Script id="google-analytics" strategy="afterInteractive">
+            <Script id="google-analytics" strategy="lazyOnload">
               {`
                 window.dataLayer = window.dataLayer || [];
                 function gtag(){dataLayer.push(arguments);}

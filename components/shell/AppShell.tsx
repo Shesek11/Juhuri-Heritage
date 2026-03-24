@@ -7,8 +7,9 @@ import { useAuth } from '../../contexts/AuthContext';
 import { DialectItem } from '../../types';
 import { getDialects } from '../../services/storageService';
 import { featureFlagService, FeatureFlagsMap } from '../../services/featureFlagService';
-import XPDisplay from '../gamification/XPDisplay';
+import XPDisplay, { XPNotificationBubble } from '../gamification/XPDisplay';
 import FeedbackButton from '../FeedbackButton';
+import NotificationBell from './NotificationBell';
 import AuthModal from '../AuthModal';
 import Footer from '../Footer';
 import { AppContext, TranslationModalEntry, WordListModalState } from './AppContext';
@@ -118,18 +119,19 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     totalCount: 0,
   });
 
-  const openWordListModal = (category: WordListModalState['category'], title: string, totalCount: number) => {
-    setWordListModal({ isOpen: true, category, title, totalCount });
+  const openWordListModal = (category: WordListModalState['category'], title: string, totalCount: number, featuredTerm?: string) => {
+    setWordListModal({ isOpen: true, category, title, totalCount, featuredTerm });
   };
 
   // UI State
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [isContributeOpen, setIsContributeOpen] = useState(false);
+  const isAdminHash = (hash: string) =>
+    hash.startsWith('dict_') || hash.startsWith('gen_') || hash.startsWith('seo_') || hash.startsWith('recipe_') || hash.startsWith('family_') || hash.startsWith('market_');
+
   const [isAdminOpen, setIsAdminOpen] = useState(() => {
     if (typeof window !== 'undefined' && window.location.hash) {
-      const hash = window.location.hash.slice(1);
-      // If URL hash matches an admin section, open admin dashboard
-      return hash.startsWith('dict_') || hash.startsWith('gen_') || hash.startsWith('seo_') || hash.startsWith('recipe_') || hash.startsWith('family_') || hash.startsWith('marketplace_');
+      return isAdminHash(window.location.hash.slice(1));
     }
     return false;
   });
@@ -194,6 +196,33 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     };
 
     init();
+  }, []);
+
+  // Sync admin open/close with URL hash
+  const openAdmin = (section?: string) => {
+    const hash = section || 'dict_active';
+    window.history.pushState(null, '', `#${hash}`);
+    setIsAdminOpen(true);
+  };
+
+  const closeAdmin = () => {
+    setIsAdminOpen(false);
+    // Replace current hash entry so Back doesn't re-open admin
+    window.history.replaceState(null, '', window.location.pathname + window.location.search);
+  };
+
+  // Listen for browser Back/Forward — close admin when hash leaves admin scope
+  useEffect(() => {
+    const onPopState = () => {
+      const hash = window.location.hash.slice(1);
+      if (hash && isAdminHash(hash)) {
+        setIsAdminOpen(true);
+      } else {
+        setIsAdminOpen(false);
+      }
+    };
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
   }, []);
 
   // Reload dialects when admin closes
@@ -282,31 +311,31 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             </nav>
 
             {/* Left: Actions */}
-            <div className={`flex items-center gap-2 transition-all duration-300 border ${!isScrolled ? 'bg-[#0d1424]/60 backdrop-blur-md rounded-full px-2 py-1 border-white/5 shadow-lg' : 'border-transparent'}`}>
-              {/* XP Display (Desktop) */}
-              <div className="hidden sm:block">
-                <XPDisplay />
-              </div>
-
-              {/* User Menu - Pill Style */}
+            <div className="flex items-center gap-2">
+              {/* Notification Bell */}
+              <NotificationBell />
+              {/* User Menu */}
               <div className="relative" onClick={e => e.stopPropagation()}>
                 <button
                   onClick={() => setIsMenuOpen(!isMenuOpen)}
-                  className="flex items-center gap-2 pl-2 pr-1 py-1 bg-slate-800/80 backdrop-blur-sm rounded-full hover:bg-slate-700/80 transition-all border border-white/10"
+                  className="flex items-center gap-2 pr-2 pl-1 py-1 rounded-full hover:bg-white/10 transition-all"
                 >
                   {user ? (
                     <>
-                      <span className="text-sm text-slate-200 font-medium hidden sm:inline">{user.name}</span>
-                      <div className="w-7 h-7 rounded-full bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center text-white text-xs font-bold">
-                        {user.name?.charAt(0)}
+                      <div className="relative">
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-orange-600 flex items-center justify-center text-white text-sm font-bold shadow-lg shadow-amber-500/30">
+                          {user.name?.charAt(0)}
+                        </div>
+                        <XPNotificationBubble />
                       </div>
+                      <span className="text-sm text-slate-200 font-medium hidden sm:inline">{user.name?.split(' ')[0]}</span>
                     </>
                   ) : (
                     <>
-                      <span className="text-sm text-slate-300 hidden sm:inline">התחברות</span>
-                      <div className="w-7 h-7 rounded-full bg-slate-700 flex items-center justify-center text-slate-400">
-                        <UserIcon size={14} />
+                      <div className="w-8 h-8 rounded-full bg-slate-700 flex items-center justify-center text-slate-400">
+                        <UserIcon size={16} />
                       </div>
+                      <span className="text-sm text-slate-300 hidden sm:inline">התחברות</span>
                     </>
                   )}
                 </button>
@@ -331,6 +360,13 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                     )}
 
                     <div className="py-1">
+                      {/* XP Stats inside menu */}
+                      {user && (
+                        <div className="px-3 py-2 border-b border-slate-700">
+                          <XPDisplay variant="menu" />
+                        </div>
+                      )}
+
                       {user && (
                         <button
                           onClick={() => { setIsMenuOpen(false); setIsProfileModalOpen(true); }}
@@ -344,15 +380,13 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                       {/* Admin */}
                       {user && (user.role === 'admin' || user.role === 'approver') && (
                         <button
-                          onClick={() => { setIsAdminOpen(true); setIsMenuOpen(false); }}
+                          onClick={() => { openAdmin(); setIsMenuOpen(false); }}
                           className="w-full text-right px-3 py-2 text-sm text-purple-300 hover:bg-purple-500/10 flex items-center gap-2"
                         >
                           <LayoutDashboard size={14} />
                           ממשק ניהול
                         </button>
                       )}
-
-                      <div className="h-px bg-slate-700 my-1" />
 
                       {/* Mobile Theme */}
                       <button
@@ -421,7 +455,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         </Suspense>
         {isAdminOpen && user && (
           <Suspense fallback={<LazyFallback />}>
-            <AdminDashboard user={user} onClose={() => setIsAdminOpen(false)} />
+            <AdminDashboard user={user} onClose={closeAdmin} />
           </Suspense>
         )}
         <AuthModal
@@ -458,6 +492,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             title={wordListModal.title}
             category={wordListModal.category}
             totalCount={wordListModal.totalCount}
+            featuredTerm={wordListModal.featuredTerm}
             onSelectWord={(entryId: number, term: string) => {
               setWordListModal(prev => ({ ...prev, isOpen: false }));
               setTranslationModalEntry({ id: entryId, term });

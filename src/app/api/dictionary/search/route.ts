@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
             ELSE 4
           END,
           de.created_at DESC
-       LIMIT 10`,
+       LIMIT 30`,
       [`%${term}%`, `${term}*`, `%${term}%`, `%${term}%`, term, term, `${term}%`, `${term}%`]
     ) as any[];
 
@@ -47,10 +47,11 @@ export async function GET(request: NextRequest) {
       [translations],
       [definitions],
       [examples],
-      [fieldSourceRows]
+      [fieldSourceRows],
+      [pendingSuggestionRows]
     ] = await Promise.all([
       pool.query(
-        `SELECT t.*, COALESCE(d.name, 'לא ידוע') as dialect
+        `SELECT t.*, COALESCE(d.name, '') as dialect
          FROM translations t
          LEFT JOIN dialects d ON t.dialect_id = d.id
          WHERE t.entry_id = ?`,
@@ -67,6 +68,14 @@ export async function GET(request: NextRequest) {
       pool.query(
         'SELECT field_name, source_type FROM field_sources WHERE entry_id = ?',
         [entry.id]
+      ),
+      pool.query(
+        `SELECT id, field_name, suggested_hebrew, suggested_latin,
+                suggested_cyrillic, suggested_russian, reason,
+                user_id, created_at
+         FROM translation_suggestions
+         WHERE entry_id = ? AND status = 'pending'`,
+        [entry.id]
       )
     ]) as any[];
 
@@ -74,6 +83,15 @@ export async function GET(request: NextRequest) {
     for (const row of fieldSourceRows) {
       fieldSources[row.field_name] = row.source_type;
     }
+
+    const pendingSuggestions = pendingSuggestionRows.map((s: any) => ({
+      id: s.id,
+      fieldName: s.field_name || (s.suggested_hebrew ? 'hebrew' : s.suggested_latin ? 'latin' : s.suggested_cyrillic ? 'cyrillic' : s.suggested_russian ? 'russian' : 'hebrew'),
+      suggestedValue: s.suggested_hebrew || s.suggested_latin || s.suggested_cyrillic || s.suggested_russian || '',
+      userId: s.user_id ? String(s.user_id) : undefined,
+      createdAt: s.created_at,
+      reason: s.reason,
+    }));
 
     const result = {
       id: String(entry.id),
@@ -95,19 +113,22 @@ export async function GET(request: NextRequest) {
       russian: entry.russian,
       isCustom: true,
       source: entry.source,
+      sourceName: entry.source_name || '',
+      contributorName: entry.contributor_name || '',
       status: entry.status,
       fieldSources,
+      pendingSuggestions,
     };
 
     // Also return additional matches for multi-result display
     const allResults: any[] = [result];
-    const additionalEntries = entries.slice(1, 5);
+    const additionalEntries = entries.slice(1);
     if (additionalEntries.length > 0) {
       const additionalIds = additionalEntries.map((e: any) => e.id);
       const placeholders = additionalIds.map(() => '?').join(',');
 
       const [allTrans] = await pool.query(
-        `SELECT t.*, COALESCE(d.name, 'לא ידוע') as dialect
+        `SELECT t.*, COALESCE(d.name, '') as dialect
          FROM translations t LEFT JOIN dialects d ON t.dialect_id = d.id
          WHERE t.entry_id IN (${placeholders})`, additionalIds
       ) as any[];
@@ -143,6 +164,8 @@ export async function GET(request: NextRequest) {
           russian: e.russian,
           isCustom: true,
           source: e.source,
+          sourceName: e.source_name || '',
+          contributorName: e.contributor_name || '',
           status: e.status,
         });
       }

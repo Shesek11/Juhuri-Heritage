@@ -86,6 +86,42 @@ export async function PUT(
       await connection.query('UPDATE users SET xp = xp + 50 WHERE id = ?', [suggestion.user_id]);
     }
 
+    // Notify watchers — people who requested this translation
+    const entryId = suggestion.entry_id;
+    try {
+      const [watchers] = await connection.query(
+        'SELECT user_id FROM translation_watchers WHERE entry_id = ? AND notified = FALSE',
+        [entryId]
+      );
+      if (watchers.length > 0) {
+        const [entryRows] = await connection.query('SELECT term FROM dictionary_entries WHERE id = ?', [entryId]);
+        const entryTerm = entryRows[0]?.term || '';
+        for (const w of watchers) {
+          await connection.query(
+            `INSERT INTO notifications (user_id, type, title, message, link)
+             VALUES (?, 'suggestion_approved', ?, ?, ?)`,
+            [
+              w.user_id,
+              `תרגום חדש למילה "${entryTerm}"`,
+              `למילה "${entryTerm}" נוסף תרגום חדש!`,
+              `/word/${encodeURIComponent(entryTerm)}`
+            ]
+          );
+        }
+        await connection.query(
+          'UPDATE translation_watchers SET notified = TRUE WHERE entry_id = ?',
+          [entryId]
+        );
+        // Mark entry as no longer needing translation
+        await connection.query(
+          'UPDATE dictionary_entries SET needs_translation = FALSE WHERE id = ?',
+          [entryId]
+        );
+      }
+    } catch (watchErr) {
+      console.error('Watcher notification error (non-fatal):', watchErr);
+    }
+
     await connection.commit();
     connection.release();
     return NextResponse.json({ success: true });

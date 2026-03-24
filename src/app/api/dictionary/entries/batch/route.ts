@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
           entry.term,
           entry.detectedLanguage || 'Hebrew',
           entry.pronunciationGuide || null,
-          entry.source || 'Manual',
+          entry.source || 'מאגר',
           user.id,
           user.id
         ]

@@ -16,11 +16,21 @@ const HeroSection: React.FC<HeroSectionProps> = ({ scrollY, searchTerm, setSearc
         className="absolute inset-0 z-0"
         style={{ transform: `translateY(${scrollY * 0.25}px)` }}
       >
-        <img
-          src="/images/caucasus-bg.jpg"
-          alt="הרי הקווקז"
-          className="w-full h-[120%] object-cover object-center"
-        />
+        <picture>
+          <source
+            type="image/webp"
+            srcSet="/images/caucasus-bg-sm.webp 768w, /images/caucasus-bg-md.webp 1280w, /images/caucasus-bg.webp 1920w"
+            sizes="100vw"
+          />
+          <img
+            src="/images/caucasus-bg-opt.jpg"
+            alt="הרי הקווקז"
+            className="w-full h-[120%] object-cover object-center"
+            loading="eager"
+            fetchPriority="high"
+            decoding="async"
+          />
+        </picture>
         {/* Color overlay for mood */}
         <div className="absolute inset-0 bg-gradient-to-b from-[#050B14]/70 via-[#050B14]/30 to-[#050B14]/90" />
         {/* Warm sunset tint */}

@@ -177,11 +177,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
     // Inline Editing State
     const [editingEntryId, setEditingEntryId] = useState<number | null>(null);
     const [editForm, setEditForm] = useState<{
+        term: string;
         hebrew: string;
         latin: string;
         cyrillic: string;
         dialect: string;
-    }>({ hebrew: '', latin: '', cyrillic: '', dialect: 'General' });
+    }>({ term: '', hebrew: '', latin: '', cyrillic: '', dialect: '' });
 
     useEffect(() => {
         if (isAuthorized) {
@@ -460,7 +461,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                     definitions: definition.trim() ? [definition.trim()] : [],
                     examples: [],
                     isCustom: true,
-                    source: 'Manual',
+                    source: 'מאגר',
                     status: 'active',
                     contributorId: user.id
                 };
@@ -535,16 +536,17 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
         }
         setEditingEntryId(entryId);
         setEditForm({
+            term: entry.term || '',
             hebrew: entry.translations[0]?.hebrew || '',
             latin: entry.translations[0]?.latin || '',
             cyrillic: entry.translations[0]?.cyrillic || '',
-            dialect: entry.translations[0]?.dialect || 'General'
+            dialect: entry.translations[0]?.dialect || ''
         });
     };
 
     const handleCancelEdit = () => {
         setEditingEntryId(null);
-        setEditForm({ hebrew: '', latin: '', cyrillic: '', dialect: 'General' });
+        setEditForm({ term: '', hebrew: '', latin: '', cyrillic: '', dialect: '' });
     };
 
     const handleSaveEdit = async () => {
@@ -554,6 +556,16 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
             // Find the translation ID for this entry
             const entry = entries.find(e => (e as any).id === editingEntryId);
             const translationId = (entry?.translations[0] as any)?.id;
+
+            // Update term if changed
+            if (editForm.term !== (entry?.term || '')) {
+                await fetch(`/api/dictionary/entries/${editingEntryId}/update-term`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    credentials: 'include',
+                    body: JSON.stringify({ term: editForm.term })
+                });
+            }
 
             if (translationId) {
                 // Update existing translation
@@ -830,9 +842,10 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                     <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-lg shadow border border-white/10 overflow-hidden">
                                         <div className="overflow-x-auto max-h-[calc(100vh-280px)] overflow-y-auto">
                                             <table className="w-full text-sm text-right">
-                                                <thead className="bg-white/5 text-slate-500 dark:text-slate-400 font-medium sticky top-0">
+                                                <thead className="bg-slate-800 text-slate-300 font-medium sticky top-0 z-10">
                                                     <tr>
                                                         <th className="p-4">מקור</th>
+                                                        <th className="p-4">שם מקור / תורם</th>
                                                         <th className="p-4">מונח (Term)</th>
                                                         <th className="p-4">ניב</th>
                                                         <th className="p-4">תרגום (עברית)</th>
@@ -849,9 +862,23 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                                         return (
                                                             <tr key={idx} className={`text-slate-200 ${isEditing ? 'bg-amber-900/30' : 'hover:bg-white/5'}`}>
                                                                 <td className="p-4">
-                                                                    <span className={`text-[10px] px-2 py-0.5 rounded-full border ${entry.source === 'AI' ? 'bg-purple-50 text-purple-600 border-purple-200' : entry.source === 'User' ? 'bg-blue-50 text-blue-600 border-blue-200' : 'bg-slate-100 text-slate-600 border-slate-200'}`}>{entry.source || 'Manual'}</span>
+                                                                    <span className={`text-[10px] px-2 py-0.5 rounded-full border ${entry.source === 'AI' ? 'bg-purple-50 text-purple-600 border-purple-200' : entry.source === 'קהילה' ? 'bg-blue-50 text-blue-600 border-blue-200' : 'bg-emerald-900/30 text-emerald-400 border-emerald-700'}`}>{entry.source || 'מאגר'}</span>
                                                                 </td>
-                                                                <td className="p-4 font-bold">{entry.term}</td>
+                                                                <td className="p-4 text-xs text-slate-400">{(entry as any).sourceName || (entry as any).contributorName || '-'}</td>
+                                                                <td className="p-4 font-bold">
+                                                                    {isEditing ? (
+                                                                        <input
+                                                                            type="text"
+                                                                            value={editForm.term}
+                                                                            onChange={(e) => setEditForm({ ...editForm, term: e.target.value })}
+                                                                            className="w-full p-1 border rounded dark:bg-slate-800 dark:border-slate-600"
+                                                                            placeholder="מונח..."
+                                                                            dir="auto"
+                                                                        />
+                                                                    ) : (
+                                                                        entry.term || <span className="text-amber-500 text-sm">חסר term</span>
+                                                                    )}
+                                                                </td>
                                                                 <td className="p-4">
                                                                     {isEditing ? (
                                                                         <select
@@ -864,7 +891,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                                                             ))}
                                                                         </select>
                                                                     ) : (
-                                                                        <span className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-300 px-2 py-1 rounded text-xs">{entry.translations[0]?.dialect || 'General'}</span>
+                                                                        <span className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-300 px-2 py-1 rounded text-xs">{entry.translations[0]?.dialect || '-'}</span>
                                                                     )}
                                                                 </td>
                                                                 <td className="p-4">
@@ -927,8 +954,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                                             </tr>
                                                         );
                                                     })}
-                                                    {entriesLoading && (<tr><td colSpan={7} className="p-8 text-center text-slate-400"><Loader2 className="inline animate-spin ml-2" size={18} /> טוען...</td></tr>)}
-                                                    {!entriesLoading && filteredActive.length === 0 && (<tr><td colSpan={7} className="p-8 text-center text-slate-400">אין נתונים להצגה</td></tr>)}
+                                                    {entriesLoading && (<tr><td colSpan={8} className="p-8 text-center text-slate-400"><Loader2 className="inline animate-spin ml-2" size={18} /> טוען...</td></tr>)}
+                                                    {!entriesLoading && filteredActive.length === 0 && (<tr><td colSpan={8} className="p-8 text-center text-slate-400">אין נתונים להצגה</td></tr>)}
                                                 </tbody>
                                             </table>
                                         </div>
@@ -1035,7 +1062,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                     </h3>
                                     <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
                                         <table className="w-full text-sm text-right">
-                                            <thead className="bg-white/5 text-slate-500 dark:text-slate-400 font-medium sticky top-0">
+                                            <thead className="bg-slate-800 text-slate-300 font-medium sticky top-0 z-10">
                                                 <tr>
                                                     <th className="p-4">מונח</th>
                                                     <th className="p-4">תרגום מוצע</th>
@@ -1049,7 +1076,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                                     <tr key={idx} className="hover:bg-white/5 text-slate-200">
                                                         <td className="p-4 font-bold text-lg">{entry.term}</td>
                                                         <td className="p-4">{entry.translations[0]?.hebrew}</td>
-                                                        <td className="p-4"><span className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-300 px-2 py-1 rounded text-xs">{entry.translations[0]?.dialect || 'General'}</span></td>
+                                                        <td className="p-4"><span className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-300 px-2 py-1 rounded text-xs">{entry.translations[0]?.dialect || '-'}</span></td>
                                                         <td className="p-4 text-xs text-slate-500">{entry.contributorId ? 'משתמש רשום' : 'אורח'}</td>
                                                         <td className="p-4">
                                                             <div className="flex gap-2">
@@ -1080,7 +1107,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                     </h3>
                                     <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
                                         <table className="w-full text-sm text-right">
-                                            <thead className="bg-white/5 text-slate-500 dark:text-slate-400 font-medium sticky top-0">
+                                            <thead className="bg-slate-800 text-slate-300 font-medium sticky top-0 z-10">
                                                 <tr>
                                                     <th className="p-4">מונח</th>
                                                     <th className="p-4">הצעה</th>
@@ -1214,7 +1241,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                 <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-lg shadow border border-white/10 overflow-hidden">
                                     <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
                                         <table className="w-full text-sm text-right">
-                                            <thead className="bg-white/5 text-slate-500 dark:text-slate-400 font-medium sticky top-0">
+                                            <thead className="bg-slate-800 text-slate-300 font-medium sticky top-0 z-10">
                                                 <tr>
                                                     <th className="p-3 w-10">
                                                         <input
@@ -1328,7 +1355,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                 <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-lg shadow border border-white/10 overflow-hidden">
                                     <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
                                         <table className="w-full text-sm text-right">
-                                            <thead className="bg-white/5 text-slate-500 dark:text-slate-400 font-medium sticky top-0">
+                                            <thead className="bg-slate-800 text-slate-300 font-medium sticky top-0 z-10">
                                                 <tr>
                                                     <th className="p-4">מזהה / שם</th>
                                                     <th className="p-4">תיאור תצוגה</th>
@@ -1377,7 +1404,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                 <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-lg shadow border border-white/10 overflow-hidden">
                                     <div className="overflow-x-auto max-h-[calc(100vh-250px)] overflow-y-auto">
                                         <table className="w-full text-sm text-right">
-                                            <thead className="bg-white/5 text-slate-500 dark:text-slate-400 font-medium sticky top-0">
+                                            <thead className="bg-slate-800 text-slate-300 font-medium sticky top-0 z-10">
                                                 <tr>
                                                     <th className="p-4">שם משתמש</th>
                                                     <th className="p-4">אימייל</th>
@@ -1454,7 +1481,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                 <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-lg shadow border border-white/10 overflow-hidden">
                                     <div className="overflow-x-auto max-h-[calc(100vh-250px)] overflow-y-auto">
                                         <table className="w-full text-sm text-right">
-                                            <thead className="bg-white/5 text-slate-500 dark:text-slate-400 font-medium sticky top-0">
+                                            <thead className="bg-slate-800 text-slate-300 font-medium sticky top-0 z-10">
                                                 <tr>
                                                     <th className="p-4">תאריך ושעה</th>
                                                     <th className="p-4">סוג פעולה</th>

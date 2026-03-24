@@ -115,12 +115,14 @@ class DirectDatabaseImporter {
         // Insert dictionary entry
         const [result] = await this.connection.query(
             `INSERT INTO dictionary_entries
-            (term, detected_language, pronunciation_guide, status, notes, confidence, translation_source, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, NOW())`,
+            (term, detected_language, pronunciation_guide, source, source_name, status, notes, confidence, translation_source, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
             [
                 entry.juhuri,
                 'Juhuri',
                 entry.latin || null,
+                entry.source || 'מאגר',
+                entry.sourceName || entry.source_name || null,
                 'active',  // Import directly as active
                 entry.notes || '',
                 entry.confidence || 0.9,

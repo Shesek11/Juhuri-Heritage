@@ -22,28 +22,93 @@ export interface FieldSources {
 
 export interface DictionaryEntry {
   term: string;
-  detectedLanguage: 'Hebrew' | 'Juhuri' | 'English';
+  detectedLanguage: 'Hebrew' | 'Juhuri' | 'English' | 'Russian';
   translations: Translation[];
   definitions: string[];
   examples: Example[];
   pronunciationGuide?: string;
   partOfSpeech?: string;
   russian?: string;
-  isCustom?: boolean; // Flag to indicate if this came from the manual DB
-  source?: 'AI' | 'Manual' | 'User' | 'Community'; // Origin of the entry
-  status?: 'active' | 'pending'; // Moderation status
-  contributorId?: string; // ID of the user who contributed this
-  fieldSources?: FieldSources; // Per-field source tracking (import/ai/community)
+  isCustom?: boolean;
+  source?: 'AI' | 'מאגר' | 'קהילה';
+  sourceName?: string;
+  status?: 'active' | 'pending';
+  contributorId?: string;
+  fieldSources?: FieldSources;
 
   // Audit fields
-  approvedBy?: string; // Name/ID of the admin who approved
-  approvedAt?: number; // Timestamp of approval
+  approvedBy?: string;
+  approvedAt?: number;
 
   // Community fields
-  id?: string; // Database ID needed for likes/comments
+  id?: string;
   likesCount?: number;
   commentsCount?: number;
   isLiked?: boolean;
+  pendingSuggestions?: PendingSuggestion[];
+
+  // Community signals (from search)
+  communityScore?: number;
+  verificationLevel?: 'verified' | 'community' | 'ai' | 'unverified';
+}
+
+// Search result with fuzzy suggestions
+export interface SearchResponse {
+  found: boolean;
+  entry: DictionaryEntry | null;
+  results: DictionaryEntry[];
+}
+
+export interface FuzzySuggestion {
+  id: string;
+  term: string;
+  hebrew: string;
+  latin?: string;
+  partOfSpeech?: string;
+}
+
+// Notification
+export interface Notification {
+  id: number;
+  type: 'suggestion_approved' | 'suggestion_rejected' | 'entry_approved' | 'example_approved' | 'upvote_received' | 'comment_reply';
+  title: string;
+  message?: string;
+  link?: string;
+  is_read: boolean;
+  created_at: string;
+}
+
+// Contribution dashboard
+export interface ContributionItem {
+  id: number | string;
+  entryTerm?: string;
+  term?: string;
+  fieldName?: string;
+  suggestedValue?: string;
+  origin?: string;
+  translated?: string;
+  status: 'pending' | 'approved' | 'rejected' | 'active';
+  reportType?: string;
+  createdAt: string;
+  reviewedAt?: string;
+  approvedAt?: string;
+}
+
+export interface ContributionDashboard {
+  suggestions: ContributionItem[];
+  entries: ContributionItem[];
+  examples: ContributionItem[];
+  xp: number;
+  totalContributions: number;
+}
+
+export interface PendingSuggestion {
+  id: number;
+  fieldName: string;
+  suggestedValue: string;
+  userId?: string;
+  createdAt: string;
+  reason?: string;
 }
 
 export interface Comment {

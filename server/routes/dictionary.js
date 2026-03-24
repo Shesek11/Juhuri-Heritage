@@ -22,27 +22,37 @@ router.get('/search', [
     try {
         const term = req.query.q.trim();
 
-        // Search in active entries: by term (Juhuri) OR by hebrew translation (FULLTEXT) OR russian
+        // Search in active entries: term, hebrew (FULLTEXT), latin, cyrillic, russian
         const [entries] = await db.query(
-            `SELECT de.*, u.name as contributor_name, a.name as approver_name
+            `SELECT de.*, u.name as contributor_name, a.name as approver_name,
+                    SUM(COALESCE(t.upvotes, 0)) - SUM(COALESCE(t.downvotes, 0)) as community_score
              FROM dictionary_entries de
              LEFT JOIN users u ON de.contributor_id = u.id
              LEFT JOIN users a ON de.approved_by = a.id
              LEFT JOIN translations t ON de.id = t.entry_id
              WHERE de.status = 'active'
-               AND (de.term LIKE ? OR MATCH(t.hebrew) AGAINST(? IN BOOLEAN MODE) OR t.hebrew LIKE ? OR de.russian LIKE ?)
+               AND (de.term LIKE ?
+                    OR MATCH(t.hebrew) AGAINST(? IN BOOLEAN MODE)
+                    OR t.hebrew LIKE ?
+                    OR t.latin LIKE ?
+                    OR t.cyrillic LIKE ?
+                    OR de.russian LIKE ?)
              GROUP BY de.id
              ORDER BY
                 CASE
                   WHEN de.term = ? THEN 0
                   WHEN t.hebrew = ? THEN 1
+                  WHEN t.latin = ? THEN 1
+                  WHEN t.cyrillic = ? THEN 1
                   WHEN de.term LIKE ? THEN 2
                   WHEN t.hebrew LIKE ? THEN 3
                   ELSE 4
                 END,
+                community_score DESC,
                 de.created_at DESC
              LIMIT 10`,
-            [`%${term}%`, `${term}*`, `%${term}%`, `%${term}%`, term, term, `${term}%`, `${term}%`]
+            [`%${term}%`, `${term}*`, `%${term}%`, `%${term}%`, `%${term}%`, `%${term}%`,
+             term, term, term, term, `${term}%`, `${term}%`]
         );
 
         if (entries.length === 0) {
@@ -52,15 +62,16 @@ router.get('/search', [
         // Get the best match (exact or first)
         const entry = entries[0];
 
-        // Fetch all related data in parallel (4 queries at once instead of sequential)
+        // Fetch all related data in parallel (5 queries at once instead of sequential)
         const [
             [translations],
             [definitions],
             [examples],
-            [fieldSourceRows]
+            [fieldSourceRows],
+            [pendingSuggestionRows]
         ] = await Promise.all([
             db.query(
-                `SELECT t.*, COALESCE(d.name, 'לא ידוע') as dialect
+                `SELECT t.*, COALESCE(d.name, '') as dialect
                  FROM translations t
                  LEFT JOIN dialects d ON t.dialect_id = d.id
                  WHERE t.entry_id = ?`,
@@ -77,6 +88,14 @@ router.get('/search', [
             db.query(
                 'SELECT field_name, source_type FROM field_sources WHERE entry_id = ?',
                 [entry.id]
+            ),
+            db.query(
+                `SELECT id, field_name, suggested_hebrew, suggested_latin,
+                        suggested_cyrillic, suggested_russian, reason,
+                        user_id, created_at
+                 FROM translation_suggestions
+                 WHERE entry_id = ? AND status = 'pending'`,
+                [entry.id]
             )
         ]);
         const fieldSources = {};
@@ -84,10 +103,28 @@ router.get('/search', [
             fieldSources[row.field_name] = row.source_type;
         }
 
+        // Map pending suggestions to a per-field lookup
+        const pendingSuggestions = pendingSuggestionRows.map(s => ({
+            id: s.id,
+            fieldName: s.field_name || (s.suggested_hebrew ? 'hebrew' : s.suggested_latin ? 'latin' : s.suggested_cyrillic ? 'cyrillic' : s.suggested_russian ? 'russian' : 'hebrew'),
+            suggestedValue: s.suggested_hebrew || s.suggested_latin || s.suggested_cyrillic || s.suggested_russian || '',
+            userId: s.user_id ? String(s.user_id) : undefined,
+            createdAt: s.created_at,
+            reason: s.reason,
+        }));
+
+        // Compute community signals
+        const communityScore = translations.reduce((sum, t) => sum + (t.upvotes || 0) - (t.downvotes || 0), 0);
+        const verificationLevel = entry.approved_by ? 'verified'
+            : entry.source === 'קהילה' ? 'community'
+            : entry.source === 'AI' ? 'ai'
+            : 'unverified';
+
         const result = {
             id: String(entry.id),
             term: entry.term,
             detectedLanguage: entry.detected_language,
+            sourceName: entry.source_name || null,
             translations: translations.map(t => ({
                 id: t.id,
                 dialect: t.dialect,
@@ -106,6 +143,9 @@ router.get('/search', [
             source: entry.source,
             status: entry.status,
             fieldSources,
+            pendingSuggestions,
+            communityScore,
+            verificationLevel,
         };
 
         // Also return additional matches for multi-result display (batched queries)
@@ -117,7 +157,7 @@ router.get('/search', [
 
             // Batch: get all translations and definitions in 2 queries instead of 2*N
             const [allTrans] = await db.query(
-                `SELECT t.*, COALESCE(d.name, 'לא ידוע') as dialect
+                `SELECT t.*, COALESCE(d.name, '') as dialect
                  FROM translations t LEFT JOIN dialects d ON t.dialect_id = d.id
                  WHERE t.entry_id IN (${placeholders})`, additionalIds
             );
@@ -138,10 +178,15 @@ router.get('/search', [
             for (const e of additionalEntries) {
                 const trans = transMap[e.id] || [];
                 const defs = defsMap[e.id] || [];
+                const score = trans.reduce((sum, t) => sum + (t.upvotes || 0) - (t.downvotes || 0), 0);
+                const vLevel = e.approved_by ? 'verified'
+                    : e.source === 'קהילה' ? 'community'
+                    : e.source === 'AI' ? 'ai' : 'unverified';
                 allResults.push({
                     id: String(e.id),
                     term: e.term,
                     detectedLanguage: e.detected_language,
+                    sourceName: e.source_name || null,
                     translations: trans.map(t => ({
                         id: t.id, dialect: t.dialect, hebrew: t.hebrew,
                         latin: t.latin, cyrillic: t.cyrillic,
@@ -155,6 +200,8 @@ router.get('/search', [
                     isCustom: true,
                     source: e.source,
                     status: e.status,
+                    communityScore: score,
+                    verificationLevel: vLevel,
                 });
             }
         }
@@ -187,14 +234,19 @@ router.get('/entry/:term', async (req, res) => {
 
         const entry = entries[0];
 
+        // Fetch all data in parallel (including word-page-specific data)
         const [
             [translations],
             [definitions],
             [examples],
-            [fieldSourceRows]
+            [fieldSourceRows],
+            [pendingSuggestionRows],
+            [relatedRows],
+            [likesData],
+            [commentsData]
         ] = await Promise.all([
             db.query(
-                `SELECT t.*, COALESCE(d.name, 'לא ידוע') as dialect
+                `SELECT t.*, COALESCE(d.name, '') as dialect
                  FROM translations t
                  LEFT JOIN dialects d ON t.dialect_id = d.id
                  WHERE t.entry_id = ?`,
@@ -202,13 +254,54 @@ router.get('/entry/:term', async (req, res) => {
             ),
             db.query('SELECT definition FROM definitions WHERE entry_id = ?', [entry.id]),
             db.query('SELECT origin, translated, transliteration FROM examples WHERE entry_id = ?', [entry.id]),
-            db.query('SELECT field_name, source_type FROM field_sources WHERE entry_id = ?', [entry.id])
+            db.query('SELECT field_name, source_type FROM field_sources WHERE entry_id = ?', [entry.id]),
+            db.query(
+                `SELECT id, field_name, suggested_hebrew, suggested_latin,
+                        suggested_cyrillic, suggested_russian, reason,
+                        user_id, created_at
+                 FROM translation_suggestions
+                 WHERE entry_id = ? AND status = 'pending'`,
+                [entry.id]
+            ),
+            db.query(
+                `SELECT rw.relation_type, de.id, de.term, de.part_of_speech,
+                        (SELECT t.hebrew FROM translations t WHERE t.entry_id = de.id LIMIT 1) as hebrew
+                 FROM related_words rw
+                 JOIN dictionary_entries de ON de.id = rw.related_entry_id
+                 WHERE rw.entry_id = ? AND de.status = 'active'
+                 LIMIT 10`,
+                [entry.id]
+            ),
+            db.query('SELECT COUNT(*) as count FROM entry_likes WHERE entry_id = ?', [entry.id]),
+            db.query('SELECT COUNT(*) as count FROM comments WHERE entry_id = ? AND status = ?', [entry.id, 'approved']),
         ]);
+
+        // Track word view (non-blocking)
+        db.query(
+            `INSERT INTO word_views (entry_id, view_date, view_count)
+             VALUES (?, CURDATE(), 1)
+             ON DUPLICATE KEY UPDATE view_count = view_count + 1`,
+            [entry.id]
+        ).catch(() => {});
 
         const fieldSources = {};
         for (const row of fieldSourceRows) {
             fieldSources[row.field_name] = row.source_type;
         }
+
+        const pendingSuggestions = pendingSuggestionRows.map(s => ({
+            id: s.id,
+            fieldName: s.field_name || (s.suggested_hebrew ? 'hebrew' : s.suggested_latin ? 'latin' : s.suggested_cyrillic ? 'cyrillic' : s.suggested_russian ? 'russian' : 'hebrew'),
+            suggestedValue: s.suggested_hebrew || s.suggested_latin || s.suggested_cyrillic || s.suggested_russian || '',
+            userId: s.user_id ? String(s.user_id) : undefined,
+            createdAt: s.created_at,
+            reason: s.reason,
+        }));
+
+        const communityScore = translations.reduce((sum, t) => sum + (t.upvotes || 0) - (t.downvotes || 0), 0);
+        const verificationLevel = entry.approved_by ? 'verified'
+            : entry.source === 'קהילה' ? 'community'
+            : entry.source === 'AI' ? 'ai' : 'unverified';
 
         res.json({
             found: true,
@@ -216,6 +309,7 @@ router.get('/entry/:term', async (req, res) => {
                 id: String(entry.id),
                 term: entry.term,
                 detectedLanguage: entry.detected_language,
+                sourceName: entry.source_name || null,
                 translations: translations.map(t => ({
                     id: t.id,
                     dialect: t.dialect,
@@ -233,11 +327,34 @@ router.get('/entry/:term', async (req, res) => {
                 isCustom: true,
                 source: entry.source,
                 fieldSources,
+                pendingSuggestions,
+                communityScore,
+                verificationLevel,
+                likesCount: likesData[0]?.count || 0,
+                commentsCount: commentsData[0]?.count || 0,
+                relatedWords: relatedRows.map(r => ({
+                    id: String(r.id),
+                    term: r.term,
+                    hebrew: r.hebrew,
+                    partOfSpeech: r.part_of_speech,
+                    relationType: r.relation_type,
+                })),
             }
         });
     } catch (err) {
         console.error('Entry lookup error:', err);
         res.status(500).json({ error: 'שגיאה בטעינת הערך' });
+    }
+});
+
+// GET /api/dictionary/dialects - Get all dialects
+router.get('/dialects', async (req, res) => {
+    try {
+        const [dialects] = await db.query('SELECT id, name, description FROM dialects ORDER BY name');
+        res.json(dialects);
+    } catch (err) {
+        console.error('Get dialects error:', err);
+        res.status(500).json({ error: 'שגיאה בטעינת ניבים' });
     }
 });
 
@@ -264,7 +381,7 @@ router.get('/word-of-day', async (req, res) => {
         // Get the word at that offset
         const [entries] = await db.query(
             `SELECT de.id, de.term, de.detected_language, de.pronunciation_guide,
-                    t.hebrew, t.latin, t.cyrillic, COALESCE(d.name, 'לא ידוע') as dialect
+                    t.hebrew, t.latin, t.cyrillic, COALESCE(d.name, '') as dialect
              FROM dictionary_entries de
              JOIN translations t ON de.id = t.entry_id
              LEFT JOIN dialects d ON t.dialect_id = d.id
@@ -380,10 +497,10 @@ router.get('/entries', authenticate, requireApprover, async (req, res) => {
         // Get page of entries with their first translation (single JOIN instead of N+1)
         const [entries] = await db.query(
             `SELECT de.id, de.term, de.detected_language, de.pronunciation_guide,
-                    de.part_of_speech, de.russian, de.source, de.status, de.created_at,
+                    de.part_of_speech, de.russian, de.source, de.source_name, de.status, de.created_at,
                     u.name as contributor_name,
                     t.id as trans_id, t.hebrew, t.latin, t.cyrillic,
-                    COALESCE(d.name, 'לא ידוע') as dialect,
+                    COALESCE(d.name, '') as dialect,
                     def.definition
              FROM dictionary_entries de
              LEFT JOIN users u ON de.contributor_id = u.id
@@ -399,25 +516,29 @@ router.get('/entries', authenticate, requireApprover, async (req, res) => {
         );
 
         // Map to response format
-        const result = entries.map(e => ({
-            id: String(e.id),
-            term: e.term,
-            detectedLanguage: e.detected_language,
-            pronunciationGuide: e.pronunciation_guide,
-            partOfSpeech: e.part_of_speech,
-            russian: e.russian,
-            source: e.source,
-            status: e.status,
-            contributorName: e.contributor_name,
-            translations: [{
-                id: e.trans_id,
-                dialect: e.dialect,
-                hebrew: e.hebrew || '',
-                latin: e.latin || '',
-                cyrillic: e.cyrillic || '',
-            }],
-            definitions: e.definition ? [e.definition] : [],
-        }));
+        const result = entries.map(e => {
+            const obj = {
+                id: String(e.id),
+                term: e.term,
+                detectedLanguage: e.detected_language,
+                pronunciationGuide: e.pronunciation_guide,
+                partOfSpeech: e.part_of_speech,
+                russian: e.russian,
+                source: e.source,
+                status: e.status,
+                translations: [{
+                    id: e.trans_id,
+                    dialect: e.dialect,
+                    hebrew: e.hebrew || '',
+                    latin: e.latin || '',
+                    cyrillic: e.cyrillic || '',
+                }],
+                definitions: e.definition ? [e.definition] : [],
+            };
+            obj.sourceName = e.source_name || '';
+            obj.contributorName = e.contributor_name || '';
+            return obj;
+        });
 
         res.json({ entries: result, total, page, limit, totalPages: Math.ceil(total / limit) });
     } catch (err) {
@@ -517,15 +638,16 @@ router.post('/entries/batch', authenticate, requireApprover, async (req, res) =>
 
             // Insert entry
             const [result] = await db.query(
-                `INSERT INTO dictionary_entries 
-                 (term, detected_language, pronunciation_guide, source, status, contributor_id, approved_by, approved_at) 
-                 VALUES (?, ?, ?, ?, 'active', ?, ?, NOW())
+                `INSERT INTO dictionary_entries
+                 (term, detected_language, pronunciation_guide, source, source_name, status, contributor_id, approved_by, approved_at)
+                 VALUES (?, ?, ?, ?, ?, 'active', ?, ?, NOW())
                  ON DUPLICATE KEY UPDATE term = term`,
                 [
                     entry.term,
                     entry.detectedLanguage || 'Hebrew',
                     entry.pronunciationGuide || null,
-                    entry.source || 'Manual',
+                    entry.source || 'מאגר',
+                    entry.sourceName || null,
                     req.user.id,
                     req.user.id
                 ]
@@ -723,12 +845,13 @@ router.put('/translations/:id', authenticate, requireApprover, async (req, res) 
         const { id } = req.params;
         const { hebrew, latin, cyrillic, dialectId } = req.body;
 
-        if (!hebrew) {
-            return res.status(400).json({ error: 'נדרש תרגום עברי' });
-        }
+        const updates = [];
+        const values = [];
 
-        const updates = ['hebrew = ?'];
-        const values = [hebrew];
+        if (hebrew !== undefined) {
+            updates.push('hebrew = ?');
+            values.push(hebrew);
+        }
 
         if (latin !== undefined) {
             updates.push('latin = ?');
@@ -741,6 +864,10 @@ router.put('/translations/:id', authenticate, requireApprover, async (req, res) 
         if (dialectId !== undefined) {
             updates.push('dialect_id = ?');
             values.push(dialectId);
+        }
+
+        if (updates.length === 0) {
+            return res.status(400).json({ error: 'לא סופקו שדות לעדכון' });
         }
 
         values.push(id);
@@ -803,6 +930,18 @@ router.post('/translations/:id/vote', authenticate, async (req, res) => {
         // Award XP for first vote on this translation
         if (!existingVote && voteType) {
             await db.query('UPDATE users SET xp = xp + 2 WHERE id = ?', [userId]);
+        }
+
+        // Auto-flag translation if net score drops below -3
+        if (voteType === 'down') {
+            const [[scoreRow]] = await db.query(
+                `SELECT SUM(CASE WHEN vote_type = 'up' THEN 1 ELSE -1 END) as score
+                 FROM translation_votes WHERE translation_id = ?`,
+                [id]
+            );
+            if (scoreRow?.score <= -3) {
+                await db.query('UPDATE translations SET flagged = TRUE WHERE id = ?', [id]);
+            }
         }
 
         res.json({ success: true });
@@ -1483,6 +1622,20 @@ router.put('/suggestions/:id/approve', authenticate, requireApprover, async (req
 
         await connection.commit();
         connection.release();
+
+        // Notify suggester (after commit, non-blocking)
+        if (suggestion.user_id) {
+            const [[entryRow]] = await db.query('SELECT term FROM dictionary_entries WHERE id = ?', [suggestion.entry_id]);
+            const termName = entryRow?.term || '';
+            createNotification(
+                suggestion.user_id,
+                'suggestion_approved',
+                'הצעתך אושרה!',
+                `ההצעה שלך לערך "${termName}" אושרה והוחלה על המילון`,
+                `/word/${encodeURIComponent(termName)}`
+            );
+        }
+
         res.json({ success: true });
     } catch (err) {
         await connection.rollback();
@@ -1497,15 +1650,65 @@ router.put('/suggestions/:id/reject', authenticate, requireApprover, async (req,
     try {
         const { id } = req.params;
 
+        // Get suggestion before rejecting (for notification)
+        const [[suggestion]] = await db.query('SELECT * FROM translation_suggestions WHERE id = ?', [id]);
+
         await db.query(
             'UPDATE translation_suggestions SET status = ?, reviewed_by = ?, reviewed_at = NOW() WHERE id = ?',
             ['rejected', req.user.id, id]
         );
 
+        // Notify suggester (non-blocking)
+        if (suggestion?.user_id) {
+            const [[entryRow]] = await db.query('SELECT term FROM dictionary_entries WHERE id = ?', [suggestion.entry_id]);
+            const termName = entryRow?.term || '';
+            createNotification(
+                suggestion.user_id,
+                'suggestion_rejected',
+                'הצעתך נדחתה',
+                `ההצעה שלך לערך "${termName}" לא אושרה`,
+                `/word/${encodeURIComponent(termName)}`
+            );
+        }
+
         res.json({ success: true });
     } catch (err) {
         console.error('Reject suggestion error:', err);
         res.status(500).json({ error: 'שגיאה בדחיית הצעה' });
+    }
+});
+
+// POST /api/dictionary/suggestions/:id/upvote - Upvote a pending suggestion
+router.post('/suggestions/:id/upvote', authenticate, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userId = req.user.id;
+
+        // Check suggestion exists and is pending
+        const [suggestions] = await db.query(
+            'SELECT id FROM translation_suggestions WHERE id = ? AND status = ?',
+            [id, 'pending']
+        );
+        if (suggestions.length === 0) {
+            return res.status(404).json({ error: 'הצעה לא נמצאה' });
+        }
+
+        // Insert vote (ignore duplicate)
+        await db.query(
+            `INSERT IGNORE INTO suggestion_votes (suggestion_id, user_id) VALUES (?, ?)`,
+            [id, userId]
+        );
+
+        // Return updated count
+        const [countRows] = await db.query(
+            'SELECT COUNT(*) as count FROM suggestion_votes WHERE suggestion_id = ?',
+            [id]
+        );
+
+        res.json({ success: true, upvotes: countRows[0].count });
+    } catch (err) {
+        console.error('Upvote suggestion error:', err);
+        res.status(500).json({ error: 'שגיאה בחיזוק הצעה' });
     }
 });
 
@@ -1521,8 +1724,8 @@ router.post('/entries/add-untranslated', authenticate, requireApprover, async (r
         // Try with needs_translation column, fall back to without it if column doesn't exist
         try {
             const [result] = await db.query(
-                `INSERT INTO dictionary_entries (term, detected_language, pronunciation_guide, source, status, needs_translation, contributor_id) 
-                 VALUES (?, ?, ?, 'Manual', 'active', TRUE, ?)`,
+                `INSERT INTO dictionary_entries (term, detected_language, pronunciation_guide, source, status, needs_translation, contributor_id)
+                 VALUES (?, ?, ?, 'קהילה', 'active', TRUE, ?)`,
                 [term, detectedLanguage || 'Hebrew', pronunciationGuide || null, req.user.id]
             );
             res.json({ success: true, entryId: result.insertId });
@@ -1530,8 +1733,8 @@ router.post('/entries/add-untranslated', authenticate, requireApprover, async (r
             // If needs_translation column doesn't exist, insert without it
             if (colErr.code === 'ER_BAD_FIELD_ERROR') {
                 const [result] = await db.query(
-                    `INSERT INTO dictionary_entries (term, detected_language, pronunciation_guide, source, status, contributor_id) 
-                     VALUES (?, ?, ?, 'Manual', 'active', ?)`,
+                    `INSERT INTO dictionary_entries (term, detected_language, pronunciation_guide, source, status, contributor_id)
+                     VALUES (?, ?, ?, 'קהילה', 'active', ?)`,
                     [term, detectedLanguage || 'Hebrew', pronunciationGuide || null, req.user.id]
                 );
                 res.json({ success: true, entryId: result.insertId, note: 'migration_needed' });
@@ -1723,5 +1926,192 @@ router.put('/examples/:id/reject', authenticate, requireApprover, async (req, re
     }
 });
 
-module.exports = router;
+// GET /api/dictionary/similar?q=term - Fuzzy/similar word suggestions
+router.get('/similar', async (req, res) => {
+    try {
+        const term = (req.query.q || '').trim();
+        if (!term) return res.json({ suggestions: [] });
+        const limit = Math.min(parseInt(req.query.limit) || 5, 10);
 
+        // Search by SOUNDEX, substring match, and partial overlap
+        const [results] = await db.query(
+            `SELECT DISTINCT de.id, de.term, de.part_of_speech,
+                    (SELECT t.hebrew FROM translations t WHERE t.entry_id = de.id LIMIT 1) as hebrew,
+                    (SELECT t.latin FROM translations t WHERE t.entry_id = de.id AND t.latin IS NOT NULL LIMIT 1) as latin,
+                    CASE
+                      WHEN SOUNDEX(de.term) = SOUNDEX(?) THEN 1
+                      WHEN de.term LIKE CONCAT('%', ?, '%') THEN 2
+                      ELSE 3
+                    END as match_rank
+             FROM dictionary_entries de
+             LEFT JOIN translations t ON de.id = t.entry_id
+             WHERE de.status = 'active'
+               AND de.term != ?
+               AND (SOUNDEX(de.term) = SOUNDEX(?)
+                    OR SOUNDEX(t.hebrew) = SOUNDEX(?)
+                    OR de.term LIKE CONCAT('%', ?, '%')
+                    OR t.hebrew LIKE CONCAT('%', ?, '%')
+                    OR t.latin LIKE CONCAT('%', ?, '%'))
+             GROUP BY de.id
+             ORDER BY match_rank, de.term
+             LIMIT ?`,
+            [term, term, term, term, term, term, term, term, limit]
+        );
+
+        res.json({
+            suggestions: results.map(r => ({
+                id: String(r.id),
+                term: r.term,
+                hebrew: r.hebrew,
+                latin: r.latin,
+                partOfSpeech: r.part_of_speech,
+            }))
+        });
+    } catch (err) {
+        console.error('Similar search error:', err);
+        res.status(500).json({ error: 'שגיאה בחיפוש דומים' });
+    }
+});
+
+// GET /api/dictionary/notifications - Get user notifications
+router.get('/notifications', authenticate, async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const unreadOnly = req.query.unread === 'true';
+        const limit = Math.min(parseInt(req.query.limit) || 20, 50);
+
+        const whereClause = unreadOnly ? 'WHERE user_id = ? AND is_read = FALSE' : 'WHERE user_id = ?';
+        const [notifications] = await db.query(
+            `SELECT * FROM notifications ${whereClause} ORDER BY created_at DESC LIMIT ?`,
+            [userId, limit]
+        );
+        const [[{ count: unreadCount }]] = await db.query(
+            'SELECT COUNT(*) as count FROM notifications WHERE user_id = ? AND is_read = FALSE',
+            [userId]
+        );
+
+        res.json({ notifications, unreadCount });
+    } catch (err) {
+        console.error('Notifications error:', err);
+        res.status(500).json({ error: 'שגיאה בטעינת התראות' });
+    }
+});
+
+// PUT /api/dictionary/notifications/:id/read - Mark notification as read
+router.put('/notifications/:id/read', authenticate, async (req, res) => {
+    try {
+        await db.query(
+            'UPDATE notifications SET is_read = TRUE WHERE id = ? AND user_id = ?',
+            [req.params.id, req.user.id]
+        );
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Mark read error:', err);
+        res.status(500).json({ error: 'שגיאה' });
+    }
+});
+
+// PUT /api/dictionary/notifications/read-all - Mark all notifications as read
+router.put('/notifications/read-all', authenticate, async (req, res) => {
+    try {
+        await db.query(
+            'UPDATE notifications SET is_read = TRUE WHERE user_id = ?',
+            [req.user.id]
+        );
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Mark all read error:', err);
+        res.status(500).json({ error: 'שגיאה' });
+    }
+});
+
+// GET /api/dictionary/users/me/contributions - User contribution dashboard
+router.get('/users/me/contributions', authenticate, async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        const [
+            [suggestions],
+            [entries],
+            [examples],
+            [[userRow]]
+        ] = await Promise.all([
+            db.query(
+                `SELECT ts.id, ts.field_name, ts.suggested_hebrew, ts.suggested_latin,
+                        ts.suggested_cyrillic, ts.suggested_russian, ts.status,
+                        ts.report_type, ts.created_at, ts.reviewed_at,
+                        de.term as entry_term
+                 FROM translation_suggestions ts
+                 LEFT JOIN dictionary_entries de ON ts.entry_id = de.id
+                 WHERE ts.user_id = ?
+                 ORDER BY ts.created_at DESC LIMIT 50`,
+                [userId]
+            ),
+            db.query(
+                `SELECT id, term, status, created_at, approved_at
+                 FROM dictionary_entries
+                 WHERE contributor_id = ?
+                 ORDER BY created_at DESC LIMIT 50`,
+                [userId]
+            ),
+            db.query(
+                `SELECT id, origin, translated, status, created_at
+                 FROM community_examples
+                 WHERE user_id = ?
+                 ORDER BY created_at DESC LIMIT 50`,
+                [userId]
+            ),
+            db.query(
+                'SELECT xp, contributions_count FROM users WHERE id = ?',
+                [userId]
+            ),
+        ]);
+
+        res.json({
+            suggestions: suggestions.map(s => ({
+                id: s.id,
+                entryTerm: s.entry_term,
+                fieldName: s.field_name,
+                suggestedValue: s.suggested_hebrew || s.suggested_latin || s.suggested_cyrillic || s.suggested_russian || '',
+                status: s.status,
+                reportType: s.report_type,
+                createdAt: s.created_at,
+                reviewedAt: s.reviewed_at,
+            })),
+            entries: entries.map(e => ({
+                id: String(e.id),
+                term: e.term,
+                status: e.status,
+                createdAt: e.created_at,
+                approvedAt: e.approved_at,
+            })),
+            examples: examples.map(ex => ({
+                id: ex.id,
+                origin: ex.origin,
+                translated: ex.translated,
+                status: ex.status,
+                createdAt: ex.created_at,
+            })),
+            xp: userRow?.xp || 0,
+            totalContributions: userRow?.contributions_count || 0,
+        });
+    } catch (err) {
+        console.error('Contributions error:', err);
+        res.status(500).json({ error: 'שגיאה בטעינת תרומות' });
+    }
+});
+
+// Helper: create notification (used by approve/reject endpoints)
+async function createNotification(userId, type, title, message, link) {
+    if (!userId) return;
+    try {
+        await db.query(
+            'INSERT INTO notifications (user_id, type, title, message, link) VALUES (?, ?, ?, ?, ?)',
+            [userId, type, title, message, link]
+        );
+    } catch (err) {
+        console.error('Notification creation error:', err);
+    }
+}
+
+module.exports = router;

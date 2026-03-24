@@ -44,11 +44,11 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess, reaso
     if (!isOpen) return null;
 
     const handleGoogleLogin = () => {
-        // Redirect to backend Passport.js Google OAuth
         const baseUrl = window.location.origin.includes('localhost')
             ? 'http://localhost:3002'
             : '';
-        window.location.href = `${baseUrl}/api/auth/google`;
+        const returnTo = encodeURIComponent(window.location.pathname + window.location.search);
+        window.location.href = `${baseUrl}/api/auth/google?returnTo=${returnTo}`;
     };
 
     const handleEmailSubmit = async (e: React.FormEvent) => {

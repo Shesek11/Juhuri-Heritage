@@ -183,7 +183,7 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
           }],
           definitions: [`User contribution: ${hebrew}`],
           examples: [],
-          source: 'User',
+          source: 'קהילה',
           status: 'pending',
           contributorId: user?.id
         };

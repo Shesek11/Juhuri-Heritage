@@ -4,18 +4,19 @@ import { generateToken } from '@/src/lib/auth';
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
-const CALLBACK_URL = `${process.env.SITE_URL || 'https://jun-juhuri.com'}/api/auth/google/callback`;
+const SITE_URL = process.env.SITE_URL || 'https://jun-juhuri.com';
+const CALLBACK_URL = `${SITE_URL}/api/auth/google/callback`;
 
 export async function GET(request: NextRequest) {
   try {
     if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
       console.error('Google OAuth not configured: missing GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET');
-      return NextResponse.redirect(new URL('/login?error=oauth_not_configured', request.url));
+      return NextResponse.redirect(`${SITE_URL}/login?error=oauth_not_configured`);
     }
 
     const code = request.nextUrl.searchParams.get('code');
     if (!code) {
-      return NextResponse.redirect(new URL('/login?error=no_code', request.url));
+      return NextResponse.redirect(`${SITE_URL}/login?error=no_code`);
     }
 
     // Exchange code for tokens
@@ -33,7 +34,7 @@ export async function GET(request: NextRequest) {
 
     if (!tokenRes.ok) {
       console.error('Google token exchange failed:', await tokenRes.text());
-      return NextResponse.redirect(new URL('/login?error=token_failed', request.url));
+      return NextResponse.redirect(`${SITE_URL}/login?error=token_failed`);
     }
 
     const tokenData = await tokenRes.json();
@@ -44,7 +45,7 @@ export async function GET(request: NextRequest) {
     });
 
     if (!profileRes.ok) {
-      return NextResponse.redirect(new URL('/login?error=profile_failed', request.url));
+      return NextResponse.redirect(`${SITE_URL}/login?error=profile_failed`);
     }
 
     const profile = await profileRes.json();
@@ -87,8 +88,15 @@ export async function GET(request: NextRequest) {
     };
     const token = generateToken(safeUser);
 
-    // Redirect to home with cookie
-    const response = NextResponse.redirect(new URL('/?login=success', request.url));
+    // Redirect back to where the user was before login
+    const rawState = request.nextUrl.searchParams.get('state') || '';
+    let returnPath = '/';
+    try {
+      const decoded = Buffer.from(rawState, 'base64url').toString();
+      if (decoded.startsWith('/')) returnPath = decoded;
+    } catch {};
+    const separator = returnPath.includes('?') ? '&' : '?';
+    const response = NextResponse.redirect(`${SITE_URL}${returnPath}${separator}login=success`);
     response.cookies.set('token', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -100,6 +108,6 @@ export async function GET(request: NextRequest) {
     return response;
   } catch (error) {
     console.error('Google OAuth callback error:', error);
-    return NextResponse.redirect(new URL('/login?error=failed', request.url));
+    return NextResponse.redirect(`${SITE_URL}/login?error=failed`);
   }
 }

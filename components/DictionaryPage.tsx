@@ -1,40 +1,37 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '../contexts/AuthContext';
-import { DictionaryEntry, HistoryItem, DialectItem } from '../types';
+import { DictionaryEntry, HistoryItem, DialectItem, FuzzySuggestion } from '../types';
+import apiService from '../services/apiService';
 import { searchDictionary, searchByAudio, SearchResult } from '../services/geminiService';
 import { blobToBase64 } from '../utils/audioUtils';
-import ResultCard from './ResultCard';
+import ResultCard, { EnrichmentData } from './dictionary/ResultCard';
+import SearchResultCard from './search/SearchResultCard';
+import FuzzyMatchBanner from './search/FuzzyMatchBanner';
+import ScriptDetectionBanner from './search/ScriptDetectionBanner';
+import EmptyResultsCTA from './search/EmptyResultsCTA';
+import ReportModal from './search/ReportModal';
+import NewTranslationModal from './search/NewTranslationModal';
 import HistoryPanel from './HistoryPanel';
 import HeroSection from './HeroSection';
 import WordOfTheDay from './widgets/WordOfTheDay';
-import CommunityTicker from './widgets/CommunityTicker';
 import RecentAdditions from './widgets/RecentAdditions';
-import MissingDialects from './widgets/MissingDialects';
-import HebrewOnlyWidget from './widgets/HebrewOnlyWidget';
-import JuhuriOnlyWidget from './widgets/JuhuriOnlyWidget';
-import MissingAudioWidget from './widgets/MissingAudioWidget';
+import ContributionGrid from './widgets/ContributionGrid';
 import { Mic, Search, Plus, Loader2 } from 'lucide-react';
 import { SEOHead, buildDefinedTermJsonLd } from './seo/SEOHead';
 
-const STORAGE_KEY = 'juhuri_history';
+import { partOfSpeechHebrew as posHebrew } from '../utils/pos';
 
-const POS_HEBREW: Record<string, string> = {
-  noun: 'שם עצם', verb: 'פועל', adjective: 'שם תואר', adverb: 'תואר הפועל',
-  pronoun: 'כינוי גוף', preposition: 'מילת יחס', conjunction: 'מילת חיבור',
-  interjection: 'מילת קריאה', particle: 'מילית', numeral: 'שם מספר',
-  phrase: 'צירוף', idiom: 'ניב', expression: 'ביטוי',
-};
-const posHebrew = (pos: string) => POS_HEBREW[pos.toLowerCase().trim()] || pos;
+const STORAGE_KEY = 'juhuri_history';
 
 interface DictionaryPageProps {
   dialects: DialectItem[];
   onOpenContribute: () => void;
   onOpenAuthModal: (reason?: string) => void;
   onOpenTranslationModal: (entry: { id: number; term: string; existingTranslation?: any }) => void;
-  onOpenWordListModal: (category: 'hebrew-only' | 'juhuri-only' | 'missing-dialects' | 'missing-audio', title: string, totalCount: number) => void;
+  onOpenWordListModal: (category: 'hebrew-only' | 'juhuri-only' | 'missing-dialects' | 'missing-audio', title: string, totalCount: number, featuredTerm?: string) => void;
 }
 
 const DictionaryPage: React.FC<DictionaryPageProps> = ({
@@ -45,7 +42,10 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({
   onOpenWordListModal,
 }) => {
   const params = useParams();
+  const searchParams = useSearchParams();
   const term = params?.term as string | undefined;
+  const qParam = searchParams?.get('q') || undefined;
+  const initialTerm = term || qParam;
   const router = useRouter();
 
   const [query, setQuery] = useState('');
@@ -56,6 +56,14 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [isRecording, setIsRecording] = useState(false);
+  const [enrichmentData, setEnrichmentData] = useState<EnrichmentData | null>(null);
+  const [enrichmentLoading, setEnrichmentLoading] = useState(false);
+  const enrichmentEntryRef = useRef<string | null>(null);
+
+  // New: report/contribution modals + fuzzy suggestions
+  const [reportEntry, setReportEntry] = useState<DictionaryEntry | null>(null);
+  const [showNewTranslation, setShowNewTranslation] = useState(false);
+  const [fuzzySuggestions, setFuzzySuggestions] = useState<FuzzySuggestion[]>([]);
 
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef = useRef<Blob[]>([]);
@@ -67,15 +75,23 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({
     if (savedHistory) setHistory(JSON.parse(savedHistory));
   }, []);
 
-  // Handle URL parameter search
+  // Handle URL parameter search (/dictionary/:term OR /dictionary?q=term)
+  // Also re-run when qParam changes (back/forward navigation)
   useEffect(() => {
-    if (term && !initialSearchDone.current) {
+    if (initialTerm) {
+      const decoded = decodeURIComponent(initialTerm);
+      // Skip if already showing this query's results
+      if (initialSearchDone.current && decoded === query && result) return;
       initialSearchDone.current = true;
-      const decoded = decodeURIComponent(term);
       setQuery(decoded);
       performSearch(decoded);
+    } else if (initialSearchDone.current && !initialTerm) {
+      // User navigated back to /dictionary without query — clear results
+      setResult(null);
+      setAdditionalResults([]);
+      setError(null);
     }
-  }, [term]);
+  }, [initialTerm, qParam]);
 
   // Loading message
   useEffect(() => {
@@ -103,16 +119,41 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({
     setLoading(true);
     setError(null);
     setAdditionalResults([]);
+    setEnrichmentData(null);
+    setEnrichmentLoading(false);
     try {
-      const { entry, additionalResults: extras } = await searchDictionary(searchTerm);
+      const searchResult = await searchDictionary(searchTerm);
+      const { entry, additionalResults: extras } = searchResult;
       setResult(entry);
       setAdditionalResults(extras);
       addToHistory(entry);
-      // Update URL to reflect the searched term
-      router.replace(`/word/${encodeURIComponent(entry.term)}`);
+
+      // Handle enrichment promise (if returned)
+      if (searchResult.enrichmentPromise) {
+        const entryTerm = entry.term;
+        enrichmentEntryRef.current = entryTerm;
+        setEnrichmentLoading(true);
+        searchResult.enrichmentPromise.then(data => {
+          // Guard against stale results
+          if (enrichmentEntryRef.current === entryTerm && data) {
+            setEnrichmentData(data as EnrichmentData);
+          }
+          setEnrichmentLoading(false);
+        });
+      }
+      // Update URL to reflect what the user searched — push (not replace) so back button works
+      router.push(`/dictionary?q=${encodeURIComponent(searchTerm)}`, { scroll: false });
     } catch (err: any) {
       if (err?.message === 'NOT_FOUND') {
-        setError(`המילה "${searchTerm}" לא נמצאה במילון. בדוק את האיות או הוסף אותה בעצמך!`);
+        setError(`המילה "${searchTerm}" לא נמצאה במילון.`);
+        // Fetch fuzzy suggestions
+        setFuzzySuggestions([]);
+        try {
+          const fuzzy = await apiService.get<{ suggestions: FuzzySuggestion[] }>(
+            `/dictionary/similar?q=${encodeURIComponent(searchTerm.trim())}&limit=5`
+          );
+          setFuzzySuggestions(fuzzy.suggestions || []);
+        } catch { /* ignore */ }
       } else {
         setError('שגיאה בחיפוש. נסה שוב.');
       }
@@ -128,7 +169,7 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({
     setAdditionalResults([]);
     setQuery(entry.term);
     addToHistory(entry);
-    router.replace(`/word/${encodeURIComponent(entry.term)}`);
+    router.replace(`/dictionary?q=${encodeURIComponent(entry.term)}`, { scroll: false });
   };
 
   const handleSearch = async (e?: React.FormEvent, specificTerm?: string) => {
@@ -165,7 +206,7 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({
           setAdditionalResults([]);
           addToHistory(data);
           setQuery(data.term);
-          router.replace(`/word/${encodeURIComponent(data.term)}`);
+          router.replace(`/dictionary?q=${encodeURIComponent(data.term)}`, { scroll: false });
         } catch (err) {
           setError('לא הצלחנו לזהות את הדיבור. נסה שוב, בקול ברור.');
           console.error(err);
@@ -255,15 +296,29 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({
           </div>
         )}
 
-        {/* Error Message */}
-        {error && (
+        {/* Error Message — only show red banner for actual errors, not "not found" */}
+        {error && !error.includes('לא נמצאה') && (
           <div className="bg-red-500/80 backdrop-blur text-white p-3 rounded-xl text-center animate-in fade-in slide-in-from-top-2 mt-4 mx-auto max-w-lg shadow-lg">
             {error}
           </div>
         )}
 
-        {/* History Panel */}
-        {!result && !loading && (
+        {/* Empty state CTA — show ABOVE history when word not found */}
+        {!result && !loading && error && (
+          <div className="w-full max-w-2xl mx-auto mt-8">
+            <EmptyResultsCTA
+              query={query}
+              suggestions={fuzzySuggestions}
+              onAddWord={onOpenContribute}
+              onRequestTranslation={() => setShowNewTranslation(true)}
+              onSelectSuggestion={(term) => { setQuery(term); performSearch(term); }}
+              onOpenAuthModal={onOpenAuthModal}
+            />
+          </div>
+        )}
+
+        {/* History Panel — hide when there's an error (CTA shown instead) */}
+        {!result && !loading && !error && (
           <div className="mt-4 w-full">
             <HistoryPanel
               history={history}
@@ -288,120 +343,128 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({
           <span className="hidden sm:inline">הוסף מילה</span>
         </button>
 
-        {/* Widgets Grid - Only show if not searching (result is null) and not loading */}
+        {/* Widgets — Only show if not searching (result is null) and not loading */}
         {!result && !loading && (
           <>
-            {/* Row 1: Translation Gaps */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in slide-in-from-bottom-8 duration-700 mb-6">
-              <div className="h-56 md:h-64">
-                <HebrewOnlyWidget
-                  onAddTranslation={(entryId, term) => onOpenTranslationModal({ id: entryId, term })}
-                  onOpenAuthModal={onOpenAuthModal}
-                  onViewAll={(total) => onOpenWordListModal('hebrew-only', 'מילים עם עברית בלבד', total)}
-                />
-              </div>
-              <div className="h-56 md:h-64">
-                <JuhuriOnlyWidget
-                  onAddTranslation={(entryId, term) => onOpenTranslationModal({ id: entryId, term })}
-                  onOpenAuthModal={onOpenAuthModal}
-                  onViewAll={(total) => onOpenWordListModal('juhuri-only', 'מילים עם ג\'והורי בלבד', total)}
-                />
-              </div>
-              <div className="h-56 md:h-64">
-                <MissingDialects
-                  onAddDialect={(entryId, term, missing) => onOpenTranslationModal({ id: entryId, term })}
-                  onOpenAuthModal={onOpenAuthModal}
-                  onViewAll={(total) => onOpenWordListModal('missing-dialects', 'מילים חסרות ניבים', total)}
-                />
-              </div>
-            </div>
+            {/* Contribution CTAs */}
+            <ContributionGrid onOpenWordList={onOpenWordListModal} />
 
-            {/* Row 2: Audio + Content */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in slide-in-from-bottom-8 duration-700 delay-200">
-              <div className="h-64 md:h-80">
-                <MissingAudioWidget
-                  onAddAudio={(entryId, term) => onOpenTranslationModal({ id: entryId, term })}
-                  onOpenAuthModal={onOpenAuthModal}
-                  onViewAll={(total) => onOpenWordListModal('missing-audio', 'מילים חסרות הקלטה', total)}
-                />
+            {/* Content: Word of Day + Recent Additions */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 animate-in slide-in-from-bottom-6 duration-700 delay-150">
+              <div className="h-64 md:h-72">
+                <WordOfTheDay onSelectWord={(term) => { setQuery(term); handleSearch(undefined, term); }} />
               </div>
-              <div className="h-64 md:h-80"><WordOfTheDay onSelectWord={(term) => { setQuery(term); handleSearch(undefined, term); }} /></div>
-              <div className="h-64 md:h-80"><RecentAdditions onSelectWord={setQuery} /></div>
-            </div>
-
-            {/* Community Ticker - Full Width */}
-            <div className="mt-6 animate-in slide-in-from-bottom-8 duration-700 delay-300">
-              <div className="h-64 md:h-72"><CommunityTicker /></div>
+              <div className="h-64 md:h-72">
+                <RecentAdditions onSelectWord={setQuery} />
+              </div>
             </div>
           </>
         )}
 
-        {/* Results Container */}
-        <div className="w-full max-w-2xl mx-auto mt-8">
-          {/* Main Result */}
-          {result && !loading && (
-            <div className="w-full animate-in slide-in-from-bottom-8 duration-500">
-              <ResultCard
-                entry={result}
-                onOpenAuthModal={(reason) => onOpenAuthModal(reason)}
-                onSuggestCorrection={(translation, entryId, term) => {
-                  onOpenTranslationModal({
-                    id: Number(entryId),
-                    term,
-                    existingTranslation: {
-                      id: translation.id,
-                      dialect: translation.dialect,
-                      hebrew: translation.hebrew,
-                      latin: translation.latin,
-                      cyrillic: translation.cyrillic
-                    }
-                  });
-                }}
-              />
-            </div>
-          )}
+        {/* Script Detection Banner */}
+        {result && query && <ScriptDetectionBanner query={query} onSwitchScript={() => {}} />}
 
-          {/* Additional Results */}
-          {additionalResults.length > 0 && !loading && (
-            <div className="mt-6 animate-in slide-in-from-bottom-8 duration-500 delay-150">
-              <h3 className="text-sm uppercase tracking-wider text-slate-400 font-bold mb-3">תוצאות נוספות</h3>
-              <div className="space-y-2">
-                {additionalResults.map((entry) => (
-                  <button
-                    key={entry.id}
-                    type="button"
-                    onClick={() => selectResult(entry)}
-                    className="w-full text-right p-4 rounded-xl bg-[#0d1424]/60 backdrop-blur-xl border border-white/10 hover:border-amber-500/40 hover:bg-[#0d1424]/90 transition-all group cursor-pointer"
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="text-xl font-bold text-slate-100">{entry.term}</span>
-                          {entry.partOfSpeech && (
-                            <span className="text-[10px] px-1.5 py-0.5 bg-white/10 rounded text-slate-400">{posHebrew(entry.partOfSpeech)}</span>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-2 mt-1 text-sm text-slate-400">
-                          {entry.translations?.[0]?.hebrew && (
-                            <span>{entry.translations[0].hebrew}</span>
-                          )}
-                          {entry.translations?.[0]?.latin && (
-                            <span className="font-mono text-xs text-slate-500">{entry.translations[0].latin}</span>
-                          )}
-                          {entry.russian && (
-                            <span className="text-xs text-slate-500" dir="ltr">{entry.russian}</span>
-                          )}
-                        </div>
-                      </div>
-                      <Search size={16} className="text-slate-500 group-hover:text-amber-500 transition-colors shrink-0" />
-                    </div>
-                  </button>
+        {/* Fuzzy suggestions already included in EmptyResultsCTA above */}
+
+        {/* Results Container — full width like widgets */}
+        <div className="w-full mt-8">
+          {/* All Results as SearchResultCards */}
+          {result && !loading && (
+            <div className="animate-in slide-in-from-bottom-8 duration-500">
+              {/* Results count */}
+              <div className="flex items-center justify-between text-sm text-slate-500 px-1 mb-3">
+                <span>{1 + additionalResults.length} תוצאות עבור "{query}"</span>
+              </div>
+
+              {/* Results grid: auto-fit columns */}
+              <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+                {/* Best match */}
+                <SearchResultCard
+                  entry={result}
+                  isBestMatch
+                  searchQuery={query}
+                  onReport={() => setReportEntry(result)}
+                  onNavigate={() => router.push(`/word/${encodeURIComponent(result.term)}`)}
+                />
+
+                {/* Additional results */}
+                {additionalResults.map((entry, idx) => (
+                  <SearchResultCard
+                    key={entry.id || idx}
+                    entry={entry}
+                    searchQuery={query}
+                    onReport={() => setReportEntry(entry)}
+                    onNavigate={() => router.push(`/word/${encodeURIComponent(entry.term)}`)}
+                  />
                 ))}
+              </div>
+
+              {/* Bottom actions — full width */}
+              <div className="mt-4 bg-[#0d1424]/40 backdrop-blur-xl rounded-xl border border-dashed border-white/10 p-4">
+                <p className="text-sm text-slate-500 mb-3 text-center">לא מצאת מה שחיפשת?</p>
+                <div className="flex flex-col sm:flex-row gap-2 justify-center">
+                  <button
+                    type="button"
+                    onClick={() => setShowNewTranslation(true)}
+                    className="flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600/20 text-indigo-400 rounded-lg hover:bg-indigo-600/30 transition-colors text-sm font-medium border border-indigo-500/20"
+                  >
+                    <Plus size={14} />
+                    הצע תרגום חדש ל"{query}"
+                  </button>
+                  <button
+                    type="button"
+                    onClick={onOpenContribute}
+                    className="flex items-center justify-center gap-2 px-4 py-2 text-slate-400 hover:bg-white/5 rounded-lg transition-colors text-sm"
+                  >
+                    הוסף מילה חדשה למילון
+                  </button>
+                </div>
               </div>
             </div>
           )}
         </div>
       </div>
+
+      {/* Report Modal */}
+      {reportEntry && (
+        <ReportModal
+          searchQuery={query}
+          entry={reportEntry}
+          onClose={() => setReportEntry(null)}
+          onSubmit={async (data) => {
+            try {
+              await apiService.post(`/dictionary/entries/${reportEntry.id}/suggest-field`, {
+                fieldName: 'hebrew',
+                value: data.betterTranslation || '',
+                reason: `[דיווח: ${data.reportType}] ${data.explanation || ''}`,
+                reportType: 'report',
+                searchContext: query,
+              });
+            } catch { /* ignore */ }
+            setReportEntry(null);
+          }}
+        />
+      )}
+
+      {/* New Translation Modal */}
+      {showNewTranslation && (
+        <NewTranslationModal
+          searchQuery={query}
+          onClose={() => setShowNewTranslation(false)}
+          onSubmit={async (data) => {
+            try {
+              await apiService.post('/dictionary/entries', {
+                term: data.term,
+                hebrew: query,
+                latin: data.latin,
+                cyrillic: data.cyrillic,
+                dialect: data.dialect || '',
+              });
+            } catch { /* ignore */ }
+            setShowNewTranslation(false);
+          }}
+        />
+      )}
     </>
   );
 };

@@ -455,7 +455,7 @@ const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal, onSugge
                 <span className="inline-flex items-center gap-1 px-2 py-1 bg-amber-500/80 rounded-md text-xs font-medium backdrop-blur-sm">
                   <Bot size={12} /> תרגום AI
                 </span>
-              ) : entry.source === 'Community' ? (
+              ) : entry.source === 'קהילה' ? (
                 <span className="inline-flex items-center gap-1 px-2 py-1 bg-indigo-500/80 rounded-md text-xs font-medium backdrop-blur-sm">
                   <Users size={12} /> תרומה קהילתית
                 </span>
@@ -712,7 +712,7 @@ const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal, onSugge
             </div>
 
             {/* AI Disclosure */}
-            {entry.examples.length > 0 && entry.source !== 'Community' && (
+            {entry.examples.length > 0 && entry.source !== 'קהילה' && (
               <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg text-xs text-amber-700 dark:text-amber-300 mb-3 border border-amber-100 dark:border-amber-800/30">
                 <Info size={14} className="shrink-0" />
                 <span>המשפטים נוצרו בעזרת AI ועשויים להכיל אי-דיוקים. יש לכם הצעה טובה יותר? לחצו על "הוסף פתגם".</span>

@@ -7,6 +7,7 @@ import { geminiApi, dictionaryApi } from "./apiService";
 export interface SearchResult {
   entry: DictionaryEntry;
   additionalResults: DictionaryEntry[];
+  enrichmentPromise?: Promise<Record<string, any> | null>;
 }
 
 export const searchDictionary = async (query: string): Promise<SearchResult> => {
@@ -14,7 +15,7 @@ export const searchDictionary = async (query: string): Promise<SearchResult> => 
   try {
     const localResult = await dictionaryApi.search(query);
     if (localResult.found && localResult.entry) {
-      const entry: DictionaryEntry = { ...localResult.entry, source: localResult.entry.source || 'Manual' };
+      const entry: DictionaryEntry = { ...localResult.entry, source: localResult.entry.source || 'מאגר' };
 
       // Check for missing fields that AI can fill
       const missingFields: string[] = [];
@@ -24,17 +25,20 @@ export const searchDictionary = async (query: string): Promise<SearchResult> => 
       if (!entry.examples || entry.examples.length === 0) missingFields.push('examples');
       if (!entry.pronunciationGuide) missingFields.push('pronunciationGuide');
 
-      // If there are missing fields, fire-and-forget enrich (don't block search results)
+      // If there are missing fields, start enrichment (returns promise for UI to observe)
+      let enrichmentPromise: Promise<Record<string, any> | null> | undefined;
       if (missingFields.length > 0) {
-        geminiApi.enrich(entry.term, t?.hebrew || '', missingFields).catch(() => {});
+        enrichmentPromise = geminiApi.enrich(entry.term, t?.hebrew || '', missingFields)
+          .then((res: any) => res.enrichment || null)
+          .catch(() => null);
       }
 
       // Additional results from the same search (server returns up to 5)
       const additionalResults: DictionaryEntry[] = (localResult.results || [])
         .slice(1)
-        .map((r: any) => ({ ...r, source: r.source || 'Manual' }));
+        .map((r: any) => ({ ...r, source: r.source || 'מאגר' }));
 
-      return { entry, additionalResults };
+      return { entry, additionalResults, enrichmentPromise };
     }
   } catch (err) {
     console.log('Local search failed, trying AI:', err);

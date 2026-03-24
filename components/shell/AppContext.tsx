@@ -15,6 +15,7 @@ export interface WordListModalState {
   category: 'hebrew-only' | 'juhuri-only' | 'missing-dialects' | 'missing-audio';
   title: string;
   totalCount: number;
+  featuredTerm?: string;
 }
 
 export interface AppContextType {
@@ -22,7 +23,7 @@ export interface AppContextType {
   openAuthModal: (reason?: string) => void;
   openContributeModal: () => void;
   setTranslationModalEntry: (entry: TranslationModalEntry | null) => void;
-  openWordListModal: (category: WordListModalState['category'], title: string, totalCount: number) => void;
+  openWordListModal: (category: WordListModalState['category'], title: string, totalCount: number, featuredTerm?: string) => void;
 
   // Data
   dialects: DialectItem[];

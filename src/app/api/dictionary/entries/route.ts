@@ -39,10 +39,10 @@ export async function GET(request: NextRequest) {
 
     const [entries] = await pool.query(
       `SELECT de.id, de.term, de.detected_language, de.pronunciation_guide,
-              de.part_of_speech, de.russian, de.source, de.status, de.created_at,
+              de.part_of_speech, de.russian, de.source, de.source_name, de.status, de.created_at,
               u.name as contributor_name,
               t.id as trans_id, t.hebrew, t.latin, t.cyrillic,
-              COALESCE(d.name, 'לא ידוע') as dialect,
+              COALESCE(d.name, '') as dialect,
               def.definition
        FROM dictionary_entries de
        LEFT JOIN users u ON de.contributor_id = u.id
@@ -65,8 +65,9 @@ export async function GET(request: NextRequest) {
       partOfSpeech: e.part_of_speech,
       russian: e.russian,
       source: e.source,
+      sourceName: e.source_name || '',
       status: e.status,
-      contributorName: e.contributor_name,
+      contributorName: e.contributor_name || '',
       translations: [{
         id: e.trans_id,
         dialect: e.dialect,
@@ -109,7 +110,7 @@ export async function POST(request: NextRequest) {
     const [result] = await pool.query(
       `INSERT INTO dictionary_entries
        (term, detected_language, source, status, contributor_id)
-       VALUES (?, ?, 'User', ?, ?)`,
+       VALUES (?, ?, 'קהילה', ?, ?)`,
       [term.trim(), detectedLanguage || 'Hebrew', status, user?.id || null]
     ) as any[];
 

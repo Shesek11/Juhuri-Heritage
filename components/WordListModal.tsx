@@ -20,6 +20,7 @@ interface WordListModalProps {
     category: 'hebrew-only' | 'juhuri-only' | 'missing-dialects' | 'missing-audio';
     totalCount: number;
     onSelectWord: (entryId: number, term: string) => void;
+    featuredTerm?: string;
 }
 
 const WordListModal: React.FC<WordListModalProps> = ({
@@ -28,7 +29,8 @@ const WordListModal: React.FC<WordListModalProps> = ({
     title,
     category,
     totalCount,
-    onSelectWord
+    onSelectWord,
+    featuredTerm,
 }) => {
     const [entries, setEntries] = useState<WordListEntry[]>([]);
     const [loading, setLoading] = useState(false);
@@ -36,6 +38,7 @@ const WordListModal: React.FC<WordListModalProps> = ({
     const [debouncedSearch, setDebouncedSearch] = useState('');
     const [page, setPage] = useState(0);
     const [serverTotal, setServerTotal] = useState(totalCount);
+    const [featuredEntry, setFeaturedEntry] = useState<WordListEntry | null>(null);
     const pageSize = 20;
     const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -67,8 +70,21 @@ const WordListModal: React.FC<WordListModalProps> = ({
             setPage(0);
             setSearchTerm('');
             setDebouncedSearch('');
+            setFeaturedEntry(null);
+
+            // If there's a featured term, fetch it specifically
+            if (featuredTerm) {
+                apiService.get<{ entries: WordListEntry[]; total: number }>(
+                    `/dictionary/${category}?limit=20&search=${encodeURIComponent(featuredTerm)}`
+                ).then((res) => {
+                    const match = (res.entries || []).find(
+                        (e) => e.term === featuredTerm
+                    );
+                    if (match) setFeaturedEntry(match);
+                }).catch(() => {});
+            }
         }
-    }, [isOpen, category]);
+    }, [isOpen, category, featuredTerm]);
 
     // Debounce search input
     useEffect(() => {
@@ -91,6 +107,26 @@ const WordListModal: React.FC<WordListModalProps> = ({
             case 'missing-dialects': return 'from-blue-500 to-indigo-600';
             case 'missing-audio': return 'from-purple-500 to-violet-600';
             default: return 'from-slate-500 to-slate-600';
+        }
+    };
+
+    const getCategoryBorderClass = () => {
+        switch (category) {
+            case 'hebrew-only': return 'border-amber-500/20 bg-amber-500/[0.04] hover:bg-amber-500/[0.08]';
+            case 'juhuri-only': return 'border-emerald-500/20 bg-emerald-500/[0.04] hover:bg-emerald-500/[0.08]';
+            case 'missing-dialects': return 'border-blue-500/20 bg-blue-500/[0.04] hover:bg-blue-500/[0.08]';
+            case 'missing-audio': return 'border-purple-500/20 bg-purple-500/[0.04] hover:bg-purple-500/[0.08]';
+            default: return 'border-white/10 bg-white/[0.02]';
+        }
+    };
+
+    const getCategoryTextClass = () => {
+        switch (category) {
+            case 'hebrew-only': return 'text-amber-400';
+            case 'juhuri-only': return 'text-emerald-400';
+            case 'missing-dialects': return 'text-blue-400';
+            case 'missing-audio': return 'text-purple-400';
+            default: return 'text-slate-400';
         }
     };
 
@@ -155,20 +191,46 @@ const WordListModal: React.FC<WordListModalProps> = ({
                         <div className="flex items-center justify-center h-32">
                             <Loader2 className="animate-spin text-indigo-500" size={32} />
                         </div>
-                    ) : entries.length === 0 ? (
+                    ) : entries.length === 0 && !featuredEntry ? (
                         <div className="text-center text-slate-400 py-8">
                             {searchTerm ? 'לא נמצאו תוצאות' : 'אין מילים בקטגוריה זו'}
                         </div>
                     ) : (
                         <div className="space-y-2">
-                            {entries.map((entry) => (
+                            {/* Featured entry — only on first page, no search */}
+                            {featuredEntry && page === 0 && !debouncedSearch && (
+                                <button
+                                    key={`featured-${featuredEntry.id}`}
+                                    onClick={() => onSelectWord(featuredEntry.id, featuredEntry.term)}
+                                    className={`w-full text-right p-5 rounded-xl transition-all group border ${getCategoryBorderClass()} mb-3`}
+                                >
+                                    <div className={`text-[0.6rem] font-semibold uppercase tracking-wider ${getCategoryTextClass()} mb-2`}>
+                                        המילה שבחרתם
+                                    </div>
+                                    <div className="font-bold text-xl text-white group-hover:text-amber-400 transition-colors">
+                                        {featuredEntry.term}
+                                    </div>
+                                    <div className="text-sm text-slate-400 mt-1 flex flex-wrap items-center gap-2">
+                                        {featuredEntry.hebrew && <span>{featuredEntry.hebrew}</span>}
+                                        {featuredEntry.latin && <span className="font-mono text-xs">{featuredEntry.latin}</span>}
+                                    </div>
+                                    <div className="text-xs mt-1">
+                                        {getMissingInfo(featuredEntry)}
+                                    </div>
+                                </button>
+                            )}
+
+                            {/* Regular entries — skip featured */}
+                            {entries
+                                .filter((e) => !featuredEntry || e.id !== featuredEntry.id)
+                                .map((entry) => (
                                 <button
                                     key={entry.id}
                                     onClick={() => onSelectWord(entry.id, entry.term)}
-                                    className="w-full text-right flex items-center justify-between p-4 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-all group border border-white/10 hover:border-indigo-200 dark:hover:border-indigo-800"
+                                    className="w-full text-right flex items-center justify-between p-4 rounded-xl hover:bg-white/[0.03] transition-all group border border-white/[0.06] hover:border-white/10"
                                 >
                                     <div className="min-w-0 flex-1">
-                                        <div className="font-bold text-slate-200 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                                        <div className="font-bold text-slate-200 group-hover:text-amber-400 transition-colors">
                                             {entry.term}
                                         </div>
                                         <div className="text-sm text-slate-500 mt-1 flex flex-wrap items-center gap-2">
@@ -179,7 +241,7 @@ const WordListModal: React.FC<WordListModalProps> = ({
                                             {getMissingInfo(entry)}
                                         </div>
                                     </div>
-                                    <ChevronLeft size={18} className="text-slate-300 group-hover:text-indigo-500 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0 shrink-0 mr-2" />
+                                    <ChevronLeft size={18} className="text-slate-600 group-hover:text-amber-500 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0 shrink-0 mr-2" />
                                 </button>
                             ))}
                         </div>

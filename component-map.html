@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dictionary ResultCard — Component Map</title>
+<link href="https://fonts.googleapis.com/css2?family=Rubik:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Rubik', 'Segoe UI', sans-serif;
+    background: #0a0f1e;
+    color: #e2e8f0;
+    padding: 32px 16px;
+    min-height: 100vh;
+  }
+  h1 { text-align: center; color: #f59e0b; margin-bottom: 6px; font-size: 24px; font-weight: 700; }
+  .subtitle { text-align: center; color: #64748b; margin-bottom: 32px; font-size: 13px; }
+
+  .layout { display: flex; gap: 32px; max-width: 1300px; margin: 0 auto; align-items: flex-start; }
+  .card-visual { flex: 1; min-width: 480px; max-width: 680px; }
+  .sidebar { width: 340px; position: sticky; top: 16px; display: flex; flex-direction: column; gap: 16px; }
+
+  /* === CARD — matches real Tailwind styles === */
+  .result-card {
+    background: rgba(13, 20, 36, 0.6);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 20px 40px -15px rgba(0,0,0,0.4);
+    position: relative;
+  }
+  .result-card::before {
+    content: '';
+    display: block;
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(to right, transparent, rgba(245,158,11,0.8), transparent);
+    transform: scaleX(0);
+    transition: transform 0.7s;
+  }
+  .result-card:hover::before { transform: scaleX(1); }
+
+  /* === SECTION HIGHLIGHT SYSTEM === */
+  .section {
+    position: relative;
+    border: 2px solid transparent;
+    border-radius: 12px;
+    transition: all 0.25s;
+    cursor: pointer;
+  }
+  .section:hover, .section.active {
+    border-color: var(--c);
+    box-shadow: inset 0 0 0 1px var(--c-dim), 0 0 20px var(--c-glow);
+  }
+  .section-tag {
+    position: absolute;
+    top: -11px;
+    right: 12px;
+    background: var(--c);
+    color: #0a0f1e;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 10px;
+    border-radius: 10px;
+    opacity: 0;
+    transition: opacity 0.2s;
+    direction: ltr;
+    z-index: 5;
+    letter-spacing: 0.5px;
+    font-family: 'Consolas', monospace;
+  }
+  .section:hover .section-tag, .section.active .section-tag { opacity: 1; }
+
+  /* Colors per component */
+  [data-c="header"]  { --c: #f59e0b; --c-dim: rgba(245,158,11,0.15); --c-glow: rgba(245,158,11,0.08); }
+  [data-c="details"] { --c: #3b82f6; --c-dim: rgba(59,130,246,0.15); --c-glow: rgba(59,130,246,0.08); }
+  [data-c="trans"]   { --c: #10b981; --c-dim: rgba(16,185,129,0.15); --c-glow: rgba(16,185,129,0.08); }
+  [data-c="voice"]   { --c: #ef4444; --c-dim: rgba(239,68,68,0.15); --c-glow: rgba(239,68,68,0.08); }
+  [data-c="examples"]{ --c: #8b5cf6; --c-dim: rgba(139,92,246,0.15); --c-glow: rgba(139,92,246,0.08); }
+  [data-c="community"]{ --c: #ec4899; --c-dim: rgba(236,72,153,0.15); --c-glow: rgba(236,72,153,0.08); }
+
+  /* === CARD HEADER (gradient bg like real) === */
+  .card-header {
+    padding: 24px;
+    background: linear-gradient(135deg, rgba(255,255,255,0.1) 0%, transparent 100%);
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    color: white;
+  }
+  .badges-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 4px; align-items: center; }
+  .badge-sm {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 500;
+    backdrop-filter: blur(4px);
+  }
+  .badge-lang { background: rgba(255,255,255,0.2); }
+  .badge-source-db { background: rgba(16,185,129,0.8); }
+  .badge-source-ai { background: rgba(245,158,11,0.8); }
+  .badge-pos { background: rgba(255,255,255,0.2); }
+
+  .term { font-size: 36px; font-weight: 700; letter-spacing: -0.5px; margin: 4px 0; }
+  .pronunciation { color: rgba(199,210,254,0.9); font-family: 'Consolas', monospace; font-size: 13px; direction: ltr; text-align: right; }
+
+  .controls-row { display: flex; gap: 8px; position: absolute; top: 24px; left: 24px; }
+  .ctrl-btn {
+    width: 36px; height: 36px;
+    display: flex; align-items: center; justify-content: center;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    color: white;
+    border: none;
+    cursor: pointer;
+    font-size: 16px;
+    transition: background 0.2s;
+  }
+  .ctrl-btn:hover { background: rgba(255,255,255,0.3); }
+
+  /* Missing field placeholder */
+  .placeholder {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border: 1px dashed rgba(100,116,139,0.4);
+    border-radius: 8px;
+    color: #64748b;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .placeholder:hover {
+    border-color: rgba(99,102,241,0.5);
+    color: #818cf8;
+    background: rgba(99,102,241,0.05);
+  }
+  .placeholder .plus { color: inherit; font-weight: 600; }
+
+  /* Pending suggestion */
+  .pending {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    border: 1px solid rgba(245,158,11,0.3);
+    background: rgba(245,158,11,0.05);
+    border-radius: 8px;
+    font-size: 12px;
+    flex-wrap: wrap;
+  }
+  .pending-icon { color: #f59e0b; }
+  .pending-label { color: #fbbf24; font-size: 11px; }
+  .pending-value { color: #cbd5e1; font-weight: 500; }
+  .mini-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    background: rgba(255,255,255,0.05);
+    color: #94a3b8;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .mini-btn:hover { background: rgba(255,255,255,0.1); }
+  .mini-btn.green:hover { color: #34d399; }
+  .mini-btn.indigo:hover { color: #818cf8; }
+
+  /* AI enriching skeleton */
+  .enriching {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-size: 11px;
+    color: #fbbf24;
+  }
+  .enriching .bar {
+    flex: 1;
+    height: 16px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 4px;
+    animation: pulse 1.5s infinite;
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+  .enriching .spin {
+    display: inline-block;
+    width: 12px; height: 12px;
+    border: 2px solid rgba(251,191,36,0.3);
+    border-top-color: #fbbf24;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* === BODY SECTIONS === */
+  .card-body { padding: 24px; display: flex; flex-direction: column; gap: 20px; }
+
+  .section-title {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: #64748b;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+
+  /* Details rows */
+  .detail-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .detail-label { font-size: 11px; color: #64748b; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; min-width: 45px; }
+  .detail-value { font-size: 16px; color: #e2e8f0; flex: 1; font-weight: 500; }
+  .detail-value.serif { font-family: Georgia, serif; direction: ltr; }
+  .field-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+  }
+  .field-badge.ai { background: rgba(245,158,11,0.15); color: #fbbf24; }
+  .field-badge.community { background: rgba(99,102,241,0.15); color: #a5b4fc; }
+  .edit-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 500;
+    background: rgba(99,102,241,0.12);
+    color: #a5b4fc;
+    border: none;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .detail-row:hover .edit-btn, .trans-row:hover .edit-btn { opacity: 1; }
+
+  /* Translation card */
+  .trans-card {
+    padding: 16px;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.08);
+    transition: background 0.2s;
+  }
+  .trans-card:hover { background: rgba(255,255,255,0.06); }
+  .trans-inner { display: flex; gap: 12px; }
+  .trans-play {
+    width: 32px; height: 32px;
+    display: flex; align-items: center; justify-content: center;
+    color: #64748b;
+    opacity: 0;
+    transition: opacity 0.2s;
+    flex-shrink: 0;
+    margin-top: 4px;
+  }
+  .trans-card:hover .trans-play { opacity: 1; }
+  .trans-content { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+  .trans-row { display: flex; align-items: center; gap: 8px; min-height: 28px; }
+  .trans-hebrew { font-size: 22px; font-weight: 700; color: #f1f5f9; }
+  .trans-latin { font-size: 14px; color: #94a3b8; font-family: 'Consolas', monospace; letter-spacing: 0.5px; }
+  .trans-cyrillic { font-size: 16px; color: #94a3b8; font-family: Georgia, serif; }
+  .dialect-badge {
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    background: rgba(99,102,241,0.15);
+    color: #818cf8;
+  }
+
+  /* Vote bar */
+  .vote-bar {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 8px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+  }
+  .vote-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    color: #64748b;
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .vote-btn:hover { background: rgba(255,255,255,0.05); }
+  .vote-btn.active-up { background: rgba(34,197,94,0.1); color: #4ade80; }
+  .vote-btn.active-down { background: rgba(239,68,68,0.1); color: #f87171; }
+  .correction-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 12px;
+    color: #f59e0b;
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-right: auto;
+  }
+  .correction-btn:hover { background: rgba(245,158,11,0.08); }
+
+  /* Voice recorder */
+  .voice-area {
+    text-align: center;
+    padding: 12px;
+  }
+  .voice-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 20px;
+    border-radius: 12px;
+    background: rgba(239,68,68,0.1);
+    color: #f87171;
+    border: 1px solid rgba(239,68,68,0.2);
+    font-size: 13px;
+    cursor: pointer;
+    font-family: inherit;
+  }
+  .voice-note { font-size: 10px; color: #475569; margin-top: 4px; direction: ltr; }
+
+  /* Examples */
+  .example-item {
+    padding: 10px 16px;
+    border-right: 4px solid rgba(99,102,241,0.3);
+    border-radius: 0 8px 8px 0;
+    background: rgba(255,255,255,0.03);
+    margin: 6px 0;
+  }
+  .example-origin { font-size: 15px; font-weight: 500; color: #e2e8f0; }
+  .example-translit { font-size: 12px; color: #64748b; font-family: 'Consolas', monospace; direction: ltr; text-align: right; }
+  .example-translated { font-size: 13px; color: #94a3b8; margin-top: 2px; }
+  .ai-disclosure {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: rgba(245,158,11,0.08);
+    border: 1px solid rgba(245,158,11,0.15);
+    border-radius: 8px;
+    font-size: 11px;
+    color: #fbbf24;
+    margin-bottom: 8px;
+  }
+
+  /* Community actions */
+  .community-bar {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255,255,255,0.08);
+  }
+  .comm-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    border-radius: 999px;
+    font-size: 13px;
+    color: #64748b;
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .comm-btn:hover { background: rgba(255,255,255,0.05); }
+  .comm-btn.liked { background: rgba(245,158,11,0.08); color: #f59e0b; }
+
+  /* === SIDEBAR === */
+  .sidebar-box {
+    background: rgba(30, 41, 59, 0.6);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 12px;
+    padding: 16px;
+  }
+  .sidebar-title { font-size: 14px; font-weight: 700; color: #f8fafc; margin-bottom: 12px; }
+
+  .legend-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 8px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s;
+    margin: 2px 0;
+  }
+  .legend-item:hover, .legend-item.active { background: rgba(255,255,255,0.05); }
+  .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; margin-top: 4px; }
+  .legend-name { font-size: 12px; font-weight: 600; direction: ltr; font-family: 'Consolas', monospace; }
+  .legend-file { font-size: 10px; color: #475569; direction: ltr; font-family: 'Consolas', monospace; }
+  .legend-desc { font-size: 11px; color: #94a3b8; margin-top: 2px; line-height: 1.5; }
+
+  .sep { height: 1px; background: rgba(255,255,255,0.06); margin: 4px 0; }
+
+  /* States legend */
+  .states-grid { display: flex; flex-direction: column; gap: 6px; }
+  .state-demo { border-radius: 8px; padding: 6px 10px; font-size: 11px; }
+
+  /* Helpers list */
+  .helper-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 0;
+    font-size: 11px;
+    direction: ltr;
+  }
+  .helper-name { color: #cbd5e1; font-family: 'Consolas', monospace; font-weight: 600; }
+  .helper-desc { color: #64748b; }
+
+  /* Data flow */
+  .flow-step {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 11px;
+    direction: ltr;
+  }
+  .flow-step code { color: #fbbf24; font-family: 'Consolas', monospace; }
+  .flow-step .dim { color: #64748b; }
+  .flow-arrow { text-align: center; color: #f59e0b; font-size: 14px; margin: 4px 0; }
+
+  /* Tooltip annotations */
+  .anno {
+    position: absolute;
+    font-size: 9px;
+    color: #475569;
+    direction: ltr;
+    font-family: 'Consolas', monospace;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .section:hover .anno, .section.active .anno { opacity: 1; color: #94a3b8; }
+
+  @media (max-width: 900px) {
+    .layout { flex-direction: column; }
+    .card-visual { min-width: auto; max-width: none; }
+    .sidebar { width: 100%; position: static; }
+  }
+</style>
+</head>
+<body>
+
+<h1>Dictionary ResultCard — Component Map</h1>
+<p class="subtitle">לחץ על רכיב בכרטיס או באגדה כדי להדגיש • העכבר מגלה פרטים נוספים</p>
+
+<div class="layout">
+
+<!-- ========== CARD ========== -->
+<div class="card-visual">
+  <div class="result-card">
+
+    <!-- 1. CardHeader -->
+    <div class="section" data-c="header" data-id="header" onclick="hl('header')">
+      <div class="section-tag">CardHeader.tsx</div>
+      <div class="card-header">
+
+        <!-- Controls (top-left) -->
+        <div class="controls-row">
+          <span class="ctrl-btn" title="בחר קול">⚙</span>
+          <span class="ctrl-btn" title="השמע">🔊</span>
+          <span class="ctrl-btn" title="העתק">📋</span>
+        </div>
+
+        <!-- Badges -->
+        <div class="badges-row">
+          <span class="badge-sm badge-lang">ג'והורי</span>
+          <span class="badge-sm badge-source-db">✓ מאגר קהילתי</span>
+          <span class="badge-sm badge-pos">שם עצם</span>
+          <span class="anno" style="bottom:4px;left:8px;">partOfSpeechHebrew() • missing → ghost button</span>
+        </div>
+
+        <!-- Term -->
+        <div class="term">خونه</div>
+
+        <!-- Pronunciation (present) -->
+        <div class="pronunciation">xuna</div>
+
+        <!-- Pronunciation (missing — placeholder example) -->
+        <div style="margin-top:8px; max-width:200px;">
+          <div class="placeholder" style="border-style:dashed;">
+            <span class="plus">+</span> הוסף הגייה
+          </div>
+        </div>
+        <span class="anno" style="bottom:4px;right:8px;">MissingFieldPlaceholder(compact)</span>
+      </div>
+    </div>
+
+    <div class="card-body">
+
+      <!-- 2. DetailsSection -->
+      <div class="section" data-c="details" data-id="details" onclick="hl('details')">
+        <div class="section-tag">DetailsSection.tsx</div>
+        <div style="padding:4px;">
+
+          <!-- Definition -->
+          <div class="detail-row">
+            <span class="detail-label">הגדרה</span>
+            <span class="field-badge ai">🤖 AI</span>
+            <span class="detail-value">מקום מגורים, בית</span>
+            <button class="edit-btn">✏ ערוך</button>
+          </div>
+          <span class="anno" style="top:2px;left:4px;">dedup: skips if === firstHebrew</span>
+
+          <!-- Russian -->
+          <div class="detail-row" style="margin-top:8px;">
+            <span class="detail-label">רוסית</span>
+            <span class="detail-value serif">дом, жилище</span>
+            <button class="edit-btn">✏ ערוך</button>
+          </div>
+
+          <!-- Missing Russian example -->
+          <div style="margin-top:8px;">
+            <span class="detail-label" style="display:block;margin-bottom:4px;">רוסית</span>
+            <div class="placeholder">
+              <span class="plus">+</span> הוסף רוסית
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Translations heading -->
+      <div>
+        <div class="section-title" style="margin-bottom:0;">תרגומים</div>
+      </div>
+
+      <!-- 3a. TranslationCard — full -->
+      <div class="section" data-c="trans" data-id="trans" onclick="hl('trans')">
+        <div class="section-tag">TranslationCard.tsx</div>
+        <div class="trans-card">
+          <div class="trans-inner">
+            <div class="trans-play">🔊</div>
+            <div class="trans-content">
+              <!-- Hebrew row -->
+              <div class="trans-row">
+                <span class="trans-hebrew">בית</span>
+                <span class="field-badge community">👥 קהילה</span>
+                <button class="edit-btn">✏ ערוך</button>
+              </div>
+              <!-- Dialect + Latin row -->
+              <div class="trans-row">
+                <span class="dialect-badge">קובה</span>
+                <span class="trans-latin">xuna</span>
+                <span class="field-badge ai">🤖 AI</span>
+                <button class="edit-btn">✏ ערוך</button>
+              </div>
+              <!-- Cyrillic row -->
+              <div class="trans-row">
+                <span class="trans-cyrillic">хуна</span>
+                <span class="field-badge ai">🤖 AI</span>
+                <button class="edit-btn">✏ ערוך</button>
+              </div>
+              <!-- Votes -->
+              <div class="vote-bar">
+                <button class="vote-btn active-up">👍 <b>12</b></button>
+                <button class="vote-btn">👎 <b>2</b></button>
+                <button class="correction-btn">✏ הצע תיקון</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3b. TranslationCard — with missing fields -->
+      <div class="section" data-c="trans" data-id="trans" onclick="hl('trans')" style="opacity:0.7;">
+        <div class="trans-card">
+          <div class="trans-inner">
+            <div class="trans-play">🔊</div>
+            <div class="trans-content">
+              <div class="trans-row"><span class="trans-hebrew">דירה</span></div>
+              <!-- Missing latin — placeholder -->
+              <div class="trans-row">
+                <div class="placeholder" style="flex:1;">
+                  <span class="plus">+</span> הוסף תעתיק לטיני
+                </div>
+              </div>
+              <!-- Missing cyrillic — AI enriching -->
+              <div class="trans-row">
+                <div class="enriching" style="flex:1;">
+                  <span class="spin"></span>
+                  <span>AI מעשיר...</span>
+                  <div class="bar"></div>
+                </div>
+              </div>
+              <!-- Votes -->
+              <div class="vote-bar">
+                <button class="vote-btn">👍 <b>0</b></button>
+                <button class="vote-btn">👎 <b>0</b></button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3c. TranslationCard — with pending suggestion -->
+      <div class="section" data-c="trans" data-id="trans" onclick="hl('trans')" style="opacity:0.7;">
+        <div class="trans-card">
+          <div class="trans-inner">
+            <div class="trans-play">🔊</div>
+            <div class="trans-content">
+              <div class="trans-row"><span class="trans-hebrew">מגורים</span></div>
+              <!-- Pending suggestion on latin -->
+              <div class="trans-row">
+                <div class="pending" style="flex:1;">
+                  <span class="pending-icon">⏳</span>
+                  <span class="pending-label">יש הצעה ממתינה</span>
+                  <span class="pending-value">xune</span>
+                  <button class="mini-btn green">👍 חזק</button>
+                  <button class="mini-btn indigo">+ הצעה חלופית</button>
+                </div>
+              </div>
+              <div class="trans-row"><span class="trans-cyrillic">хуна</span></div>
+              <div class="vote-bar">
+                <button class="vote-btn">👍 <b>3</b></button>
+                <button class="vote-btn">👎 <b>0</b></button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sep"></div>
+
+      <!-- 4. VoiceRecorder -->
+      <div class="section" data-c="voice" data-id="voice" onclick="hl('voice')">
+        <div class="section-tag">VoiceRecorder.tsx</div>
+        <div class="voice-area">
+          <button class="voice-btn">🎤 הקלט הגייה</button>
+          <div class="voice-note">components/audio/VoiceRecorder.tsx (external)</div>
+        </div>
+      </div>
+
+      <div class="sep"></div>
+
+      <!-- 5. ExamplesSection -->
+      <div class="section" data-c="examples" data-id="examples" onclick="hl('examples')">
+        <div class="section-tag">ExamplesSection.tsx</div>
+        <div style="padding:4px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+            <div class="section-title" style="margin:0;">פתגמים וברכות</div>
+            <button class="mini-btn indigo" style="font-size:12px;padding:4px 10px;">+ הוסף פתגם</button>
+          </div>
+
+          <!-- AI disclosure -->
+          <div class="ai-disclosure">
+            ℹ️ המשפטים נוצרו בעזרת AI ועשויים להכיל אי-דיוקים
+          </div>
+
+          <!-- Example 1 — DB -->
+          <div class="example-item">
+            <div class="example-origin">من خونه‌دار هستم</div>
+            <div class="example-translit">man xune-dor hestam</div>
+            <div class="example-translated">אני בעל בית</div>
+          </div>
+
+          <!-- Example 2 — AI enriched -->
+          <div class="example-item" style="border-right-color:rgba(139,92,246,0.4); opacity:0.85;">
+            <div style="display:flex;align-items:center;gap:6px;">
+              <span class="example-origin">خونه بزرگ است</span>
+              <span class="field-badge ai">🤖 AI</span>
+            </div>
+            <div class="example-translated">הבית גדול</div>
+          </div>
+
+          <!-- Community proverbs label -->
+          <div style="margin-top:12px;font-size:11px;color:#818cf8;font-weight:700;display:flex;align-items:center;gap:4px;">
+            👥 פתגמים מהקהילה
+          </div>
+          <div class="example-item" style="background:rgba(99,102,241,0.06);border-right-color:rgba(99,102,241,0.4);">
+            <div class="example-origin">خونه‌ی پدری</div>
+            <div class="example-translated">בית אבות</div>
+            <div style="font-size:10px;color:#475569;margin-top:4px;">תרומה: יוסף</div>
+          </div>
+
+          <span class="anno" style="bottom:2px;left:4px;">sources: DB → AI enriched → Community</span>
+        </div>
+      </div>
+
+      <div class="sep"></div>
+
+      <!-- 6. CommunityActions -->
+      <div class="section" data-c="community" data-id="community" onclick="hl('community')">
+        <div class="section-tag">CommunityActions.tsx</div>
+        <div class="community-bar">
+          <button class="comm-btn liked">❤️ <b>5</b></button>
+          <button class="comm-btn">💬 <b>3</b></button>
+        </div>
+        <span class="anno" style="bottom:4px;left:4px;">guest comments → admin moderation</span>
+      </div>
+
+    </div><!-- /card-body -->
+  </div><!-- /result-card -->
+</div><!-- /card-visual -->
+
+<!-- ========== SIDEBAR ========== -->
+<div class="sidebar">
+
+  <!-- Legend -->
+  <div class="sidebar-box">
+    <div class="sidebar-title">רכיבים</div>
+
+    <div class="legend-item" data-legend="header" onclick="hl('header')">
+      <div class="legend-dot" style="background:#f59e0b"></div>
+      <div>
+        <div class="legend-name">CardHeader</div>
+        <div class="legend-file">dictionary/CardHeader.tsx</div>
+        <div class="legend-desc">מונח, תגי שפה/מקור, חלק דיבר, הגייה, בקרות (השמע/העתק/קול)</div>
+      </div>
+    </div>
+
+    <div class="legend-item" data-legend="details" onclick="hl('details')">
+      <div class="legend-dot" style="background:#3b82f6"></div>
+      <div>
+        <div class="legend-name">DetailsSection</div>
+        <div class="legend-file">dictionary/DetailsSection.tsx</div>
+        <div class="legend-desc">הגדרה (עם dedup) + רוסית. שדות חסרים מראים placeholder</div>
+      </div>
+    </div>
+
+    <div class="legend-item" data-legend="trans" onclick="hl('trans')">
+      <div class="legend-dot" style="background:#10b981"></div>
+      <div>
+        <div class="legend-name">TranslationCard</div>
+        <div class="legend-file">dictionary/TranslationCard.tsx</div>
+        <div class="legend-desc">תרגום בודד: עברית → לטיני → קירילי + ניב + הצבעות + תיקונים. מוצג N פעמים</div>
+      </div>
+    </div>
+
+    <div class="legend-item" data-legend="voice" onclick="hl('voice')">
+      <div class="legend-dot" style="background:#ef4444"></div>
+      <div>
+        <div class="legend-name">VoiceRecorder</div>
+        <div class="legend-file">audio/VoiceRecorder.tsx</div>
+        <div class="legend-desc">הקלטת הגייה קהילתית (רכיב חיצוני)</div>
+      </div>
+    </div>
+
+    <div class="legend-item" data-legend="examples" onclick="hl('examples')">
+      <div class="legend-dot" style="background:#8b5cf6"></div>
+      <div>
+        <div class="legend-name">ExamplesSection</div>
+        <div class="legend-file">dictionary/ExamplesSection.tsx</div>
+        <div class="legend-desc">פתגמים/דוגמאות: DB → AI → קהילה. טופס הוספת פתגם</div>
+      </div>
+    </div>
+
+    <div class="legend-item" data-legend="community" onclick="hl('community')">
+      <div class="legend-dot" style="background:#ec4899"></div>
+      <div>
+        <div class="legend-name">CommunityActions</div>
+        <div class="legend-file">dictionary/CommunityActions.tsx</div>
+        <div class="legend-desc">לייקים + תגובות עם מודרציה לאורחים</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Field States -->
+  <div class="sidebar-box">
+    <div class="sidebar-title">3 מצבי שדה (MissingFieldPlaceholder)</div>
+    <div class="states-grid">
+      <div class="state-demo">
+        <div class="placeholder" style="cursor:default;margin:0;">
+          <span class="plus">+</span> הוסף [שדה]
+        </div>
+        <div style="font-size:10px;color:#475569;margin-top:4px;">① ריק — הזמנה לתרומה</div>
+      </div>
+      <div class="state-demo">
+        <div class="pending" style="margin:0;">
+          <span class="pending-icon">⏳</span>
+          <span class="pending-label">יש הצעה</span>
+          <span class="pending-value">ערך</span>
+          <button class="mini-btn green" style="pointer-events:none;">👍 חזק</button>
+        </div>
+        <div style="font-size:10px;color:#475569;margin-top:4px;">② הצעה ממתינה — upvote או חלופית</div>
+      </div>
+      <div class="state-demo">
+        <div class="enriching" style="margin:0;">
+          <span class="spin"></span>
+          <span>AI מעשיר...</span>
+          <div class="bar"></div>
+        </div>
+        <div style="font-size:10px;color:#475569;margin-top:4px;">③ AI loading — skeleton + pulse</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Helper components -->
+  <div class="sidebar-box">
+    <div class="sidebar-title">רכיבי עזר</div>
+    <div class="helper-row"><span class="helper-name">FieldSourceBadge</span> <span class="helper-desc">— AI / קהילה badge</span></div>
+    <div class="helper-row"><span class="helper-name">ConfirmAiButton</span> <span class="helper-desc">— אישור ערך AI</span></div>
+    <div class="helper-row"><span class="helper-name">FieldEditForm</span> <span class="helper-desc">— טופס inline להצעת ערך</span></div>
+    <div class="helper-row"><span class="helper-name">EnrichmentSkeleton</span> <span class="helper-desc">— skeleton טעינה</span></div>
+  </div>
+
+  <!-- Data Flow -->
+  <div class="sidebar-box">
+    <div class="sidebar-title">זרימת נתונים</div>
+    <div class="flow-step"><code>DictionaryPage.tsx</code> <span class="dim">→ searchDictionary(query)</span></div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step"><code>geminiService.ts</code> <span class="dim">→ { entry, enrichmentPromise }</span></div>
+    <div class="flow-arrow">↓</div>
+    <div class="flow-step"><code>ResultCard</code> <span class="dim">→ orchestrator, ~170 lines</span></div>
+    <div class="flow-arrow">↓ distributes to</div>
+    <div class="flow-step" style="font-size:10px;">
+      <code>CardHeader</code> ← pronunciation, POS<br>
+      <code>DetailsSection</code> ← definition, russian<br>
+      <code>TranslationCard[]</code> ← hebrew, latin, cyrillic<br>
+      <code>ExamplesSection</code> ← examples<br>
+      <code>CommunityActions</code> ← likes, comments
+    </div>
+  </div>
+
+</div><!-- /sidebar -->
+
+</div><!-- /layout -->
+
+<script>
+function hl(id) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.legend-item').forEach(l => l.classList.remove('active'));
+  document.querySelectorAll(`.section[data-id="${id}"]`).forEach(s => s.classList.add('active'));
+  document.querySelectorAll(`.legend-item[data-legend="${id}"]`).forEach(l => l.classList.add('active'));
+}
+</script>
+
+</body>
+</html>

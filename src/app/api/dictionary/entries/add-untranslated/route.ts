@@ -1,36 +1,67 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/src/lib/db';
-import { requireApprover } from '@/src/lib/auth';
+import { getAuthUser } from '@/src/lib/auth';
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await requireApprover(request);
-    const { term, detectedLanguage, pronunciationGuide } = await request.json();
+    const { term } = await request.json();
 
-    if (!term) {
+    if (!term || !term.trim()) {
       return NextResponse.json({ error: 'נדרש מונח' }, { status: 400 });
     }
 
+    const cleanTerm = term.trim();
+
+    // Get user if logged in (optional)
+    let user = null;
     try {
+      user = await getAuthUser(request);
+    } catch { /* guest */ }
+
+    // Check if already exists
+    const [existing] = await pool.query(
+      'SELECT id FROM dictionary_entries WHERE term = ? LIMIT 1',
+      [cleanTerm]
+    ) as any[];
+
+    let entryId: number;
+    let alreadyExists = false;
+
+    if (existing.length > 0) {
+      entryId = existing[0].id;
+      alreadyExists = true;
+    } else {
       const [result] = await pool.query(
-        `INSERT INTO dictionary_entries (term, detected_language, pronunciation_guide, source, status, needs_translation, contributor_id)
-         VALUES (?, ?, ?, 'Manual', 'active', TRUE, ?)`,
-        [term, detectedLanguage || 'Hebrew', pronunciationGuide || null, user.id]
+        `INSERT INTO dictionary_entries (term, detected_language, source, status, needs_translation, contributor_id)
+         VALUES (?, 'Hebrew', 'קהילה', 'active', TRUE, ?)`,
+        [cleanTerm, user?.id || null]
       ) as any[];
-      return NextResponse.json({ success: true, entryId: result.insertId });
-    } catch (colErr: any) {
-      if (colErr.code === 'ER_BAD_FIELD_ERROR') {
-        const [result] = await pool.query(
-          `INSERT INTO dictionary_entries (term, detected_language, pronunciation_guide, source, status, contributor_id)
-           VALUES (?, ?, ?, 'Manual', 'active', ?)`,
-          [term, detectedLanguage || 'Hebrew', pronunciationGuide || null, user.id]
-        ) as any[];
-        return NextResponse.json({ success: true, entryId: result.insertId, note: 'migration_needed' });
-      }
-      throw colErr;
+      entryId = result.insertId;
     }
-  } catch (error) {
-    if (error instanceof Response) return error;
+
+    // Register watcher if user is logged in
+    let watching = false;
+    if (user?.id) {
+      try {
+        await pool.query(
+          'INSERT IGNORE INTO translation_watchers (entry_id, user_id) VALUES (?, ?)',
+          [entryId, user.id]
+        );
+        watching = true;
+      } catch { /* ignore duplicate */ }
+    }
+
+    return NextResponse.json({
+      success: true,
+      entryId,
+      alreadyExists,
+      watching,
+      isGuest: !user,
+      message: alreadyExists
+        ? 'המילה כבר קיימת במאגר — תרגום יתווסף בקרוב'
+        : 'המילה נוספה! הקהילה תוכל להציע תרגום',
+    });
+  } catch (error: any) {
     console.error('Add untranslated error:', error);
     return NextResponse.json({ error: 'שגיאה בהוספת מילה' }, { status: 500 });
   }

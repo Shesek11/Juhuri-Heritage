@@ -29,10 +29,11 @@ export async function GET(
       [translations],
       [definitions],
       [examples],
-      [fieldSourceRows]
+      [fieldSourceRows],
+      [pendingSuggestionRows]
     ] = await Promise.all([
       pool.query(
-        `SELECT t.*, COALESCE(d.name, 'לא ידוע') as dialect
+        `SELECT t.*, COALESCE(d.name, '') as dialect
          FROM translations t
          LEFT JOIN dialects d ON t.dialect_id = d.id
          WHERE t.entry_id = ?`,
@@ -40,13 +41,30 @@ export async function GET(
       ),
       pool.query('SELECT definition FROM definitions WHERE entry_id = ?', [entry.id]),
       pool.query('SELECT origin, translated, transliteration FROM examples WHERE entry_id = ?', [entry.id]),
-      pool.query('SELECT field_name, source_type FROM field_sources WHERE entry_id = ?', [entry.id])
+      pool.query('SELECT field_name, source_type FROM field_sources WHERE entry_id = ?', [entry.id]),
+      pool.query(
+        `SELECT id, field_name, suggested_hebrew, suggested_latin,
+                suggested_cyrillic, suggested_russian, reason,
+                user_id, created_at
+         FROM translation_suggestions
+         WHERE entry_id = ? AND status = 'pending'`,
+        [entry.id]
+      )
     ]) as any[];
 
     const fieldSources: Record<string, string> = {};
     for (const row of fieldSourceRows) {
       fieldSources[row.field_name] = row.source_type;
     }
+
+    const pendingSuggestions = pendingSuggestionRows.map((s: any) => ({
+      id: s.id,
+      fieldName: s.field_name || (s.suggested_hebrew ? 'hebrew' : s.suggested_latin ? 'latin' : s.suggested_cyrillic ? 'cyrillic' : s.suggested_russian ? 'russian' : 'hebrew'),
+      suggestedValue: s.suggested_hebrew || s.suggested_latin || s.suggested_cyrillic || s.suggested_russian || '',
+      userId: s.user_id ? String(s.user_id) : undefined,
+      createdAt: s.created_at,
+      reason: s.reason,
+    }));
 
     return NextResponse.json({
       found: true,
@@ -70,7 +88,10 @@ export async function GET(
         russian: entry.russian,
         isCustom: true,
         source: entry.source,
+        sourceName: entry.source_name || '',
+        contributorName: entry.contributor_name || '',
         fieldSources,
+        pendingSuggestions,
       }
     });
   } catch (error) {

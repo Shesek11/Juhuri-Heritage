@@ -85,6 +85,12 @@ async function run() {
       continue;
     }
 
+    // Skip entries where Juhuri = Russian (broken data, no actual Juhuri translation)
+    if (juhuri_cyr === russian) {
+      empty++;
+      continue;
+    }
+
     // Dedup by juhuri+russian
     const key = `${juhuri_cyr}|${russian}`.toLowerCase();
     if (seen.has(key)) continue;
@@ -92,15 +98,18 @@ async function run() {
 
     entries.push({
       term: juhuri_cyr,       // Juhuri in Cyrillic (this site uses Cyrillic, not Hebrew chars)
-      latin: latin,
-      hebrew: hebrew,
+      latin: latin || '',
+      hebrew: hebrew || '',
       russian: russian,
-      english: english,
+      english: english || '',
       partOfSpeech: partOfSpeech ? mapPartOfSpeech(partOfSpeech) : '',
-      definition: russian,    // Primary definition in Russian
+      definition: '',         // No definition in source — don't fabricate
       pronunciationGuide: '',
-      dialect: 'General',
+      dialect: '',
+      source: 'מאגר',
+      sourceName: 'סטמגי',
       source_id: item.id,
+      ruDesc: (item.ruDesc || '').trim(),  // Keep original description if exists
     });
   }
 
@@ -133,7 +142,8 @@ async function run() {
   const output = {
     timestamp: new Date().toISOString(),
     source_files: ['juhuri.ru'],
-    source_name: 'juhuri.ru Online Dictionary (STMEGI)',
+    source: 'מאגר',
+    sourceName: 'סטמגי',
     source_url: 'https://juhuri.ru',
     total_entries: entries.length,
     entries,

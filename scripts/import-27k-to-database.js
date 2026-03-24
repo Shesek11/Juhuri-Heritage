@@ -104,9 +104,9 @@ async function run() {
           // Insert dictionary_entry
           const [result] = await conn.query(
             `INSERT INTO dictionary_entries
-             (term, detected_language, pronunciation_guide, part_of_speech, russian, source, status, source_info)
-             VALUES (?, ?, ?, ?, ?, 'Manual', 'active', ?)`,
-            [term, detectedLanguage, pronunciationGuide, partOfSpeech, russian, sourceInfo]
+             (term, detected_language, pronunciation_guide, part_of_speech, russian, source, source_name, status, source_info)
+             VALUES (?, ?, ?, ?, ?, 'מאגר', ?, 'active', ?)`,
+            [term, detectedLanguage, pronunciationGuide, partOfSpeech, russian, entry.sourceName || entry.source_name || null, sourceInfo]
           );
 
           const entryId = result.insertId;

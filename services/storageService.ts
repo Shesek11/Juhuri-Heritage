@@ -140,7 +140,7 @@ export const parseExcelData = (text: string): DictionaryEntry[] => {
         definitions: definition ? [definition] : [],
         examples: [],
         isCustom: true,
-        source: 'Manual',
+        source: 'מאגר',
         status: 'active'
       };
       entries.push(entry);

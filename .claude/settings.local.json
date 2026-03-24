@@ -16,7 +16,8 @@
       "Bash(ssh:*)",
       "Bash(code --list-extensions --show-versions)",
       "Bash(where antigravity)",
-      "Read(//c/Users/shimo/AppData/Local/Programs/Antigravity/bin//**)"
+      "Read(//c/Users/shimo/AppData/Local/Programs/Antigravity/bin//**)",
+      "Bash(grep -n \"source\" c:devjuhuri-heritagemigrations/*.sql)"
     ]
   }
 }

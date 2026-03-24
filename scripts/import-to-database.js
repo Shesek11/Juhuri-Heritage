@@ -145,20 +145,21 @@ class DictionaryDatabaseImporter {
         // AI = AI translated the Hebrew from Russian
         // Manual = Hebrew came from original scanned documents (ספרות)
         // User = community submissions (קהילה)
-        let source = 'Manual'; // Default: from literature/scans
+        let source = 'מאגר'; // Default: from literature/scans
 
         if (entry.translation_source === 'AI') {
             source = 'AI';
         } else if (entry.translation_source === 'User' || entry.translation_source === 'Community') {
-            source = 'User';
+            source = 'קהילה';
         }
-        // 'Original' or anything else = 'Manual' (ספרות)
+        // 'Original' or anything else = 'מאגר' (ספרות)
 
         return {
             term: entry.juhuri,
             detectedLanguage: 'Juhuri',
             pronunciationGuide: entry.latin || null,
             source: source,
+            sourceName: entry.sourceName || entry.source_name || null,
             sourceFile: entry.source_file, // Keep original filename for reference
             translations: [
                 {

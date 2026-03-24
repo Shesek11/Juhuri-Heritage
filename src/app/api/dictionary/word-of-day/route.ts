@@ -20,7 +20,7 @@ export async function GET() {
 
     const [entries] = await pool.query(
       `SELECT de.id, de.term, de.detected_language, de.pronunciation_guide,
-              t.hebrew, t.latin, t.cyrillic, COALESCE(d.name, 'לא ידוע') as dialect
+              t.hebrew, t.latin, t.cyrillic, COALESCE(d.name, '') as dialect
        FROM dictionary_entries de
        JOIN translations t ON de.id = t.entry_id
        LEFT JOIN dialects d ON t.dialect_id = d.id

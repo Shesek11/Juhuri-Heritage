@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="he">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Widget Redesign — Final</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Rubik:wght@300;400;500;600;700&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Rubik', sans-serif;
+    background: #050b14;
+    color: #e2e8f0;
+    direction: rtl;
+    min-height: 100vh;
+    padding: 2rem;
+  }
+  .container { max-width: 1100px; margin: 0 auto; }
+
+  .glass {
+    background: rgba(13,20,36,0.6);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 1rem;
+  }
+
+  /* ========================================
+     CTA Cards with rotating words inside
+     ======================================== */
+  .cta-grid {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+  .cta-card {
+    border-radius: 1rem;
+    padding: 1.5rem 1.25rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .cta-card::before {
+    content: '';
+    position: absolute; inset: 0;
+    border-radius: 1rem;
+    opacity: 0;
+    transition: opacity 0.4s;
+    pointer-events: none;
+  }
+  .cta-card:hover {
+    transform: translateY(-3px);
+    border-color: rgba(255,255,255,0.15);
+  }
+  .cta-card:hover::before { opacity: 1; }
+
+  /* Card accent colors */
+  .cta-card[data-color="amber"] { border-color: rgba(245,158,11,0.12); }
+  .cta-card[data-color="amber"]:hover { border-color: rgba(245,158,11,0.3); box-shadow: 0 12px 30px rgba(245,158,11,0.1); }
+  .cta-card[data-color="amber"]::before { background: radial-gradient(ellipse at center bottom, rgba(245,158,11,0.06) 0%, transparent 70%); }
+
+  .cta-card[data-color="green"] { border-color: rgba(52,211,153,0.12); }
+  .cta-card[data-color="green"]:hover { border-color: rgba(52,211,153,0.3); box-shadow: 0 12px 30px rgba(52,211,153,0.1); }
+  .cta-card[data-color="green"]::before { background: radial-gradient(ellipse at center bottom, rgba(52,211,153,0.06) 0%, transparent 70%); }
+
+  .cta-card[data-color="blue"] { border-color: rgba(96,165,250,0.12); }
+  .cta-card[data-color="blue"]:hover { border-color: rgba(96,165,250,0.3); box-shadow: 0 12px 30px rgba(96,165,250,0.1); }
+  .cta-card[data-color="blue"]::before { background: radial-gradient(ellipse at center bottom, rgba(96,165,250,0.06) 0%, transparent 70%); }
+
+  .cta-card[data-color="purple"] { border-color: rgba(192,132,252,0.12); }
+  .cta-card[data-color="purple"]:hover { border-color: rgba(192,132,252,0.3); box-shadow: 0 12px 30px rgba(192,132,252,0.1); }
+  .cta-card[data-color="purple"]::before { background: radial-gradient(ellipse at center bottom, rgba(192,132,252,0.06) 0%, transparent 70%); }
+
+  .cta-icon {
+    width: 2.5rem; height: 2.5rem;
+    border-radius: 0.75rem;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.15rem;
+    flex-shrink: 0;
+  }
+  .cta-label {
+    font-weight: 600; font-size: 0.85rem; color: #fff;
+  }
+  .cta-count {
+    font-size: 0.65rem; color: #64748b;
+  }
+
+  /* Rotating word inside card */
+  .cta-word-area {
+    margin-top: 0.5rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    width: 100%;
+    min-height: 3.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+  }
+  .cta-word {
+    font-size: 0.85rem; color: #94a3b8;
+    line-height: 1.5;
+    transition: opacity 0.3s;
+  }
+  .cta-word-highlight {
+    font-weight: 700; color: #f59e0b;
+  }
+  .cta-card[data-color="green"] .cta-word-highlight { color: #34d399; }
+  .cta-card[data-color="blue"] .cta-word-highlight { color: #60a5fa; }
+  .cta-card[data-color="purple"] .cta-word-highlight { color: #c084fc; }
+
+  .cta-word-dots {
+    display: flex; gap: 3px; margin-top: 0.5rem;
+  }
+  .cta-word-dot {
+    width: 4px; height: 4px; border-radius: 50%;
+    background: rgba(255,255,255,0.1);
+    transition: all 0.3s;
+  }
+  .cta-word-dot.active {
+    width: 10px; border-radius: 2px;
+  }
+  .cta-card[data-color="amber"] .cta-word-dot.active { background: #f59e0b; }
+  .cta-card[data-color="green"] .cta-word-dot.active { background: #34d399; }
+  .cta-card[data-color="blue"] .cta-word-dot.active { background: #60a5fa; }
+  .cta-card[data-color="purple"] .cta-word-dot.active { background: #c084fc; }
+
+  /* ========================================
+     Content Grid
+     ======================================== */
+  .content-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;
+  }
+  .wod {
+    padding: 1.75rem;
+    display: flex; flex-direction: column; align-items: center;
+    text-align: center; justify-content: center; min-height: 14rem;
+  }
+  .wod-date {
+    font-size: 0.6rem; background: rgba(255,255,255,0.07);
+    padding: 0.2rem 0.6rem; border-radius: 999px; color: #94a3b8; margin-bottom: 1rem;
+  }
+  .wod-term { font-size: 2.2rem; font-weight: 700; color: #fff; margin-bottom: 0.2rem; }
+  .wod-phonetic { font-size: 0.8rem; color: #64748b; font-family: monospace; margin-bottom: 0.6rem; }
+  .wod-translation { font-size: 1rem; color: #cbd5e1; margin-bottom: 1rem; }
+  .wod-play {
+    width: 2.5rem; height: 2.5rem; border-radius: 50%;
+    background: rgba(245,158,11,0.12); border: 1px solid rgba(245,158,11,0.25);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: all 0.3s; font-size: 0.9rem; color: #f59e0b;
+  }
+  .wod-play:hover { background: rgba(245,158,11,0.25); }
+
+  .recent { padding: 1.25rem; }
+  .recent h3 {
+    font-size: 0.85rem; font-weight: 600; color: #fff; margin-bottom: 0.75rem;
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  .recent-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0.55rem 0.75rem; border-radius: 0.5rem;
+    transition: background 0.2s; cursor: pointer;
+  }
+  .recent-item:hover { background: rgba(255,255,255,0.04); }
+  .recent-term { font-weight: 600; font-size: 0.85rem; color: #e2e8f0; }
+  .recent-heb { font-size: 0.7rem; color: #64748b; margin-top: 1px; }
+  .recent-arrow { color: #475569; font-size: 0.75rem; }
+
+  /* ========================================
+     Modal
+     ======================================== */
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 1000;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(6px);
+    display: flex; align-items: center; justify-content: center;
+    padding: 1.5rem;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.3s;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: auto; }
+
+  .modal {
+    background: #0d1424;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 1.25rem;
+    width: 100%; max-width: 520px;
+    max-height: 80vh;
+    display: flex; flex-direction: column;
+    transform: translateY(20px) scale(0.97);
+    transition: transform 0.3s;
+    overflow: hidden;
+  }
+  .modal-overlay.open .modal {
+    transform: translateY(0) scale(1);
+  }
+
+  .modal-header {
+    padding: 1.5rem 1.5rem 1rem;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .modal-header-right {
+    display: flex; align-items: center; gap: 0.75rem;
+  }
+  .modal-header-icon {
+    width: 2.25rem; height: 2.25rem; border-radius: 0.625rem;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1rem;
+  }
+  .modal-title { font-weight: 700; font-size: 1.05rem; color: #fff; }
+  .modal-subtitle { font-size: 0.75rem; color: #64748b; margin-top: 2px; }
+  .modal-close {
+    width: 2rem; height: 2rem; border-radius: 0.5rem;
+    background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);
+    color: #94a3b8; font-size: 1.1rem;
+    cursor: pointer; transition: all 0.2s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .modal-close:hover { background: rgba(255,255,255,0.1); color: #fff; }
+
+  .modal-list {
+    flex: 1; overflow-y: auto; padding: 0.75rem;
+  }
+  .modal-list::-webkit-scrollbar { width: 4px; }
+  .modal-list::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
+
+  /* Featured (first) item */
+  .modal-item-featured {
+    padding: 1.25rem;
+    border-radius: 0.75rem;
+    margin-bottom: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+  }
+  .modal-item-featured:hover {
+    background: rgba(245,158,11,0.08);
+  }
+  .featured-badge {
+    display: inline-block;
+    font-size: 0.6rem; font-weight: 600;
+    padding: 0.15rem 0.5rem; border-radius: 999px;
+    margin-bottom: 0.6rem;
+  }
+  .featured-term {
+    font-size: 1.5rem; font-weight: 700; color: #fff;
+    margin-bottom: 0.25rem;
+  }
+  .featured-translation {
+    font-size: 0.85rem; color: #94a3b8;
+  }
+  .featured-action {
+    display: inline-flex; align-items: center; gap: 0.4rem;
+    margin-top: 0.75rem;
+    padding: 0.45rem 1rem;
+    border-radius: 999px; border: none;
+    font-family: inherit; font-weight: 600; font-size: 0.8rem;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .featured-action:hover { filter: brightness(1.1); }
+
+  /* Color themes for featured */
+  .modal-item-featured[data-theme="amber"] {
+    background: rgba(245,158,11,0.06);
+    border: 1px solid rgba(245,158,11,0.15);
+  }
+  .modal-item-featured[data-theme="amber"] .featured-badge {
+    background: rgba(245,158,11,0.15); color: #f59e0b;
+  }
+  .modal-item-featured[data-theme="amber"] .featured-action {
+    background: linear-gradient(135deg, #f59e0b, #ea580c); color: #050b14;
+  }
+
+  .modal-item-featured[data-theme="green"] {
+    background: rgba(52,211,153,0.06);
+    border: 1px solid rgba(52,211,153,0.15);
+  }
+  .modal-item-featured[data-theme="green"] .featured-badge {
+    background: rgba(52,211,153,0.15); color: #34d399;
+  }
+  .modal-item-featured[data-theme="green"] .featured-action {
+    background: linear-gradient(135deg, #34d399, #059669); color: #050b14;
+  }
+
+  .modal-item-featured[data-theme="blue"] {
+    background: rgba(96,165,250,0.06);
+    border: 1px solid rgba(96,165,250,0.15);
+  }
+  .modal-item-featured[data-theme="blue"] .featured-badge {
+    background: rgba(96,165,250,0.15); color: #60a5fa;
+  }
+  .modal-item-featured[data-theme="blue"] .featured-action {
+    background: linear-gradient(135deg, #60a5fa, #2563eb); color: #050b14;
+  }
+
+  .modal-item-featured[data-theme="purple"] {
+    background: rgba(192,132,252,0.06);
+    border: 1px solid rgba(192,132,252,0.15);
+  }
+  .modal-item-featured[data-theme="purple"] .featured-badge {
+    background: rgba(192,132,252,0.15); color: #c084fc;
+  }
+  .modal-item-featured[data-theme="purple"] .featured-action {
+    background: linear-gradient(135deg, #c084fc, #7c3aed); color: #050b14;
+  }
+
+  /* Regular list items */
+  .modal-item {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0.75rem 1rem;
+    border-radius: 0.5rem;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .modal-item:hover { background: rgba(255,255,255,0.04); }
+  .modal-item-term { font-weight: 600; font-size: 0.85rem; color: #e2e8f0; }
+  .modal-item-sub { font-size: 0.7rem; color: #64748b; margin-top: 1px; }
+  .modal-item-arrow { color: #475569; font-size: 0.75rem; }
+
+  .modal-footer {
+    padding: 0.75rem 1.5rem;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    text-align: center;
+  }
+  .modal-footer-text {
+    font-size: 0.7rem; color: #475569;
+  }
+
+  @media (max-width: 768px) {
+    body { padding: 1rem; }
+    .cta-grid { grid-template-columns: repeat(2, 1fr); }
+    .content-grid { grid-template-columns: 1fr; }
+    .modal { max-height: 90vh; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- 4 CTA Cards — each with a rotating example word inside -->
+  <div class="cta-grid">
+    <div class="cta-card glass" data-color="amber" data-card="0">
+      <div class="cta-icon" style="background:linear-gradient(135deg,#f59e0b,#ea580c);color:#050b14">&#x1f4dd;</div>
+      <div class="cta-label">הוסף ג'והורי</div>
+      <div class="cta-count">1,247 מילים מחכות</div>
+      <div class="cta-word-area">
+        <div class="cta-word"><span class="cta-word-highlight">שמש</span> — יודעים איך אומרים?</div>
+        <div class="cta-word-dots">
+          <span class="cta-word-dot active"></span>
+          <span class="cta-word-dot"></span>
+          <span class="cta-word-dot"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="cta-card glass" data-color="green" data-card="1">
+      <div class="cta-icon" style="background:linear-gradient(135deg,#34d399,#059669);color:#050b14">&#x1f4d6;</div>
+      <div class="cta-label">תרגם לעברית</div>
+      <div class="cta-count">892 מילים מחכות</div>
+      <div class="cta-word-area">
+        <div class="cta-word"><span class="cta-word-highlight">dusdoq</span> — מה זה בעברית?</div>
+        <div class="cta-word-dots">
+          <span class="cta-word-dot active"></span>
+          <span class="cta-word-dot"></span>
+          <span class="cta-word-dot"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="cta-card glass" data-color="blue" data-card="2">
+      <div class="cta-icon" style="background:linear-gradient(135deg,#60a5fa,#2563eb);color:#050b14">&#x1f30d;</div>
+      <div class="cta-label">השלם ניבים</div>
+      <div class="cta-count">3,400 מילים מחכות</div>
+      <div class="cta-word-area">
+        <div class="cta-word"><span class="cta-word-highlight">ov</span> — חסר בניב הקובאי</div>
+        <div class="cta-word-dots">
+          <span class="cta-word-dot active"></span>
+          <span class="cta-word-dot"></span>
+          <span class="cta-word-dot"></span>
+        </div>
+      </div>
+    </div>
+
+    <div class="cta-card glass" data-color="purple" data-card="3">
+      <div class="cta-icon" style="background:linear-gradient(135deg,#c084fc,#7c3aed);color:#050b14">&#x1f3a4;</div>
+      <div class="cta-label">הקלט הגייה</div>
+      <div class="cta-count">5,100 מילים מחכות</div>
+      <div class="cta-word-area">
+        <div class="cta-word"><span class="cta-word-highlight">kifo</span> — הקליטו את ההגייה</div>
+        <div class="cta-word-dots">
+          <span class="cta-word-dot active"></span>
+          <span class="cta-word-dot"></span>
+          <span class="cta-word-dot"></span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Content: Word of Day + Recent -->
+  <div class="content-grid">
+    <div class="wod glass">
+      <div class="wod-date">24.03.2026 &bull; המילה היומית</div>
+      <div class="wod-term">ov</div>
+      <div class="wod-phonetic">/ov/</div>
+      <div class="wod-translation">מים</div>
+      <div class="wod-play">&#9654;</div>
+    </div>
+    <div class="recent glass">
+      <h3>&#128339; נוספו לאחרונה</h3>
+      <div class="recent-item">
+        <div><div class="recent-term">dusdoq</div><div class="recent-heb">חבר</div></div>
+        <span class="recent-arrow">&larr;</span>
+      </div>
+      <div class="recent-item">
+        <div><div class="recent-term">kifo</div><div class="recent-heb">מספיק</div></div>
+        <span class="recent-arrow">&larr;</span>
+      </div>
+      <div class="recent-item">
+        <div><div class="recent-term">gof</div><div class="recent-heb">דיבור</div></div>
+        <span class="recent-arrow">&larr;</span>
+      </div>
+      <div class="recent-item">
+        <div><div class="recent-term">sere</div><div class="recent-heb">ראש</div></div>
+        <span class="recent-arrow">&larr;</span>
+      </div>
+      <div class="recent-item">
+        <div><div class="recent-term">xuneg</div><div class="recent-heb">בית</div></div>
+        <span class="recent-arrow">&larr;</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-header-right">
+        <div class="modal-header-icon" id="modalIcon"></div>
+        <div>
+          <div class="modal-title" id="modalTitle"></div>
+          <div class="modal-subtitle" id="modalSubtitle"></div>
+        </div>
+      </div>
+      <button type="button" class="modal-close" id="modalClose">&times;</button>
+    </div>
+    <div class="modal-list" id="modalList"></div>
+    <div class="modal-footer">
+      <span class="modal-footer-text">לחצו על מילה לעבור לעמוד שלה</span>
+    </div>
+  </div>
+</div>
+
+<script>
+// Each card rotates its own example word independently
+var cardWords = [
+  // Card 0: missing Juhuri
+  [
+    { word: 'שמש', text: 'יודעים איך אומרים?' },
+    { word: 'ירח', text: 'איך אומרים בג\'והורי?' },
+    { word: 'אדמה', text: 'עזרו לנו לתרגם!' },
+  ],
+  // Card 1: missing Hebrew
+  [
+    { word: 'dusdoq', text: 'מה זה בעברית?' },
+    { word: 'sefto', text: 'מכירים את המילה?' },
+    { word: 'gulmek', text: 'עזרו לנו לתרגם!' },
+  ],
+  // Card 2: missing dialects
+  [
+    { word: 'ov', text: 'חסר בניב הקובאי' },
+    { word: 'sere', text: 'חסר בניב הדרבנטי' },
+    { word: 'gof', text: 'חסר בניב הנלצ\'יקי' },
+  ],
+  // Card 3: missing audio
+  [
+    { word: 'kifo', text: 'הקליטו את ההגייה' },
+    { word: 'xuneg', text: 'איך מבטאים?' },
+    { word: 'ov', text: 'הקליטו בקולכם!' },
+  ],
+];
+
+var cardIndexes = [0, 0, 0, 0];
+
+// Stagger the rotation: each card starts at a different offset
+var intervals = [3500, 4200, 3800, 4500];
+
+function rotateCard(cardIndex) {
+  var card = document.querySelector('[data-card="' + cardIndex + '"]');
+  if (!card) return;
+
+  var wordEl = card.querySelector('.cta-word');
+  var dots = card.querySelectorAll('.cta-word-dot');
+
+  // Fade out
+  wordEl.style.opacity = '0';
+
+  setTimeout(function() {
+    // Advance index
+    cardIndexes[cardIndex] = (cardIndexes[cardIndex] + 1) % cardWords[cardIndex].length;
+    var item = cardWords[cardIndex][cardIndexes[cardIndex]];
+
+    // Rebuild DOM safely
+    while (wordEl.firstChild) wordEl.removeChild(wordEl.firstChild);
+
+    var highlight = document.createElement('span');
+    highlight.className = 'cta-word-highlight';
+    highlight.textContent = item.word;
+
+    wordEl.appendChild(highlight);
+    wordEl.appendChild(document.createTextNode(' \u2014 ' + item.text));
+
+    // Update dots
+    dots.forEach(function(dot, i) {
+      if (i === cardIndexes[cardIndex]) {
+        dot.classList.add('active');
+      } else {
+        dot.classList.remove('active');
+      }
+    });
+
+    // Fade in
+    wordEl.style.opacity = '1';
+  }, 300);
+}
+
+// Start each card on its own interval
+intervals.forEach(function(ms, i) {
+  setInterval(function() { rotateCard(i); }, ms);
+});
+
+// ========================================
+// Modal data & logic
+// ========================================
+var modalData = [
+  {
+    title: 'הוסף ג\'והורי',
+    subtitle: '1,247 מילים עם עברית בלבד',
+    theme: 'amber',
+    icon: '&#x1f4dd;',
+    iconBg: 'linear-gradient(135deg,#f59e0b,#ea580c)',
+    badge: 'המילה שבחרתם',
+    action: 'הוסף תרגום ג\'והורי',
+    items: [
+      { term: 'שמש', sub: 'שם עצם' },
+      { term: 'ירח', sub: 'שם עצם' },
+      { term: 'אדמה', sub: 'שם עצם' },
+      { term: 'שמים', sub: 'שם עצם' },
+      { term: 'רוח', sub: 'שם עצם' },
+      { term: 'גשם', sub: 'שם עצם' },
+      { term: 'כוכב', sub: 'שם עצם' },
+      { term: 'ענן', sub: 'שם עצם' },
+    ]
+  },
+  {
+    title: 'תרגם לעברית',
+    subtitle: '892 מילים עם ג\'והורי בלבד',
+    theme: 'green',
+    icon: '&#x1f4d6;',
+    iconBg: 'linear-gradient(135deg,#34d399,#059669)',
+    badge: 'המילה שבחרתם',
+    action: 'הוסף תרגום עברי',
+    items: [
+      { term: 'dusdoq', sub: 'latin' },
+      { term: 'sefto', sub: 'latin' },
+      { term: 'gulmek', sub: 'latin' },
+      { term: 'tovuq', sub: 'latin' },
+      { term: 'mifo', sub: 'latin' },
+      { term: 'numu', sub: 'latin' },
+    ]
+  },
+  {
+    title: 'השלם ניבים',
+    subtitle: '3,400 מילים חסרות בחלק מהניבים',
+    theme: 'blue',
+    icon: '&#x1f30d;',
+    iconBg: 'linear-gradient(135deg,#60a5fa,#2563eb)',
+    badge: 'המילה שבחרתם',
+    action: 'השלם ניב חסר',
+    items: [
+      { term: 'ov', sub: 'חסר: קובאי' },
+      { term: 'sere', sub: 'חסר: דרבנטי' },
+      { term: 'gof', sub: 'חסר: נלצ\'יקי' },
+      { term: 'xuneg', sub: 'חסר: קובאי, דרבנטי' },
+      { term: 'dor', sub: 'חסר: קובאי' },
+    ]
+  },
+  {
+    title: 'הקלט הגייה',
+    subtitle: '5,100 מילים ללא הקלטה',
+    theme: 'purple',
+    icon: '&#x1f3a4;',
+    iconBg: 'linear-gradient(135deg,#c084fc,#7c3aed)',
+    badge: 'המילה שבחרתם',
+    action: 'הקלט הגייה',
+    items: [
+      { term: 'kifo', sub: 'מספיק' },
+      { term: 'xuneg', sub: 'בית' },
+      { term: 'ov', sub: 'מים' },
+      { term: 'sere', sub: 'ראש' },
+      { term: 'gof', sub: 'דיבור' },
+      { term: 'dusdoq', sub: 'חבר' },
+    ]
+  }
+];
+
+function openModal(cardIndex) {
+  var data = modalData[cardIndex];
+  var currentWord = cardWords[cardIndex][cardIndexes[cardIndex]].word;
+
+  // Set header
+  var iconEl = document.getElementById('modalIcon');
+  iconEl.style.background = data.iconBg;
+  iconEl.style.color = '#050b14';
+  // Use a temporary element to decode the HTML entity
+  var tempEl = document.createElement('span');
+  tempEl.appendChild(document.createTextNode(''));
+  iconEl.textContent = '';
+  // Decode HTML entity
+  var decoder = document.createElement('div');
+  decoder.appendChild(document.createTextNode(data.icon));
+  // For emoji entities we need a different approach
+  var iconMap = { 0: '\u{1f4dd}', 1: '\u{1f4d6}', 2: '\u{1f30d}', 3: '\u{1f3a4}' };
+  iconEl.textContent = iconMap[cardIndex] || '';
+
+  document.getElementById('modalTitle').textContent = data.title;
+  document.getElementById('modalSubtitle').textContent = data.subtitle;
+
+  // Build list — featured word first, then rest
+  var listEl = document.getElementById('modalList');
+  while (listEl.firstChild) listEl.removeChild(listEl.firstChild);
+
+  // Featured item
+  var featured = document.createElement('div');
+  featured.className = 'modal-item-featured';
+  featured.setAttribute('data-theme', data.theme);
+
+  var badge = document.createElement('div');
+  badge.className = 'featured-badge';
+  badge.textContent = data.badge;
+  featured.appendChild(badge);
+
+  var term = document.createElement('div');
+  term.className = 'featured-term';
+  term.textContent = currentWord;
+  featured.appendChild(term);
+
+  // Find sub for featured word
+  var featuredSub = '';
+  data.items.forEach(function(item) {
+    if (item.term === currentWord) featuredSub = item.sub;
+  });
+  if (featuredSub) {
+    var sub = document.createElement('div');
+    sub.className = 'featured-translation';
+    sub.textContent = featuredSub;
+    featured.appendChild(sub);
+  }
+
+  var actionBtn = document.createElement('button');
+  actionBtn.type = 'button';
+  actionBtn.className = 'featured-action';
+  actionBtn.textContent = data.action;
+  featured.appendChild(actionBtn);
+
+  listEl.appendChild(featured);
+
+  // Rest of items (skip featured word)
+  data.items.forEach(function(item) {
+    if (item.term === currentWord) return;
+
+    var row = document.createElement('div');
+    row.className = 'modal-item';
+
+    var info = document.createElement('div');
+    var termDiv = document.createElement('div');
+    termDiv.className = 'modal-item-term';
+    termDiv.textContent = item.term;
+    info.appendChild(termDiv);
+    var subDiv = document.createElement('div');
+    subDiv.className = 'modal-item-sub';
+    subDiv.textContent = item.sub;
+    info.appendChild(subDiv);
+    row.appendChild(info);
+
+    var arrow = document.createElement('span');
+    arrow.className = 'modal-item-arrow';
+    arrow.textContent = '\u2190';
+    row.appendChild(arrow);
+
+    listEl.appendChild(row);
+  });
+
+  // Open
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+// Card click handlers
+document.querySelectorAll('.cta-card').forEach(function(card) {
+  card.addEventListener('click', function() {
+    var idx = parseInt(card.getAttribute('data-card'));
+    openModal(idx);
+  });
+});
+
+// Close modal
+document.getElementById('modalClose').addEventListener('click', function() {
+  document.getElementById('modalOverlay').classList.remove('open');
+});
+document.getElementById('modalOverlay').addEventListener('click', function(e) {
+  if (e.target === this) this.classList.remove('open');
+});
+</script>
+</body>
+</html>

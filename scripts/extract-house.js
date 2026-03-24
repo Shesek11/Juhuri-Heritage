@@ -1,0 +1,77 @@
+const fs = require('fs');
+const src = { source: 'מאגר', sourceName: 'רויטל חנוקוב ומרכז המורשת' };
+const base = { russian: '', english: '', definition: '', pronunciationGuide: '', dialect: '', ...src, partOfSpeech: 'noun' };
+
+const entries = [
+  { latin: 'khuna', term: 'חונה', hebrew: 'בית' },
+  { latin: 'der', term: 'דר', hebrew: 'דלת' },
+  { latin: 'Khori khona', term: 'חורי חונה', hebrew: 'רצפה' },
+  { latin: 'penjera', term: "פנג'רה", hebrew: 'חלון' },
+  { latin: 'bun', term: 'בון', hebrew: 'גג' },
+  { latin: 'bun khona', term: 'בון חונה', hebrew: 'תקרה' },
+  { latin: 'lampuchke', term: 'למפוצקה', hebrew: 'מנורה' },
+  { latin: 'lampa', term: 'למפה', hebrew: 'מנורת לילה / עששית' },
+  { latin: 'perda', term: 'פרדה', hebrew: 'וילון' },
+  { latin: 'ochoro', term: "אוצ'ורו", hebrew: 'מפתחות' },
+  { latin: 'shishebend', term: 'שישה בנד', hebrew: 'חדר סלון' },
+  { latin: 'divan', term: 'דיבן', hebrew: 'ספה' },
+  { latin: 'kholinche', term: 'אולוב', hebrew: 'שטיח' },
+  { latin: 'olov', term: '', hebrew: 'שטיח' },
+  { latin: 'shilxhan', term: 'שילחן', hebrew: 'שולחן קפה' },
+  { latin: 'zohut', term: 'זוחוט', hebrew: 'חדר שירותים' },
+  { latin: 'xhamum', term: 'חאמום', hebrew: 'מקלחת' },
+  { latin: 'guzgi', term: 'גוזגי', hebrew: 'מראה' },
+  { latin: 'krant', term: 'קראנט', hebrew: 'ברז' },
+  { latin: 'dorini khuna', term: 'דוריני חונה', hebrew: 'חדר שינה' },
+  { latin: 'otorg', term: 'אוטוג', hebrew: 'חדר שינה' },
+  { latin: 'Kravat', term: 'קראבאט', hebrew: 'מיטה' },
+  { latin: 'lokhcheg', term: "לוחצ'ג", hebrew: 'מיטה' },
+  { latin: 'shfanir', term: 'שפאניר', hebrew: 'ארון' },
+  { latin: 'shkob', term: 'שקוב', hebrew: 'שידה' },
+  { latin: 'luxhuf', term: 'לוחוף', hebrew: 'פוח' },
+  { latin: 'dusheg', term: 'דושג', hebrew: 'מזרון' },
+  { latin: 'ediol', term: 'אדיול', hebrew: 'שמיכה' },
+  { latin: 'bolush', term: 'בולוש', hebrew: 'כרית' },
+  { latin: 'Roy laxhchegi', term: "רוי לחצ'גי", hebrew: 'כיסוי מיטה' },
+  { latin: 'kukhni', term: 'קוחני', hebrew: 'מטבח' },
+  { latin: 'Stul kukhni', term: 'סטול קוחני', hebrew: 'שולחן (מטבח)' },
+  { latin: 'stul', term: 'סטול', hebrew: 'כסא' },
+  { latin: 'khaladinik', term: 'חלדיניק', hebrew: 'מקרר' },
+  { latin: 'tenu', term: 'תנו', hebrew: 'תנור' },
+  { latin: 'gaz', term: 'גז', hebrew: 'כיריים' },
+  { latin: 'piti', term: 'פיטי', hebrew: 'סיר בישול' },
+  { latin: 'rgazgo', term: 'רגזגו', hebrew: 'סיר לאורז' },
+  { latin: 'tovo', term: 'טובו', hebrew: "מחבת סוטא'ז" },
+  { latin: 'choinig', term: "צ'ויניג", hebrew: 'קומקום' },
+  { latin: 'Choinig rangi', term: "צ'ויניג רנגי", hebrew: 'קומקום לתמצית' },
+  { latin: 'larga', term: 'לגה', hebrew: 'כף' },
+  { latin: 'Larga choii', term: "לגה צ'ויי", hebrew: 'כפית' },
+  { latin: 'vilke', term: 'וויילקה', hebrew: 'מזלג' },
+  { latin: 'korda', term: 'קורדה', hebrew: 'סכין' },
+  { latin: 'burme', term: 'בורמה', hebrew: 'צלחת' },
+  { latin: 'peila', term: 'פיילה', hebrew: 'כוס' },
+  { latin: 'Munukdoku', term: 'מונוקדוקו', hebrew: 'מלחיה' },
+  { latin: 'sofra', term: 'סופרה', hebrew: 'מפה' },
+  { latin: 'logon', term: 'לוגון', hebrew: 'קערה' },
+  { latin: 'ashpalu', term: 'אשפלו', hebrew: 'מסננת' },
+  { latin: 'bonke', term: 'בונקה', hebrew: 'צנצנת' },
+  { latin: 'maxhala', term: "מח'לה", hebrew: 'גינה' },
+  { latin: 'Bor', term: 'בור', hebrew: 'חצר' },
+  { latin: 'borche', term: "בורצ'ה", hebrew: 'חצר' },
+  { latin: 'govdu', term: 'גובדו', hebrew: 'מחסן' },
+  { latin: 'borkhund', term: 'בורחונד', hebrew: 'מרפסת' },
+  { latin: 'kucha', term: '', hebrew: 'רחוב' },
+].map(e => ({ ...base, ...e, term: e.term || '' }));
+
+const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+const output = {
+  timestamp: new Date().toISOString(),
+  source_files: ['בית.pdf'],
+  ...src,
+  total_entries: entries.length,
+  entries,
+};
+
+const outPath = `data/processed/dictionary-house-${timestamp}.json`;
+fs.writeFileSync(outPath, JSON.stringify(output, null, 2), 'utf-8');
+console.log(`${entries.length} entries saved to ${outPath}`);
