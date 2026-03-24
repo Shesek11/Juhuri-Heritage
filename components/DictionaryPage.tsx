@@ -355,7 +355,7 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({
                 <WordOfTheDay onSelectWord={(term) => { setQuery(term); handleSearch(undefined, term); }} />
               </div>
               <div className="h-64 md:h-72">
-                <RecentAdditions onSelectWord={setQuery} />
+                <RecentAdditions onSelectWord={(term) => router.push(`/word/${encodeURIComponent(term)}`)} />
               </div>
             </div>
           </>

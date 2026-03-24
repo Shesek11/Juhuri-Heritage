@@ -25,14 +25,13 @@ export async function GET(request: NextRequest) {
       LIMIT ? OFFSET ?
     `, [...searchParams, limit, offset]) as any[];
 
+    // Total count without Hebrew filter — shows real scope
     const [[{ total }]] = await pool.query(`
       SELECT COUNT(DISTINCT de.id) as total
       FROM dictionary_entries de
-      LEFT JOIN translations t ON de.id = t.entry_id
       LEFT JOIN audio_recordings ar ON de.id = ar.entry_id AND ar.status = 'approved'
       WHERE de.status = 'active'
         AND ar.id IS NULL
-        AND de.term REGEXP '^[א-ת]'
         ${searchCondition}
     `, searchParams) as any[];
 

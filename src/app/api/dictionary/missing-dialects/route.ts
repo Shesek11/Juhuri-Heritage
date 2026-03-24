@@ -32,6 +32,7 @@ export async function GET(request: NextRequest) {
       [...searchParams, dialectCount, limit, offset]
     ) as any[];
 
+    // Total count without Hebrew filter — shows real scope of work
     const [[{ total }]] = await pool.query(
       `SELECT COUNT(*) as total FROM (
           SELECT de.id,
@@ -39,7 +40,6 @@ export async function GET(request: NextRequest) {
           FROM dictionary_entries de
           JOIN translations t ON de.id = t.entry_id
           WHERE de.status = 'active'
-          AND de.term REGEXP '^[א-ת]'
           ${searchCondition}
           GROUP BY de.id
           HAVING dc < ?

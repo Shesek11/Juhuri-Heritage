@@ -13,11 +13,13 @@ export async function GET(request: NextRequest) {
     // "הוסף ג'והורי" = entries where:
     // 1. Term is NOT in Hebrew script (missing Hebrew transliteration), OR
     // 2. Has Hebrew translation but no Juhuri latin transliteration
+    // Filter out very long terms (phrases/sentences) to keep widget clean
     const [entries] = await pool.query(`
-      SELECT de.id, de.term, de.detected_language, t.hebrew
+      SELECT de.id, de.term, de.detected_language, t.hebrew, t.latin, t.cyrillic
       FROM dictionary_entries de
       LEFT JOIN translations t ON de.id = t.entry_id
       WHERE de.status = 'active'
+      AND CHAR_LENGTH(de.term) <= 30
       AND (
         de.term NOT REGEXP '^[א-ת]'
         OR (t.hebrew IS NOT NULL AND t.hebrew != '' AND (t.latin IS NULL OR t.latin = ''))
