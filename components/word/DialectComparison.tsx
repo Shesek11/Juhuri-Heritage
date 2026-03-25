@@ -62,7 +62,7 @@ const DialectComparison: React.FC<DialectComparisonProps> = ({
       {/* Dialects table */}
       {dialects.length > 0 && (
         <div>
-          <h3 className="text-sm uppercase tracking-wider text-slate-400 dark:text-slate-400 font-bold mb-3">
+          <h3 className="text-sm uppercase tracking-wider text-slate-300 dark:text-slate-300 font-bold mb-3">
             ניבים
           </h3>
 
@@ -70,10 +70,10 @@ const DialectComparison: React.FC<DialectComparisonProps> = ({
             <table className="w-full text-sm min-w-[340px]">
               <thead>
                 <tr className="border-b border-white/10">
-                  <th className="text-right py-2 px-3 text-xs text-slate-400 font-bold uppercase tracking-wider">ניב</th>
-                  <th className="text-right py-2 px-3 text-xs text-slate-400 font-bold uppercase tracking-wider">תעתיק לטיני</th>
-                  <th className="text-right py-2 px-3 text-xs text-slate-400 font-bold uppercase tracking-wider">תעתיק קירילי</th>
-                  <th className="text-right py-2 px-3 text-xs text-slate-400 font-bold uppercase tracking-wider">הצבעות</th>
+                  <th className="text-right py-2 px-3 text-xs text-slate-300 font-bold uppercase tracking-wider">ניב</th>
+                  <th className="text-right py-2 px-3 text-xs text-slate-300 font-bold uppercase tracking-wider">תעתיק לטיני</th>
+                  <th className="text-right py-2 px-3 text-xs text-slate-300 font-bold uppercase tracking-wider">תעתיק קירילי</th>
+                  <th className="text-right py-2 px-3 text-xs text-slate-300 font-bold uppercase tracking-wider">הצבעות</th>
                   <th className="py-2 px-2"><span className="sr-only">פעולות</span></th>
                 </tr>
               </thead>
@@ -139,11 +139,11 @@ const DialectComparison: React.FC<DialectComparisonProps> = ({
                               value={d.displayCyrillic}
                               entryId={entry.id}
                               fieldName="cyrillic"
-                              valueClassName="font-serif text-slate-400"
+                              valueClassName="font-serif text-slate-300"
                               inline
                             />
                           ) : (
-                            <div className="flex items-center gap-1 font-serif text-slate-400">
+                            <div className="flex items-center gap-1 font-serif text-slate-300">
                               <FieldSourceBadge source={entry.fieldSources?.cyrillic} />
                               <span>{d.displayCyrillic}</span>
                               <ConfirmAiButton entryId={entry.id} fieldName="cyrillic" value={d.displayCyrillic} source={entry.fieldSources?.cyrillic} />
@@ -183,7 +183,7 @@ const DialectComparison: React.FC<DialectComparisonProps> = ({
                               className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs transition-all ${
                                 voteData?.userVote === 'up'
                                   ? 'bg-green-900/30 text-green-400'
-                                  : 'text-slate-400 hover:bg-white/10'
+                                  : 'text-slate-300 hover:bg-white/10'
                               }`}
                               title="הצבע לטובה"
                             >
@@ -196,7 +196,7 @@ const DialectComparison: React.FC<DialectComparisonProps> = ({
                               className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs transition-all ${
                                 voteData?.userVote === 'down'
                                   ? 'bg-red-900/30 text-red-400'
-                                  : 'text-slate-400 hover:bg-white/10'
+                                  : 'text-slate-300 hover:bg-white/10'
                               }`}
                               title="הצבע נגד"
                             >
@@ -213,7 +213,7 @@ const DialectComparison: React.FC<DialectComparisonProps> = ({
                           <button
                             type="button"
                             onClick={() => onPlay(d.cyrillic || d.latin || d.hebrew, `dialect-${d.idx}`)}
-                            className={`p-1.5 rounded-full text-slate-400 hover:text-indigo-400 transition-colors ${isPlaying === `dialect-${d.idx}` ? 'text-indigo-400 animate-pulse' : ''}`}
+                            className={`p-1.5 rounded-full text-slate-300 hover:text-indigo-400 transition-colors ${isPlaying === `dialect-${d.idx}` ? 'text-indigo-400 animate-pulse' : ''}`}
                             title="השמע"
                           >
                             <Volume2 size={14} />
@@ -222,7 +222,7 @@ const DialectComparison: React.FC<DialectComparisonProps> = ({
                             <button
                               type="button"
                               onClick={() => onSuggestCorrection?.(d, entry.id!, entry.term)}
-                              className="p-1.5 rounded-full text-slate-400 hover:text-amber-400 transition-colors"
+                              className="p-1.5 rounded-full text-slate-300 hover:text-amber-400 transition-colors"
                               title="הצע תיקון"
                             >
                               <Edit3 size={14} />

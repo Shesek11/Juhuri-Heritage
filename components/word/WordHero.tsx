@@ -132,7 +132,7 @@ const WordHero: React.FC<WordHeroProps> = ({
     ? 'text-indigo-400'
     : entry.verificationLevel === 'ai'
     ? 'text-amber-400'
-    : 'text-slate-400';
+    : 'text-slate-300';
 
   return (
     <div className="p-8 bg-gradient-to-br from-white/10 to-transparent border-b border-white/10 text-white relative">
@@ -174,7 +174,7 @@ const WordHero: React.FC<WordHeroProps> = ({
               <button
                 type="button"
                 onClick={() => setEditingPOS(true)}
-                className="inline-flex items-center gap-1 px-2 py-1 border border-dashed border-white/20 rounded-md text-xs text-slate-400 hover:border-indigo-400 hover:text-indigo-300 transition-colors"
+                className="inline-flex items-center gap-1 px-2 py-1 border border-dashed border-white/20 rounded-md text-xs text-slate-300 hover:border-indigo-400 hover:text-indigo-300 transition-colors"
               >
                 <Pencil size={10} />
                 הוסף חלק דיבר
@@ -196,7 +196,7 @@ const WordHero: React.FC<WordHeroProps> = ({
               <button
                 type="button"
                 onClick={() => setEditingDialect(true)}
-                className="inline-flex items-center gap-1 px-2 py-1 border border-dashed border-white/20 rounded-md text-xs text-slate-400 hover:border-violet-400 hover:text-violet-300 transition-colors"
+                className="inline-flex items-center gap-1 px-2 py-1 border border-dashed border-white/20 rounded-md text-xs text-slate-300 hover:border-violet-400 hover:text-violet-300 transition-colors"
               >
                 <Pencil size={10} />
                 הוסף ניב
@@ -230,7 +230,7 @@ const WordHero: React.FC<WordHeroProps> = ({
             </button>
             <button
               onClick={() => setEditingDialect(false)}
-              className="px-2 py-1 text-xs text-slate-400 hover:text-white"
+              className="px-2 py-1 text-xs text-slate-300 hover:text-white"
             >
               ביטול
             </button>
@@ -241,7 +241,7 @@ const WordHero: React.FC<WordHeroProps> = ({
         {entry.source === 'AI' ? (
           <span className="text-xs text-amber-400/70">תרגום AI</span>
         ) : (
-          <span className="text-xs text-slate-400">באדיבות {(entry as any).sourceName || (entry as any).contributorName || 'הקהילה'}</span>
+          <span className="text-xs text-slate-300">באדיבות {(entry as any).sourceName || (entry as any).contributorName || 'הקהילה'}</span>
         )}
 
         {/* POS edit form */}

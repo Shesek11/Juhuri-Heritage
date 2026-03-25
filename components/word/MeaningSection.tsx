@@ -59,7 +59,7 @@ const MeaningSection: React.FC<MeaningSectionProps> = ({
     <div className="space-y-3">
       {/* Hebrew translation */}
       <div className="flex items-start gap-2">
-        <span className="text-sm text-slate-400 mt-1.5 shrink-0 min-w-[100px]">עברית:</span>
+        <span className="text-sm text-slate-300 mt-1.5 shrink-0 min-w-[100px]">עברית:</span>
         {primaryHebrew ? (
           <div className="flex items-center gap-2 flex-wrap group flex-1">
             <span className="text-2xl font-bold text-slate-100 font-rubik">{primaryHebrew}</span>
@@ -92,7 +92,7 @@ const MeaningSection: React.FC<MeaningSectionProps> = ({
       {/* Russian translation */}
       {displayRussian ? (
         <div className="flex items-start gap-2 group">
-          <span className="text-sm text-slate-400 mt-0.5 shrink-0 min-w-[100px]">רוסית:</span>
+          <span className="text-sm text-slate-300 mt-0.5 shrink-0 min-w-[100px]">רוסית:</span>
           {isRussianFromAI ? (
             <AIValueBadge
               value={displayRussian}
@@ -110,7 +110,7 @@ const MeaningSection: React.FC<MeaningSectionProps> = ({
         </div>
       ) : (
         <div className="flex items-start gap-2">
-          <span className="text-sm text-slate-400 mt-0.5 shrink-0 min-w-[100px]">רוסית:</span>
+          <span className="text-sm text-slate-300 mt-0.5 shrink-0 min-w-[100px]">רוסית:</span>
           <div className="flex-1">
             <MissingFieldPlaceholder
               fieldName="russian"
@@ -128,18 +128,18 @@ const MeaningSection: React.FC<MeaningSectionProps> = ({
       {/* Expanded definition — with AIValueBadge if from enrichment */}
       {showDefinition && (
         <div className="flex items-start gap-2">
-          <span className="text-sm text-slate-400 mt-0.5 shrink-0 min-w-[100px]">תרגום (עברית):</span>
+          <span className="text-sm text-slate-300 mt-0.5 shrink-0 min-w-[100px]">תרגום (עברית):</span>
           {isDefinitionFromAI ? (
             <AIValueBadge
               value={displayDefinition!}
               entryId={entry.id}
               fieldName="definition"
-              valueClassName="text-sm text-slate-400 leading-relaxed"
+              valueClassName="text-sm text-slate-300 leading-relaxed"
             />
           ) : (
             <div className="flex items-start gap-1.5 flex-1 group">
               <FieldSourceBadge source={entry.fieldSources?.definition} />
-              <span className="text-sm text-slate-400 leading-relaxed flex-1">{displayDefinition}</span>
+              <span className="text-sm text-slate-300 leading-relaxed flex-1">{displayDefinition}</span>
               {entry.id && <EditBtn onClick={() => onStartEdit('definition')} />}
             </div>
           )}
@@ -152,7 +152,7 @@ const MeaningSection: React.FC<MeaningSectionProps> = ({
       {/* AI loading skeleton for definition */}
       {!showDefinition && !defText && enrichmentLoading && (
         <div className="flex items-start gap-2">
-          <span className="text-sm text-slate-400 mt-0.5 shrink-0 min-w-[100px]">תרגום (עברית):</span>
+          <span className="text-sm text-slate-300 mt-0.5 shrink-0 min-w-[100px]">תרגום (עברית):</span>
           <div className="flex items-center gap-2 text-xs text-amber-400 flex-1">
             <Loader2 size={12} className="animate-spin" />
             <span>AI מתרגם...</span>
