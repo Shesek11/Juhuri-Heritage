@@ -1,4 +1,65 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { jwtVerify } from 'jose';
+
+// ---------------------------------------------------------------------------
+// Admin route protection (JWT-based)
+// ---------------------------------------------------------------------------
+
+// Pages accessible to both admin and approver:
+// /admin/dictionary, /admin/dictionary/pending, /admin/dictionary/ai, /admin/family
+// Everything else requires admin role specifically
+const APPROVER_ALLOWED = new Set([
+  '/admin',
+  '/admin/dictionary',
+  '/admin/dictionary/pending',
+  '/admin/dictionary/ai',
+  '/admin/family',
+]);
+
+async function handleAdminAuth(request: NextRequest): Promise<NextResponse | null> {
+  const pathname = request.nextUrl.pathname;
+
+  if (!pathname.startsWith('/admin')) {
+    return null; // not an admin route — skip
+  }
+
+  const token = request.cookies.get('token')?.value;
+
+  if (!token || !process.env.JWT_SECRET) {
+    const url = request.nextUrl.clone();
+    url.pathname = '/';
+    return NextResponse.redirect(url);
+  }
+
+  try {
+    const secret = new TextEncoder().encode(process.env.JWT_SECRET);
+    const { payload } = await jwtVerify(token, secret);
+    const role = payload.role as string | undefined;
+
+    // Only admin and approver roles may access /admin/*
+    if (role !== 'admin' && role !== 'approver') {
+      const url = request.nextUrl.clone();
+      url.pathname = '/';
+      return NextResponse.redirect(url);
+    }
+
+    // Approvers can only access specific pages; everything else requires admin
+    // Normalize trailing slash to prevent bypass (e.g. /admin/users/ vs /admin/users)
+    const normalizedPath = pathname.replace(/\/$/, '') || '/admin';
+    if (role === 'approver' && !APPROVER_ALLOWED.has(normalizedPath)) {
+      const url = request.nextUrl.clone();
+      url.pathname = '/admin/dictionary';
+      return NextResponse.redirect(url);
+    }
+
+    return null; // authenticated — continue
+  } catch {
+    // Invalid / expired token
+    const url = request.nextUrl.clone();
+    url.pathname = '/';
+    return NextResponse.redirect(url);
+  }
+}
 
 // ---------------------------------------------------------------------------
 // In-memory redirect cache (2-minute TTL)
@@ -61,6 +122,12 @@ export async function middleware(request: NextRequest) {
     pathname === '/favicon.ico'
   ) {
     return NextResponse.next();
+  }
+
+  // --- Admin route protection (before redirect logic) ---
+  const adminResponse = await handleAdminAuth(request);
+  if (adminResponse) {
+    return adminResponse;
   }
 
   const origin = request.nextUrl.origin;

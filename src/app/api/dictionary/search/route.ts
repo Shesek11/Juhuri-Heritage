@@ -171,6 +171,20 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Mark duplicates: if multiple results share the same hebrew translation
+    // (the most common case for user-visible duplicates)
+    const hebrewCount: Record<string, number> = {};
+    for (const r of allResults) {
+      const heb = r.translations?.[0]?.hebrew;
+      if (heb && heb.length > 1) {
+        hebrewCount[heb] = (hebrewCount[heb] || 0) + 1;
+      }
+    }
+    for (const r of allResults) {
+      const heb = r.translations?.[0]?.hebrew;
+      r.hasDuplicates = !!(heb && hebrewCount[heb] > 1);
+    }
+
     return NextResponse.json({ found: true, entry: result, results: allResults });
   } catch (error) {
     console.error('Search error:', error);

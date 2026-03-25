@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import FocusTrap from 'focus-trap-react';
 import { X, Mail, Lock, User as UserIcon, LogIn, UserPlus, Loader2, AlertCircle } from 'lucide-react';
 import { User } from '../types';
 
@@ -96,13 +97,17 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess, reaso
             className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200 font-rubik"
             onClick={onClose}
         >
+            <FocusTrap focusTrapOptions={{ allowOutsideClick: true, escapeDeactivates: true }}>
             <div
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="auth-modal-title"
                 className="bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden animate-in zoom-in-95 duration-200 border border-white/10 relative"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Header */}
                 <div className="flex border-b border-white/10 relative bg-white/5/50">
-                    <h3 className="flex-1 py-4 text-center font-bold text-slate-700 dark:text-slate-200">
+                    <h3 id="auth-modal-title" className="flex-1 py-4 text-center font-bold text-slate-700 dark:text-slate-200">
                         {mode === 'login' ? 'כניסה למערכת' : 'הרשמה מהירה'}
                     </h3>
                     <button onClick={onClose} className="absolute top-3 left-4 p-1 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 z-10">
@@ -122,7 +127,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess, reaso
                     {!showEmailForm ? (
                         /* Social Login Options */
                         <div className="text-center">
-                            <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
+                            <p className="text-sm text-slate-400 dark:text-slate-400 mb-6">
                                 התחבר בקלות באמצעות החשבונות הקיימים שלך
                             </p>
 
@@ -146,7 +151,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess, reaso
                                     <div className="w-full border-t border-white/10"></div>
                                 </div>
                                 <div className="relative flex justify-center text-sm">
-                                    <span className="px-2 bg-[#0d1424]/60 backdrop-blur-xl text-slate-500">או</span>
+                                    <span className="px-2 bg-[#0d1424]/60 backdrop-blur-xl text-slate-400">או</span>
                                 </div>
                             </div>
 
@@ -164,7 +169,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess, reaso
                             <button
                                 type="button"
                                 onClick={() => setShowEmailForm(false)}
-                                className="text-sm text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 mb-2"
+                                className="text-sm text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 mb-2"
                             >
                                 ← חזרה לאפשרויות
                             </button>
@@ -202,6 +207,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess, reaso
                                         className="w-full pr-10 pl-4 py-2.5 border border-white/10 rounded-lg bg-white/5 backdrop-blur-sm text-amber-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
                                         required
                                         dir="ltr"
+                                        autoComplete="email"
                                     />
                                 </div>
                             </div>
@@ -221,6 +227,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess, reaso
                                         required
                                         minLength={6}
                                         dir="ltr"
+                                        autoComplete="current-password"
                                     />
                                 </div>
                             </div>
@@ -252,7 +259,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess, reaso
                                 )}
                             </button>
 
-                            <p className="text-center text-sm text-slate-500 dark:text-slate-400">
+                            <p className="text-center text-sm text-slate-400 dark:text-slate-400">
                                 {mode === 'login' ? (
                                     <>
                                         אין לך חשבון?{' '}
@@ -287,6 +294,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess, reaso
                     )}
                 </div>
             </div>
+            </FocusTrap>
         </div>
     );
 };

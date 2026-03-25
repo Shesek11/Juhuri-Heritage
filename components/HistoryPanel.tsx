@@ -14,10 +14,10 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ history, onSelect, onClear 
   return (
     <div className="w-full max-w-2xl mt-8">
       <div className="flex items-center justify-between mb-4 px-2">
-        <h3 className="flex items-center gap-2 text-slate-500 dark:text-slate-400 font-medium">
+        <h2 className="flex items-center gap-2 text-slate-400 dark:text-slate-400 font-medium">
           <Clock size={16} />
           חיפושים אחרונים
-        </h3>
+        </h2>
         <button
           onClick={onClear}
           className="text-xs text-red-400 hover:text-red-500 flex items-center gap-1 px-2 py-1 rounded hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
@@ -35,7 +35,7 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ history, onSelect, onClear 
           >
             <span className="font-medium">{item.term}</span>
             <ArrowRightLeft size={12} className="text-slate-400" />
-            <span className="text-slate-500 dark:text-slate-400 truncate max-w-[100px]">
+            <span className="text-slate-400 dark:text-slate-400 truncate max-w-[100px]">
               {item.translations[0]?.hebrew || item.translations[0]?.latin}
             </span>
           </button>

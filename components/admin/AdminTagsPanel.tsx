@@ -179,7 +179,7 @@ export const AdminTagsPanel: React.FC = () => {
         return (
             <div className="flex items-center justify-center py-16">
                 <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
-                <span className="mr-3 text-slate-500">טוען תגיות...</span>
+                <span className="mr-3 text-slate-400">טוען תגיות...</span>
             </div>
         );
     }
@@ -194,7 +194,7 @@ export const AdminTagsPanel: React.FC = () => {
                             <Tag className="w-8 h-8 text-amber-600" />
                             ניהול תגיות מתכונים
                         </h1>
-                        <p className="text-slate-500 dark:text-slate-400 mt-1">
+                        <p className="text-slate-400 dark:text-slate-400 mt-1">
                             סך הכל: {tags.length} תגיות מוגדרות
                         </p>
                     </div>
@@ -294,7 +294,7 @@ export const AdminTagsPanel: React.FC = () => {
                                             </div>
                                         )}
                                     </div>
-                                    <p className="text-xs text-slate-500 mt-1">הדבק אמוג'י (emoji) או העתק מ-<a href="https://emojipedia.org" target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:underline">Emojipedia</a></p>
+                                    <p className="text-xs text-slate-400 mt-1">הדבק אמוג'י (emoji) או העתק מ-<a href="https://emojipedia.org" target="_blank" rel="noopener noreferrer" className="text-amber-600 hover:underline">Emojipedia</a></p>
                                 </div>
                                 <div>
                                     <label className="block text-sm font-medium mb-1">צבע</label>
@@ -379,7 +379,7 @@ export const AdminTagsPanel: React.FC = () => {
                                     <tr key={tag.id} className="hover:bg-white/5">
                                         <td className="px-4 py-3 text-2xl">{tag.icon}</td>
                                         <td className="px-4 py-3 font-medium">{tag.name_hebrew}</td>
-                                        <td className="px-4 py-3 text-slate-500">{tag.name}</td>
+                                        <td className="px-4 py-3 text-slate-400">{tag.name}</td>
                                         <td className="px-4 py-3">
                                             <span className="text-sm">
                                                 {category?.icon} {category?.label || tag.category}
@@ -391,7 +391,7 @@ export const AdminTagsPanel: React.FC = () => {
                                                     className="w-6 h-6 rounded border border-slate-300"
                                                     style={{ backgroundColor: tag.color }}
                                                 />
-                                                <span className="text-xs text-slate-500">{tag.color}</span>
+                                                <span className="text-xs text-slate-400">{tag.color}</span>
                                             </div>
                                         </td>
                                         <td className="px-4 py-3">
@@ -491,11 +491,11 @@ export const AdminTagsPanel: React.FC = () => {
                                                     <span className="text-2xl">{cat.icon}</span>
                                                     <div>
                                                         <div className="font-medium text-slate-800 dark:text-white">{cat.label}</div>
-                                                        <div className="text-xs text-slate-500">{cat.value}</div>
+                                                        <div className="text-xs text-slate-400">{cat.value}</div>
                                                     </div>
                                                 </div>
                                                 <div className="flex items-center gap-3">
-                                                    <span className="text-sm text-slate-500">
+                                                    <span className="text-sm text-slate-400">
                                                         {tagCount} תגיות
                                                     </span>
                                                     <button

@@ -11,7 +11,7 @@ const AccessibilityPage: React.FC = () => {
         <h1 className="text-3xl md:text-4xl font-bold text-center mb-4 text-slate-900 dark:text-slate-50">
           הצהרת נגישות
         </h1>
-        <p className="text-sm text-slate-500 dark:text-slate-400 text-center mb-10">
+        <p className="text-sm text-slate-400 dark:text-slate-400 text-center mb-10">
           עודכן לאחרונה: 5 במרץ 2026
         </p>
 

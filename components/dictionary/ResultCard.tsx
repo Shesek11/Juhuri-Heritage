@@ -11,11 +11,14 @@ import ExamplesSection from './ExamplesSection';
 import CommunityActions from './CommunityActions';
 
 export interface EnrichmentData {
+  hebrewTransliteration?: string;
+  hebrew?: string;
   latin?: string;
   cyrillic?: string;
-  examples?: Example[];
+  russian?: string;
   pronunciationGuide?: string;
   definition?: string;
+  partOfSpeech?: string;
 }
 
 interface ResultCardProps {
@@ -109,6 +112,7 @@ const ResultCard: React.FC<ResultCardProps> = ({
         pendingSuggestions={pendingSuggestions}
         enrichmentLoading={enrichmentLoading}
         enrichedPronunciation={enrichmentData?.pronunciationGuide}
+        enrichedPartOfSpeech={enrichmentData?.partOfSpeech}
       />
 
       <div className="p-6 space-y-6">
@@ -120,11 +124,13 @@ const ResultCard: React.FC<ResultCardProps> = ({
           onCloseEdit={() => setEditingField(null)}
           pendingSuggestions={pendingSuggestions}
           enrichmentLoading={enrichmentLoading}
+          enrichedDefinition={enrichmentData?.definition}
+          enrichedRussian={enrichmentData?.russian}
         />
 
         {/* Translations */}
         <div>
-          <h3 className="text-sm uppercase tracking-wider text-slate-400 dark:text-slate-500 font-bold mb-3">תרגומים</h3>
+          <h3 className="text-sm uppercase tracking-wider text-slate-400 dark:text-slate-400 font-bold mb-3">תרגומים</h3>
           <div className="grid gap-4">
             {entry.translations.map((t, idx) => (
               <TranslationCard
@@ -142,7 +148,7 @@ const ResultCard: React.FC<ResultCardProps> = ({
                 onSuggestCorrection={onSuggestCorrection}
                 pendingSuggestions={pendingSuggestions}
                 enrichmentLoading={enrichmentLoading}
-                enrichmentData={enrichmentData ? { latin: enrichmentData.latin, cyrillic: enrichmentData.cyrillic } : null}
+                enrichmentData={enrichmentData ? { hebrew: enrichmentData.hebrew, latin: enrichmentData.latin, cyrillic: enrichmentData.cyrillic } : null}
               />
             ))}
           </div>
@@ -156,8 +162,6 @@ const ResultCard: React.FC<ResultCardProps> = ({
           entry={entry}
           isPlaying={isPlaying}
           onPlay={handlePlay}
-          enrichmentLoading={enrichmentLoading}
-          enrichedExamples={enrichmentData?.examples}
         />
 
         {/* Community Actions: likes, comments */}

@@ -213,7 +213,7 @@ const MobileAdminPanel: React.FC<MobileAdminPanelProps> = ({ onClose }) => {
                     </div>
                 ) : activeTab === 'comments' ? (
                     pendingComments.length === 0 ? (
-                        <p className="text-center text-slate-500 py-12">אין תגובות ממתינות 🎉</p>
+                        <p className="text-center text-slate-400 py-12">אין תגובות ממתינות 🎉</p>
                     ) : (
                         pendingComments.map((comment) => (
                             <div
@@ -225,7 +225,7 @@ const MobileAdminPanel: React.FC<MobileAdminPanelProps> = ({ onClose }) => {
                                         <span className="text-amber-400 font-medium">
                                             {comment.guest_name || 'אורח'}
                                         </span>
-                                        <span className="text-slate-500 text-xs mr-2">
+                                        <span className="text-slate-400 text-xs mr-2">
                                             {formatDate(comment.created_at)}
                                         </span>
                                     </div>
@@ -259,7 +259,7 @@ const MobileAdminPanel: React.FC<MobileAdminPanelProps> = ({ onClose }) => {
                     )
                 ) : activeTab === 'recordings' ? (
                     pendingRecordings.length === 0 ? (
-                        <p className="text-center text-slate-500 py-12">אין הקלטות ממתינות 🎉</p>
+                        <p className="text-center text-slate-400 py-12">אין הקלטות ממתינות 🎉</p>
                     ) : (
                         pendingRecordings.map((recording) => (
                             <div
@@ -270,7 +270,7 @@ const MobileAdminPanel: React.FC<MobileAdminPanelProps> = ({ onClose }) => {
                                     <span className="text-xs bg-slate-700 text-slate-300 px-2 py-1 rounded">
                                         {recording.entry_term || `#${recording.entry_id}`}
                                     </span>
-                                    <span className="text-slate-500 text-xs">
+                                    <span className="text-slate-400 text-xs">
                                         {formatDate(recording.created_at)}
                                     </span>
                                 </div>
@@ -312,7 +312,7 @@ const MobileAdminPanel: React.FC<MobileAdminPanelProps> = ({ onClose }) => {
                     )
                 ) : (
                     pendingSuggestions.length === 0 ? (
-                        <p className="text-center text-slate-500 py-12">אין הצעות שדה ממתינות 🎉</p>
+                        <p className="text-center text-slate-400 py-12">אין הצעות שדה ממתינות 🎉</p>
                     ) : (
                         pendingSuggestions.map((suggestion) => (
                             <div
@@ -324,7 +324,7 @@ const MobileAdminPanel: React.FC<MobileAdminPanelProps> = ({ onClose }) => {
                                         <span className="text-amber-400 font-medium">
                                             {suggestion.user_name || 'אורח'}
                                         </span>
-                                        <span className="text-slate-500 text-xs mr-2">
+                                        <span className="text-slate-400 text-xs mr-2">
                                             {formatDate(suggestion.created_at)}
                                         </span>
                                     </div>

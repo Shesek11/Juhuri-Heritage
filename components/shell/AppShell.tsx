@@ -24,7 +24,7 @@ const ContributeModal = lazy(() => import('../ContributeModal'));
 const ProfileModal = lazy(() => import('../ProfileModal'));
 const TranslationModal = lazy(() => import('../TranslationModal'));
 const WordListModal = lazy(() => import('../WordListModal'));
-const AdminDashboard = lazy(() => import('../AdminDashboard'));
+// AdminDashboard removed — admin is now at /admin route
 
 const LazyFallback = () => (
   <div className="flex items-center justify-center p-12">
@@ -47,14 +47,14 @@ const NavTab: React.FC<NavTabProps> = ({ href, icon, label, comingSoon, isActive
   <Link
     href={href}
     className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-all whitespace-nowrap ${isActive
-      ? 'bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-400 border border-amber-500/30 shadow-inner'
-      : 'text-slate-400 hover:text-white hover:bg-white/5'
+      ? 'bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-white border border-amber-500/30 shadow-inner'
+      : 'text-slate-300 hover:text-white hover:bg-white/5'
       }`}
   >
     {icon}
     <span>{label}</span>
     {comingSoon && (
-      <span className="px-1.5 py-0.5 text-[9px] bg-blue-500 text-white rounded-full font-bold">
+      <span className="px-1.5 py-0.5 text-[10px] bg-blue-500 text-white rounded-full font-bold">
         בקרוב
       </span>
     )}
@@ -75,11 +75,12 @@ interface MobileNavTabProps {
 const MobileNavTab: React.FC<MobileNavTabProps> = ({ href, icon, label, comingSoon, isActive }) => (
   <Link
     href={href}
-    className={`flex flex-col items-center justify-center gap-0.5 p-2 rounded-xl text-[10px] font-medium transition-all min-w-[56px] ${isActive
-      ? 'bg-amber-500/20 text-amber-400'
-      : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+    className={`flex flex-col items-center justify-center gap-0.5 p-2 rounded-xl text-[11px] font-medium transition-all min-w-[56px] ${isActive
+      ? 'bg-amber-500/20 text-white'
+      : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
       }`}
     title={label}
+    aria-current={isActive ? 'page' : undefined}
   >
     <div className="relative">
       {icon}
@@ -126,15 +127,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   // UI State
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [isContributeOpen, setIsContributeOpen] = useState(false);
-  const isAdminHash = (hash: string) =>
-    hash.startsWith('dict_') || hash.startsWith('gen_') || hash.startsWith('seo_') || hash.startsWith('recipe_') || hash.startsWith('family_') || hash.startsWith('market_');
-
-  const [isAdminOpen, setIsAdminOpen] = useState(() => {
-    if (typeof window !== 'undefined' && window.location.hash) {
-      return isAdminHash(window.location.hash.slice(1));
-    }
-    return false;
-  });
+  // Admin is now a route (/admin/*), no modal state needed
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
 
@@ -198,39 +191,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     init();
   }, []);
 
-  // Sync admin open/close with URL hash
-  const openAdmin = (section?: string) => {
-    const hash = section || 'dict_active';
-    window.history.pushState(null, '', `#${hash}`);
-    setIsAdminOpen(true);
-  };
-
-  const closeAdmin = () => {
-    setIsAdminOpen(false);
-    // Replace current hash entry so Back doesn't re-open admin
-    window.history.replaceState(null, '', window.location.pathname + window.location.search);
-  };
-
-  // Listen for browser Back/Forward — close admin when hash leaves admin scope
+  // Reload dialects when navigating away from admin
   useEffect(() => {
-    const onPopState = () => {
-      const hash = window.location.hash.slice(1);
-      if (hash && isAdminHash(hash)) {
-        setIsAdminOpen(true);
-      } else {
-        setIsAdminOpen(false);
-      }
-    };
-    window.addEventListener('popstate', onPopState);
-    return () => window.removeEventListener('popstate', onPopState);
-  }, []);
-
-  // Reload dialects when admin closes
-  useEffect(() => {
-    if (!isAdminOpen) {
+    if (!pathname.startsWith('/admin')) {
       getDialects().then(setDialects).catch(console.error);
     }
-  }, [isAdminOpen]);
+  }, [pathname]);
 
   // Update theme class
   useEffect(() => {
@@ -266,10 +232,25 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   const isHomePage = pathname === '/';
   const isFullScreenPage = pathname === '/';
+  const isAdminPage = pathname.startsWith('/admin');
+
+  // Admin pages have their own full layout — skip AppShell chrome
+  if (isAdminPage) {
+    return (
+      <AppContext.Provider value={appContextValue}>
+        {children}
+      </AppContext.Provider>
+    );
+  }
 
   return (
     <AppContext.Provider value={appContextValue}>
       <div className="min-h-screen dark bg-[#050B14] text-slate-200 dir-rtl font-rubik relative">
+        {/* Skip to content — WCAG 2.4.1 */}
+        <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:right-2 focus:z-[100] focus:bg-amber-500 focus:text-black focus:px-4 focus:py-2 focus:rounded-lg focus:font-bold">
+          דלג לתוכן הראשי
+        </a>
+
         {/* Subtle Premium Background Pattern Overlay */}
         <div
           className="fixed inset-0 pointer-events-none z-0 mix-blend-screen opacity-[0.03]"
@@ -297,7 +278,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               <div className={`flex items-center p-1 rounded-full gap-1 transition-all duration-300 border ${!isScrolled ? 'bg-[#0d1424]/60 backdrop-blur-md border-white/5 shadow-lg' : 'bg-white/5 border-transparent backdrop-blur-sm'}`}>
                 <NavTab href="/" icon={<BookOpen size={16} />} label="בית" isActive={isActive('/')} />
                 <NavTab href="/dictionary" icon={<BookOpen size={16} />} label="מילון" isActive={isActive('/dictionary') || pathname.startsWith('/word/')} />
-                <NavTab href="/tutor" icon={<GraduationCap size={16} />} label="מורה פרטי" isActive={isActive('/tutor')} />
+                {isFeatureVisible('tutor_module') && (
+                  <NavTab href="/tutor" icon={<GraduationCap size={16} />} label="מורה פרטי" isActive={isActive('/tutor')} comingSoon={isComingSoon('tutor_module')} />
+                )}
                 {isFeatureVisible('recipes_module') && (
                   <NavTab href="/recipes" icon={<ChefHat size={16} />} label="מתכונים" isActive={isActive('/recipes')} comingSoon={isComingSoon('recipes_module')} />
                 )}
@@ -379,13 +362,14 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
                       {/* Admin */}
                       {user && (user.role === 'admin' || user.role === 'approver') && (
-                        <button
-                          onClick={() => { openAdmin(); setIsMenuOpen(false); }}
+                        <Link
+                          href="/admin"
+                          onClick={() => setIsMenuOpen(false)}
                           className="w-full text-right px-3 py-2 text-sm text-purple-300 hover:bg-purple-500/10 flex items-center gap-2"
                         >
                           <LayoutDashboard size={14} />
                           ממשק ניהול
-                        </button>
+                        </Link>
                       )}
 
                       {/* Mobile Theme */}
@@ -421,7 +405,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             <div className="flex justify-around overflow-x-auto py-1 px-1 gap-0 scrollbar-hide">
               <MobileNavTab href="/" icon={<BookOpen size={18} />} label="בית" isActive={isActive('/')} />
               <MobileNavTab href="/dictionary" icon={<BookOpen size={18} />} label="מילון" isActive={isActive('/dictionary') || pathname.startsWith('/word/')} />
-              <MobileNavTab href="/tutor" icon={<GraduationCap size={18} />} label="מורה" isActive={isActive('/tutor')} />
+              {isFeatureVisible('tutor_module') && (
+                <MobileNavTab href="/tutor" icon={<GraduationCap size={18} />} label="מורה" isActive={isActive('/tutor')} comingSoon={isComingSoon('tutor_module')} />
+              )}
               {isFeatureVisible('recipes_module') && (
                 <MobileNavTab href="/recipes" icon={<ChefHat size={18} />} label="מתכונים" isActive={isActive('/recipes')} comingSoon={isComingSoon('recipes_module')} />
               )}
@@ -437,6 +423,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
         {/* Main Content Area */}
         <main
+          id="main-content"
           className={`w-full relative z-10 flex flex-col items-center min-h-screen ${isFullScreenPage ? '' : 'pb-20 pt-[104px] md:pt-[104px]'}`}
           onClick={() => setIsMenuOpen(false)}
         >
@@ -453,11 +440,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         <Suspense fallback={null}>
           <ContributeModal isOpen={isContributeOpen} onClose={() => setIsContributeOpen(false)} user={user} />
         </Suspense>
-        {isAdminOpen && user && (
-          <Suspense fallback={<LazyFallback />}>
-            <AdminDashboard user={user} onClose={closeAdmin} />
-          </Suspense>
-        )}
         <AuthModal
           isOpen={isAuthModalOpen}
           onClose={() => { setIsAuthModalOpen(false); setAuthModalReason(undefined); }}

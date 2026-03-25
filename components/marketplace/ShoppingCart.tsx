@@ -146,12 +146,12 @@ export const ShoppingCart: React.FC<ShoppingCartProps> = ({ isOpen, onClose }) =
                                                     <h4 className="font-bold text-slate-100 text-sm">
                                                         {item.item_name}
                                                     </h4>
-                                                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                                                    <p className="text-xs text-slate-400 dark:text-slate-400">
                                                         {item.item_currency === 'ILS' ? '₪' : item.item_currency}
                                                         {item.item_price}
                                                     </p>
                                                     {item.notes && (
-                                                        <p className="text-xs text-slate-500 mt-1 italic">
+                                                        <p className="text-xs text-slate-400 mt-1 italic">
                                                             "{item.notes}"
                                                         </p>
                                                     )}
@@ -219,7 +219,7 @@ export const ShoppingCart: React.FC<ShoppingCartProps> = ({ isOpen, onClose }) =
                             </button>
                         </div>
 
-                        <p className="text-xs text-center text-slate-500 dark:text-slate-400">
+                        <p className="text-xs text-center text-slate-400 dark:text-slate-400">
                             התשלום והאיסוף נעשים ישירות מול המוכר
                         </p>
                     </div>

@@ -4,7 +4,7 @@ import React, { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../contexts/AuthContext';
 import { useAppContext } from '../shell/AppContext';
-import { Clock, ChefHat, Store, TreeDeciduous } from 'lucide-react';
+import { Clock, ChefHat, Store, TreeDeciduous, GraduationCap } from 'lucide-react';
 
 function RedirectHome() {
   const router = useRouter();
@@ -21,6 +21,12 @@ interface FeatureRouteProps {
 }
 
 const featureMeta: Record<string, { icon: React.ReactNode; title: string; description: string; gradient: string }> = {
+  tutor_module: {
+    icon: <GraduationCap className="w-12 h-12 text-white" />,
+    title: 'מורה פרטי - בקרוב! 🎓',
+    description: 'שיעורי שפה מונחי בינה מלאכותית בפיתוח. בקרוב תוכלו ללמוד ג׳והורית בקצב שלכם!',
+    gradient: 'from-amber-300 to-amber-500',
+  },
   recipes_module: {
     icon: <ChefHat className="w-12 h-12 text-white" />,
     title: 'מתכונים - בקרוב! \u{1F372}',
@@ -68,7 +74,7 @@ export const FeatureRoute: React.FC<FeatureRouteProps> = ({ feature, children })
         <p className="text-lg text-slate-600 dark:text-slate-300 max-w-md mb-4">
           {meta.description}
         </p>
-        <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-4 py-2 rounded-full">
+        <div className="flex items-center gap-2 text-sm text-slate-400 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-4 py-2 rounded-full">
           <Clock className="w-4 h-4" />
           <span>הפיצ'ר בשלבי פיתוח אחרונים</span>
         </div>

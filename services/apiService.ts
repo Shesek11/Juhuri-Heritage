@@ -147,10 +147,10 @@ export const geminiApi = {
             body: JSON.stringify({ audioData, mimeType })
         }),
 
-    enrich: (term: string, hebrew: string, missingFields: string[]) =>
+    enrich: (missingFields: string[], knownFields: Record<string, string>) =>
         request('/gemini/enrich', {
             method: 'POST',
-            body: JSON.stringify({ term, hebrew, missingFields })
+            body: JSON.stringify({ missingFields, knownFields })
         }),
 
     tts: (text: string, voice?: string) =>

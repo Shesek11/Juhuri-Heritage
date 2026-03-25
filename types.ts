@@ -50,6 +50,10 @@ export interface DictionaryEntry {
   // Community signals (from search)
   communityScore?: number;
   verificationLevel?: 'verified' | 'community' | 'ai' | 'unverified';
+
+  // Duplicate detection
+  hasDuplicates?: boolean;
+  possibleDuplicates?: DuplicatePreview[];
 }
 
 // Search result with fuzzy suggestions
@@ -109,6 +113,29 @@ export interface PendingSuggestion {
   userId?: string;
   createdAt: string;
   reason?: string;
+}
+
+export interface DuplicatePreview {
+  id: string;
+  term: string;
+  hebrew?: string;
+  latin?: string;
+}
+
+export interface MergeSuggestion {
+  id: number;
+  entryIdA: number;
+  entryIdB: number;
+  termA: string;
+  termB: string;
+  hebrewA?: string;
+  hebrewB?: string;
+  latinA?: string;
+  latinB?: string;
+  reason?: string;
+  userName?: string;
+  status: 'pending' | 'approved' | 'rejected';
+  createdAt: string;
 }
 
 export interface Comment {

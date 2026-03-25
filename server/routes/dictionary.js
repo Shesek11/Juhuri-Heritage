@@ -3,6 +3,7 @@ const router = express.Router();
 const db = require('../config/db');
 const { authenticate, requireApprover, optionalAuth } = require('../middleware/auth');
 const { body, query: queryParam, param, validationResult } = require('express-validator');
+const { normalizeTerm } = require('../utils/normalization');
 
 // Validation middleware helper
 const validate = (req, res, next) => {
@@ -206,6 +207,25 @@ router.get('/search', [
             }
         }
 
+        // Check for duplicates: entries sharing term_normalized with other active entries
+        const normalizedTerms = [...new Set(entries.map(e => e.term_normalized).filter(Boolean))];
+        let dupNormSet = new Set();
+        if (normalizedTerms.length > 0) {
+            const [dupRows] = await db.query(
+                `SELECT term_normalized FROM dictionary_entries
+                 WHERE status = 'active' AND term_normalized IN (${normalizedTerms.map(() => '?').join(',')})
+                 GROUP BY term_normalized HAVING COUNT(*) > 1`,
+                normalizedTerms
+            );
+            dupNormSet = new Set(dupRows.map(r => r.term_normalized));
+        }
+
+        // Add hasDuplicates flag to each result
+        for (let i = 0; i < allResults.length; i++) {
+            const e = entries[i < entries.length ? i : 0];
+            allResults[i].hasDuplicates = dupNormSet.has(e?.term_normalized);
+        }
+
         res.json({ found: true, entry: result, results: allResults });
     } catch (err) {
         console.error('Search error:', err);
@@ -243,7 +263,8 @@ router.get('/entry/:term', async (req, res) => {
             [pendingSuggestionRows],
             [relatedRows],
             [likesData],
-            [commentsData]
+            [commentsData],
+            [possibleDuplicateRows]
         ] = await Promise.all([
             db.query(
                 `SELECT t.*, COALESCE(d.name, '') as dialect
@@ -274,6 +295,18 @@ router.get('/entry/:term', async (req, res) => {
             ),
             db.query('SELECT COUNT(*) as count FROM entry_likes WHERE entry_id = ?', [entry.id]),
             db.query('SELECT COUNT(*) as count FROM comments WHERE entry_id = ? AND status = ?', [entry.id, 'approved']),
+            // Possible duplicates: entries with same normalized term
+            entry.term_normalized
+                ? db.query(
+                    `SELECT de.id, de.term,
+                            (SELECT t.hebrew FROM translations t WHERE t.entry_id = de.id LIMIT 1) as hebrew,
+                            (SELECT t.latin FROM translations t WHERE t.entry_id = de.id LIMIT 1) as latin
+                     FROM dictionary_entries de
+                     WHERE de.term_normalized = ? AND de.id != ? AND de.status = 'active'
+                     LIMIT 5`,
+                    [entry.term_normalized, entry.id]
+                )
+                : Promise.resolve([[]]),
         ]);
 
         // Track word view (non-blocking)
@@ -338,6 +371,12 @@ router.get('/entry/:term', async (req, res) => {
                     hebrew: r.hebrew,
                     partOfSpeech: r.part_of_speech,
                     relationType: r.relation_type,
+                })),
+                possibleDuplicates: possibleDuplicateRows.map(d => ({
+                    id: String(d.id),
+                    term: d.term,
+                    hebrew: d.hebrew,
+                    latin: d.latin,
                 })),
             }
         });
@@ -565,10 +604,10 @@ router.post('/entries', optionalAuth, [
 
         // Insert entry
         const [result] = await db.query(
-            `INSERT INTO dictionary_entries 
-             (term, detected_language, source, status, contributor_id) 
-             VALUES (?, ?, 'User', ?, ?)`,
-            [term, detectedLanguage || 'Hebrew', status, req.user?.id || null]
+            `INSERT INTO dictionary_entries
+             (term, term_normalized, detected_language, source, status, contributor_id)
+             VALUES (?, ?, ?, 'User', ?, ?)`,
+            [term, normalizeTerm(term), detectedLanguage || 'Hebrew', status, req.user?.id || null]
         );
 
         const entryId = result.insertId;
@@ -639,11 +678,12 @@ router.post('/entries/batch', authenticate, requireApprover, async (req, res) =>
             // Insert entry
             const [result] = await db.query(
                 `INSERT INTO dictionary_entries
-                 (term, detected_language, pronunciation_guide, source, source_name, status, contributor_id, approved_by, approved_at)
-                 VALUES (?, ?, ?, ?, ?, 'active', ?, ?, NOW())
+                 (term, term_normalized, detected_language, pronunciation_guide, source, source_name, status, contributor_id, approved_by, approved_at)
+                 VALUES (?, ?, ?, ?, ?, ?, 'active', ?, ?, NOW())
                  ON DUPLICATE KEY UPDATE term = term`,
                 [
                     entry.term,
+                    normalizeTerm(entry.term),
                     entry.detectedLanguage || 'Hebrew',
                     entry.pronunciationGuide || null,
                     entry.source || 'מאגר',
@@ -1724,18 +1764,18 @@ router.post('/entries/add-untranslated', authenticate, requireApprover, async (r
         // Try with needs_translation column, fall back to without it if column doesn't exist
         try {
             const [result] = await db.query(
-                `INSERT INTO dictionary_entries (term, detected_language, pronunciation_guide, source, status, needs_translation, contributor_id)
-                 VALUES (?, ?, ?, 'קהילה', 'active', TRUE, ?)`,
-                [term, detectedLanguage || 'Hebrew', pronunciationGuide || null, req.user.id]
+                `INSERT INTO dictionary_entries (term, term_normalized, detected_language, pronunciation_guide, source, status, needs_translation, contributor_id)
+                 VALUES (?, ?, ?, ?, 'קהילה', 'active', TRUE, ?)`,
+                [term, normalizeTerm(term), detectedLanguage || 'Hebrew', pronunciationGuide || null, req.user.id]
             );
             res.json({ success: true, entryId: result.insertId });
         } catch (colErr) {
             // If needs_translation column doesn't exist, insert without it
             if (colErr.code === 'ER_BAD_FIELD_ERROR') {
                 const [result] = await db.query(
-                    `INSERT INTO dictionary_entries (term, detected_language, pronunciation_guide, source, status, contributor_id)
-                     VALUES (?, ?, ?, 'קהילה', 'active', ?)`,
-                    [term, detectedLanguage || 'Hebrew', pronunciationGuide || null, req.user.id]
+                    `INSERT INTO dictionary_entries (term, term_normalized, detected_language, pronunciation_guide, source, status, contributor_id)
+                     VALUES (?, ?, ?, ?, 'קהילה', 'active', ?)`,
+                    [term, normalizeTerm(term), detectedLanguage || 'Hebrew', pronunciationGuide || null, req.user.id]
                 );
                 res.json({ success: true, entryId: result.insertId, note: 'migration_needed' });
             } else {
@@ -2098,6 +2138,508 @@ router.get('/users/me/contributions', authenticate, async (req, res) => {
     } catch (err) {
         console.error('Contributions error:', err);
         res.status(500).json({ error: 'שגיאה בטעינת תרומות' });
+    }
+});
+
+// ============================================================
+// DUPLICATE MANAGEMENT ENDPOINTS
+// ============================================================
+
+// GET /api/dictionary/duplicates - Detect duplicate groups
+router.get('/duplicates', authenticate, requireApprover, async (req, res) => {
+    try {
+        const page = Math.max(1, parseInt(req.query.page) || 1);
+        const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 20));
+        const search = (req.query.search || '').trim();
+        const offset = (page - 1) * limit;
+
+        // Find groups by normalized term
+        let termQuery = `
+            SELECT term_normalized, GROUP_CONCAT(id ORDER BY id) as ids, COUNT(*) as cnt
+            FROM dictionary_entries
+            WHERE status = 'active' AND term_normalized IS NOT NULL AND term_normalized != ''
+        `;
+        const termParams = [];
+        if (search) {
+            termQuery += ` AND (term LIKE ? OR term_normalized LIKE ?)`;
+            termParams.push(`%${search}%`, `%${normalizeTerm(search)}%`);
+        }
+        termQuery += ` GROUP BY term_normalized HAVING cnt > 1 ORDER BY cnt DESC`;
+
+        const [termGroups] = await db.query(termQuery, termParams);
+
+        // Find groups by latin match (only entries not already grouped by term)
+        let latinQuery = `
+            SELECT LOWER(t.latin) as latin_key, GROUP_CONCAT(DISTINCT de.id ORDER BY de.id) as ids, COUNT(DISTINCT de.id) as cnt
+            FROM translations t
+            JOIN dictionary_entries de ON t.entry_id = de.id
+            WHERE de.status = 'active' AND t.latin IS NOT NULL AND t.latin != ''
+        `;
+        const latinParams = [];
+        if (search) {
+            latinQuery += ` AND (de.term LIKE ? OR t.latin LIKE ?)`;
+            latinParams.push(`%${search}%`, `%${search}%`);
+        }
+        latinQuery += ` GROUP BY latin_key HAVING cnt > 1 ORDER BY cnt DESC`;
+
+        const [latinGroups] = await db.query(latinQuery, latinParams);
+
+        // Merge groups, deduplicating overlapping ID sets
+        const seenIds = new Set();
+        const groups = [];
+
+        for (const g of termGroups) {
+            const ids = g.ids.split(',').map(Number);
+            const key = ids.sort().join(',');
+            if (!seenIds.has(key)) {
+                seenIds.add(key);
+                groups.push({ matchType: 'term', matchKey: g.term_normalized, ids });
+            }
+        }
+
+        for (const g of latinGroups) {
+            const ids = g.ids.split(',').map(Number);
+            const key = ids.sort().join(',');
+            if (!seenIds.has(key)) {
+                seenIds.add(key);
+                groups.push({ matchType: 'latin', matchKey: g.latin_key, ids });
+            }
+        }
+
+        const total = groups.length;
+        const pagedGroups = groups.slice(offset, offset + limit);
+
+        // Fetch preview data for paged groups
+        const allIds = [...new Set(pagedGroups.flatMap(g => g.ids))];
+        if (allIds.length === 0) {
+            return res.json({ groups: [], total: 0, page, limit });
+        }
+
+        const [entries] = await db.query(
+            `SELECT de.id, de.term, de.term_normalized, de.part_of_speech, de.source_name, de.source, de.created_at,
+                    (SELECT JSON_ARRAYAGG(JSON_OBJECT('hebrew', t.hebrew, 'latin', t.latin, 'cyrillic', t.cyrillic, 'dialect', COALESCE(d.name, '')))
+                     FROM translations t LEFT JOIN dialects d ON t.dialect_id = d.id WHERE t.entry_id = de.id) as translations_json
+             FROM dictionary_entries de
+             WHERE de.id IN (${allIds.map(() => '?').join(',')})`,
+            allIds
+        );
+
+        const entryMap = {};
+        for (const e of entries) {
+            entryMap[e.id] = {
+                id: String(e.id),
+                term: e.term,
+                termNormalized: e.term_normalized,
+                partOfSpeech: e.part_of_speech,
+                sourceName: e.source_name,
+                source: e.source,
+                createdAt: e.created_at,
+                translations: (() => {
+                    try { return JSON.parse(e.translations_json) || []; }
+                    catch { return []; }
+                })(),
+            };
+        }
+
+        const result = pagedGroups.map(g => ({
+            matchType: g.matchType,
+            matchKey: g.matchKey,
+            entries: g.ids.map(id => entryMap[id]).filter(Boolean),
+        }));
+
+        res.json({ groups: result, total, page, limit });
+    } catch (err) {
+        console.error('Duplicates detection error:', err);
+        res.status(500).json({ error: 'שגיאה בזיהוי כפילויות' });
+    }
+});
+
+// GET /api/dictionary/duplicates/compare - Side-by-side comparison
+router.get('/duplicates/compare', authenticate, requireApprover, async (req, res) => {
+    try {
+        const ids = (req.query.ids || '').split(',').map(Number).filter(n => n > 0);
+        if (ids.length < 2 || ids.length > 5) {
+            return res.status(400).json({ error: 'נדרשים 2-5 מזהי ערכים' });
+        }
+
+        const placeholders = ids.map(() => '?').join(',');
+
+        const [
+            [entries],
+            [translations],
+            [definitions],
+            [examples],
+            [likesData],
+            [commentsData],
+            [viewsData]
+        ] = await Promise.all([
+            db.query(
+                `SELECT de.*, u.name as contributor_name
+                 FROM dictionary_entries de
+                 LEFT JOIN users u ON de.contributor_id = u.id
+                 WHERE de.id IN (${placeholders})`,
+                ids
+            ),
+            db.query(
+                `SELECT t.*, COALESCE(d.name, '') as dialect
+                 FROM translations t
+                 LEFT JOIN dialects d ON t.dialect_id = d.id
+                 WHERE t.entry_id IN (${placeholders})`,
+                ids
+            ),
+            db.query(`SELECT * FROM definitions WHERE entry_id IN (${placeholders})`, ids),
+            db.query(`SELECT * FROM examples WHERE entry_id IN (${placeholders})`, ids),
+            db.query(
+                `SELECT entry_id, COUNT(*) as count FROM entry_likes WHERE entry_id IN (${placeholders}) GROUP BY entry_id`,
+                ids
+            ),
+            db.query(
+                `SELECT entry_id, COUNT(*) as count FROM comments WHERE entry_id IN (${placeholders}) AND status = 'approved' GROUP BY entry_id`,
+                ids
+            ),
+            db.query(
+                `SELECT entry_id, SUM(view_count) as total_views FROM word_views WHERE entry_id IN (${placeholders}) GROUP BY entry_id`,
+                ids
+            ),
+        ]);
+
+        const likesMap = Object.fromEntries(likesData.map(r => [r.entry_id, r.count]));
+        const commentsMap = Object.fromEntries(commentsData.map(r => [r.entry_id, r.count]));
+        const viewsMap = Object.fromEntries(viewsData.map(r => [r.entry_id, r.total_views]));
+
+        const result = entries.map(e => ({
+            id: String(e.id),
+            term: e.term,
+            termNormalized: e.term_normalized,
+            detectedLanguage: e.detected_language,
+            pronunciationGuide: e.pronunciation_guide,
+            partOfSpeech: e.part_of_speech,
+            russian: e.russian,
+            english: e.english,
+            source: e.source,
+            sourceName: e.source_name,
+            status: e.status,
+            contributorName: e.contributor_name,
+            createdAt: e.created_at,
+            translations: translations.filter(t => t.entry_id === e.id).map(t => ({
+                id: t.id,
+                dialect: t.dialect,
+                dialectId: t.dialect_id,
+                hebrew: t.hebrew,
+                latin: t.latin,
+                cyrillic: t.cyrillic,
+                upvotes: t.upvotes || 0,
+                downvotes: t.downvotes || 0,
+            })),
+            definitions: definitions.filter(d => d.entry_id === e.id).map(d => d.definition),
+            examples: examples.filter(ex => ex.entry_id === e.id).map(ex => ({
+                origin: ex.origin,
+                translated: ex.translated,
+                transliteration: ex.transliteration,
+            })),
+            likesCount: likesMap[e.id] || 0,
+            commentsCount: commentsMap[e.id] || 0,
+            totalViews: viewsMap[e.id] || 0,
+        }));
+
+        res.json({ entries: result });
+    } catch (err) {
+        console.error('Compare entries error:', err);
+        res.status(500).json({ error: 'שגיאה בהשוואת ערכים' });
+    }
+});
+
+// POST /api/dictionary/duplicates/merge - Execute merge
+router.post('/duplicates/merge', authenticate, requireApprover, [
+    body('keepId').isInt().withMessage('נדרש מזהה ערך לשמירה'),
+    body('deleteId').isInt().withMessage('נדרש מזהה ערך למחיקה'),
+    validate
+], async (req, res) => {
+    const conn = await db.getConnection();
+    try {
+        const { keepId, deleteId, fieldOverrides } = req.body;
+        if (keepId === deleteId) {
+            return res.status(400).json({ error: 'לא ניתן למזג ערך עם עצמו' });
+        }
+
+        await conn.beginTransaction();
+
+        // Verify both entries exist
+        const [[keepEntry]] = await conn.query('SELECT * FROM dictionary_entries WHERE id = ?', [keepId]);
+        const [[deleteEntry]] = await conn.query('SELECT * FROM dictionary_entries WHERE id = ?', [deleteId]);
+        if (!keepEntry || !deleteEntry) {
+            await conn.rollback();
+            return res.status(404).json({ error: 'אחד הערכים לא נמצא' });
+        }
+
+        // 1. Snapshot the deleted entry
+        const [deleteTranslations] = await conn.query(
+            `SELECT t.*, COALESCE(d.name, '') as dialect_name FROM translations t LEFT JOIN dialects d ON t.dialect_id = d.id WHERE t.entry_id = ?`,
+            [deleteId]
+        );
+        const [deleteDefinitions] = await conn.query('SELECT * FROM definitions WHERE entry_id = ?', [deleteId]);
+        const [deleteExamples] = await conn.query('SELECT * FROM examples WHERE entry_id = ?', [deleteId]);
+
+        const snapshot = {
+            entry: deleteEntry,
+            translations: deleteTranslations,
+            definitions: deleteDefinitions,
+            examples: deleteExamples,
+        };
+
+        await conn.query(
+            'INSERT INTO merge_log (kept_entry_id, deleted_entry_id, deleted_term, merge_details, merged_by) VALUES (?, ?, ?, ?, ?)',
+            [keepId, deleteId, deleteEntry.term, JSON.stringify(snapshot), req.user.id]
+        );
+
+        // 2. Apply field overrides to kept entry
+        if (fieldOverrides && typeof fieldOverrides === 'object') {
+            const allowedFields = ['term', 'pronunciation_guide', 'part_of_speech', 'russian', 'english', 'detected_language'];
+            const updates = [];
+            const values = [];
+            for (const [field, value] of Object.entries(fieldOverrides)) {
+                if (allowedFields.includes(field)) {
+                    updates.push(`${field} = ?`);
+                    values.push(value);
+                }
+            }
+            if (updates.length > 0) {
+                // Also update term_normalized if term changed
+                if (fieldOverrides.term) {
+                    updates.push('term_normalized = ?');
+                    values.push(normalizeTerm(fieldOverrides.term));
+                }
+                values.push(keepId);
+                await conn.query(`UPDATE dictionary_entries SET ${updates.join(', ')} WHERE id = ?`, values);
+            }
+        }
+
+        // 3. Move translations
+        await conn.query('UPDATE translations SET entry_id = ? WHERE entry_id = ?', [keepId, deleteId]);
+
+        // 4. Move unique definitions
+        const [keepDefs] = await conn.query('SELECT definition FROM definitions WHERE entry_id = ?', [keepId]);
+        const keepDefSet = new Set(keepDefs.map(d => d.definition));
+        for (const d of deleteDefinitions) {
+            if (!keepDefSet.has(d.definition)) {
+                await conn.query('INSERT INTO definitions (entry_id, definition) VALUES (?, ?)', [keepId, d.definition]);
+            }
+        }
+        await conn.query('DELETE FROM definitions WHERE entry_id = ?', [deleteId]);
+
+        // 5. Move examples
+        await conn.query('UPDATE examples SET entry_id = ? WHERE entry_id = ?', [keepId, deleteId]);
+
+        // 6. Re-point other FKs
+        await conn.query('UPDATE translation_suggestions SET entry_id = ? WHERE entry_id = ?', [keepId, deleteId]);
+        await conn.query('UPDATE comments SET entry_id = ? WHERE entry_id = ?', [keepId, deleteId]);
+        await conn.query('UPDATE community_examples SET entry_id = ? WHERE entry_id = ?', [keepId, deleteId]);
+
+        // entry_likes: INSERT IGNORE to avoid duplicate unique constraint
+        await conn.query(
+            `INSERT IGNORE INTO entry_likes (entry_id, user_id, created_at)
+             SELECT ?, user_id, created_at FROM entry_likes WHERE entry_id = ?`,
+            [keepId, deleteId]
+        );
+        await conn.query('DELETE FROM entry_likes WHERE entry_id = ?', [deleteId]);
+
+        // word_views: aggregate
+        await conn.query(
+            `INSERT INTO word_views (entry_id, view_date, view_count)
+             SELECT ?, view_date, view_count FROM word_views WHERE entry_id = ?
+             ON DUPLICATE KEY UPDATE view_count = word_views.view_count + VALUES(view_count)`,
+            [keepId, deleteId]
+        );
+        await conn.query('DELETE FROM word_views WHERE entry_id = ?', [deleteId]);
+
+        // related_words: INSERT IGNORE, skip self-references
+        await conn.query(
+            `INSERT IGNORE INTO related_words (entry_id, related_entry_id, relation_type)
+             SELECT ?, related_entry_id, relation_type FROM related_words
+             WHERE entry_id = ? AND related_entry_id != ?`,
+            [keepId, deleteId, keepId]
+        );
+        await conn.query(
+            `INSERT IGNORE INTO related_words (entry_id, related_entry_id, relation_type)
+             SELECT entry_id, ?, relation_type FROM related_words
+             WHERE related_entry_id = ? AND entry_id != ?`,
+            [keepId, deleteId, keepId]
+        );
+        await conn.query('DELETE FROM related_words WHERE entry_id = ? OR related_entry_id = ?', [deleteId, deleteId]);
+
+        // word_mastery: INSERT IGNORE (keep existing progress)
+        await conn.query(
+            `INSERT IGNORE INTO word_mastery (user_id, entry_id, box, next_review, times_correct, times_incorrect, last_reviewed)
+             SELECT user_id, ?, box, next_review, times_correct, times_incorrect, last_reviewed
+             FROM word_mastery WHERE entry_id = ?`,
+            [keepId, deleteId]
+        );
+        await conn.query('DELETE FROM word_mastery WHERE entry_id = ?', [deleteId]);
+
+        // unit_words: INSERT IGNORE
+        await conn.query(
+            `INSERT IGNORE INTO unit_words (unit_id, entry_id, display_order)
+             SELECT unit_id, ?, display_order FROM unit_words WHERE entry_id = ?`,
+            [keepId, deleteId]
+        );
+        await conn.query('DELETE FROM unit_words WHERE entry_id = ?', [deleteId]);
+
+        // example_word_links
+        await conn.query(
+            `INSERT IGNORE INTO example_word_links (example_id, entry_id)
+             SELECT example_id, ? FROM example_word_links WHERE entry_id = ?`,
+            [keepId, deleteId]
+        );
+        await conn.query('DELETE FROM example_word_links WHERE entry_id = ?', [deleteId]);
+
+        // field_sources: move unique field_name entries
+        await conn.query(
+            `INSERT IGNORE INTO field_sources (entry_id, field_name, source_type, confidence)
+             SELECT ?, field_name, source_type, confidence FROM field_sources WHERE entry_id = ?`,
+            [keepId, deleteId]
+        );
+        await conn.query('DELETE FROM field_sources WHERE entry_id = ?', [deleteId]);
+
+        // likes (generic)
+        await conn.query(
+            `INSERT IGNORE INTO likes (user_id, target_type, target_id)
+             SELECT user_id, target_type, ? FROM likes WHERE target_type = 'entry' AND target_id = ?`,
+            [keepId, deleteId]
+        );
+        await conn.query('DELETE FROM likes WHERE target_type = ? AND target_id = ?', ['entry', deleteId]);
+
+        // 7. Delete the doomed entry
+        await conn.query('DELETE FROM dictionary_entries WHERE id = ?', [deleteId]);
+
+        // 8. Update term_normalized on kept entry (if not already done via overrides)
+        if (!fieldOverrides?.term) {
+            await conn.query(
+                'UPDATE dictionary_entries SET term_normalized = ? WHERE id = ?',
+                [normalizeTerm(keepEntry.term), keepId]
+            );
+        }
+
+        // 9. Log to system_logs
+        await conn.query(
+            `INSERT INTO system_logs (event_type, description, user_id, user_name, metadata)
+             VALUES ('ENTRY_MERGED', ?, ?, ?, ?)`,
+            [
+                `מוזגו ערכים: "${keepEntry.term}" (${keepId}) ← "${deleteEntry.term}" (${deleteId})`,
+                req.user.id,
+                req.user.name,
+                JSON.stringify({ keepId, deleteId, deletedTerm: deleteEntry.term })
+            ]
+        );
+
+        // Also resolve any pending merge suggestions for this pair
+        await conn.query(
+            `UPDATE merge_suggestions SET status = 'approved', reviewed_by = ?, reviewed_at = NOW()
+             WHERE status = 'pending' AND (
+                (entry_id_a = ? AND entry_id_b = ?) OR (entry_id_a = ? AND entry_id_b = ?)
+             )`,
+            [req.user.id, keepId, deleteId, deleteId, keepId]
+        );
+
+        await conn.commit();
+
+        // 10. Invalidate stats cache
+        statsCache = { data: null, expiry: 0 };
+
+        res.json({ success: true, keptId: keepId, deletedId: deleteId });
+    } catch (err) {
+        await conn.rollback();
+        console.error('Merge error:', err);
+        res.status(500).json({ error: 'שגיאה במיזוג ערכים' });
+    } finally {
+        conn.release();
+    }
+});
+
+// POST /api/dictionary/duplicates/suggest - User suggests merge
+router.post('/duplicates/suggest', authenticate, [
+    body('entryIdA').isInt().withMessage('נדרש מזהה ערך A'),
+    body('entryIdB').isInt().withMessage('נדרש מזהה ערך B'),
+    validate
+], async (req, res) => {
+    try {
+        const { entryIdA, entryIdB, reason } = req.body;
+        if (entryIdA === entryIdB) {
+            return res.status(400).json({ error: 'לא ניתן להציע מיזוג של ערך עם עצמו' });
+        }
+
+        // Normalize order so (A,B) and (B,A) are the same
+        const [idA, idB] = [Math.min(entryIdA, entryIdB), Math.max(entryIdA, entryIdB)];
+
+        await db.query(
+            `INSERT INTO merge_suggestions (entry_id_a, entry_id_b, reason, user_id, user_name)
+             VALUES (?, ?, ?, ?, ?)
+             ON DUPLICATE KEY UPDATE reason = COALESCE(VALUES(reason), reason)`,
+            [idA, idB, reason || null, req.user.id, req.user.name]
+        );
+
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Suggest merge error:', err);
+        res.status(500).json({ error: 'שגיאה בשליחת הצעת מיזוג' });
+    }
+});
+
+// GET /api/dictionary/duplicates/suggestions - List pending merge suggestions
+router.get('/duplicates/suggestions', authenticate, requireApprover, async (req, res) => {
+    try {
+        const [suggestions] = await db.query(
+            `SELECT ms.*,
+                    a.term as term_a, b.term as term_b,
+                    (SELECT t.hebrew FROM translations t WHERE t.entry_id = ms.entry_id_a LIMIT 1) as hebrew_a,
+                    (SELECT t.hebrew FROM translations t WHERE t.entry_id = ms.entry_id_b LIMIT 1) as hebrew_b,
+                    (SELECT t.latin FROM translations t WHERE t.entry_id = ms.entry_id_a LIMIT 1) as latin_a,
+                    (SELECT t.latin FROM translations t WHERE t.entry_id = ms.entry_id_b LIMIT 1) as latin_b
+             FROM merge_suggestions ms
+             JOIN dictionary_entries a ON ms.entry_id_a = a.id
+             JOIN dictionary_entries b ON ms.entry_id_b = b.id
+             WHERE ms.status = 'pending'
+             ORDER BY ms.created_at DESC`
+        );
+
+        res.json({ suggestions });
+    } catch (err) {
+        console.error('List merge suggestions error:', err);
+        res.status(500).json({ error: 'שגיאה בטעינת הצעות מיזוג' });
+    }
+});
+
+// PUT /api/dictionary/duplicates/suggestions/:id/dismiss - Reject merge suggestion
+router.put('/duplicates/suggestions/:id/dismiss', authenticate, requireApprover, async (req, res) => {
+    try {
+        const { id } = req.params;
+        await db.query(
+            `UPDATE merge_suggestions SET status = 'rejected', reviewed_by = ?, reviewed_at = NOW() WHERE id = ?`,
+            [req.user.id, id]
+        );
+        res.json({ success: true });
+    } catch (err) {
+        console.error('Dismiss merge suggestion error:', err);
+        res.status(500).json({ error: 'שגיאה בדחיית הצעת מיזוג' });
+    }
+});
+
+// GET /api/dictionary/duplicates/count - Count for admin badge
+router.get('/duplicates/count', authenticate, requireApprover, async (req, res) => {
+    try {
+        const [[{ count: termCount }]] = await db.query(
+            `SELECT COUNT(*) as count FROM (
+                SELECT term_normalized FROM dictionary_entries
+                WHERE status = 'active' AND term_normalized IS NOT NULL AND term_normalized != ''
+                GROUP BY term_normalized HAVING COUNT(*) > 1
+            ) as dup_groups`
+        );
+        const [[{ count: suggestionsCount }]] = await db.query(
+            `SELECT COUNT(*) as count FROM merge_suggestions WHERE status = 'pending'`
+        );
+        res.json({ duplicateGroups: termCount, pendingSuggestions: suggestionsCount });
+    } catch (err) {
+        console.error('Duplicates count error:', err);
+        res.status(500).json({ error: 'שגיאה בספירת כפילויות' });
     }
 });
 

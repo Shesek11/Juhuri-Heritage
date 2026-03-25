@@ -186,7 +186,7 @@ export const BecomeVendorWizard: React.FC<BecomeVendorWizardProps> = ({ isOpen, 
                                     type="text"
                                     value={formData.name}
                                     onChange={e => setFormData({ ...formData, name: e.target.value })}
-                                    className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 focus:ring-2 focus:ring-orange-500 outline-none"
+                                    className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 focus-visible:ring-2 focus-visible:ring-orange-500 outline-none"
                                     placeholder="המטבח של סבתא שושנה"
                                     autoFocus
                                 />
@@ -197,7 +197,7 @@ export const BecomeVendorWizard: React.FC<BecomeVendorWizardProps> = ({ isOpen, 
                                 <textarea
                                     value={formData.about_text}
                                     onChange={e => setFormData({ ...formData, about_text: e.target.value })}
-                                    className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 focus:ring-2 focus:ring-orange-500 outline-none"
+                                    className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 focus-visible:ring-2 focus-visible:ring-orange-500 outline-none"
                                     rows={3}
                                     placeholder="מה מיוחד במטבח שלך? איזה סוג אוכל אתה מכין?"
                                 />
@@ -209,7 +209,7 @@ export const BecomeVendorWizard: React.FC<BecomeVendorWizardProps> = ({ isOpen, 
                                     type="tel"
                                     value={formData.phone}
                                     onChange={e => setFormData({ ...formData, phone: e.target.value })}
-                                    className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 focus:ring-2 focus:ring-orange-500 outline-none"
+                                    className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 focus-visible:ring-2 focus-visible:ring-orange-500 outline-none"
                                     placeholder="050-1234567"
                                 />
                             </div>
@@ -220,7 +220,7 @@ export const BecomeVendorWizard: React.FC<BecomeVendorWizardProps> = ({ isOpen, 
                                     type="email"
                                     value={formData.email}
                                     onChange={e => setFormData({ ...formData, email: e.target.value })}
-                                    className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 focus:ring-2 focus:ring-orange-500 outline-none"
+                                    className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 focus-visible:ring-2 focus-visible:ring-orange-500 outline-none"
                                     placeholder="vendor@example.com"
                                 />
                             </div>
@@ -237,7 +237,7 @@ export const BecomeVendorWizard: React.FC<BecomeVendorWizardProps> = ({ isOpen, 
                                     type="text"
                                     value={formData.city}
                                     onChange={e => setFormData({ ...formData, city: e.target.value })}
-                                    className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 focus:ring-2 focus:ring-orange-500 outline-none"
+                                    className="w-full p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 focus-visible:ring-2 focus-visible:ring-orange-500 outline-none"
                                     placeholder="תל אביב, ירושלים, חיפה..."
                                 />
                             </div>
@@ -249,7 +249,7 @@ export const BecomeVendorWizard: React.FC<BecomeVendorWizardProps> = ({ isOpen, 
                                         type="text"
                                         value={formData.address}
                                         onChange={e => setFormData({ ...formData, address: e.target.value })}
-                                        className="flex-1 p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 focus:ring-2 focus:ring-orange-500 outline-none"
+                                        className="flex-1 p-2 rounded-lg border dark:bg-slate-700 dark:border-slate-600 focus-visible:ring-2 focus-visible:ring-orange-500 outline-none"
                                         placeholder="רחוב הרצל 1"
                                     />
                                     <button

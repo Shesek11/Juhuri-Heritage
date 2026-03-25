@@ -61,7 +61,7 @@ export default function WordBank({ exercise, onAnswer, feedback, onPlayAudio, is
       {/* Built word display */}
       <div className="min-h-[56px] px-6 py-3 mb-6 border-b-2 border-amber-500/30 flex items-center gap-1 min-w-[200px] justify-center">
         {selectedTiles.length === 0 ? (
-          <span className="text-slate-500 text-lg">...</span>
+          <span className="text-slate-400 text-lg">...</span>
         ) : (
           selectedTiles.map((tileIdx, pos) => (
             <button
@@ -74,7 +74,7 @@ export default function WordBank({ exercise, onAnswer, feedback, onPlayAudio, is
           ))
         )}
         {selectedTiles.length > 0 && !feedback && (
-          <button onClick={handleReset} className="mr-2 p-1 text-slate-500 hover:text-slate-300">
+          <button onClick={handleReset} className="mr-2 p-1 text-slate-400 hover:text-slate-300">
             <RotateCcw size={16} />
           </button>
         )}

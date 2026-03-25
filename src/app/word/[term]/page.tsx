@@ -39,21 +39,23 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { term } = await params;
   const decodedTerm = decodeURIComponent(term);
 
+  const isNumericId = /^\d+$/.test(decodedTerm);
   const [rows] = await pool.query<DictionaryRow[] & any>(
-    'SELECT * FROM dictionary_entries WHERE term = ? LIMIT 1',
-    [decodedTerm],
+    `SELECT * FROM dictionary_entries WHERE ${isNumericId ? '(id = ? OR term = ?)' : 'term = ?'} LIMIT 1`,
+    isNumericId ? [decodedTerm, decodedTerm] : [decodedTerm],
   );
   const entry = (rows as DictionaryRow[])[0];
   if (!entry) {
     return { title: '\u05DE\u05D9\u05DC\u05D4 \u05DC\u05D0 \u05E0\u05DE\u05E6\u05D0\u05D4' };
   }
 
+  const displayTerm = entry.term || decodedTerm;
   const meanings = [entry.russian, entry.english].filter(Boolean).join(' | ');
   const descOverride = meanings
-    ? `${entry.term} \u2014 ${meanings}`
+    ? `${displayTerm} \u2014 ${meanings}`
     : undefined;
 
-  return buildPageMeta('word', { term: entry.term }, {
+  return buildPageMeta('word', { term: displayTerm }, {
     description: descOverride,
     ogType: 'article',
     canonicalPath: `/word/${encodeURIComponent(entry.term)}`,
@@ -84,9 +86,10 @@ export default async function WordPage({ params }: Props) {
   const decodedTerm = decodeURIComponent(term);
 
   // Fetch entry for JSON-LD structured data
+  const isId = /^\d+$/.test(decodedTerm);
   const [entryRows] = await pool.query<DictionaryRow[] & any>(
-    'SELECT * FROM dictionary_entries WHERE term = ? LIMIT 1',
-    [decodedTerm],
+    `SELECT * FROM dictionary_entries WHERE ${isId ? '(id = ? OR term = ?)' : 'term = ?'} LIMIT 1`,
+    isId ? [decodedTerm, decodedTerm] : [decodedTerm],
   );
   const entry = (entryRows as DictionaryRow[])[0];
 

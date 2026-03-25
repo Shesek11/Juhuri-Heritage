@@ -46,9 +46,9 @@ const HeroSection: React.FC<HeroSectionProps> = ({ scrollY, searchTerm, setSearc
       </div>
       {/* Giant Title Text — Behind the foreground, creates layering effect */}
       <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none" style={{ transform: `translateY(${scrollY * -0.15}px)` }}>
-        <h1 className="text-[6rem] sm:text-[9rem] md:text-[14rem] lg:text-[18rem] font-black text-white/[0.08] tracking-tighter leading-none select-none whitespace-nowrap" style={{ fontFamily: "'Rubik', sans-serif" }}>
+        <div aria-hidden="true" className="text-[6rem] sm:text-[9rem] md:text-[14rem] lg:text-[18rem] font-black text-white/[0.08] tracking-tighter leading-none select-none whitespace-nowrap" style={{ fontFamily: "'Rubik', sans-serif" }}>
           ג׳והורי
-        </h1>
+        </div>
       </div>
       {/* Foreground gradient — imitates "rocks/ground" layer for depth */}
       <div className="absolute bottom-0 left-0 right-0 z-20 h-[50vh] bg-gradient-to-t from-[#050B14] via-[#050B14]/80 to-transparent pointer-events-none" />

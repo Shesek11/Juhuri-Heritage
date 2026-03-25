@@ -102,7 +102,7 @@ const AdminMarketplacePanel: React.FC = () => {
                     className={`px-4 py-2 font-bold border-b-2 transition-colors ${
                         activeTab === 'pending'
                             ? 'border-orange-500 text-orange-600'
-                            : 'border-transparent text-slate-500'
+                            : 'border-transparent text-slate-400'
                     }`}
                 >
                     חנויות ממתינות ({pendingVendors.length})
@@ -112,7 +112,7 @@ const AdminMarketplacePanel: React.FC = () => {
                     className={`px-4 py-2 font-bold border-b-2 transition-colors ${
                         activeTab === 'reports'
                             ? 'border-orange-500 text-orange-600'
-                            : 'border-transparent text-slate-500'
+                            : 'border-transparent text-slate-400'
                     }`}
                 >
                     דיווחים קהילתיים ({reports.length})
@@ -122,7 +122,7 @@ const AdminMarketplacePanel: React.FC = () => {
                     className={`px-4 py-2 font-bold border-b-2 transition-colors ${
                         activeTab === 'all'
                             ? 'border-orange-500 text-orange-600'
-                            : 'border-transparent text-slate-500'
+                            : 'border-transparent text-slate-400'
                     }`}
                 >
                     כל החנויות
@@ -155,7 +155,7 @@ const AdminMarketplacePanel: React.FC = () => {
                                                     <h3 className="text-xl font-bold text-slate-100">
                                                         {vendor.name}
                                                     </h3>
-                                                    <p className="text-sm text-slate-500">{vendor.address}</p>
+                                                    <p className="text-sm text-slate-400">{vendor.address}</p>
                                                     {vendor.owner_name && (
                                                         <p className="text-sm text-slate-400 mt-1">
                                                             בעלים: {vendor.owner_name}
@@ -224,7 +224,7 @@ const AdminMarketplacePanel: React.FC = () => {
                                                     <h3 className="text-lg font-bold text-slate-100">
                                                         {report.vendor_name}
                                                     </h3>
-                                                    <p className="text-sm text-slate-500">{report.vendor_address}</p>
+                                                    <p className="text-sm text-slate-400">{report.vendor_address}</p>
                                                     {report.vendor_phone && (
                                                         <p className="text-sm text-slate-400">
                                                             טלפון: {report.vendor_phone}
@@ -297,7 +297,7 @@ const AdminMarketplacePanel: React.FC = () => {
                                                             </span>
                                                         )}
                                                     </h3>
-                                                    <p className="text-sm text-slate-500">{vendor.address}</p>
+                                                    <p className="text-sm text-slate-400">{vendor.address}</p>
                                                     {vendor.owner_name && (
                                                         <p className="text-sm text-slate-400 mt-1">
                                                             בעלים: {vendor.owner_name}

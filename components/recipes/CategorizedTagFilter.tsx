@@ -87,7 +87,7 @@ export const CategorizedTagFilter: React.FC<CategorizedTagFilterProps> = ({
                 {selectedCount > 0 && (
                     <button
                         onClick={onClearAll}
-                        className="flex items-center gap-1 text-xs text-slate-500 hover:text-amber-600 dark:text-slate-400 dark:hover:text-amber-400 transition-colors"
+                        className="flex items-center gap-1 text-xs text-slate-400 hover:text-amber-600 dark:text-slate-400 dark:hover:text-amber-400 transition-colors"
                     >
                         <X className="w-3 h-3" />
                         נקה

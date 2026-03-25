@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import FocusTrap from 'focus-trap-react';
 import { X, Plus, Send } from 'lucide-react';
 import { dialectsApi } from '../../services/apiService';
 import apiService from '../../services/apiService';
 import { useAuth } from '../../contexts/AuthContext';
+import DictionaryInput from '../dictionary/inputs/DictionaryInput';
 
 interface NewTranslationModalProps {
   searchQuery: string;
@@ -77,7 +79,11 @@ const NewTranslationModal: React.FC<NewTranslationModalProps> = ({ searchQuery, 
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <FocusTrap focusTrapOptions={{ allowOutsideClick: true, escapeDeactivates: true }}>
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="new-translation-modal-title"
         className="bg-[#0d1424] border border-white/10 rounded-2xl w-full max-w-md shadow-2xl font-rubik"
         dir="rtl"
         onClick={(e) => e.stopPropagation()}
@@ -86,7 +92,7 @@ const NewTranslationModal: React.FC<NewTranslationModalProps> = ({ searchQuery, 
         <div className="flex items-center justify-between p-5 border-b border-white/10">
           <div className="flex items-center gap-2">
             <Plus className="w-5 h-5 text-indigo-400" />
-            <h2 className="text-lg font-bold text-white">הוסף תרגום חדש</h2>
+            <h2 id="new-translation-modal-title" className="text-lg font-bold text-white">הוסף תרגום חדש</h2>
           </div>
           <button onClick={onClose} className="p-1.5 text-slate-400 hover:bg-white/5 rounded-lg transition-colors">
             <X className="w-5 h-5" />
@@ -126,13 +132,12 @@ const NewTranslationModal: React.FC<NewTranslationModalProps> = ({ searchQuery, 
               <label className="text-sm text-slate-300 font-medium">
                 מילה בג׳והורית <span className="text-red-400">*</span>
               </label>
-              <input
-                type="text"
+              <DictionaryInput
+                fieldName="term"
                 value={juhuriTerm}
-                onChange={(e) => setJuhuriTerm(e.target.value)}
+                onChange={setJuhuriTerm}
+                latinHint={latin}
                 placeholder="המילה בג׳והורית..."
-                required
-                className="w-full px-3 py-2 text-sm rounded-md border border-slate-600 bg-[#0d1424]/60 backdrop-blur-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 outline-none"
                 autoFocus
               />
             </div>
@@ -140,26 +145,22 @@ const NewTranslationModal: React.FC<NewTranslationModalProps> = ({ searchQuery, 
             {/* Latin transliteration */}
             <div className="space-y-1.5">
               <label className="text-sm text-slate-300 font-medium">תעתיק לטיני (אופציונלי)</label>
-              <input
-                type="text"
+              <DictionaryInput
+                fieldName="latin"
                 value={latin}
-                onChange={(e) => setLatin(e.target.value)}
+                onChange={setLatin}
                 placeholder="Latin transliteration..."
-                dir="ltr"
-                className="w-full px-3 py-2 text-sm rounded-md border border-slate-600 bg-[#0d1424]/60 backdrop-blur-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 outline-none"
               />
             </div>
 
             {/* Cyrillic */}
             <div className="space-y-1.5">
               <label className="text-sm text-slate-300 font-medium">כתב קירילי (אופציונלי)</label>
-              <input
-                type="text"
+              <DictionaryInput
+                fieldName="cyrillic"
                 value={cyrillic}
-                onChange={(e) => setCyrillic(e.target.value)}
+                onChange={setCyrillic}
                 placeholder="Кириллица..."
-                dir="ltr"
-                className="w-full px-3 py-2 text-sm rounded-md border border-slate-600 bg-[#0d1424]/60 backdrop-blur-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 outline-none"
               />
             </div>
 
@@ -201,6 +202,7 @@ const NewTranslationModal: React.FC<NewTranslationModalProps> = ({ searchQuery, 
           </form>
         )}
       </div>
+      </FocusTrap>
     </div>
   );
 };

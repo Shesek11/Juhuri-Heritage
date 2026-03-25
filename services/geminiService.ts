@@ -17,18 +17,35 @@ export const searchDictionary = async (query: string): Promise<SearchResult> => 
     if (localResult.found && localResult.entry) {
       const entry: DictionaryEntry = { ...localResult.entry, source: localResult.entry.source || 'מאגר' };
 
-      // Check for missing fields that AI can fill
-      const missingFields: string[] = [];
+      // Collect known and missing fields for AI enrichment
       const t = entry.translations?.[0];
+      const knownFields: Record<string, string> = {};
+      const missingFields: string[] = [];
+
+      // Known fields (priority order: russian > hebrew > latin for context)
+      if (entry.russian) knownFields.russian = entry.russian;
+      if (t?.hebrew) knownFields.hebrew = t.hebrew;
+      if (t?.latin) knownFields.latin = t.latin;
+      if (t?.cyrillic) knownFields.cyrillic = t.cyrillic;
+      if (entry.definitions?.[0]) knownFields.definition = entry.definitions[0];
+      if (entry.pronunciationGuide) knownFields.pronunciationGuide = entry.pronunciationGuide;
+      if (entry.partOfSpeech) knownFields.partOfSpeech = entry.partOfSpeech;
+
+      // Missing fields
+      if (!entry.term) missingFields.push('hebrewTransliteration');
+      if (!t?.hebrew) missingFields.push('hebrew');
       if (!t?.latin) missingFields.push('latin');
       if (!t?.cyrillic) missingFields.push('cyrillic');
-      if (!entry.examples || entry.examples.length === 0) missingFields.push('examples');
+      if (!entry.russian) missingFields.push('russian');
       if (!entry.pronunciationGuide) missingFields.push('pronunciationGuide');
+      if (!entry.partOfSpeech) missingFields.push('partOfSpeech');
+      if (!entry.definitions || entry.definitions.length === 0) missingFields.push('definition');
 
-      // If there are missing fields, start enrichment (returns promise for UI to observe)
+      // Need at least one known field to provide context, and at least one missing field
       let enrichmentPromise: Promise<Record<string, any> | null> | undefined;
-      if (missingFields.length > 0) {
-        enrichmentPromise = geminiApi.enrich(entry.term, t?.hebrew || '', missingFields)
+      const hasContext = knownFields.russian || knownFields.hebrew || knownFields.latin;
+      if (missingFields.length > 0 && hasContext) {
+        enrichmentPromise = geminiApi.enrich(missingFields, knownFields)
           .then((res: any) => res.enrichment || null)
           .catch(() => null);
       }

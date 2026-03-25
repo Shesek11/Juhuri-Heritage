@@ -89,7 +89,7 @@ function StatCard({ icon, value, label }: { icon: React.ReactNode; value: number
       <div className="shrink-0">{icon}</div>
       <div>
         <p className="text-lg lg:text-xl font-bold text-slate-100">{value}</p>
-        <p className="text-xs text-slate-500">{label}</p>
+        <p className="text-xs text-slate-400">{label}</p>
       </div>
     </div>
   );

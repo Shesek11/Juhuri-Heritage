@@ -17,7 +17,7 @@ export default function CulturalNote({ note, link }: Props) {
           {link && (
             <a
               href={link}
-              className="inline-flex items-center gap-1 text-[10px] sm:text-xs text-amber-500/80 hover:text-amber-400 mt-1.5 transition-colors"
+              className="inline-flex items-center gap-1 text-[11px] sm:text-xs text-amber-500/80 hover:text-amber-400 mt-1.5 transition-colors"
             >
               למד עוד <ExternalLink size={10} />
             </a>

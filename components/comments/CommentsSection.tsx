@@ -123,7 +123,7 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({ entryId }) => {
                         value={guestName}
                         onChange={(e) => setGuestName(e.target.value)}
                         placeholder="השם שלך"
-                        className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-200 focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                        className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-200 focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:border-transparent"
                         required={!isAuthenticated}
                     />
                 )}
@@ -133,7 +133,7 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({ entryId }) => {
                         onChange={(e) => setContent(e.target.value)}
                         placeholder="הוסף תגובה..."
                         rows={2}
-                        className="flex-1 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-200 resize-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                        className="flex-1 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-200 resize-none focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:border-transparent"
                         required
                     />
                     <button
@@ -145,7 +145,7 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({ entryId }) => {
                     </button>
                 </div>
                 {!isAuthenticated && (
-                    <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                    <p className="text-xs text-slate-400 dark:text-slate-400 flex items-center gap-1">
                         <Clock size={12} />
                         תגובות אורחים ממתינות לאישור מנהל
                     </p>
@@ -169,7 +169,7 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({ entryId }) => {
                     ))}
                 </div>
             ) : comments.length === 0 ? (
-                <p className="text-center text-slate-500 dark:text-slate-400 py-8">
+                <p className="text-center text-slate-400 dark:text-slate-400 py-8">
                     אין תגובות עדיין. היה הראשון להגיב!
                 </p>
             ) : (
@@ -211,7 +211,7 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({ entryId }) => {
                                     <button
                                         onClick={() => handleLike(comment.id)}
                                         disabled={!isAuthenticated}
-                                        className="flex items-center gap-1 text-xs text-slate-500 hover:text-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                        className="flex items-center gap-1 text-xs text-slate-400 hover:text-red-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                     >
                                         <Heart size={14} />
                                         {comment.likes_count > 0 && comment.likes_count}
@@ -220,7 +220,7 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({ entryId }) => {
                                     {isAuthenticated && String(user?.id) === String(comment.user_id) && (
                                         <button
                                             onClick={() => handleDelete(comment.id)}
-                                            className="flex items-center gap-1 text-xs text-slate-500 hover:text-red-500 transition-colors"
+                                            className="flex items-center gap-1 text-xs text-slate-400 hover:text-red-500 transition-colors"
                                         >
                                             <Trash2 size={14} />
                                             מחק

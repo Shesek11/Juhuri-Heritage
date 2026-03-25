@@ -107,7 +107,7 @@ export const RecipesPage: React.FC = () => {
                 <h2 className="text-2xl font-bold text-slate-700 dark:text-slate-300 mb-2">
                     מודול המתכונים בפיתוח
                 </h2>
-                <p className="text-slate-500 dark:text-slate-400">
+                <p className="text-slate-400 dark:text-slate-400">
                     המודול יהיה זמין בקרוב. הישארו מעודכנים!
                 </p>
             </div>
@@ -140,7 +140,7 @@ export const RecipesPage: React.FC = () => {
                 <h1 className="text-3xl md:text-4xl font-bold text-slate-800 dark:text-white mb-3">
                     מתכונים מסורתיים
                 </h1>
-                <p className="text-slate-500 dark:text-slate-400 max-w-2xl mx-auto">
+                <p className="text-slate-400 dark:text-slate-400 max-w-2xl mx-auto">
                     אוסף מתכונים אותנטיים מהמטבח הג׳והורי והקווקזי-יהודי.
                     שמור את המסורת הקולינרית של הקהילה.
                 </p>
@@ -158,7 +158,7 @@ export const RecipesPage: React.FC = () => {
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
                                 placeholder="חפש מתכון..."
-                                className="w-full pr-10 pl-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-200 focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                                className="w-full pr-10 pl-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-200 focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:border-transparent"
                             />
                         </div>
                     </form>
@@ -228,7 +228,7 @@ export const RecipesPage: React.FC = () => {
             {loading ? (
                 <div className="flex items-center justify-center py-16">
                     <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
-                    <span className="mr-3 text-slate-500">טוען מתכונים...</span>
+                    <span className="mr-3 text-slate-400">טוען מתכונים...</span>
                 </div>
             ) : error ? (
                 <div className="text-center py-16">
@@ -246,7 +246,7 @@ export const RecipesPage: React.FC = () => {
                     <h3 className="text-xl font-medium text-slate-600 dark:text-slate-400 mb-2">
                         לא נמצאו מתכונים
                     </h3>
-                    <p className="text-slate-500 dark:text-slate-500 mb-6">
+                    <p className="text-slate-400 dark:text-slate-400 mb-6">
                         נסה לשנות את הסינון או להוסיף מתכון חדש
                     </p>
                     <button

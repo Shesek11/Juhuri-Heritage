@@ -2,10 +2,11 @@
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Search, Loader2, Mic, Plus } from 'lucide-react';
+import { Search, Loader2, Mic, Plus, GitMerge, X, Check } from 'lucide-react';
 import { DictionaryEntry, FuzzySuggestion } from '../../types';
 import { searchDictionary } from '../../services/geminiService';
 import apiService from '../../services/apiService';
+import { useAuth } from '../../contexts/AuthContext';
 import SearchResultCard from './SearchResultCard';
 import FuzzyMatchBanner from './FuzzyMatchBanner';
 import ScriptDetectionBanner from './ScriptDetectionBanner';
@@ -22,6 +23,7 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
   onOpenAuthModal,
   onOpenContribute,
 }) => {
+  const { isAuthenticated } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get('q') || '';
@@ -37,6 +39,7 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
   // Modal state
   const [reportEntry, setReportEntry] = useState<DictionaryEntry | null>(null);
   const [showNewTranslation, setShowNewTranslation] = useState(false);
+  const [mergeSourceEntry, setMergeSourceEntry] = useState<DictionaryEntry | null>(null);
 
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -129,7 +132,7 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
             value={query}
             onChange={e => setQuery(e.target.value)}
             placeholder="חפש מילה בעברית, ג'והורי, רוסית..."
-            className="w-full px-5 py-4 pr-14 text-lg rounded-2xl bg-[#0d1424]/60 backdrop-blur-xl border border-white/10 text-white placeholder-slate-500 focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50 outline-none transition-all font-rubik"
+            className="w-full px-5 py-4 pr-14 text-lg rounded-2xl bg-[#0d1424]/60 backdrop-blur-xl border border-white/10 text-white placeholder-slate-500 focus-visible:ring-2 focus-visible:ring-amber-500/50 focus-visible:border-amber-500/50 outline-none transition-all font-rubik"
             dir="auto"
           />
           <button
@@ -164,7 +167,7 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
       {!loading && !error && searched && results.length > 0 && (
         <div className="space-y-3">
           {/* Results header */}
-          <div className="flex items-center justify-between text-sm text-slate-500 px-1">
+          <div className="flex items-center justify-between text-sm text-slate-400 px-1">
             <span>{results.length} תוצאות עבור "{searchTerm}"</span>
           </div>
 
@@ -182,12 +185,13 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
               searchQuery={searchTerm}
               onReport={() => setReportEntry(entry)}
               onNavigate={() => router.push(`/word/${encodeURIComponent(entry.term)}`)}
+              onSuggestMerge={entry.hasDuplicates ? (e) => setMergeSourceEntry(e) : undefined}
             />
           ))}
 
           {/* Bottom actions */}
           <div className="bg-[#0d1424]/40 backdrop-blur-xl rounded-xl border border-dashed border-white/10 p-4">
-            <p className="text-sm text-slate-500 mb-3 text-center">לא מצאת מה שחיפשת?</p>
+            <p className="text-sm text-slate-400 mb-3 text-center">לא מצאת מה שחיפשת?</p>
             <div className="flex flex-col sm:flex-row gap-2 justify-center">
               <button
                 onClick={() => setShowNewTranslation(true)}
@@ -247,6 +251,146 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
           onSubmit={handleNewTranslation}
         />
       )}
+
+      {/* Suggest Merge Modal */}
+      {mergeSourceEntry && (
+        <SuggestMergeModal
+          sourceEntry={mergeSourceEntry}
+          candidates={results.filter(r => r.id !== mergeSourceEntry.id)}
+          onClose={() => setMergeSourceEntry(null)}
+          onSubmit={async (targetIds, reason) => {
+            if (!isAuthenticated) {
+              onOpenAuthModal('כדי להציע מיזוג ערכים, צריך להתחבר');
+              return;
+            }
+            try {
+              const sourceId = parseInt(mergeSourceEntry.id || '0');
+              for (const targetId of targetIds) {
+                await apiService.post('/dictionary/duplicates/suggest', {
+                  entryIdA: sourceId,
+                  entryIdB: parseInt(targetId),
+                  reason: reason || undefined,
+                });
+              }
+              setMergeSourceEntry(null);
+            } catch { /* ignore */ }
+          }}
+        />
+      )}
+    </div>
+  );
+};
+
+// ──── Inline SuggestMergeModal ────
+interface SuggestMergeModalProps {
+  sourceEntry: DictionaryEntry;
+  candidates: DictionaryEntry[];
+  onClose: () => void;
+  onSubmit: (targetIds: string[], reason?: string) => Promise<void>;
+}
+
+const SuggestMergeModal: React.FC<SuggestMergeModalProps> = ({ sourceEntry, candidates, onClose, onSubmit }) => {
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [reason, setReason] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+
+  const toggleId = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
+  const handleSubmit = async () => {
+    if (selectedIds.size === 0) return;
+    setSubmitting(true);
+    await onSubmit([...selectedIds], reason);
+    setSubmitted(true);
+    setSubmitting(false);
+  };
+
+  if (submitted) {
+    return (
+      <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
+        <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-sm w-full text-center" dir="rtl" onClick={e => e.stopPropagation()}>
+          <Check className="w-10 h-10 text-emerald-400 mx-auto mb-3" />
+          <p className="text-white font-medium mb-1">ההצעה נשלחה</p>
+          <p className="text-slate-400 text-sm mb-4">מנהל יבדוק את ההצעה. תודה!</p>
+          <button onClick={onClose} className="px-4 py-2 bg-slate-700 text-white rounded-lg text-sm hover:bg-slate-600 transition-colors">סגור</button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-md w-full" dir="rtl" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center gap-2">
+            <GitMerge className="w-5 h-5 text-amber-400" />
+            <h3 className="text-lg font-bold text-white">הצעת מיזוג</h3>
+          </div>
+          <button onClick={onClose} title="סגור" className="text-slate-400 hover:text-white"><X className="w-5 h-5" /></button>
+        </div>
+
+        <p className="text-slate-300 text-sm mb-3">
+          בחר ערכים כפולים של <strong className="text-white">"{sourceEntry.term}"</strong>:
+        </p>
+
+        <div className="space-y-2 mb-4 max-h-60 overflow-y-auto">
+          {candidates.map(c => {
+            const t = c.translations?.[0];
+            const isSelected = selectedIds.has(c.id || '');
+            return (
+              <button
+                key={c.id}
+                type="button"
+                onClick={() => toggleId(c.id || '')}
+                className={`w-full text-right px-3 py-2.5 rounded-lg border transition-all text-sm flex items-center gap-2 ${
+                  isSelected
+                    ? 'bg-amber-500/15 border-amber-500/30 text-white'
+                    : 'bg-slate-800/50 border-slate-700 text-slate-300 hover:border-slate-600'
+                }`}
+              >
+                <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 text-xs ${
+                  isSelected ? 'bg-amber-500 border-amber-400 text-white' : 'border-slate-600'
+                }`}>{isSelected && '✓'}</div>
+                <span className="font-medium">{c.term}</span>
+                {t?.hebrew && <span className="text-slate-400 mr-1">{t.hebrew}</span>}
+                {t?.latin && <span className="text-slate-500 text-xs mr-1">{t.latin}</span>}
+              </button>
+            );
+          })}
+          {candidates.length === 0 && (
+            <p className="text-slate-500 text-sm text-center py-4">אין ערכים נוספים בתוצאות החיפוש</p>
+          )}
+        </div>
+
+        <textarea
+          value={reason}
+          onChange={e => setReason(e.target.value)}
+          placeholder="סיבה (לא חובה)"
+          rows={2}
+          className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm placeholder-slate-500 focus:border-amber-500/50 focus:outline-none resize-none mb-4"
+          dir="rtl"
+        />
+
+        <div className="flex gap-3">
+          <button
+            onClick={handleSubmit}
+            disabled={selectedIds.size === 0 || submitting}
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 bg-amber-600 text-white rounded-lg font-medium hover:bg-amber-700 disabled:opacity-50 transition-colors text-sm"
+          >
+            {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <GitMerge className="w-4 h-4" />}
+            {`שלח הצעה${selectedIds.size > 1 ? ` (${selectedIds.size})` : ''}`}
+          </button>
+          <button onClick={onClose} className="px-4 py-2.5 bg-slate-700 text-slate-300 rounded-lg hover:bg-slate-600 transition-colors text-sm">
+            ביטול
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

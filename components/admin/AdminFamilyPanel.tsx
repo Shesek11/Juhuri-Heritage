@@ -72,7 +72,7 @@ export const AdminFamilyPanel: React.FC = () => {
                             ({confidencePercent}% דמיון)
                         </span>
                     </div>
-                    <div className="text-xs text-slate-500">
+                    <div className="text-xs text-slate-400">
                         הוצע על ידי: {suggestion.suggested_by_name || 'מערכת'} • {new Date(suggestion.suggested_at).toLocaleDateString('he-IL')}
                     </div>
                 </div>
@@ -95,7 +95,7 @@ export const AdminFamilyPanel: React.FC = () => {
                                 <img src={suggestion.member1_photo} alt="" className="w-16 h-16 rounded-full object-cover" />
                             ) : (
                                 <div className="w-16 h-16 rounded-full bg-slate-300 dark:bg-slate-600 flex items-center justify-center">
-                                    <User className="w-8 h-8 text-slate-500" />
+                                    <User className="w-8 h-8 text-slate-400" />
                                 </div>
                             )}
                             <div className="flex-1">
@@ -103,14 +103,14 @@ export const AdminFamilyPanel: React.FC = () => {
                                     {suggestion.member1_first} {suggestion.member1_last}
                                 </h4>
                                 {suggestion.member1_birth && (
-                                    <p className="text-sm text-slate-500 flex items-center gap-1">
+                                    <p className="text-sm text-slate-400 flex items-center gap-1">
                                         <Calendar className="w-3 h-3" />
                                         {new Date(suggestion.member1_birth).toLocaleDateString('he-IL')}
                                     </p>
                                 )}
                             </div>
                         </div>
-                        <div className="text-xs text-slate-500">
+                        <div className="text-xs text-slate-400">
                             מזהה: #{suggestion.member1_id} • הוסף על ידי משתמש #{suggestion.member1_owner}
                         </div>
                     </div>
@@ -122,7 +122,7 @@ export const AdminFamilyPanel: React.FC = () => {
                                 <img src={suggestion.member2_photo} alt="" className="w-16 h-16 rounded-full object-cover" />
                             ) : (
                                 <div className="w-16 h-16 rounded-full bg-slate-300 dark:bg-slate-600 flex items-center justify-center">
-                                    <User className="w-8 h-8 text-slate-500" />
+                                    <User className="w-8 h-8 text-slate-400" />
                                 </div>
                             )}
                             <div className="flex-1">
@@ -130,14 +130,14 @@ export const AdminFamilyPanel: React.FC = () => {
                                     {suggestion.member2_first} {suggestion.member2_last}
                                 </h4>
                                 {suggestion.member2_birth && (
-                                    <p className="text-sm text-slate-500 flex items-center gap-1">
+                                    <p className="text-sm text-slate-400 flex items-center gap-1">
                                         <Calendar className="w-3 h-3" />
                                         {new Date(suggestion.member2_birth).toLocaleDateString('he-IL')}
                                     </p>
                                 )}
                             </div>
                         </div>
-                        <div className="text-xs text-slate-500">
+                        <div className="text-xs text-slate-400">
                             מזהה: #{suggestion.member2_id} • הוסף על ידי משתמש #{suggestion.member2_owner}
                         </div>
                     </div>
@@ -193,7 +193,7 @@ export const AdminFamilyPanel: React.FC = () => {
                             בקשת חיבור: {relationshipLabels[request.relationship_type]}
                         </h3>
                     </div>
-                    <div className="text-xs text-slate-500">
+                    <div className="text-xs text-slate-400">
                         מבקש: {request.requester_name} • {new Date(request.created_at).toLocaleDateString('he-IL')}
                     </div>
                 </div>
@@ -211,22 +211,22 @@ export const AdminFamilyPanel: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     {/* Source Member */}
                     <div className="bg-white/5 p-4 rounded-lg border border-white/10">
-                        <div className="text-xs text-slate-500 mb-2">מתוך עץ המבקש:</div>
+                        <div className="text-xs text-slate-400 mb-2">מתוך עץ המבקש:</div>
                         <h4 className="font-semibold text-slate-800 dark:text-white">
                             {request.source_first} {request.source_last}
                         </h4>
-                        <div className="text-xs text-slate-500 mt-1">
+                        <div className="text-xs text-slate-400 mt-1">
                             מזהה: #{request.source_member_id}
                         </div>
                     </div>
 
                     {/* Target Member */}
                     <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg border border-amber-200 dark:border-amber-800">
-                        <div className="text-xs text-slate-500 mb-2">מתוך עץ קיים:</div>
+                        <div className="text-xs text-slate-400 mb-2">מתוך עץ קיים:</div>
                         <h4 className="font-semibold text-slate-800 dark:text-white">
                             {request.target_first} {request.target_last}
                         </h4>
-                        <div className="text-xs text-slate-500 mt-1">
+                        <div className="text-xs text-slate-400 mt-1">
                             מזהה: #{request.target_member_id} • בעלים: משתמש #{request.target_owner}
                         </div>
                     </div>
@@ -292,7 +292,7 @@ export const AdminFamilyPanel: React.FC = () => {
                         <GitBranch className="w-8 h-8 text-amber-600" />
                         ניהול אילן יוחסין
                     </h1>
-                    <p className="text-slate-500 dark:text-slate-400 mt-1">
+                    <p className="text-slate-400 dark:text-slate-400 mt-1">
                         אישור הצעות מיזוג ובקשות חיבור
                     </p>
                 </div>
@@ -328,7 +328,7 @@ export const AdminFamilyPanel: React.FC = () => {
                         className={`px-4 py-2 border-b-2 transition-colors ${
                             activeTab === 'merge'
                                 ? 'border-amber-500 text-amber-600 font-semibold'
-                                : 'border-transparent text-slate-500 hover:text-slate-700'
+                                : 'border-transparent text-slate-400 hover:text-slate-700'
                         }`}
                     >
                         <div className="flex items-center gap-2">
@@ -341,7 +341,7 @@ export const AdminFamilyPanel: React.FC = () => {
                         className={`px-4 py-2 border-b-2 transition-colors ${
                             activeTab === 'link'
                                 ? 'border-blue-500 text-blue-600 font-semibold'
-                                : 'border-transparent text-slate-500 hover:text-slate-700'
+                                : 'border-transparent text-slate-400 hover:text-slate-700'
                         }`}
                     >
                         <div className="flex items-center gap-2">
@@ -357,7 +357,7 @@ export const AdminFamilyPanel: React.FC = () => {
                 {activeTab === 'merge' && (
                     <>
                         {mergeSuggestions.length === 0 ? (
-                            <div className="text-center py-16 text-slate-500">
+                            <div className="text-center py-16 text-slate-400">
                                 <AlertCircle className="w-12 h-12 mx-auto mb-4 opacity-50" />
                                 <p>אין הצעות מיזוג ממתינות</p>
                             </div>
@@ -370,7 +370,7 @@ export const AdminFamilyPanel: React.FC = () => {
                 {activeTab === 'link' && (
                     <>
                         {linkRequests.length === 0 ? (
-                            <div className="text-center py-16 text-slate-500">
+                            <div className="text-center py-16 text-slate-400">
                                 <Users className="w-12 h-12 mx-auto mb-4 opacity-50" />
                                 <p>אין בקשות חיבור ממתינות</p>
                             </div>

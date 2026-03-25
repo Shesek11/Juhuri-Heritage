@@ -34,7 +34,7 @@ export default function DailyGoalRing({ earned, goal, streak }: Props) {
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
           <span className={`text-sm sm:text-base font-bold leading-none ${isComplete ? 'text-green-400' : 'text-amber-400'}`}>{earned}</span>
-          <span className="text-[9px] sm:text-[10px] text-slate-500 leading-none">/{goal}</span>
+          <span className="text-[11px] sm:text-xs text-slate-400 leading-none">/{goal}</span>
         </div>
       </div>
 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, ThumbsUp, AlertTriangle, Shield, Users, Sparkles, Star, Plus } from 'lucide-react';
+import { ArrowLeft, ThumbsUp, AlertTriangle, Shield, Users, Sparkles, Star, Plus, Copy } from 'lucide-react';
 import { DictionaryEntry } from '../../types';
 import { partOfSpeechHebrew } from '../../utils/pos';
 import apiService from '../../services/apiService';
@@ -11,6 +11,7 @@ interface SearchResultCardProps {
   searchQuery: string;
   onReport: () => void;
   onNavigate: () => void;
+  onSuggestMerge?: (entry: DictionaryEntry) => void;
 }
 
 const verificationConfig: Record<string, { icon: React.ReactNode; label: string; color: string }> = {
@@ -23,7 +24,7 @@ const verificationConfig: Record<string, { icon: React.ReactNode; label: string;
 const isHebrew = (s: string) => /^[\u0590-\u05FF]/.test(s);
 const isCyrillic = (s: string) => /^[\u0400-\u04FF]/.test(s);
 
-const SearchResultCard: React.FC<SearchResultCardProps> = ({ entry, isBestMatch, searchQuery, onReport, onNavigate }) => {
+const SearchResultCard: React.FC<SearchResultCardProps> = ({ entry, isBestMatch, searchQuery, onReport, onNavigate, onSuggestMerge }) => {
   const { isAuthenticated } = useAuth();
   const [upvoted, setUpvoted] = useState(false);
   const [upvoteCount, setUpvoteCount] = useState(entry.translations[0]?.upvotes || 0);
@@ -78,7 +79,7 @@ const SearchResultCard: React.FC<SearchResultCardProps> = ({ entry, isBestMatch,
       dir="rtl"
     >
       {isBestMatch && (
-        <div className="absolute -top-2.5 right-4 px-2.5 py-0.5 bg-amber-500/20 text-amber-400 text-[10px] font-bold rounded-full border border-amber-500/30">
+        <div className="absolute -top-2.5 right-4 px-2.5 py-0.5 bg-amber-500/20 text-amber-400 text-[11px] font-bold rounded-full border border-amber-500/30">
           התאמה מיטבית
         </div>
       )}
@@ -92,7 +93,7 @@ const SearchResultCard: React.FC<SearchResultCardProps> = ({ entry, isBestMatch,
             </h3>
           ) : (
             /* Missing Hebrew transliteration — show placeholder */
-            <div className="flex items-center gap-1.5 px-3 py-1 border border-dashed border-slate-600/50 rounded-lg text-slate-500 text-sm">
+            <div className="flex items-center gap-1.5 px-3 py-1 border border-dashed border-slate-600/50 rounded-lg text-slate-400 text-sm">
               <Plus size={12} />
               <span>חסר תעתיק עברי</span>
             </div>
@@ -132,7 +133,7 @@ const SearchResultCard: React.FC<SearchResultCardProps> = ({ entry, isBestMatch,
           <span className="text-slate-400 text-sm font-mono" dir="ltr">{latinText}</span>
         )}
         {secondaryTerm && (
-          <span className="text-slate-500 text-xs font-serif" dir="ltr">{secondaryTerm}</span>
+          <span className="text-slate-400 text-xs font-serif" dir="ltr">{secondaryTerm}</span>
         )}
       </div>
 
@@ -162,6 +163,16 @@ const SearchResultCard: React.FC<SearchResultCardProps> = ({ entry, isBestMatch,
           <AlertTriangle className="w-3.5 h-3.5" />
           <span>לא מדויק</span>
         </button>
+
+        {entry.hasDuplicates && onSuggestMerge && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onSuggestMerge(entry); }}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-orange-300/70 hover:bg-orange-500/10 rounded-lg text-xs transition-colors border border-transparent"
+          >
+            <Copy className="w-3 h-3" />
+            <span>נראה כפול?</span>
+          </button>
+        )}
 
         <button
           onClick={(e) => { e.stopPropagation(); onNavigate(); }}

@@ -12,7 +12,6 @@ const CACHE_DURATION = 7 * 24 * 60 * 60; // 7 days
 const MODELS = [
     "gemini-2.5-flash",       // Newest & Fastest
     "gemini-2.0-flash",       // Stable High-Perf fallback
-    "gemini-1.5-flash"        // Reliable fallback
 ];
 
 // --- API Key resolution: DB (encrypted) → .env ---
@@ -262,20 +261,45 @@ router.post('/search', async (req, res) => {
 // POST /api/gemini/enrich - Fill missing fields for an existing DB entry
 router.post('/enrich', async (req, res) => {
     try {
-        const { term, hebrew, missingFields } = req.body;
-        if (!term || !missingFields || missingFields.length === 0) {
-            return res.status(400).json({ error: 'נדרש מונח ושדות חסרים' });
+        const { missingFields, knownFields } = req.body;
+        // knownFields: { russian, hebrew, latin, cyrillic, definition, pronunciationGuide, partOfSpeech }
+        if (!missingFields || missingFields.length === 0) {
+            return res.status(400).json({ error: 'נדרשים שדות חסרים' });
+        }
+        if (!knownFields || (!knownFields.russian && !knownFields.hebrew && !knownFields.latin)) {
+            return res.status(400).json({ error: 'נדרש לפחות שדה אחד מוכר (רוסית, עברית, או לטינית)' });
         }
 
-        // Build a targeted prompt asking only for missing fields
+        // Build context from known fields, priority: russian > hebrew > latin
+        const contextParts = [];
+        if (knownFields.russian) contextParts.push(`Russian: "${knownFields.russian}"`);
+        if (knownFields.hebrew) contextParts.push(`Hebrew script: "${knownFields.hebrew}"`);
+        if (knownFields.latin) contextParts.push(`Latin transliteration: "${knownFields.latin}"`);
+        if (knownFields.cyrillic) contextParts.push(`Cyrillic: "${knownFields.cyrillic}"`);
+        if (knownFields.definition) contextParts.push(`Definition: "${knownFields.definition}"`);
+        if (knownFields.pronunciationGuide) contextParts.push(`Pronunciation: "${knownFields.pronunciationGuide}"`);
+        if (knownFields.partOfSpeech) contextParts.push(`Part of speech: "${knownFields.partOfSpeech}"`);
+
+        const contextStr = contextParts.join('\n');
         const fieldsList = missingFields.join(', ');
-        const prompt = `For the Juhuri word "${term}" (Hebrew: "${hebrew || ''}"), provide ONLY the following missing fields: ${fieldsList}.
+
+        const prompt = `I have a Juhuri (Judeo-Tat) dictionary entry with the following KNOWN information:
+${contextStr}
+
+Provide ONLY the following MISSING fields: ${fieldsList}.
 Do NOT repeat information I already have. Only fill in what's missing.
-If the field is "latin" - provide Latin transliteration of the Juhuri word.
-If the field is "cyrillic" - provide Cyrillic script of the Juhuri word.
-If the field is "examples" - provide 2-3 usage examples.
-If the field is "pronunciationGuide" - provide pronunciation guide.
-If the field is "definition" - expand the definition in Hebrew.`;
+
+Field instructions:
+- "hebrew" — the Juhuri word written in Hebrew script (כתב עברי). NOT a Hebrew translation.
+- "latin" — Latin transliteration of the Juhuri word.
+- "cyrillic" — the Juhuri word in Cyrillic script.
+- "russian" — Russian translation/meaning of the word.
+- "definition" — expanded definition in Hebrew.
+- "pronunciationGuide" — pronunciation guide using Hebrew with Nikud.
+- "partOfSpeech" — part of speech in Hebrew (e.g. שם עצם, פועל, שם תואר).
+- "examples" — 2-3 usage examples with origin (Hebrew), translated (Juhuri in Hebrew script), and transliteration (Latin).
+
+CRITICAL: For hebrew/latin/cyrillic fields, provide the JUHURI word in that script — NOT translations to those languages.`;
 
         // Schema for enrichment - only include requested fields
         const enrichSchema = {
@@ -284,11 +308,26 @@ If the field is "definition" - expand the definition in Hebrew.`;
             required: []
         };
 
+        if (missingFields.includes('hebrew')) {
+            enrichSchema.properties.hebrew = { type: "STRING", description: "המילה הג'והורית בכתב עברי" };
+        }
         if (missingFields.includes('latin')) {
             enrichSchema.properties.latin = { type: "STRING", description: "תעתיק לטיני של המילה הג'והורית" };
         }
         if (missingFields.includes('cyrillic')) {
-            enrichSchema.properties.cyrillic = { type: "STRING", description: "המילה בכתב קירילי" };
+            enrichSchema.properties.cyrillic = { type: "STRING", description: "המילה הג'והורית בכתב קירילי" };
+        }
+        if (missingFields.includes('russian')) {
+            enrichSchema.properties.russian = { type: "STRING", description: "תרגום לרוסית" };
+        }
+        if (missingFields.includes('definition')) {
+            enrichSchema.properties.definition = { type: "STRING", description: "הגדרה מורחבת בעברית" };
+        }
+        if (missingFields.includes('pronunciationGuide')) {
+            enrichSchema.properties.pronunciationGuide = { type: "STRING", description: "מדריך הגייה בעברית עם ניקוד" };
+        }
+        if (missingFields.includes('partOfSpeech')) {
+            enrichSchema.properties.partOfSpeech = { type: "STRING", description: "חלק דיבר בעברית" };
         }
         if (missingFields.includes('examples')) {
             enrichSchema.properties.examples = {
@@ -297,17 +336,11 @@ If the field is "definition" - expand the definition in Hebrew.`;
                     type: "OBJECT",
                     properties: {
                         origin: { type: "STRING", description: "משפט בעברית" },
-                        translated: { type: "STRING", description: "תרגום לג'והורית" },
+                        translated: { type: "STRING", description: "תרגום לג'והורית בכתב עברי" },
                         transliteration: { type: "STRING", description: "תעתיק לטיני" },
                     },
                 },
             };
-        }
-        if (missingFields.includes('pronunciationGuide')) {
-            enrichSchema.properties.pronunciationGuide = { type: "STRING", description: "מדריך הגייה" };
-        }
-        if (missingFields.includes('definition')) {
-            enrichSchema.properties.definition = { type: "STRING", description: "הגדרה מורחבת בעברית" };
         }
 
         const result = await callGemini(prompt, DICTIONARY_SYSTEM_INSTRUCTION, enrichSchema);

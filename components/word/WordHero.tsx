@@ -1,17 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { Volume2, Copy, Check, Share2, Settings2, Bot, Users, Pencil, Shield, Star } from 'lucide-react';
+import { Volume2, Copy, Check, Share2, Bot, Users, Pencil, Shield, Star } from 'lucide-react';
 import { DictionaryEntry, PendingSuggestion } from '../../types';
 import { partOfSpeechHebrew } from '../../utils/pos';
 import { generateSpeech } from '../../services/geminiService';
 import { playBase64Audio } from '../../utils/audioUtils';
-import MissingFieldPlaceholder from '../dictionary/MissingFieldPlaceholder';
-import FieldEditForm from '../dictionary/FieldEditForm';
+import EditableField from '../dictionary/EditableField';
+import TransliterationGuideModal from '../dictionary/TransliterationGuideModal';
 
 interface WordHeroProps {
   entry: DictionaryEntry;
   pendingSuggestions?: PendingSuggestion[];
   enrichmentLoading?: boolean;
   enrichedPronunciation?: string;
+  enrichedPartOfSpeech?: string;
+  enrichedHebrewTransliteration?: string;
 }
 
 const WordHero: React.FC<WordHeroProps> = ({
@@ -19,12 +21,15 @@ const WordHero: React.FC<WordHeroProps> = ({
   pendingSuggestions = [],
   enrichmentLoading = false,
   enrichedPronunciation,
+  enrichedPartOfSpeech,
+  enrichedHebrewTransliteration,
 }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [copied, setCopied] = useState(false);
   const [voice, setVoice] = useState<'Zephyr' | 'Fenrir'>('Zephyr');
   const [editingPOS, setEditingPOS] = useState(false);
   const [editingPronunciation, setEditingPronunciation] = useState(false);
+  const [showTranslitGuide, setShowTranslitGuide] = useState(false);
   const [editingDialect, setEditingDialect] = useState(false);
   const [dialects, setDialects] = useState<{id: number; name: string; description?: string}[]>([]);
   const [selectedDialect, setSelectedDialect] = useState('');
@@ -64,8 +69,8 @@ const WordHero: React.FC<WordHeroProps> = ({
     if (isPlaying) return;
     setIsPlaying(true);
     try {
-      const text = entry.translations?.[0]?.cyrillic || entry.translations?.[0]?.latin || entry.term;
-      const audioData = await generateSpeech(text, voice);
+      const text = entry.translations?.[0]?.latin || entry.translations?.[0]?.cyrillic || entry.term;
+      const audioData = await generateSpeech(text);
       await playBase64Audio(audioData);
     } catch {
       try {
@@ -104,7 +109,6 @@ const WordHero: React.FC<WordHeroProps> = ({
     }
   };
 
-  const pronunciation = entry.pronunciationGuide || enrichedPronunciation;
   const pronSuggestion = pendingSuggestions.find(s => s.fieldName === 'pronunciationGuide');
 
   // Trust signals
@@ -122,7 +126,7 @@ const WordHero: React.FC<WordHeroProps> = ({
     ? 'text-indigo-400'
     : entry.verificationLevel === 'ai'
     ? 'text-amber-400'
-    : 'text-slate-500';
+    : 'text-slate-300';
 
   return (
     <div className="p-8 bg-gradient-to-br from-white/10 to-transparent border-b border-white/10 text-white relative">
@@ -145,22 +149,18 @@ const WordHero: React.FC<WordHeroProps> = ({
               <Check size={12} /> מאגר קהילתי
             </span>
           )}
-          {entry.partOfSpeech ? (
-            <span className="inline-flex items-center px-2 py-1 bg-white/20 rounded-md text-xs font-medium backdrop-blur-sm">
-              {partOfSpeechHebrew(entry.partOfSpeech)}
-            </span>
-          ) : (
-            !editingPOS && entry.id && (
-              <button
-                type="button"
-                onClick={() => setEditingPOS(true)}
-                className="inline-flex items-center gap-1 px-2 py-1 border border-dashed border-white/20 rounded-md text-xs text-slate-400 hover:border-indigo-400 hover:text-indigo-300 transition-colors"
-              >
-                <Pencil size={10} />
-                הוסף חלק דיבר
-              </button>
-            )
-          )}
+          <EditableField
+            entryId={entry.id}
+            fieldName="partOfSpeech"
+            dbValue={entry.partOfSpeech ? partOfSpeechHebrew(entry.partOfSpeech) : undefined}
+            aiValue={enrichedPartOfSpeech ? partOfSpeechHebrew(enrichedPartOfSpeech) : undefined}
+            isEnriching={enrichmentLoading && !entry.partOfSpeech}
+            compact
+            valueClassName="text-xs font-medium"
+            isEditing={editingPOS}
+            onStartEdit={() => setEditingPOS(true)}
+            onCloseEdit={() => setEditingPOS(false)}
+          />
           {/* Dialect badge */}
           {currentDialect && currentDialect !== 'General' ? (
             <button
@@ -176,7 +176,7 @@ const WordHero: React.FC<WordHeroProps> = ({
               <button
                 type="button"
                 onClick={() => setEditingDialect(true)}
-                className="inline-flex items-center gap-1 px-2 py-1 border border-dashed border-white/20 rounded-md text-xs text-slate-400 hover:border-violet-400 hover:text-violet-300 transition-colors"
+                className="inline-flex items-center gap-1 px-2 py-1 border border-dashed border-white/20 rounded-md text-xs text-slate-300 hover:border-violet-400 hover:text-violet-300 transition-colors"
               >
                 <Pencil size={10} />
                 הוסף ניב
@@ -210,7 +210,7 @@ const WordHero: React.FC<WordHeroProps> = ({
             </button>
             <button
               onClick={() => setEditingDialect(false)}
-              className="px-2 py-1 text-xs text-slate-400 hover:text-white"
+              className="px-2 py-1 text-xs text-slate-300 hover:text-white"
             >
               ביטול
             </button>
@@ -221,119 +221,78 @@ const WordHero: React.FC<WordHeroProps> = ({
         {entry.source === 'AI' ? (
           <span className="text-xs text-amber-400/70">תרגום AI</span>
         ) : (
-          <span className="text-xs text-slate-400">באדיבות {(entry as any).sourceName || (entry as any).contributorName || 'הקהילה'}</span>
-        )}
-
-        {/* POS edit form */}
-        {editingPOS && entry.id && (
-          <FieldEditForm
-            entryId={entry.id}
-            fieldName="partOfSpeech"
-            currentValue={entry.partOfSpeech || ''}
-            onClose={() => setEditingPOS(false)}
-            onSuccess={() => setEditingPOS(false)}
-          />
+          <span className="text-xs text-slate-300">באדיבות {(entry as any).sourceName || (entry as any).contributorName || 'הקהילה'}</span>
         )}
 
         {/* Term - Hebrew script is primary */}
         {/^[\u0590-\u05FF]/.test(entry.term) ? (
           <h1 className="text-5xl md:text-6xl font-bold tracking-tight leading-tight">{entry.term}</h1>
         ) : (
-          /* Term is NOT in Hebrew — single CTA to add Hebrew transliteration */
           <div>
-            {entry.id && (
-              <MissingFieldPlaceholder
-                fieldName="hebrewTransliteration"
-                entryId={entry.id}
-                compact
-              />
+            <EditableField
+              entryId={entry.id}
+              fieldName="hebrewTransliteration"
+              aiValue={enrichedHebrewTransliteration}
+              isEnriching={enrichmentLoading && !enrichedHebrewTransliteration}
+              latinHint={entry.translations?.[0]?.latin}
+              compact
+              valueClassName="text-5xl md:text-6xl font-bold tracking-tight leading-tight"
+            />
+            {entry.term && (
+              <h1 className="text-4xl md:text-5xl font-bold tracking-tight leading-tight font-serif text-slate-200 mt-2" dir="ltr">
+                {entry.term}
+              </h1>
             )}
-            {/* Show the original term (Cyrillic/other) below as secondary */}
-            <h1 className="text-4xl md:text-5xl font-bold tracking-tight leading-tight font-serif text-slate-200 mt-2" dir="ltr">
-              {entry.term}
-            </h1>
           </div>
         )}
 
-        {/* Subtitle: Latin + Cyrillic transliterations + POS */}
+        {/* Subtitle: Latin + Cyrillic transliterations */}
         <div className="flex items-center gap-3 text-base text-indigo-200 flex-wrap">
-          {entry.translations?.[0]?.latin ? (
-            <span className="flex items-center gap-1.5">
-              <span className="text-indigo-400/60 text-xs">תעתיק לטיני:</span>
-              <span className="font-mono" dir="ltr">{entry.translations[0].latin}</span>
-            </span>
-          ) : entry.id && (
-            <MissingFieldPlaceholder fieldName="latin" entryId={entry.id} compact />
-          )}
+          <span className="flex items-center gap-1.5">
+            <span className="text-slate-300 text-xs">תעתיק לטיני:</span>
+            <EditableField
+              entryId={entry.id}
+              fieldName="latin"
+              dbValue={entry.translations?.[0]?.latin || undefined}
+              compact
+              valueClassName="font-mono text-indigo-200"
+            />
+          </span>
           {entry.translations?.[0]?.cyrillic && (
             <span className="flex items-center gap-1.5">
-              <span className="text-indigo-400/60 text-xs">תעתיק קירילי:</span>
+              <span className="text-slate-300 text-xs">תעתיק קירילי:</span>
               <span className="font-serif" dir="ltr">{entry.translations[0].cyrillic}</span>
             </span>
           )}
-          {/* POS already shown in badges row above — no duplicate here */}
         </div>
 
         {/* Pronunciation */}
-        {pronunciation ? (
-          <div className="flex items-center gap-1.5">
-            <span className="text-indigo-400/60 text-xs">הגייה:</span>
-            <span className="text-indigo-100 font-mono text-sm opacity-90" dir="ltr">{pronunciation}</span>
-          </div>
-        ) : (
-          !editingPronunciation && (
-            <div className="max-w-xs">
-              <MissingFieldPlaceholder
-                fieldName="pronunciationGuide"
-                entryId={entry.id}
-                pendingSuggestion={pronSuggestion}
-                isEnriching={enrichmentLoading}
-                compact
-              />
-            </div>
-          )
-        )}
-
-        {/* Pronunciation edit form */}
-        {editingPronunciation && entry.id && (
-          <FieldEditForm
+        <div className="flex items-center gap-1.5">
+          <span className="text-slate-300 text-xs">הגייה:</span>
+          <EditableField
             entryId={entry.id}
             fieldName="pronunciationGuide"
-            currentValue={entry.pronunciationGuide || ''}
-            onClose={() => setEditingPronunciation(false)}
-            onSuccess={() => setEditingPronunciation(false)}
+            dbValue={entry.pronunciationGuide}
+            aiValue={enrichedPronunciation}
+            isEnriching={enrichmentLoading && !entry.pronunciationGuide}
+            pendingSuggestion={pronSuggestion}
+            compact
+            valueClassName="text-indigo-100 font-mono text-sm opacity-90"
+            isEditing={editingPronunciation}
+            onStartEdit={() => setEditingPronunciation(true)}
+            onCloseEdit={() => setEditingPronunciation(false)}
           />
-        )}
+        </div>
 
         {/* Action buttons row */}
         <div className="flex items-center gap-3 mt-2 flex-wrap">
-          {/* Voice selection + play */}
-          <div className="relative group/voice">
-            <button className="p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors" title="בחר קול">
-              <Settings2 size={18} />
-            </button>
-            <div className="absolute top-full left-0 mt-2 w-32 bg-[#0d1424]/90 backdrop-blur-xl rounded-lg shadow-xl p-1 hidden group-hover/voice:block z-20 text-slate-200 text-sm border border-white/10">
-              <button onClick={() => setVoice('Zephyr')} className={`w-full text-right px-3 py-2 rounded-md hover:bg-white/10 ${voice === 'Zephyr' ? 'font-bold text-indigo-400' : ''}`}>קול אישה</button>
-              <button onClick={() => setVoice('Fenrir')} className={`w-full text-right px-3 py-2 rounded-md hover:bg-white/10 ${voice === 'Fenrir' ? 'font-bold text-indigo-400' : ''}`}>קול גבר</button>
-            </div>
-          </div>
-
           <button
             onClick={handlePlay}
             className={`flex items-center gap-2 px-4 py-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors text-sm font-medium ${isPlaying ? 'animate-pulse' : ''}`}
-            title="השמע"
+            title="השמע הגייה"
           >
             <Volume2 size={18} />
             <span>השמע</span>
-          </button>
-
-          <button
-            onClick={copyToClipboard}
-            className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors text-sm font-medium"
-            title="העתק"
-          >
-            {copied ? <Check size={18} /> : <Copy size={18} />}
-            <span>העתק</span>
           </button>
 
           <button
@@ -370,6 +329,7 @@ const WordHero: React.FC<WordHeroProps> = ({
 
         {/* Per-field edit buttons are in MeaningSection and DialectComparison */}
       </div>
+      {showTranslitGuide && <TransliterationGuideModal onClose={() => setShowTranslitGuide(false)} />}
     </div>
   );
 };

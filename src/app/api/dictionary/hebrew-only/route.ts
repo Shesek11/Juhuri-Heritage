@@ -7,16 +7,18 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(request.nextUrl.searchParams.get('offset') || '0') || 0;
     const search = request.nextUrl.searchParams.get('search')?.trim();
 
-    const searchCondition = search ? 'AND (de.term LIKE ? OR t.hebrew LIKE ?)' : '';
-    const searchParams = search ? [`%${search}%`, `%${search}%`] : [];
+    const searchCondition = search ? 'AND (de.term LIKE ? OR t.hebrew LIKE ? OR t.latin LIKE ?)' : '';
+    const searchParams = search ? [`%${search}%`, `%${search}%`, `%${search}%`] : [];
 
+    // "הוסף ג'והורי" = entries that have latin or cyrillic but NO Hebrew term.
+    // These need someone to add the Hebrew transliteration.
     const [entries] = await pool.query(`
-      SELECT de.id, de.term, de.detected_language, t.hebrew
+      SELECT de.id, de.term, de.detected_language, t.hebrew, t.latin, t.cyrillic
       FROM dictionary_entries de
       JOIN translations t ON de.id = t.entry_id
       WHERE de.status = 'active'
-      AND t.hebrew IS NOT NULL AND t.hebrew != ''
-      AND (t.latin IS NULL OR t.latin = '')
+      AND (de.term = '' OR de.term IS NULL OR de.term NOT REGEXP '^[א-ת]')
+      AND (t.latin IS NOT NULL AND t.latin != '' OR t.cyrillic IS NOT NULL AND t.cyrillic != '')
       ${searchCondition}
       GROUP BY de.id
       ORDER BY de.created_at DESC
@@ -27,8 +29,8 @@ export async function GET(request: NextRequest) {
       SELECT COUNT(DISTINCT de.id) as total FROM dictionary_entries de
       JOIN translations t ON de.id = t.entry_id
       WHERE de.status = 'active'
-      AND t.hebrew IS NOT NULL AND t.hebrew != ''
-      AND (t.latin IS NULL OR t.latin = '')
+      AND (de.term = '' OR de.term IS NULL OR de.term NOT REGEXP '^[א-ת]')
+      AND (t.latin IS NOT NULL AND t.latin != '' OR t.cyrillic IS NOT NULL AND t.cyrillic != '')
       ${searchCondition}
     `, searchParams) as any[];
 

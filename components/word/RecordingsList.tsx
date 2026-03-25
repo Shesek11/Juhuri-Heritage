@@ -26,7 +26,7 @@ const RecordingsList: React.FC<RecordingsListProps> = ({ recordings, entryId }) 
 
   return (
     <div className="space-y-3">
-      <h3 className="text-sm uppercase tracking-wider text-slate-400 dark:text-slate-500 font-bold flex items-center gap-2">
+      <h3 className="text-sm uppercase tracking-wider text-slate-300 dark:text-slate-300 font-bold flex items-center gap-2">
         <Mic size={14} />
         הגיות מהקהילה
       </h3>
@@ -54,11 +54,11 @@ const RecordingsList: React.FC<RecordingsListProps> = ({ recordings, entryId }) 
                     </span>
                   )}
                 </div>
-                <span className="text-xs text-slate-500">{formatDuration(rec.duration)}</span>
+                <span className="text-xs text-slate-300">{formatDuration(rec.duration)}</span>
               </div>
 
               {typeof rec.upvotes === 'number' && (
-                <div className="flex items-center gap-1 text-xs text-slate-400">
+                <div className="flex items-center gap-1 text-xs text-slate-300">
                   <ThumbsUp size={12} />
                   <span className="font-bold">{rec.upvotes}</span>
                 </div>
@@ -67,7 +67,7 @@ const RecordingsList: React.FC<RecordingsListProps> = ({ recordings, entryId }) 
           ))}
         </div>
       ) : (
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-slate-300">
           אין עדיין הקלטות למילה זו. היו הראשונים להקליט!
         </p>
       )}

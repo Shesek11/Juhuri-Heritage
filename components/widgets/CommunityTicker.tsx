@@ -133,7 +133,7 @@ const CommunityTicker: React.FC = () => {
             <div className="p-6 border-b border-white/10 flex flex-col items-center justify-center text-center h-40 bg-[#0d1424]/40 relative group-hover:bg-[#0d1424]/60 transition-colors">
                 <div className="absolute top-4 left-4 flex items-center gap-1.5 px-2 py-0.5 bg-white/10 rounded-full">
                     <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></span>
-                    <span className="text-[10px] font-medium text-white">LIVE</span>
+                    <span className="text-[11px] font-medium text-white">LIVE</span>
                 </div>
                 <div className="w-12 h-12 bg-gradient-to-br from-indigo-400 to-purple-600 rounded-2xl flex items-center justify-center shadow-lg shadow-indigo-500/20 mb-3 text-white">
                     <Activity size={24} />
@@ -148,7 +148,7 @@ const CommunityTicker: React.FC = () => {
                         {[1, 2, 3].map(i => <div key={i} className="h-16 bg-white/10 text-white rounded-xl animate-pulse" />)}
                     </div>
                 ) : activities.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-full text-slate-400 dark:text-slate-500 p-4">
+                    <div className="flex flex-col items-center justify-center h-full text-slate-400 dark:text-slate-400 p-4">
                         <Activity size={32} className="mb-2 opacity-50" />
                         <p className="text-sm text-center">אין פעילות עדיין</p>
                         <p className="text-xs text-center mt-1">תרמו מילים כדי להתחיל!</p>
@@ -167,7 +167,7 @@ const CommunityTicker: React.FC = () => {
                                         {getText(item)}
                                     </p>
                                 </div>
-                                <span className="text-[10px] text-slate-400 whitespace-nowrap">{item.time}</span>
+                                <span className="text-[11px] text-slate-400 whitespace-nowrap">{item.time}</span>
                             </div>
                         ))}
                     </div>

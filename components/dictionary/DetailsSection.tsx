@@ -1,10 +1,6 @@
 import React from 'react';
-import { Pencil } from 'lucide-react';
 import { DictionaryEntry, PendingSuggestion } from '../../types';
-import FieldSourceBadge from './FieldSourceBadge';
-import ConfirmAiButton from './ConfirmAiButton';
-import FieldEditForm from './FieldEditForm';
-import MissingFieldPlaceholder from './MissingFieldPlaceholder';
+import EditableField from './EditableField';
 
 interface DetailsSectionProps {
   entry: DictionaryEntry;
@@ -13,6 +9,8 @@ interface DetailsSectionProps {
   onCloseEdit: () => void;
   pendingSuggestions?: PendingSuggestion[];
   enrichmentLoading?: boolean;
+  enrichedDefinition?: string;
+  enrichedRussian?: string;
   hideRussian?: boolean;
 }
 
@@ -23,6 +21,8 @@ const DetailsSection: React.FC<DetailsSectionProps> = ({
   onCloseEdit,
   pendingSuggestions = [],
   enrichmentLoading = false,
+  enrichedDefinition,
+  enrichedRussian,
   hideRussian = false,
 }) => {
   const defSuggestion = pendingSuggestions.find(s => s.fieldName === 'definition');
@@ -33,41 +33,39 @@ const DetailsSection: React.FC<DetailsSectionProps> = ({
   const firstHebrew = entry.translations?.[0]?.hebrew || '';
   const showDefinition = defText && defText !== firstHebrew;
 
+  // AI enriched values
+  const isDefinitionFromAI = !defText && !!enrichedDefinition;
+
   return (
     <div className="space-y-4">
       {/* Definition */}
-      {showDefinition ? (
-        <div className="text-slate-700 dark:text-slate-200 text-lg leading-relaxed border-b border-white/10 pb-4 font-medium group">
-          <div className="flex items-start gap-1">
-            <div className="flex-1">
-              <FieldSourceBadge source={entry.fieldSources?.definition} />
-              {defText}
-            </div>
-            <ConfirmAiButton entryId={entry.id} fieldName="definition" value={defText} source={entry.fieldSources?.definition} />
-            {entry.id && (
-              <button
-                type="button"
-                onClick={() => onStartEdit('definition')}
-                className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-200 dark:hover:bg-indigo-800/40 transition-colors opacity-100 md:opacity-0 md:group-hover:opacity-100"
-                title="הצע תיקון להגדרה"
-              >
-                <Pencil size={10} />
-                ערוך
-              </button>
-            )}
-          </div>
-          {editingField === 'definition' && entry.id && (
-            <FieldEditForm entryId={entry.id} fieldName="definition" currentValue={defText} onClose={onCloseEdit} onSuccess={() => {}} />
-          )}
+      {(showDefinition || isDefinitionFromAI) ? (
+        <div className="border-b border-white/10 pb-4">
+          <EditableField
+            entryId={entry.id}
+            fieldName="definition"
+            dbValue={showDefinition ? defText : undefined}
+            aiValue={isDefinitionFromAI ? enrichedDefinition : undefined}
+            isEnriching={enrichmentLoading && !defText}
+            pendingSuggestion={defSuggestion}
+            fieldSource={entry.fieldSources?.definition}
+            valueClassName="text-slate-200 text-lg leading-relaxed font-medium"
+            isEditing={editingField === 'definition'}
+            onStartEdit={() => onStartEdit('definition')}
+            onCloseEdit={onCloseEdit}
+          />
         </div>
       ) : !defText ? (
         <div className="border-b border-white/10 pb-4">
-          <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-2">הגדרה</span>
-          <MissingFieldPlaceholder
-            fieldName="definition"
+          <span className="text-xs font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider block mb-2">הגדרה</span>
+          <EditableField
             entryId={entry.id}
+            fieldName="definition"
             pendingSuggestion={defSuggestion}
             isEnriching={enrichmentLoading}
+            isEditing={editingField === 'definition'}
+            onStartEdit={() => onStartEdit('definition')}
+            onCloseEdit={onCloseEdit}
           />
         </div>
       ) : (
@@ -76,39 +74,31 @@ const DetailsSection: React.FC<DetailsSectionProps> = ({
       )}
 
       {/* Russian — hidden when already shown in parent (e.g., WordPage DialectComparison) */}
-      {!hideRussian && (entry.russian ? (
-        <div className="border-b border-white/10 pb-3 group">
-          <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
-            <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">רוסית</span>
-            <FieldSourceBadge source={entry.fieldSources?.russian} />
-            <span className="font-serif text-lg flex-1" dir="ltr">{entry.russian}</span>
-            <ConfirmAiButton entryId={entry.id} fieldName="russian" value={entry.russian} source={entry.fieldSources?.russian} />
-            {entry.id && (
-              <button
-                type="button"
-                onClick={() => onStartEdit('russian')}
-                className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-200 dark:hover:bg-indigo-800/40 transition-colors opacity-100 md:opacity-0 md:group-hover:opacity-100"
-                title="הצע תיקון לרוסית"
-              >
-                <Pencil size={10} />
-                ערוך
-              </button>
-            )}
-          </div>
-          {editingField === 'russian' && entry.id && (
-            <FieldEditForm entryId={entry.id} fieldName="russian" currentValue={entry.russian} onClose={onCloseEdit} onSuccess={() => {}} />
-          )}
-        </div>
-      ) : (
+      {!hideRussian && (
         <div className="border-b border-white/10 pb-3">
-          <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-2">רוסית</span>
-          <MissingFieldPlaceholder
-            fieldName="russian"
+          {!entry.russian && !enrichedRussian && (
+            <span className="text-xs font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider block mb-2">רוסית</span>
+          )}
+          {(entry.russian || enrichedRussian) && (
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-xs font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider">רוסית</span>
+            </div>
+          )}
+          <EditableField
             entryId={entry.id}
+            fieldName="russian"
+            dbValue={entry.russian}
+            aiValue={enrichedRussian}
+            isEnriching={enrichmentLoading && !entry.russian}
             pendingSuggestion={rusSuggestion}
+            fieldSource={entry.fieldSources?.russian}
+            valueClassName="font-serif text-lg"
+            isEditing={editingField === 'russian'}
+            onStartEdit={() => onStartEdit('russian')}
+            onCloseEdit={onCloseEdit}
           />
         </div>
-      ))}
+      )}
     </div>
   );
 };

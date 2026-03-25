@@ -8,6 +8,7 @@ const SECTION_DESCRIPTIONS: Record<string, string> = {
     dict_pending: 'הצעות תרגום ותיקוני שדות שממתינים לאישור מנהל.',
     dict_ai: 'שדות שמולאו אוטומטית על ידי AI. בחר ואשר כדי להפוך לתוכן קהילתי מאושר.',
     dict_dialects: 'ניהול רשימת הניבים (דיאלקטים) הזמינים במילון.',
+    dict_duplicates: 'זיהוי ומיזוג ערכים כפולים במילון. בחר זוג ערכים והחלט אילו שדות לשמור.',
     gen_users: 'ניהול משתמשים, שינוי תפקידים ואיפוס סיסמאות.',
     gen_logs: 'יומן אירועים מהמערכת: כניסות, שינויים, שגיאות.',
     gen_features: 'הפעלה/כיבוי של פיצ\'רים באתר. שינויים חלים מיד.',
@@ -37,6 +38,7 @@ import AdminFamilyPanel from './admin/AdminFamilyPanel';
 import AdminMarketplacePanel from './admin/AdminMarketplacePanel';
 import AdminSEOPanel from './admin/AdminSEOPanel';
 import AdminAnalyticsPanel from './admin/AdminAnalyticsPanel';
+import AdminDuplicatesPanel from './admin/AdminDuplicatesPanel';
 import { getCustomEntries, addCustomEntry, deleteCustomEntry, approveEntry, downloadTemplate, getDialects, addDialect, deleteDialect, getSystemLogs } from '../services/storageService';
 import { generateBatchEntries } from '../services/geminiService';
 import { getAllUsers, updateUserRole, deleteUser, updateUser } from '../services/authService';
@@ -324,7 +326,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                 { id: 'dict_active', label: 'מאגר פעיל' },
                 { id: 'dict_pending', label: 'אישורים', badge: pendingEntries.length },
                 { id: 'dict_ai', label: 'אישור AI' },
-                { id: 'dict_dialects', label: 'ניהול ניבים' }
+                { id: 'dict_dialects', label: 'ניהול ניבים' },
+                { id: 'dict_duplicates', label: 'כפילויות' }
             ]
         },
         {
@@ -721,7 +724,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                 <div className="max-w-7xl mx-auto flex justify-between items-center">
                     <div className="flex items-center gap-3">
                         <Database className="text-amber-400" />
-                        <h1 className="text-xl font-bold">שביבלן - ממשק ניהול</h1>
+                        <h1 className="text-xl font-bold">ממשק ניהול</h1>
                         <span className="text-sm text-slate-400">({user.name} - {user.role})</span>
                     </div>
                     <button onClick={onClose} className="text-sm bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded transition-colors">יציאה לאתר</button>
@@ -862,7 +865,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                                         return (
                                                             <tr key={idx} className={`text-slate-200 ${isEditing ? 'bg-amber-900/30' : 'hover:bg-white/5'}`}>
                                                                 <td className="p-4">
-                                                                    <span className={`text-[10px] px-2 py-0.5 rounded-full border ${entry.source === 'AI' ? 'bg-purple-50 text-purple-600 border-purple-200' : entry.source === 'קהילה' ? 'bg-blue-50 text-blue-600 border-blue-200' : 'bg-emerald-900/30 text-emerald-400 border-emerald-700'}`}>{entry.source || 'מאגר'}</span>
+                                                                    <span className={`text-[11px] px-2 py-0.5 rounded-full border ${entry.source === 'AI' ? 'bg-purple-50 text-purple-600 border-purple-200' : entry.source === 'קהילה' ? 'bg-blue-50 text-blue-600 border-blue-200' : 'bg-emerald-900/30 text-emerald-400 border-emerald-700'}`}>{entry.source || 'מאגר'}</span>
                                                                 </td>
                                                                 <td className="p-4 text-xs text-slate-400">{(entry as any).sourceName || (entry as any).contributorName || '-'}</td>
                                                                 <td className="p-4 font-bold">
@@ -919,7 +922,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                                                             dir="ltr"
                                                                         />
                                                                     ) : (
-                                                                        <span className="text-xs text-slate-500">{entry.translations[0]?.latin || '-'}</span>
+                                                                        <span className="text-xs text-slate-400">{entry.translations[0]?.latin || '-'}</span>
                                                                     )}
                                                                 </td>
                                                                 <td className="p-4">
@@ -933,7 +936,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                                                             dir="ltr"
                                                                         />
                                                                     ) : (
-                                                                        <span className="text-xs text-slate-500">{entry.translations[0]?.cyrillic || '-'}</span>
+                                                                        <span className="text-xs text-slate-400">{entry.translations[0]?.cyrillic || '-'}</span>
                                                                     )}
                                                                 </td>
                                                                 {isAdmin && (
@@ -941,7 +944,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                                                         {isEditing ? (
                                                                             <div className="flex gap-1">
                                                                                 <button onClick={handleSaveEdit} className="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded transition-colors" title="שמור"><Save size={16} /></button>
-                                                                                <button onClick={handleCancelEdit} className="p-2 text-slate-500 hover:bg-white/10 rounded transition-colors" title="בטל"><X size={16} /></button>
+                                                                                <button onClick={handleCancelEdit} className="p-2 text-slate-400 hover:bg-white/10 rounded transition-colors" title="בטל"><X size={16} /></button>
                                                                             </div>
                                                                         ) : (
                                                                             <div className="flex gap-1">
@@ -996,7 +999,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                                     className="w-5 h-5 rounded border-gray-300 text-amber-600 focus:ring-amber-500"
                                                 />
                                                 <span className="font-medium text-slate-300">הוסף ללא תרגום</span>
-                                                <span className="text-xs text-slate-500">(המילים יוצגו לקהילה לתרגום)</span>
+                                                <span className="text-xs text-slate-400">(המילים יוצגו לקהילה לתרגום)</span>
                                             </label>
                                         </div>
 
@@ -1036,7 +1039,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                             <div className="flex gap-2 items-center">
                                                 <button onClick={handleAddRows} className="flex items-center gap-2 text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 px-3 py-2 rounded hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors text-sm font-medium"><Plus size={16} /> הוסף</button>
                                                 <input type="number" min="1" value={rowsToAdd} onChange={(e) => setRowsToAdd(parseInt(e.target.value) || 1)} className="w-16 p-2 rounded border border-white/10 bg-[#0d1424]/60 backdrop-blur-xl text-center text-sm" />
-                                                <span className="text-sm text-slate-500">שורות</span>
+                                                <span className="text-sm text-slate-400">שורות</span>
                                                 <div className="h-6 w-px bg-slate-300 dark:bg-slate-600 mx-2"></div>
                                                 <button onClick={handleClearGrid} className="flex items-center gap-2 text-slate-400 hover:text-red-600 dark:hover:text-red-400 px-3 py-2 rounded hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors text-sm font-medium"><Eraser size={16} /> נקה טבלה</button>
                                             </div>
@@ -1077,7 +1080,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                                         <td className="p-4 font-bold text-lg">{entry.term}</td>
                                                         <td className="p-4">{entry.translations[0]?.hebrew}</td>
                                                         <td className="p-4"><span className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-300 px-2 py-1 rounded text-xs">{entry.translations[0]?.dialect || '-'}</span></td>
-                                                        <td className="p-4 text-xs text-slate-500">{entry.contributorId ? 'משתמש רשום' : 'אורח'}</td>
+                                                        <td className="p-4 text-xs text-slate-400">{entry.contributorId ? 'משתמש רשום' : 'אורח'}</td>
                                                         <td className="p-4">
                                                             <div className="flex gap-2">
                                                                 <button onClick={() => handleApprove(entry.term)} className="p-2 bg-green-100 text-green-700 hover:bg-green-200 rounded transition-colors" title="אשר"><CheckCircle size={18} /></button>
@@ -1136,12 +1139,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                                             ) : (
                                                                 <div className="flex flex-col gap-1">
                                                                     <span className="font-medium">{s.suggested_hebrew}</span>
-                                                                    {s.suggested_latin && <span className="text-xs text-slate-500">{s.suggested_latin}</span>}
-                                                                    {s.suggested_russian && <span className="text-xs text-slate-500">{s.suggested_russian}</span>}
+                                                                    {s.suggested_latin && <span className="text-xs text-slate-400">{s.suggested_latin}</span>}
+                                                                    {s.suggested_russian && <span className="text-xs text-slate-400">{s.suggested_russian}</span>}
                                                                 </div>
                                                             )}
                                                         </td>
-                                                        <td className="p-4 text-xs text-slate-500">
+                                                        <td className="p-4 text-xs text-slate-400">
                                                             {s.contributor_name || s.user_name || (s.user_id ? 'משתמש רשום' : 'אורח')}
                                                         </td>
                                                         <td className="p-4">
@@ -1234,7 +1237,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                         </button>
                                     )}
                                 </div>
-                                <p className="text-sm text-slate-500 dark:text-slate-400">
+                                <p className="text-sm text-slate-400 dark:text-slate-400">
                                     ערכים אלה מכילים שדות שמולאו אוטומטית על ידי AI. בחר ערכים ואשר כדי לשמור אותם כערכים קהילתיים.
                                 </p>
 
@@ -1294,7 +1297,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                                         <td className="p-3">
                                                             <div className="flex flex-wrap gap-1">
                                                                 {entry.ai_fields?.split(', ').map((field: string) => (
-                                                                    <span key={field} className="px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded text-[10px] font-medium">
+                                                                    <span key={field} className="px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded text-[11px] font-medium">
                                                                         {ADMIN_FIELD_LABELS[field] || field}
                                                                     </span>
                                                                 ))}
@@ -1309,7 +1312,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                     {/* Pagination */}
                                     {aiFieldsTotalPages > 1 && (
                                         <div className="flex items-center justify-between p-3 bg-white/5 border-t border-white/10">
-                                            <span className="text-xs text-slate-500">עמוד {aiFieldsPage} מתוך {aiFieldsTotalPages} ({aiFieldsTotal} ערכים)</span>
+                                            <span className="text-xs text-slate-400">עמוד {aiFieldsPage} מתוך {aiFieldsTotalPages} ({aiFieldsTotal} ערכים)</span>
                                             <div className="flex gap-2">
                                                 <button
                                                     type="button"
@@ -1379,6 +1382,17 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                             </div>
                         )}
 
+                        {/* Dictionary: Duplicates Management */}
+                        {activeSection === 'dict_duplicates' && isAdmin && (
+                            <div className="flex-1 flex flex-col max-w-5xl">
+                                <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-2">
+                                    <Database size={24} className="text-amber-500" />
+                                    ניהול כפילויות
+                                </h2>
+                                <AdminDuplicatesPanel />
+                            </div>
+                        )}
+
                         {/* Recipes: Tags Management */}
                         {activeSection === 'recipe_tags' && isAdmin && (
                             <div className="flex-1 flex flex-col w-full">
@@ -1418,13 +1432,13 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                                 {usersList.map((u) => (
                                                     <tr key={u.id} className="hover:bg-white/5 text-slate-200">
                                                         <td className="p-4 font-bold flex items-center gap-2">
-                                                            <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-slate-500">
+                                                            <div className="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center text-slate-400">
                                                                 <UsersIcon size={14} />
                                                             </div>
                                                             {u.name} {u.id === user.id && <span className="text-xs text-indigo-500">(אני)</span>}
                                                         </td>
-                                                        <td className="p-4 text-slate-500">{u.email}</td>
-                                                        <td className="p-4 text-slate-500">{new Date(u.joinedAt).toLocaleDateString('he-IL')}</td>
+                                                        <td className="p-4 text-slate-400">{u.email}</td>
+                                                        <td className="p-4 text-slate-400">{new Date(u.joinedAt).toLocaleDateString('he-IL')}</td>
                                                         <td className="p-4">
                                                             <span className="bg-green-50 text-green-700 px-2 py-1 rounded text-xs border border-green-200">
                                                                 {u.contributionsCount || 0}
@@ -1492,11 +1506,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                             <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                                                 {logs.map((log) => (
                                                     <tr key={log.id} className="hover:bg-white/5 text-slate-200">
-                                                        <td className="p-4 text-slate-500 font-mono text-xs">
+                                                        <td className="p-4 text-slate-400 font-mono text-xs">
                                                             {new Date(log.timestamp).toLocaleString('he-IL')}
                                                         </td>
                                                         <td className="p-4">
-                                                            <span className={`text-[10px] px-2 py-0.5 rounded-full border font-bold ${log.type?.includes('DELETED') || log.type?.includes('REJECTED') ? 'bg-red-50 text-red-600 border-red-200' :
+                                                            <span className={`text-[11px] px-2 py-0.5 rounded-full border font-bold ${log.type?.includes('DELETED') || log.type?.includes('REJECTED') ? 'bg-red-50 text-red-600 border-red-200' :
                                                                 log.type?.includes('APPROVED') ? 'bg-green-50 text-green-600 border-green-200' :
                                                                     log.type?.includes('LOGIN') ? 'bg-blue-50 text-blue-600 border-blue-200' :
                                                                         'bg-slate-100 text-slate-600 border-slate-200'
@@ -1610,7 +1624,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                         <h3 className="text-xl font-bold mb-4 text-white flex items-center gap-2">
                             <Plus className="text-amber-500" /> הוסף מילה ללא תרגום
                         </h3>
-                        <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">
+                        <p className="text-sm text-slate-400 dark:text-slate-400 mb-4">
                             הוסף מילה שהקהילה יוכל לתרגם. המילה תופיע בוידג'ט "מחכות לתרגום".
                         </p>
                         <div className="space-y-4">

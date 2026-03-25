@@ -239,7 +239,7 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ entryId, dialectId, onRec
             )}
 
             {!isAuthenticated && (
-                <p className="text-xs text-slate-500 dark:text-slate-400 text-center">
+                <p className="text-xs text-slate-300 text-center">
                     הקלטות אורחים ממתינות לאישור מנהל
                 </p>
             )}

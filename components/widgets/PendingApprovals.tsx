@@ -81,14 +81,14 @@ const PendingApprovals: React.FC<PendingApprovalsProps> = ({ onViewDetails }) =>
                                     <span className="font-bold text-slate-200 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
                                         {suggestion.term}
                                     </span>
-                                    <span className="text-[10px] bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded">
+                                    <span className="text-[11px] bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.5 rounded">
                                         {suggestion.dialect}
                                     </span>
                                 </div>
-                                <div className="text-sm text-slate-500 dark:text-slate-400 truncate">
+                                <div className="text-sm text-slate-400 dark:text-slate-400 truncate">
                                     {suggestion.suggested_hebrew}
                                 </div>
-                                <div className="text-[10px] text-slate-400 mt-1">
+                                <div className="text-[11px] text-slate-400 mt-1">
                                     הוצע ע״י {suggestion.user_name}
                                 </div>
                             </div>

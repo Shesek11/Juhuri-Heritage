@@ -256,7 +256,7 @@ const TutorMode: React.FC = () => {
       <div className="min-h-[60vh] flex flex-col items-center justify-center text-center p-8 font-rubik">
         <Sparkles className="text-amber-500 animate-pulse mb-4" size={56} />
         <h3 className="text-xl font-bold text-slate-100 mb-2">מכין את השיעור...</h3>
-        <p className="text-sm text-slate-500">טוען מילים ותרגילים</p>
+        <p className="text-sm text-slate-400">טוען מילים ותרגילים</p>
       </div>
     );
   }
@@ -345,13 +345,13 @@ const TutorMode: React.FC = () => {
               >
                 <div>
                   <span className="font-bold">{opt.label}</span>
-                  <span className="text-xs text-slate-500 mr-2"> — {opt.desc}</span>
+                  <span className="text-xs text-slate-400 mr-2"> — {opt.desc}</span>
                 </div>
                 <span className="text-lg font-bold">{opt.xp} XP</span>
               </button>
             ))}
           </div>
-          <button type="button" onClick={() => setMode('map')} className="w-full mt-5 py-2.5 text-sm text-slate-500 hover:text-slate-300 transition-colors">ביטול</button>
+          <button type="button" onClick={() => setMode('map')} className="w-full mt-5 py-2.5 text-sm text-slate-400 hover:text-slate-300 transition-colors">ביטול</button>
         </div>
       </div>
     );
@@ -386,7 +386,7 @@ const TutorMode: React.FC = () => {
           ))}
         </div>
         <form onSubmit={handleSendMessage} className="bg-[#0d1424]/70 backdrop-blur-xl rounded-b-2xl border border-white/10 border-t-0 p-4 flex gap-3">
-          <input type="text" value={input} onChange={e => setInput(e.target.value)} placeholder="כתוב הודעה..." className="flex-1 px-5 py-3 bg-white/5 border border-white/10 rounded-xl outline-none text-white text-sm sm:text-base focus:border-amber-500/30 transition-colors" disabled={chatLoading} />
+          <input type="text" value={input} onChange={e => setInput(e.target.value)} placeholder="כתוב הודעה..." className="flex-1 px-5 py-3 bg-white/5 border border-white/10 rounded-xl outline-none text-white text-sm sm:text-base focus-visible:border-amber-500/30 transition-colors" disabled={chatLoading} />
           <button type="submit" disabled={chatLoading || !input.trim()} className="px-5 py-3 bg-gradient-to-br from-amber-400 to-orange-600 text-[#050B14] rounded-xl hover:shadow-[0_0_15px_rgba(245,158,11,0.4)] disabled:opacity-50 transition-all font-bold" title="שלח" aria-label="שלח הודעה"><Send size={20} /></button>
         </form>
       </div>
@@ -425,17 +425,17 @@ const TutorMode: React.FC = () => {
           <div className="flex items-center gap-3 sm:gap-4">
             <div className="text-right">
               <h3 className="font-bold text-sm sm:text-base text-slate-100 leading-tight">רמה {user?.level || 1}</h3>
-              <p className="text-xs text-slate-500">{user?.xp || 0} XP</p>
+              <p className="text-xs text-slate-400">{user?.xp || 0} XP</p>
             </div>
             <div className="h-6 w-px bg-white/10" />
             <div className="flex gap-1">
-              <button type="button" onClick={() => setMode('goal')} className="p-2 text-slate-500 hover:text-amber-400 transition-colors rounded-lg hover:bg-white/5" title="יעד יומי">
+              <button type="button" onClick={() => setMode('goal')} className="p-2 text-slate-400 hover:text-amber-400 transition-colors rounded-lg hover:bg-white/5" title="יעד יומי">
                 <Target size={18} />
               </button>
-              <button type="button" onClick={() => setMode('weekly')} className="p-2 text-slate-500 hover:text-amber-400 transition-colors rounded-lg hover:bg-white/5" title="סיכום שבועי">
+              <button type="button" onClick={() => setMode('weekly')} className="p-2 text-slate-400 hover:text-amber-400 transition-colors rounded-lg hover:bg-white/5" title="סיכום שבועי">
                 <BarChart3 size={18} />
               </button>
-              <button type="button" onClick={() => setConfig(null)} className="p-2 text-slate-500 hover:text-white transition-colors rounded-lg hover:bg-white/5" title="הגדרות">
+              <button type="button" onClick={() => setConfig(null)} className="p-2 text-slate-400 hover:text-white transition-colors rounded-lg hover:bg-white/5" title="הגדרות">
                 <Settings2 size={18} />
               </button>
             </div>

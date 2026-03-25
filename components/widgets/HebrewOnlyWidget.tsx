@@ -80,7 +80,7 @@ const HebrewOnlyWidget: React.FC<HebrewOnlyWidgetProps> = ({ onAddTranslation, o
                                     <div className="font-bold text-slate-200 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
                                         {entry.term}
                                     </div>
-                                    <div className="text-xs text-slate-500 mt-0.5">
+                                    <div className="text-xs text-slate-400 mt-0.5">
                                         {entry.hebrew}
                                     </div>
                                 </div>
@@ -97,7 +97,7 @@ const HebrewOnlyWidget: React.FC<HebrewOnlyWidgetProps> = ({ onAddTranslation, o
                 onClick={() => onViewAll(total)}
                 className="p-3 border-t border-white/10 text-center hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
             >
-                <span className="text-xs text-slate-500 hover:text-amber-600 dark:hover:text-amber-400">
+                <span className="text-xs text-slate-400 hover:text-amber-600 dark:hover:text-amber-400">
                     צפייה בכל {total.toLocaleString()} המילים
                 </span>
             </button>

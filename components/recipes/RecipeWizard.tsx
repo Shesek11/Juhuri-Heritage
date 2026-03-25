@@ -330,7 +330,7 @@ export const RecipeWizard: React.FC<RecipeWizardProps> = ({ isOpen, onClose, onS
                     <div className="space-y-4 animate-in slide-in-from-right">
                         <div className="text-center mb-4">
                             <h3 className="text-lg font-medium mb-2">העלאת תמונות</h3>
-                            <p className="text-sm text-slate-500 dark:text-slate-400">
+                            <p className="text-sm text-slate-400 dark:text-slate-400">
                                 הוסף תמונות יפות של המנה שלך (עד 15MB לתמונה)
                             </p>
                         </div>
@@ -348,7 +348,7 @@ export const RecipeWizard: React.FC<RecipeWizardProps> = ({ isOpen, onClose, onS
                                     <p className="text-slate-700 dark:text-slate-300 font-medium mb-1">
                                         לחץ לבחירת תמונות
                                     </p>
-                                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                                    <p className="text-sm text-slate-400 dark:text-slate-400">
                                         או גרור קבצים לכאן
                                     </p>
                                 </div>
@@ -394,7 +394,7 @@ export const RecipeWizard: React.FC<RecipeWizardProps> = ({ isOpen, onClose, onS
                         )}
 
                         {photos.length === 0 && (
-                            <div className="text-center py-8 text-slate-400 dark:text-slate-500">
+                            <div className="text-center py-8 text-slate-400 dark:text-slate-400">
                                 <ImageIcon className="w-12 h-12 mx-auto mb-2 opacity-30" />
                                 <p className="text-sm">לא נבחרו תמונות עדיין</p>
                                 <p className="text-xs mt-1">ניתן להוסיף תמונות מאוחר יותר</p>

@@ -15,7 +15,7 @@ function CTASection({ onOpenAuthModal }: CTASectionProps) {
         </p>
         <button
           onClick={() => onOpenAuthModal('הצטרפו לקהילה ותרמו לשימור השפה והמורשת')}
-          className="px-12 py-5 bg-gradient-to-r from-amber-400 via-amber-500 to-orange-600 text-[#050B14] font-bold rounded-full relative group transition-all duration-500 shadow-[0_0_30px_rgba(245,158,11,0.3)] hover:shadow-[0_0_50px_rgba(245,158,11,0.6)] hover:scale-105"
+          className="px-12 py-5 bg-gradient-to-r from-amber-400 via-amber-500 to-orange-600 text-white font-bold rounded-full relative group transition-all duration-500 shadow-[0_0_30px_rgba(245,158,11,0.3)] hover:shadow-[0_0_50px_rgba(245,158,11,0.6)] hover:scale-105"
         >
           <span className="relative z-10 text-xl font-black tracking-wide">כניסה לקהילה</span>
         </button>

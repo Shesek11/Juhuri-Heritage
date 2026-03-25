@@ -18,7 +18,7 @@ const RelatedWords: React.FC<RelatedWordsProps> = ({ relatedWords }) => {
 
   return (
     <div className="space-y-3">
-      <h3 className="text-sm uppercase tracking-wider text-slate-400 dark:text-slate-500 font-bold">
+      <h3 className="text-sm uppercase tracking-wider text-slate-300 dark:text-slate-300 font-bold">
         מילים קשורות
       </h3>
 
@@ -33,7 +33,7 @@ const RelatedWords: React.FC<RelatedWordsProps> = ({ relatedWords }) => {
               <span className="text-base font-bold text-slate-200 group-hover/related:text-indigo-300 transition-colors">
                 {word.term}
               </span>
-              <span className="text-xs text-slate-400">
+              <span className="text-xs text-slate-300">
                 {word.hebrew}
                 {word.partOfSpeech && (
                   <span className="text-slate-600 mr-1">

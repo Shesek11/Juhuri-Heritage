@@ -7,7 +7,6 @@ const CACHE_DURATION = 7 * 24 * 60 * 60; // 7 days
 const MODELS = [
   "gemini-2.5-flash",
   "gemini-2.0-flash",
-  "gemini-1.5-flash"
 ];
 
 // --- API Key resolution: DB (encrypted) -> .env ---
@@ -159,7 +158,7 @@ export async function callGemini(contentsParts: any, systemInstruction: string |
   if (!apiKey) throw new Error("API key not configured");
 
   let lastError: Error | null = null;
-  const TIMEOUT_MS = 15000;
+  const TIMEOUT_MS = 30000;
 
   for (const model of MODELS) {
     try {
@@ -171,7 +170,7 @@ export async function callGemini(contentsParts: any, systemInstruction: string |
           responseMimeType: "application/json",
           responseSchema: responseSchema,
           temperature: 0,
-          maxOutputTokens: 2048
+          maxOutputTokens: 4096
         }
       };
 
