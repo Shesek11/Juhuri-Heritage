@@ -4,7 +4,6 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import HeroSection from './home/HeroSection';
 import FeaturesSection from './home/FeaturesSection';
-import StatsSection from './home/StatsSection';
 import CTASection from './home/CTASection';
 
 interface HomePageProps {
@@ -51,7 +50,6 @@ const HomePage: React.FC<HomePageProps> = ({ featureFlags, onOpenAuthModal, isAd
         handleSearch={handleSearch}
       />
       <FeaturesSection featureFlags={featureFlags} isAdmin={isAdmin} />
-      <StatsSection />
       <CTASection onOpenAuthModal={onOpenAuthModal} />
     </div>
   );

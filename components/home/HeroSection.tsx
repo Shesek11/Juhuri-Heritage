@@ -72,7 +72,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ scrollY, searchTerm, setSearc
       {/* Main Hero Content — sits in front of everything */}
       <div
         className="relative z-30 w-full max-w-3xl mx-auto flex flex-col items-center text-center px-4 pb-16 sm:pb-24 space-y-6 animate-hero-fade-in"
->
+      >
 
         {/* Badge */}
         <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#050B14]/50 border border-amber-500/30 text-amber-300 text-sm font-medium backdrop-blur-xl shadow-xl">
@@ -82,16 +82,16 @@ const HeroSection: React.FC<HeroSectionProps> = ({ scrollY, searchTerm, setSearc
 
         {/* Title */}
         <h1 className="text-5xl sm:text-6xl md:text-8xl font-black text-white tracking-tight leading-[1.05] drop-shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
-                                          מורשת{' '}
+          מורשת{' '}
           <span className="text-transparent bg-clip-text bg-gradient-to-l from-amber-200 via-amber-400 to-yellow-500">
-                                                                        ג'והורי
-                                                                      </span>
+            ג'והורי
+          </span>
         </h1>
 
         {/* Subtitle */}
         <p className="text-lg sm:text-xl md:text-2xl text-slate-200/90 max-w-xl font-light leading-relaxed drop-shadow-lg">
-                                  שימור השפה, התרבות והמסורת של יהודי ההרים
-                                </p>
+          שימור השפה, התרבות והמסורת של יהודי ההרים
+        </p>
 
         {/* Search Bar */}
         <form onSubmit={handleSearch} className="w-full max-w-xl pt-4 relative group">
@@ -100,7 +100,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ scrollY, searchTerm, setSearc
             <div className="absolute -inset-2 bg-gradient-to-r from-amber-500/40 via-orange-500/30 to-amber-500/40 rounded-full blur-2xl opacity-60 group-hover:opacity-100 transition duration-700"></div>
 
             {/* Search Container */}
-            <div className="relative flex items-center bg-[#0d1424]/90 border border-amber-500/30 hover:border-amber-400 rounded-full p-2 pl-6 pr-2 transition-all duration-500 shadow-[0_20px_50px_-12px_rgba(245,158,11,0.4)] backdrop-blur-3xl">
+            <div className="relative flex items-center bg-[#0d1424]/90 border border-amber-500/30 hover:border-amber-400 rounded-full p-1.5 pr-5 transition-all duration-500 shadow-[0_20px_50px_-12px_rgba(245,158,11,0.4)] backdrop-blur-3xl">
               <input
                 type="text"
                 placeholder="חפשו שם, מאכל או פתגם בקווקזית..."
@@ -112,9 +112,9 @@ const HeroSection: React.FC<HeroSectionProps> = ({ scrollY, searchTerm, setSearc
                 type="submit"
                 aria-label="חיפוש במילון"
                 title="חיפוש במילון"
-                className="flex items-center justify-center min-w-[4rem] w-16 h-16 bg-gradient-to-br from-amber-400 via-amber-500 to-orange-600 text-[#050B14] rounded-full hover:scale-105 hover:shadow-[0_0_20px_rgba(245,158,11,0.6)] transition-all duration-300"
+                className="flex items-center justify-center w-14 h-14 bg-gradient-to-br from-amber-400 via-amber-500 to-orange-600 text-[#050B14] rounded-full hover:scale-105 hover:shadow-[0_0_20px_rgba(245,158,11,0.6)] transition-all duration-300 shrink-0"
               >
-                <Search size={26} className="stroke-[2.5]" />
+                <Search size={24} className="stroke-[2.5]" />
               </button>
             </div>
           </div>

@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import {
-  BookOpen, GraduationCap, ChefHat, Store, TreeDeciduous, Compass
+  BookOpen, GraduationCap, ChefHat, Store, TreeDeciduous
 } from 'lucide-react';
 
 interface FeaturesSectionProps {
@@ -56,39 +56,39 @@ const featureCards = [
 
 const FeaturesSection: React.FC<FeaturesSectionProps> = ({ featureFlags, isAdmin }) => {
   const getCardVisibility = (featureKey: string | null) => {
-    if (featureKey === null) return { visible: true, comingSoon: false, clickable: true };
+    if (featureKey === null) return { visible: true, comingSoon: false };
     const status = featureFlags[featureKey];
-    if (!status || status === 'disabled') return { visible: false, comingSoon: false, clickable: false };
-    if (status === 'coming_soon') return { visible: true, comingSoon: true, clickable: false };
-    if (status === 'admin_only') return { visible: isAdmin, comingSoon: false, clickable: isAdmin };
-    return { visible: true, comingSoon: false, clickable: true };
+    if (!status || status === 'disabled') return { visible: false, comingSoon: false };
+    if (status === 'coming_soon') return { visible: true, comingSoon: true };
+    if (status === 'admin_only') return { visible: isAdmin, comingSoon: false };
+    return { visible: true, comingSoon: false };
   };
 
   return (
     <section className="relative z-10 py-16 px-4">
       <div className="max-w-6xl mx-auto">
         <div className="flex items-center gap-3 mb-10 justify-center text-center">
-          <Compass className="text-amber-500" size={28} />
-          <h2 className="text-3xl font-bold text-white">מחקר ולמידה</h2>
-          <div className="w-16 h-[1px] bg-gradient-to-l from-amber-500 to-transparent mr-4 hidden sm:block"></div>
-          <div className="w-16 h-[1px] bg-gradient-to-r from-amber-500 to-transparent ml-4 hidden sm:block"></div>
+          <div className="w-16 h-[1px] bg-gradient-to-l from-amber-500 to-transparent hidden sm:block"></div>
+          <h2 className="text-3xl font-bold text-white">גלו את הפלטפורמה</h2>
+          <div className="w-16 h-[1px] bg-gradient-to-r from-amber-500 to-transparent hidden sm:block"></div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {featureCards.map((card) => {
-            const { visible, comingSoon, clickable } = getCardVisibility(card.key);
+            const { visible, comingSoon } = getCardVisibility(card.key);
             if (!visible) return null;
 
             const Icon = card.icon;
+            const isClickable = !comingSoon;
             const cardContent = (
               <div className={`relative h-full flex flex-col p-8 rounded-[2rem] border border-slate-800 bg-[#0d1424]/60 backdrop-blur-lg overflow-hidden group transition-all duration-500
-                  ${clickable ? 'hover:-translate-y-2 hover:border-amber-500/40 hover:bg-[#0d1424]/90 hover:shadow-[0_20px_40px_-15px_rgba(245,158,11,0.15)] cursor-pointer' : 'cursor-default'}`}
+                  ${isClickable ? 'hover:-translate-y-2 hover:border-amber-500/40 hover:bg-[#0d1424]/90 hover:shadow-[0_20px_40px_-15px_rgba(245,158,11,0.15)] cursor-pointer' : 'hover:-translate-y-1 hover:border-slate-700 cursor-pointer'}`}
               >
                 {/* Subtle top gradient line */}
                 <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-transparent via-amber-500/80 to-transparent scale-x-0 group-hover:scale-x-100 transition-transform duration-700" />
 
                 <div className="mb-8 flex justify-between items-start">
-                  <div className={`p-5 rounded-2xl bg-gradient-to-br ${card.gradient} shadow-[0_0_20px_rgba(245,158,11,0.3)]`}>
+                  <div className={`p-5 rounded-2xl bg-gradient-to-br ${card.gradient} shadow-[0_0_20px_rgba(245,158,11,0.3)] ${comingSoon ? 'opacity-60' : ''}`}>
                     <Icon size={28} className="text-[#050B14] stroke-[2.5]" />
                   </div>
                   {comingSoon && (
@@ -103,12 +103,13 @@ const FeaturesSection: React.FC<FeaturesSectionProps> = ({ featureFlags, isAdmin
               </div>
             );
 
-            return clickable ? (
-              <Link key={card.title} href={card.link} className="block h-full">
+            // coming_soon links to a teaser page, active links to the feature
+            const href = comingSoon ? `${card.link}?preview=teaser` : card.link;
+
+            return (
+              <Link key={card.title} href={href} className="block h-full">
                 {cardContent}
               </Link>
-            ) : (
-              <div key={card.title} className="h-full">{cardContent}</div>
             );
           })}
         </div>

@@ -9,9 +9,9 @@ function CTASection({ onOpenAuthModal }: CTASectionProps) {
     <section className="relative z-10 py-32 px-4 text-center overflow-hidden">
       <div className="max-w-3xl mx-auto relative z-20">
         <div className="absolute inset-0 bg-amber-500/10 blur-[100px] rounded-full pointer-events-none" />
-        <h2 className="text-4xl md:text-6xl font-bold text-white mb-6 tracking-tight">הצטרפו למעגל השומרים</h2>
+        <h2 className="text-4xl md:text-6xl font-bold text-white mb-6 tracking-tight">בואו נחזק את הקהילה</h2>
         <p className="text-xl text-slate-300 mb-12 max-w-2xl mx-auto font-light leading-relaxed">
-          תרמו מהידע שלכם, שתפו מילים מהבית, בניית עץ משפחה ומסורת ארוכת שנים. יחד נשמר את שפת הג׳והורי חיה ופועמת.
+          שתפו מילים מהבית, תרמו מהידע שלכם, וביחד נשמר את שפת הג׳והורי חיה ופועמת לדורות הבאים.
         </p>
         <button
           onClick={() => onOpenAuthModal('הצטרפו לקהילה ותרמו לשימור השפה והמורשת')}

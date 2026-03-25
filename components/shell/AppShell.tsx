@@ -14,7 +14,7 @@ import AuthModal from '../AuthModal';
 import Footer from '../Footer';
 import { AppContext, TranslationModalEntry, WordListModalState } from './AppContext';
 import {
-  Scroll, Sun, Moon, Plus, HeartHandshake, BookOpen, GraduationCap, Info,
+  Scroll, Sun, Moon, Plus, HeartHandshake, BookOpen, GraduationCap, Info, Home,
   User as UserIcon, LogOut, Settings, LayoutDashboard, LogIn, ChefHat, Store, TreeDeciduous, Clock
 } from 'lucide-react';
 
@@ -276,7 +276,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             {/* Center: Navigation Tabs (Desktop) */}
             <nav className="hidden md:flex items-center">
               <div className={`flex items-center p-1 rounded-full gap-1 transition-all duration-300 border ${!isScrolled ? 'bg-[#0d1424]/60 backdrop-blur-md border-white/5 shadow-lg' : 'bg-white/5 border-transparent backdrop-blur-sm'}`}>
-                <NavTab href="/" icon={<BookOpen size={16} />} label="בית" isActive={isActive('/')} />
+                <NavTab href="/" icon={<Home size={16} />} label="בית" isActive={isActive('/')} />
                 <NavTab href="/dictionary" icon={<BookOpen size={16} />} label="מילון" isActive={isActive('/dictionary') || pathname.startsWith('/word/')} />
                 {isFeatureVisible('tutor_module') && (
                   <NavTab href="/tutor" icon={<GraduationCap size={16} />} label="מורה פרטי" isActive={isActive('/tutor')} comingSoon={isComingSoon('tutor_module')} />
@@ -403,7 +403,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           {/* Mobile Navigation Bar */}
           <div className="md:hidden border-t border-white/10 bg-[#050B14]/95 backdrop-blur-2xl supports-[backdrop-filter]:bg-[#050B14]/80">
             <div className="flex justify-around overflow-x-auto py-1 px-1 gap-0 scrollbar-hide">
-              <MobileNavTab href="/" icon={<BookOpen size={18} />} label="בית" isActive={isActive('/')} />
+              <MobileNavTab href="/" icon={<Home size={18} />} label="בית" isActive={isActive('/')} />
               <MobileNavTab href="/dictionary" icon={<BookOpen size={18} />} label="מילון" isActive={isActive('/dictionary') || pathname.startsWith('/word/')} />
               {isFeatureVisible('tutor_module') && (
                 <MobileNavTab href="/tutor" icon={<GraduationCap size={18} />} label="מורה" isActive={isActive('/tutor')} comingSoon={isComingSoon('tutor_module')} />
