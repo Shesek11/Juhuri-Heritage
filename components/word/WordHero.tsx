@@ -288,7 +288,7 @@ const WordHero: React.FC<WordHeroProps> = ({
         <div className="flex items-center gap-3 text-base text-indigo-200 flex-wrap">
           {entry.translations?.[0]?.latin ? (
             <span className="flex items-center gap-1.5">
-              <span className="text-indigo-400/60 text-xs">תעתיק לטיני:</span>
+              <span className="text-slate-300 text-xs">תעתיק לטיני:</span>
               <span className="font-mono" dir="ltr">{entry.translations[0].latin}</span>
               <button
                 type="button"
@@ -304,7 +304,7 @@ const WordHero: React.FC<WordHeroProps> = ({
           )}
           {entry.translations?.[0]?.cyrillic && (
             <span className="flex items-center gap-1.5">
-              <span className="text-indigo-400/60 text-xs">תעתיק קירילי:</span>
+              <span className="text-slate-300 text-xs">תעתיק קירילי:</span>
               <span className="font-serif" dir="ltr">{entry.translations[0].cyrillic}</span>
             </span>
           )}
@@ -314,7 +314,7 @@ const WordHero: React.FC<WordHeroProps> = ({
         {/* Pronunciation */}
         {pronunciation ? (
           <div className="flex items-center gap-1.5">
-            <span className="text-indigo-400/60 text-xs">הגייה:</span>
+            <span className="text-slate-300 text-xs">הגייה:</span>
             {isPronunciationFromAI ? (
               <AIValueBadge
                 value={pronunciation}
