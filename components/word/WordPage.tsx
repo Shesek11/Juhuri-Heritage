@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Sparkles } from 'lucide-react';
 import { DictionaryEntry, Translation, Example, PendingSuggestion } from '../../types';
 import { generateSpeech } from '../../services/geminiService';
 import { playBase64Audio } from '../../utils/audioUtils';
@@ -144,6 +145,15 @@ const WordPage: React.FC<WordPageProps> = ({
 
   return (
     <div className="w-full max-w-3xl mx-auto font-rubik">
+      {/* AI tip */}
+      <div className="flex items-center justify-center gap-2 text-xs text-slate-400 mb-2 px-2">
+        <span className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded text-[11px] font-bold bg-amber-500/15 text-amber-400 shrink-0">
+          <Sparkles size={9} />
+          AI
+        </span>
+        <span>לחצו על תגית זו כדי לאשר או לתקן ערכים שנוצרו על ידי AI</span>
+      </div>
+
       {/* Hero Section */}
       <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-t-2xl border border-white/10 border-b-0 overflow-hidden">
         <WordHero
