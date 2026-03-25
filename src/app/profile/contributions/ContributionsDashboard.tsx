@@ -127,11 +127,11 @@ export default function ContributionsDashboard() {
                 <Award size={18} />
                 <span className="text-xl font-bold">{data.xp}</span>
               </div>
-              <span className="text-[10px] text-slate-500 uppercase tracking-wider">XP</span>
+              <span className="text-[11px] text-slate-500 uppercase tracking-wider">XP</span>
             </div>
             <div className="text-center">
               <span className="text-xl font-bold text-indigo-400">{data.totalContributions}</span>
-              <span className="text-[10px] text-slate-500 uppercase tracking-wider block">תרומות</span>
+              <span className="text-[11px] text-slate-500 uppercase tracking-wider block">תרומות</span>
             </div>
           </div>
         </div>
@@ -151,7 +151,7 @@ export default function ContributionsDashboard() {
           >
             {tab.icon}
             {tab.label}
-            <span className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+            <span className={`px-1.5 py-0.5 rounded-full text-[11px] font-bold ${
               activeTab === tab.key ? 'bg-indigo-500/20 text-indigo-300' : 'bg-white/5 text-slate-500'
             }`}>
               {tab.count}
@@ -206,7 +206,7 @@ export default function ContributionsDashboard() {
                   )}
 
                   {/* Date */}
-                  <p className="text-[10px] text-slate-600 mt-2">
+                  <p className="text-[11px] text-slate-600 mt-2">
                     {new Date(item.createdAt).toLocaleDateString('he-IL')}
                     {item.reviewedAt && (
                       <span className="mr-2">

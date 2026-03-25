@@ -18,7 +18,7 @@ const RelatedWords: React.FC<RelatedWordsProps> = ({ relatedWords }) => {
 
   return (
     <div className="space-y-3">
-      <h3 className="text-sm uppercase tracking-wider text-slate-400 dark:text-slate-500 font-bold">
+      <h3 className="text-sm uppercase tracking-wider text-slate-400 dark:text-slate-400 font-bold">
         מילים קשורות
       </h3>
 

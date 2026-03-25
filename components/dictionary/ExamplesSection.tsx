@@ -69,7 +69,7 @@ const ExamplesSection: React.FC<ExamplesSectionProps> = ({
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-sm uppercase tracking-wider text-slate-400 dark:text-slate-500 font-bold">פתגמים וברכות</h3>
+        <h3 className="text-sm uppercase tracking-wider text-slate-400 dark:text-slate-400 font-bold">פתגמים וברכות</h3>
         {entry.id && (
           <button
             type="button"
@@ -90,7 +90,7 @@ const ExamplesSection: React.FC<ExamplesSectionProps> = ({
 
       {/* Empty state */}
       {!hasExamples && !enrichmentLoading && (
-        <p className="text-sm text-slate-400 dark:text-slate-500">אין עדיין פתגמים למילה זו. היה הראשון להוסיף!</p>
+        <p className="text-sm text-slate-400 dark:text-slate-400">אין עדיין פתגמים למילה זו. היה הראשון להוסיף!</p>
       )}
 
       {/* AI Disclosure */}
@@ -112,7 +112,7 @@ const ExamplesSection: React.FC<ExamplesSectionProps> = ({
                   <Volume2 size={16} />
                 </button>
               </div>
-              {ex.transliteration && <p className="text-sm text-slate-500 font-mono mb-1 dir-ltr text-right">{ex.transliteration}</p>}
+              {ex.transliteration && <p className="text-sm text-slate-400 font-mono mb-1 dir-ltr text-right">{ex.transliteration}</p>}
               <p className="text-slate-600 dark:text-slate-400">{ex.translated}</p>
             </div>
           ))}
@@ -134,9 +134,9 @@ const ExamplesSection: React.FC<ExamplesSectionProps> = ({
                     <Volume2 size={16} />
                   </button>
                 </div>
-                {ex.transliteration && <p className="text-sm text-slate-500 font-mono mb-1 dir-ltr text-right">{ex.transliteration}</p>}
+                {ex.transliteration && <p className="text-sm text-slate-400 font-mono mb-1 dir-ltr text-right">{ex.transliteration}</p>}
                 {ex.translated && <p className="text-slate-600 dark:text-slate-400">{ex.translated}</p>}
-                <p className="text-[10px] text-slate-400 mt-1">תרומה: {ex.user_name}</p>
+                <p className="text-[11px] text-slate-400 mt-1">תרומה: {ex.user_name}</p>
               </div>
             ))}
           </div>
@@ -152,9 +152,9 @@ const ExamplesSection: React.FC<ExamplesSectionProps> = ({
               <XIcon size={14} />
             </button>
           </div>
-          <input type="text" value={proverbOrigin} onChange={e => setProverbOrigin(e.target.value)} placeholder="הפתגם / הברכה בשפת המקור..." className="w-full px-3 py-2 text-sm rounded-md border border-slate-200 dark:border-slate-600 bg-[#0d1424]/60 backdrop-blur-xl focus:ring-2 focus:ring-indigo-500 outline-none" dir="auto" />
-          <input type="text" value={proverbTranslated} onChange={e => setProverbTranslated(e.target.value)} placeholder="תרגום (אופציונלי)" className="w-full px-3 py-2 text-sm rounded-md border border-slate-200 dark:border-slate-600 bg-[#0d1424]/60 backdrop-blur-xl focus:ring-2 focus:ring-indigo-500 outline-none" dir="auto" />
-          <input type="text" value={proverbTranslit} onChange={e => setProverbTranslit(e.target.value)} placeholder="תעתיק לטיני (אופציונלי)" className="w-full px-3 py-2 text-sm rounded-md border border-slate-200 dark:border-slate-600 bg-[#0d1424]/60 backdrop-blur-xl focus:ring-2 focus:ring-indigo-500 outline-none" dir="ltr" />
+          <input type="text" value={proverbOrigin} onChange={e => setProverbOrigin(e.target.value)} placeholder="הפתגם / הברכה בשפת המקור..." className="w-full px-3 py-2 text-sm rounded-md border border-slate-200 dark:border-slate-600 bg-[#0d1424]/60 backdrop-blur-xl focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none" dir="auto" />
+          <input type="text" value={proverbTranslated} onChange={e => setProverbTranslated(e.target.value)} placeholder="תרגום (אופציונלי)" className="w-full px-3 py-2 text-sm rounded-md border border-slate-200 dark:border-slate-600 bg-[#0d1424]/60 backdrop-blur-xl focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none" dir="auto" />
+          <input type="text" value={proverbTranslit} onChange={e => setProverbTranslit(e.target.value)} placeholder="תעתיק לטיני (אופציונלי)" className="w-full px-3 py-2 text-sm rounded-md border border-slate-200 dark:border-slate-600 bg-[#0d1424]/60 backdrop-blur-xl focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none" dir="ltr" />
           <div className="flex items-center gap-2">
             <button type="button" onClick={submitProverb} disabled={proverbSubmitting || !proverbOrigin.trim()} className="px-3 py-1.5 text-xs bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1">
               {proverbSubmitting ? <Loader2 size={12} className="animate-spin" /> : <Send size={12} />}

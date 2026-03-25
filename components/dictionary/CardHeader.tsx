@@ -34,8 +34,8 @@ const CardHeader: React.FC<CardHeaderProps> = ({
     if (isPlaying) return;
     setIsPlaying(true);
     try {
-      const text = entry.translations?.[0]?.cyrillic || entry.translations?.[0]?.latin || entry.term;
-      const audioData = await generateSpeech(text, voice);
+      const text = entry.translations?.[0]?.latin || entry.translations?.[0]?.cyrillic || entry.term;
+      const audioData = await generateSpeech(text);
       await playBase64Audio(audioData);
     } catch (error) {
       try {
@@ -117,9 +117,9 @@ const CardHeader: React.FC<CardHeaderProps> = ({
 
           {/* Source attribution */}
           {entry.source === 'AI' ? (
-            <span className="text-[10px] text-amber-400/70">תרגום AI</span>
+            <span className="text-[11px] text-amber-400/70">תרגום AI</span>
           ) : (
-            <span className="text-[10px] text-slate-400">באדיבות {(entry as any).sourceName || (entry as any).contributorName || 'הקהילה'}</span>
+            <span className="text-[11px] text-slate-400">באדיבות {(entry as any).sourceName || (entry as any).contributorName || 'הקהילה'}</span>
           )}
 
           {/* POS edit form */}
@@ -165,30 +165,14 @@ const CardHeader: React.FC<CardHeaderProps> = ({
         </div>
 
         {/* Controls */}
-        <div className="flex flex-col gap-2 items-end shrink-0">
-          <div className="flex gap-2">
-            {/* Voice Selection */}
-            <div className="relative group">
-              <button className="p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors" title="בחר קול">
-                <Settings2 size={20} />
-              </button>
-              <div className="absolute top-full left-0 mt-2 w-32 bg-[#0d1424]/60 backdrop-blur-xl rounded-lg shadow-xl p-1 hidden group-hover:block z-20 text-slate-200 text-sm">
-                <button onClick={() => setVoice('Zephyr')} className={`w-full text-right px-3 py-2 rounded-md hover:bg-white/10 ${voice === 'Zephyr' ? 'font-bold text-indigo-600' : ''}`}>קול אישה</button>
-                <button onClick={() => setVoice('Fenrir')} className={`w-full text-right px-3 py-2 rounded-md hover:bg-white/10 ${voice === 'Fenrir' ? 'font-bold text-indigo-600' : ''}`}>קול גבר</button>
-              </div>
-            </div>
-
-            <button
-              onClick={handlePlay}
-              className={`p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors ${isPlaying ? 'animate-pulse' : ''}`}
-              title="השמע מקור"
-            >
-              <Volume2 size={20} />
-            </button>
-            <button onClick={copyToClipboard} className="p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors" title="העתק">
-              {copied ? <Check size={20} /> : <Copy size={20} />}
-            </button>
-          </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <button
+            onClick={handlePlay}
+            className={`p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors ${isPlaying ? 'animate-pulse' : ''}`}
+            title="השמע הגייה"
+          >
+            <Volume2 size={20} />
+          </button>
         </div>
       </div>
     </div>

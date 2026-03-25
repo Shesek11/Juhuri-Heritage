@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import FocusTrap from 'focus-trap-react';
 import { X, Search, ChevronRight, ChevronLeft, Loader2 } from 'lucide-react';
 import apiService from '../services/apiService';
 
@@ -140,12 +141,12 @@ const WordListModal: React.FC<WordListModalProps> = ({
                 return (
                     <div className="flex flex-wrap gap-1">
                         {entry.missingDialects?.slice(0, 2).map((d, i) => (
-                            <span key={i} className="text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-1 rounded text-[10px]">
+                            <span key={i} className="text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-1 rounded text-[11px]">
                                 {d}
                             </span>
                         ))}
                         {(entry.missingDialects?.length || 0) > 2 && (
-                            <span className="text-slate-400 text-[10px]">+{entry.missingDialects!.length - 2}</span>
+                            <span className="text-slate-400 text-[11px]">+{entry.missingDialects!.length - 2}</span>
                         )}
                     </div>
                 );
@@ -158,12 +159,13 @@ const WordListModal: React.FC<WordListModalProps> = ({
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200 font-rubik" onClick={onClose}>
-            <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in zoom-in-95 duration-200 border border-white/10 h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <FocusTrap focusTrapOptions={{ allowOutsideClick: true, escapeDeactivates: true }}>
+            <div role="dialog" aria-modal="true" aria-labelledby="wordlist-modal-title" className="bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-2xl w-full max-w-2xl overflow-hidden animate-in zoom-in-95 duration-200 border border-white/10 h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
 
                 {/* Header */}
                 <div className={`p-5 bg-gradient-to-r ${getCategoryColor()} text-white flex justify-between items-center shrink-0`}>
                     <div>
-                        <h3 className="font-bold text-lg">{title}</h3>
+                        <h3 id="wordlist-modal-title" className="font-bold text-lg">{title}</h3>
                         <p className="text-sm text-white/80">{serverTotal.toLocaleString()} מילים</p>
                     </div>
                     <button type="button" onClick={onClose} title="סגור" className="p-2 rounded-full hover:bg-white/20 transition-colors">
@@ -204,7 +206,7 @@ const WordListModal: React.FC<WordListModalProps> = ({
                                     onClick={() => onSelectWord(featuredEntry.id, featuredEntry.term)}
                                     className={`w-full text-right p-5 rounded-xl transition-all group border ${getCategoryBorderClass()} mb-3`}
                                 >
-                                    <div className={`text-[0.6rem] font-semibold uppercase tracking-wider ${getCategoryTextClass()} mb-2`}>
+                                    <div className={`text-xs font-semibold uppercase tracking-wider ${getCategoryTextClass()} mb-2`}>
                                         המילה שבחרתם
                                     </div>
                                     <div className="font-bold text-xl text-white group-hover:text-amber-400 transition-colors">
@@ -233,7 +235,7 @@ const WordListModal: React.FC<WordListModalProps> = ({
                                         <div className="font-bold text-slate-200 group-hover:text-amber-400 transition-colors">
                                             {entry.term}
                                         </div>
-                                        <div className="text-sm text-slate-500 mt-1 flex flex-wrap items-center gap-2">
+                                        <div className="text-sm text-slate-400 mt-1 flex flex-wrap items-center gap-2">
                                             {entry.hebrew && <span>{entry.hebrew}</span>}
                                             {entry.latin && <span className="font-mono text-xs">{entry.latin}</span>}
                                         </div>
@@ -259,7 +261,7 @@ const WordListModal: React.FC<WordListModalProps> = ({
                             <ChevronRight size={16} />
                             הקודם
                         </button>
-                        <span className="text-sm text-slate-500">
+                        <span className="text-sm text-slate-400">
                             עמוד {page + 1} מתוך {totalPages}
                         </span>
                         <button
@@ -273,6 +275,7 @@ const WordListModal: React.FC<WordListModalProps> = ({
                     </div>
                 )}
             </div>
+            </FocusTrap>
         </div>
     );
 };

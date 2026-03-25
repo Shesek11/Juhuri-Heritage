@@ -54,7 +54,7 @@ const AIValueBadge: React.FC<AIValueBadgeProps> = ({
         e.stopPropagation();
         if (entryId) setShowModal(true);
       }}
-      className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded text-[9px] font-bold bg-amber-500/15 text-amber-400 hover:bg-amber-500/25 hover:text-amber-300 transition-colors cursor-pointer shrink-0"
+      className="inline-flex items-center gap-0.5 px-1 py-0.5 rounded text-[11px] font-bold bg-amber-500/15 text-amber-400 hover:bg-amber-500/25 hover:text-amber-300 transition-colors cursor-pointer shrink-0"
       title="לחץ לאשר או לתקן"
     >
       <Sparkles size={9} />

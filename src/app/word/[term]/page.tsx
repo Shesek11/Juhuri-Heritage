@@ -49,12 +49,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     return { title: '\u05DE\u05D9\u05DC\u05D4 \u05DC\u05D0 \u05E0\u05DE\u05E6\u05D0\u05D4' };
   }
 
+  const displayTerm = entry.term || decodedTerm;
   const meanings = [entry.russian, entry.english].filter(Boolean).join(' | ');
   const descOverride = meanings
-    ? `${entry.term} \u2014 ${meanings}`
+    ? `${displayTerm} \u2014 ${meanings}`
     : undefined;
 
-  return buildPageMeta('word', { term: entry.term }, {
+  return buildPageMeta('word', { term: displayTerm }, {
     description: descOverride,
     ogType: 'article',
     canonicalPath: `/word/${encodeURIComponent(entry.term)}`,

@@ -193,7 +193,7 @@ export const VendorDashboard: React.FC = () => {
             <div className="flex flex-col items-center justify-center h-[50vh]">
                 <Store size={64} className="text-slate-300 mb-4" />
                 <h2 className="text-2xl font-bold text-slate-700 dark:text-slate-200">אין לך חנות</h2>
-                <p className="text-slate-500 mt-2">צור חנות חדשה כדי להתחיל למכור</p>
+                <p className="text-slate-400 mt-2">צור חנות חדשה כדי להתחיל למכור</p>
             </div>
         );
     }
@@ -205,7 +205,7 @@ export const VendorDashboard: React.FC = () => {
                 <div className="flex items-center justify-between mb-4">
                     <div>
                         <h1 className="text-3xl font-bold text-slate-100">{vendor.name}</h1>
-                        <p className="text-slate-500">{vendor.address}</p>
+                        <p className="text-slate-400">{vendor.address}</p>
                     </div>
                     <div className="flex items-center gap-3">
                         <NotificationBell />
@@ -224,7 +224,7 @@ export const VendorDashboard: React.FC = () => {
                     <div className="bg-[#0d1424]/60 backdrop-blur-xl p-4 rounded-xl border border-white/10">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm text-slate-500">דירוג ממוצע</p>
+                                <p className="text-sm text-slate-400">דירוג ממוצע</p>
                                 <p className="text-2xl font-bold flex items-center gap-1">
                                     <Star size={24} fill="orange" className="text-orange-500" />
                                     {vendor.avg_rating?.toFixed(1) || 'N/A'}
@@ -237,7 +237,7 @@ export const VendorDashboard: React.FC = () => {
                     <div className="bg-[#0d1424]/60 backdrop-blur-xl p-4 rounded-xl border border-white/10">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm text-slate-500">ביקורות</p>
+                                <p className="text-sm text-slate-400">ביקורות</p>
                                 <p className="text-2xl font-bold">{vendor.review_count || 0}</p>
                             </div>
                             <MessageCircle className="text-blue-500" size={32} />
@@ -247,7 +247,7 @@ export const VendorDashboard: React.FC = () => {
                     <div className="bg-[#0d1424]/60 backdrop-blur-xl p-4 rounded-xl border border-white/10">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm text-slate-500">מנות בתפריט</p>
+                                <p className="text-sm text-slate-400">מנות בתפריט</p>
                                 <p className="text-2xl font-bold">{menuItems.length}</p>
                             </div>
                             <Utensils className="text-green-500" size={32} />
@@ -261,7 +261,7 @@ export const VendorDashboard: React.FC = () => {
                 <button
                     onClick={() => setActiveTab('orders')}
                     className={`px-4 py-3 font-bold border-b-2 transition-colors flex items-center gap-2 ${
-                        activeTab === 'orders' ? 'border-orange-500 text-orange-600' : 'border-transparent text-slate-500'
+                        activeTab === 'orders' ? 'border-orange-500 text-orange-600' : 'border-transparent text-slate-400'
                     }`}
                 >
                     <ShoppingBag size={18} /> הזמנות
@@ -269,7 +269,7 @@ export const VendorDashboard: React.FC = () => {
                 <button
                     onClick={() => setActiveTab('statistics')}
                     className={`px-4 py-3 font-bold border-b-2 transition-colors flex items-center gap-2 ${
-                        activeTab === 'statistics' ? 'border-orange-500 text-orange-600' : 'border-transparent text-slate-500'
+                        activeTab === 'statistics' ? 'border-orange-500 text-orange-600' : 'border-transparent text-slate-400'
                     }`}
                 >
                     <TrendingUp size={18} /> סטטיסטיקה
@@ -277,7 +277,7 @@ export const VendorDashboard: React.FC = () => {
                 <button
                     onClick={() => setActiveTab('menu')}
                     className={`px-4 py-3 font-bold border-b-2 transition-colors flex items-center gap-2 ${
-                        activeTab === 'menu' ? 'border-orange-500 text-orange-600' : 'border-transparent text-slate-500'
+                        activeTab === 'menu' ? 'border-orange-500 text-orange-600' : 'border-transparent text-slate-400'
                     }`}
                 >
                     <Utensils size={18} /> ניהול תפריט
@@ -285,7 +285,7 @@ export const VendorDashboard: React.FC = () => {
                 <button
                     onClick={() => setActiveTab('hours')}
                     className={`px-4 py-3 font-bold border-b-2 transition-colors flex items-center gap-2 ${
-                        activeTab === 'hours' ? 'border-orange-500 text-orange-600' : 'border-transparent text-slate-500'
+                        activeTab === 'hours' ? 'border-orange-500 text-orange-600' : 'border-transparent text-slate-400'
                     }`}
                 >
                     <Clock size={18} /> שעות פתיחה
@@ -293,7 +293,7 @@ export const VendorDashboard: React.FC = () => {
                 <button
                     onClick={() => setActiveTab('updates')}
                     className={`px-4 py-3 font-bold border-b-2 transition-colors flex items-center gap-2 ${
-                        activeTab === 'updates' ? 'border-orange-500 text-orange-600' : 'border-transparent text-slate-500'
+                        activeTab === 'updates' ? 'border-orange-500 text-orange-600' : 'border-transparent text-slate-400'
                     }`}
                 >
                     <Bell size={18} /> עדכונים ומבצעים
@@ -301,7 +301,7 @@ export const VendorDashboard: React.FC = () => {
                 <button
                     onClick={() => setActiveTab('reviews')}
                     className={`px-4 py-3 font-bold border-b-2 transition-colors flex items-center gap-2 ${
-                        activeTab === 'reviews' ? 'border-orange-500 text-orange-600' : 'border-transparent text-slate-500'
+                        activeTab === 'reviews' ? 'border-orange-500 text-orange-600' : 'border-transparent text-slate-400'
                     }`}
                 >
                     <MessageCircle size={18} /> ביקורות
@@ -376,7 +376,7 @@ export const VendorDashboard: React.FC = () => {
                         <div className="space-y-4">
                             <h3 className="text-lg font-bold">מנות קיימות</h3>
                             {menuItems.length === 0 ? (
-                                <p className="text-slate-500">אין מנות בתפריט</p>
+                                <p className="text-slate-400">אין מנות בתפריט</p>
                             ) : (
                                 menuItems.map(item => (
                                     <div key={item.id} className="bg-[#0d1424]/60 backdrop-blur-xl p-4 rounded-xl border border-white/10">
@@ -460,7 +460,7 @@ export const VendorDashboard: React.FC = () => {
                 {activeTab === 'hours' && (
                     <div className="bg-[#0d1424]/60 backdrop-blur-xl p-6 rounded-xl border border-white/10">
                         <h3 className="text-lg font-bold mb-4">ניהול שעות פתיחה</h3>
-                        <p className="text-slate-500 mb-4">
+                        <p className="text-slate-400 mb-4">
                             תכונה זו תאפשר לך לערוך שעות פתיחה ולהגדיר סגירות מיוחדות. בקרוב!
                         </p>
                     </div>
@@ -521,7 +521,7 @@ export const VendorDashboard: React.FC = () => {
                                     </div>
                                 ))
                             ) : (
-                                <p className="text-slate-500">אין עדכונים</p>
+                                <p className="text-slate-400">אין עדכונים</p>
                             )}
                         </div>
                     </div>
@@ -550,11 +550,11 @@ export const VendorDashboard: React.FC = () => {
                                                     <h4 className="font-bold text-slate-100">
                                                         הזמנה #{order.order_number}
                                                     </h4>
-                                                    <p className="text-sm text-slate-500">
+                                                    <p className="text-sm text-slate-400">
                                                         {order.customer_name} • {order.customer_phone}
                                                     </p>
                                                     {order.pickup_time && (
-                                                        <p className="text-sm text-slate-500">
+                                                        <p className="text-sm text-slate-400">
                                                             איסוף: {new Date(order.pickup_time).toLocaleString('he-IL')}
                                                         </p>
                                                     )}
@@ -742,7 +742,7 @@ export const VendorDashboard: React.FC = () => {
                                                             <p className="font-bold text-slate-100">
                                                                 {item.item_name}
                                                             </p>
-                                                            <p className="text-xs text-slate-500">
+                                                            <p className="text-xs text-slate-400">
                                                                 {item.times_ordered} פעמים
                                                             </p>
                                                         </div>
@@ -764,7 +764,7 @@ export const VendorDashboard: React.FC = () => {
                 {activeTab === 'reviews' && (
                     <div className="bg-[#0d1424]/60 backdrop-blur-xl p-6 rounded-xl border border-white/10">
                         <h3 className="text-lg font-bold mb-4">ביקורות</h3>
-                        <p className="text-slate-500">
+                        <p className="text-slate-400">
                             צפייה בביקורות תתווסף בקרוב. כרגע ניתן לראות ביקורות דרך עמוד החנות הציבורי.
                         </p>
                     </div>

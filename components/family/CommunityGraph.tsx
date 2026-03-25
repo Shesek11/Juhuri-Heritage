@@ -1532,7 +1532,7 @@ export const CommunityGraph: React.FC = () => {
                                     setSearchResults([]);
                                 }
                             }}
-                            className="pr-9 pl-3 py-1.5 bg-slate-700 border border-slate-600 rounded-lg text-white text-sm placeholder-slate-400 focus:outline-none focus:border-amber-500 w-36 md:w-48 relative z-10"
+                            className="pr-9 pl-3 py-1.5 bg-slate-700 border border-slate-600 rounded-lg text-white text-sm placeholder-slate-400 focus:outline-none focus-visible:border-amber-500 w-36 md:w-48 relative z-10"
                         />
                         {searchResults.length > 0 && (
                             <div className="absolute top-full mt-1 right-0 w-72 md:w-80 bg-slate-800 border border-slate-600 rounded-lg shadow-2xl max-h-80 overflow-y-auto">
@@ -1801,7 +1801,7 @@ export const CommunityGraph: React.FC = () => {
                                         onChange={(e) => setForceParams(prev => ({ ...prev, parentChildStrength: parseFloat(e.target.value) }))}
                                         className="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-amber-500"
                                     />
-                                    <div className="flex justify-between text-xs text-slate-500 mt-1">
+                                    <div className="flex justify-between text-xs text-slate-400 mt-1">
                                         <span>חלש</span>
                                         <span>חזק</span>
                                     </div>
@@ -1822,7 +1822,7 @@ export const CommunityGraph: React.FC = () => {
                                         onChange={(e) => setForceParams(prev => ({ ...prev, parentChildDistance: parseInt(e.target.value) }))}
                                         className="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-amber-500"
                                     />
-                                    <div className="flex justify-between text-xs text-slate-500 mt-1">
+                                    <div className="flex justify-between text-xs text-slate-400 mt-1">
                                         <span>קרוב</span>
                                         <span>רחוק</span>
                                     </div>
@@ -1843,7 +1843,7 @@ export const CommunityGraph: React.FC = () => {
                                         onChange={(e) => setForceParams(prev => ({ ...prev, spouseStrength: parseFloat(e.target.value) }))}
                                         className="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-amber-500"
                                     />
-                                    <div className="flex justify-between text-xs text-slate-500 mt-1">
+                                    <div className="flex justify-between text-xs text-slate-400 mt-1">
                                         <span>חלש</span>
                                         <span>חזק</span>
                                     </div>
@@ -1864,7 +1864,7 @@ export const CommunityGraph: React.FC = () => {
                                         onChange={(e) => setForceParams(prev => ({ ...prev, spouseDistance: parseInt(e.target.value) }))}
                                         className="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-amber-500"
                                     />
-                                    <div className="flex justify-between text-xs text-slate-500 mt-1">
+                                    <div className="flex justify-between text-xs text-slate-400 mt-1">
                                         <span>קרוב</span>
                                         <span>רחוק</span>
                                     </div>
@@ -1885,7 +1885,7 @@ export const CommunityGraph: React.FC = () => {
                                         onChange={(e) => setForceParams(prev => ({ ...prev, charge: parseInt(e.target.value) }))}
                                         className="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-red-500"
                                     />
-                                    <div className="flex justify-between text-xs text-slate-500 mt-1">
+                                    <div className="flex justify-between text-xs text-slate-400 mt-1">
                                         <span>חזק</span>
                                         <span>חלש</span>
                                     </div>
@@ -1906,7 +1906,7 @@ export const CommunityGraph: React.FC = () => {
                                         onChange={(e) => setForceParams(prev => ({ ...prev, collisionRadius: parseInt(e.target.value) }))}
                                         className="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-indigo-500"
                                     />
-                                    <div className="flex justify-between text-xs text-slate-500 mt-1">
+                                    <div className="flex justify-between text-xs text-slate-400 mt-1">
                                         <span>קטן</span>
                                         <span>גדול</span>
                                     </div>
@@ -1927,7 +1927,7 @@ export const CommunityGraph: React.FC = () => {
                                         onChange={(e) => setForceParams(prev => ({ ...prev, yForceStrength: parseFloat(e.target.value) }))}
                                         className="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-emerald-500"
                                     />
-                                    <div className="flex justify-between text-xs text-slate-500 mt-1">
+                                    <div className="flex justify-between text-xs text-slate-400 mt-1">
                                         <span>חופשי</span>
                                         <span>קשיח</span>
                                     </div>

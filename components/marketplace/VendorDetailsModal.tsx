@@ -200,7 +200,7 @@ export const VendorDetailsModal: React.FC<VendorDetailsModalProps> = ({ vendor: 
 
                         {vendor.about_text && (
                             <div className="mt-6 pt-6 border-t border-slate-200 dark:border-slate-800">
-                                <p className="text-sm italic text-slate-500">
+                                <p className="text-sm italic text-slate-400">
                                     "{vendor.about_text}"
                                 </p>
                             </div>
@@ -215,7 +215,7 @@ export const VendorDetailsModal: React.FC<VendorDetailsModalProps> = ({ vendor: 
                                         className="w-10 h-10 rounded-full"
                                     />
                                     <div>
-                                        <p className="text-xs text-slate-500 uppercase font-bold">הבשלן/ית</p>
+                                        <p className="text-xs text-slate-400 uppercase font-bold">הבשלן/ית</p>
                                         <p className="font-medium text-slate-200">{vendor.owner_name}</p>
                                     </div>
                                 </div>
@@ -231,28 +231,28 @@ export const VendorDetailsModal: React.FC<VendorDetailsModalProps> = ({ vendor: 
                         <button
                             onClick={() => setActiveTab('menu')}
                             className={`flex-1 min-w-[80px] py-3 px-2 font-bold text-xs border-b-2 transition-colors flex items-center justify-center gap-1 ${
-                                activeTab === 'menu' ? 'border-orange-500 text-orange-600 dark:text-orange-400' : 'border-transparent text-slate-500'
+                                activeTab === 'menu' ? 'border-orange-500 text-orange-600 dark:text-orange-400' : 'border-transparent text-slate-400'
                             }`}>
                             <Utensils size={14} /> תפריט
                         </button>
                         <button
                             onClick={() => setActiveTab('reviews')}
                             className={`flex-1 min-w-[80px] py-3 px-2 font-bold text-xs border-b-2 transition-colors flex items-center justify-center gap-1 ${
-                                activeTab === 'reviews' ? 'border-orange-500 text-orange-600 dark:text-orange-400' : 'border-transparent text-slate-500'
+                                activeTab === 'reviews' ? 'border-orange-500 text-orange-600 dark:text-orange-400' : 'border-transparent text-slate-400'
                             }`}>
                             <MessageCircle size={14} /> ביקורות
                         </button>
                         <button
                             onClick={() => setActiveTab('hours')}
                             className={`flex-1 min-w-[80px] py-3 px-2 font-bold text-xs border-b-2 transition-colors flex items-center justify-center gap-1 ${
-                                activeTab === 'hours' ? 'border-orange-500 text-orange-600 dark:text-orange-400' : 'border-transparent text-slate-500'
+                                activeTab === 'hours' ? 'border-orange-500 text-orange-600 dark:text-orange-400' : 'border-transparent text-slate-400'
                             }`}>
                             <Clock size={14} /> שעות
                         </button>
                         <button
                             onClick={() => setActiveTab('updates')}
                             className={`flex-1 min-w-[80px] py-3 px-2 font-bold text-xs border-b-2 transition-colors flex items-center justify-center gap-1 ${
-                                activeTab === 'updates' ? 'border-orange-500 text-orange-600 dark:text-orange-400' : 'border-transparent text-slate-500'
+                                activeTab === 'updates' ? 'border-orange-500 text-orange-600 dark:text-orange-400' : 'border-transparent text-slate-400'
                             }`}>
                             <Bell size={14} /> עדכונים
                         </button>
@@ -290,7 +290,7 @@ export const VendorDetailsModal: React.FC<VendorDetailsModalProps> = ({ vendor: 
                                                         {item.currency === 'ILS' ? '₪' : item.currency}{item.price}
                                                     </span>
                                                 </div>
-                                                <p className="text-sm text-slate-500 mt-1 mb-2">{item.description}</p>
+                                                <p className="text-sm text-slate-400 mt-1 mb-2">{item.description}</p>
                                                 <div className="flex items-center justify-between gap-2">
                                                     <div className="flex items-center gap-2">
                                                         {item.category && (
@@ -351,7 +351,7 @@ export const VendorDetailsModal: React.FC<VendorDetailsModalProps> = ({ vendor: 
                                                 <textarea
                                                     value={newReview.comment}
                                                     onChange={e => setNewReview({ ...newReview, comment: e.target.value })}
-                                                    className="w-full p-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white focus:ring-2 focus:ring-orange-500 outline-none"
+                                                    className="w-full p-2 rounded-lg border border-white/10 bg-white/5 backdrop-blur-sm text-white focus-visible:ring-2 focus-visible:ring-orange-500 outline-none"
                                                     rows={3}
                                                     placeholder="שתף את החוויה שלך..."
                                                 />

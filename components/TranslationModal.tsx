@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import FocusTrap from 'focus-trap-react';
 import { X, Loader2, Send, Mic, Square, Play, Pause, RotateCcw } from 'lucide-react';
 import apiService from '../services/apiService';
 
@@ -174,11 +175,12 @@ const TranslationModal: React.FC<TranslationModalProps> = ({ entryId, term, onCl
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 font-rubik" onClick={onClose}>
-            <div className="bg-[#0d1424] border border-white/10 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
+            <FocusTrap focusTrapOptions={{ allowOutsideClick: true, escapeDeactivates: true }}>
+            <div role="dialog" aria-modal="true" aria-labelledby="translation-modal-title" className="bg-[#0d1424] border border-white/10 rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200 max-h-[90vh] flex flex-col" onClick={e => e.stopPropagation()}>
 
                 {/* Header */}
                 <div className="p-4 border-b border-white/10 flex justify-between items-center shrink-0">
-                    <span className="text-sm text-slate-400 font-medium">השלם תרגום</span>
+                    <span id="translation-modal-title" className="text-sm text-slate-400 font-medium">השלם תרגום</span>
                     <button type="button" onClick={onClose} title="סגור" className="p-1.5 hover:bg-white/10 rounded-lg transition-colors text-slate-400">
                         <X size={18} />
                     </button>
@@ -285,7 +287,7 @@ const TranslationModal: React.FC<TranslationModalProps> = ({ entryId, term, onCl
                                     <Mic size={16} />
                                     הקלט הגייה (אופציונלי)
                                 </h4>
-                                <span className="text-xs text-slate-500">{formatTime(recordingTime)}</span>
+                                <span className="text-xs text-slate-400">{formatTime(recordingTime)}</span>
                             </div>
                             <div className="flex items-center justify-center gap-3">
                                 {!audioUrl ? (
@@ -331,12 +333,13 @@ const TranslationModal: React.FC<TranslationModalProps> = ({ entryId, term, onCl
                             </button>
                         </div>
 
-                        <p className="text-xs text-slate-500 text-center">
+                        <p className="text-xs text-slate-400 text-center">
                             ההצעה תישלח לאישור מנהלים לפני הוספה למאגר
                         </p>
                     </form>
                 )}
             </div>
+            </FocusTrap>
         </div>
     );
 };

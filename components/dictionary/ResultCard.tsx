@@ -130,7 +130,7 @@ const ResultCard: React.FC<ResultCardProps> = ({
 
         {/* Translations */}
         <div>
-          <h3 className="text-sm uppercase tracking-wider text-slate-400 dark:text-slate-500 font-bold mb-3">תרגומים</h3>
+          <h3 className="text-sm uppercase tracking-wider text-slate-400 dark:text-slate-400 font-bold mb-3">תרגומים</h3>
           <div className="grid gap-4">
             {entry.translations.map((t, idx) => (
               <TranslationCard

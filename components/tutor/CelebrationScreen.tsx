@@ -53,21 +53,21 @@ export default function CelebrationScreen({ score, accuracy, xpEarned, masteryLe
             </div>
 
             <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-100 mb-1.5">כל הכבוד!</h2>
-            <p className="text-sm sm:text-base text-slate-500 mb-8">סיימת את השיעור בהצלחה</p>
+            <p className="text-sm sm:text-base text-slate-400 mb-8">סיימת את השיעור בהצלחה</p>
 
             {/* Stats */}
             <div className="grid grid-cols-3 gap-6 sm:gap-10 lg:gap-14 w-full max-w-sm lg:max-w-md mb-8">
               <div className="flex flex-col items-center gap-1.5">
                 <span className="text-3xl sm:text-4xl font-bold text-amber-400">+{xpEarned}</span>
-                <span className="text-xs sm:text-sm text-slate-500 font-medium">XP</span>
+                <span className="text-xs sm:text-sm text-slate-400 font-medium">XP</span>
               </div>
               <div className="flex flex-col items-center gap-1.5">
                 <span className="text-3xl sm:text-4xl font-bold text-green-400">{accuracy}%</span>
-                <span className="text-xs sm:text-sm text-slate-500 font-medium">דיוק</span>
+                <span className="text-xs sm:text-sm text-slate-400 font-medium">דיוק</span>
               </div>
               <div className="flex flex-col items-center gap-1.5">
                 <span className="text-3xl sm:text-4xl font-bold text-blue-400">{wordsLearned}</span>
-                <span className="text-xs sm:text-sm text-slate-500 font-medium">מילים</span>
+                <span className="text-xs sm:text-sm text-slate-400 font-medium">מילים</span>
               </div>
             </div>
 

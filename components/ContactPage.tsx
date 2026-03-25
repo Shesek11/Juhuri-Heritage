@@ -25,7 +25,7 @@ const ContactPage: React.FC = () => {
     }
   };
 
-  const inputClasses = "w-full px-4 py-3 rounded-xl bg-white/10 border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-slate-50 focus:outline-none focus:ring-2 focus:ring-amber-500 transition-colors";
+  const inputClasses = "w-full px-4 py-3 rounded-xl bg-white/10 border border-slate-300 dark:border-slate-600 text-slate-900 dark:text-slate-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-amber-500 transition-colors";
 
   return (
     <div className="w-full max-w-5xl mx-auto px-4 py-12">

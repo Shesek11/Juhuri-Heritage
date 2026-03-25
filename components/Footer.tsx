@@ -25,9 +25,10 @@ const Footer: React.FC = () => {
             משמרים את שפת הג׳והורי, מסורותיה ותרבותם העשירה של יהודי ההרים, למען הדורות הבאים.
           </p>
           <div className="flex gap-3">
-            <a href="#" aria-label="פייסבוק" className="text-slate-500 hover:text-amber-400 transition-colors duration-300"><Facebook size={20} /></a>
-            <a href="#" aria-label="אינסטגרם" className="text-slate-500 hover:text-amber-400 transition-colors duration-300"><Instagram size={20} /></a>
-            <a href="#" aria-label="יוטיוב" className="text-slate-500 hover:text-amber-400 transition-colors duration-300"><Youtube size={20} /></a>
+            {/* TODO: Replace href="#" with real social media URLs */}
+            <a href="#" aria-label="פייסבוק" aria-disabled="true" className="text-slate-400 hover:text-amber-400 transition-colors duration-300"><Facebook size={20} /></a>
+            <a href="#" aria-label="אינסטגרם" aria-disabled="true" className="text-slate-400 hover:text-amber-400 transition-colors duration-300"><Instagram size={20} /></a>
+            <a href="#" aria-label="יוטיוב" aria-disabled="true" className="text-slate-400 hover:text-amber-400 transition-colors duration-300"><Youtube size={20} /></a>
           </div>
         </div>
 
@@ -53,7 +54,7 @@ const Footer: React.FC = () => {
         </div>
       </div>
 
-      <div className="mt-10 border-t border-white/5 pt-6 text-center text-xs text-slate-500 relative z-10 mx-6 sm:mx-10 md:mx-auto max-w-6xl">
+      <div className="mt-10 border-t border-white/5 pt-6 text-center text-xs text-slate-400 relative z-10 mx-6 sm:mx-10 md:mx-auto max-w-6xl">
         <p>&copy; {new Date().getFullYear()} מורשת ג׳והורי. כל הזכויות שמורות.</p>
         <p className="flex items-center justify-center gap-1 mt-1">
           נוצר באהבה <HeartHandshake size={12} className="text-amber-500 drop-shadow-[0_0_8px_rgba(245,158,11,0.5)]" /> לקהילה

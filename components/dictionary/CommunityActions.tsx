@@ -78,14 +78,14 @@ const CommunityActions: React.FC<CommunityActionsProps> = ({ entry, onOpenAuthMo
         <div className="flex items-center gap-4">
           <button
             onClick={handleLike}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-full transition-all ${isLiked ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600' : 'text-slate-500 hover:bg-white/5'}`}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-full transition-all ${isLiked ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-600' : 'text-slate-400 hover:bg-white/5'}`}
           >
             <Heart size={20} fill={isLiked ? "currentColor" : "none"} />
             <span className="font-bold">{likesCount}</span>
           </button>
           <button
             onClick={toggleComments}
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-full transition-all ${showComments ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600' : 'text-slate-500 hover:bg-white/5'}`}
+            className={`flex items-center gap-2 px-3 py-1.5 rounded-full transition-all ${showComments ? 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600' : 'text-slate-400 hover:bg-white/5'}`}
           >
             <MessageCircle size={20} />
             <span className="font-bold">{entry.commentsCount || 0}</span>
@@ -105,7 +105,7 @@ const CommunityActions: React.FC<CommunityActionsProps> = ({ entry, onOpenAuthMo
                 <div key={c.id} className="bg-[#0d1424]/60 backdrop-blur-xl p-3 rounded-lg shadow-sm border border-white/10">
                   <div className="flex justify-between items-start">
                     <span className="font-bold text-xs text-indigo-600 dark:text-indigo-400">{c.user_name}</span>
-                    <span className="text-[10px] text-slate-400">{new Date(c.created_at).toLocaleDateString()}</span>
+                    <span className="text-[11px] text-slate-400">{new Date(c.created_at).toLocaleDateString()}</span>
                   </div>
                   <p className="text-slate-700 dark:text-slate-300 text-sm mt-1">{c.content}</p>
                 </div>
@@ -114,15 +114,15 @@ const CommunityActions: React.FC<CommunityActionsProps> = ({ entry, onOpenAuthMo
           </div>
           <form onSubmit={submitComment} className="space-y-2">
             {!isAuthenticated && (
-              <input type="text" value={guestName} onChange={e => setGuestName(e.target.value)} placeholder="השם שלך" required className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-[#0d1424]/60 backdrop-blur-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none" />
+              <input type="text" value={guestName} onChange={e => setGuestName(e.target.value)} placeholder="השם שלך" required className="w-full px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-[#0d1424]/60 backdrop-blur-xl text-sm focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none" />
             )}
             <div className="flex gap-2">
-              <input type="text" value={newComment} onChange={e => setNewComment(e.target.value)} placeholder="הוסף תגובה, דוגמה או הערה..." required className="flex-1 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-[#0d1424]/60 backdrop-blur-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none" />
+              <input type="text" value={newComment} onChange={e => setNewComment(e.target.value)} placeholder="הוסף תגובה, דוגמה או הערה..." required className="flex-1 px-4 py-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-[#0d1424]/60 backdrop-blur-xl text-sm focus-visible:ring-2 focus-visible:ring-indigo-500 outline-none" />
               <button type="submit" disabled={isSubmitting || !newComment.trim() || (!isAuthenticated && !guestName.trim())} className="p-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed">
                 {isSubmitting ? <Loader2 className="animate-spin" size={20} /> : <Send size={20} />}
               </button>
             </div>
-            {!isAuthenticated && <p className="text-xs text-slate-500 dark:text-slate-400">תגובות אורחים ממתינות לאישור מנהל</p>}
+            {!isAuthenticated && <p className="text-xs text-slate-400 dark:text-slate-400">תגובות אורחים ממתינות לאישור מנהל</p>}
             {submitMessage && <p className="text-sm text-green-600 dark:text-green-400">{submitMessage}</p>}
           </form>
         </div>

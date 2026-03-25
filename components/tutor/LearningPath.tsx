@@ -115,7 +115,7 @@ export default function LearningPath({ unitMastery, completedUnits, onUnitClick,
                   <h3 className={`text-xl sm:text-2xl font-bold ${sectionUnlocked ? 'text-amber-400' : 'text-slate-600'}`}>
                     {section.title}
                   </h3>
-                  <p className={`text-sm mt-1.5 ${sectionUnlocked ? 'text-slate-500' : 'text-slate-700'}`}>
+                  <p className={`text-sm mt-1.5 ${sectionUnlocked ? 'text-slate-400' : 'text-slate-700'}`}>
                     {section.description}
                   </p>
                 </div>
@@ -125,7 +125,7 @@ export default function LearningPath({ unitMastery, completedUnits, onUnitClick,
               {/* Checkpoint Gate */}
               {section.order > 1 && !sectionUnlocked && (
                 <div className="flex justify-center mb-10">
-                  <div className="px-6 py-3 bg-white/5 border border-white/10 rounded-full flex items-center gap-2.5 text-slate-500 text-sm">
+                  <div className="px-6 py-3 bg-white/5 border border-white/10 rounded-full flex items-center gap-2.5 text-slate-400 text-sm">
                     <ShieldCheck size={18} />
                     <span>השלם את כל היחידות הקודמות</span>
                   </div>

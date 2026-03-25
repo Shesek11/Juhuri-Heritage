@@ -47,14 +47,14 @@ const NavTab: React.FC<NavTabProps> = ({ href, icon, label, comingSoon, isActive
   <Link
     href={href}
     className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-all whitespace-nowrap ${isActive
-      ? 'bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-amber-400 border border-amber-500/30 shadow-inner'
-      : 'text-slate-400 hover:text-white hover:bg-white/5'
+      ? 'bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-white border border-amber-500/30 shadow-inner'
+      : 'text-slate-300 hover:text-white hover:bg-white/5'
       }`}
   >
     {icon}
     <span>{label}</span>
     {comingSoon && (
-      <span className="px-1.5 py-0.5 text-[9px] bg-blue-500 text-white rounded-full font-bold">
+      <span className="px-1.5 py-0.5 text-[10px] bg-blue-500 text-white rounded-full font-bold">
         בקרוב
       </span>
     )}
@@ -75,11 +75,12 @@ interface MobileNavTabProps {
 const MobileNavTab: React.FC<MobileNavTabProps> = ({ href, icon, label, comingSoon, isActive }) => (
   <Link
     href={href}
-    className={`flex flex-col items-center justify-center gap-0.5 p-2 rounded-xl text-[10px] font-medium transition-all min-w-[56px] ${isActive
-      ? 'bg-amber-500/20 text-amber-400'
-      : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
+    className={`flex flex-col items-center justify-center gap-0.5 p-2 rounded-xl text-[11px] font-medium transition-all min-w-[56px] ${isActive
+      ? 'bg-amber-500/20 text-white'
+      : 'text-slate-300 hover:text-white hover:bg-slate-800/50'
       }`}
     title={label}
+    aria-current={isActive ? 'page' : undefined}
   >
     <div className="relative">
       {icon}
@@ -270,6 +271,11 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <AppContext.Provider value={appContextValue}>
       <div className="min-h-screen dark bg-[#050B14] text-slate-200 dir-rtl font-rubik relative">
+        {/* Skip to content — WCAG 2.4.1 */}
+        <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:right-2 focus:z-[100] focus:bg-amber-500 focus:text-black focus:px-4 focus:py-2 focus:rounded-lg focus:font-bold">
+          דלג לתוכן הראשי
+        </a>
+
         {/* Subtle Premium Background Pattern Overlay */}
         <div
           className="fixed inset-0 pointer-events-none z-0 mix-blend-screen opacity-[0.03]"
@@ -441,6 +447,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
         {/* Main Content Area */}
         <main
+          id="main-content"
           className={`w-full relative z-10 flex flex-col items-center min-h-screen ${isFullScreenPage ? '' : 'pb-20 pt-[104px] md:pt-[104px]'}`}
           onClick={() => setIsMenuOpen(false)}
         >

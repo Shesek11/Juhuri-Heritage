@@ -39,7 +39,7 @@ const STATUS_CONFIG: Record<FeatureFlagStatus, StatusConfig> = {
         label: 'כבוי',
         tooltip: 'כבוי – הפיצ\'ר לא זמין לאף אחד',
         icon: <Ban className="w-4 h-4" />,
-        color: 'text-slate-500 dark:text-slate-400',
+        color: 'text-slate-400 dark:text-slate-400',
         bgColor: 'bg-slate-100 dark:bg-slate-800'
     }
 };
@@ -107,7 +107,7 @@ export const FeatureFlagsPanel: React.FC = () => {
                     <h3 className="text-lg font-medium text-slate-200">
                         ניהול פיצ'רים
                     </h3>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                    <p className="text-sm text-slate-400 dark:text-slate-400">
                         הפעל וכבה פיצ'רים בזמן אמת
                     </p>
                 </div>
@@ -152,10 +152,10 @@ export const FeatureFlagsPanel: React.FC = () => {
                                             {currentConfig.label}
                                         </span>
                                     </div>
-                                    <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                                    <p className="text-sm text-slate-400 dark:text-slate-400 mt-1">
                                         {flag.description}
                                     </p>
-                                    <code className="text-xs text-slate-400 dark:text-slate-500 mt-1 block">
+                                    <code className="text-xs text-slate-400 dark:text-slate-400 mt-1 block">
                                         {flag.feature_key}
                                     </code>
                                 </div>
@@ -195,7 +195,7 @@ export const FeatureFlagsPanel: React.FC = () => {
             </div>
 
             {flags.length === 0 && !error && (
-                <div className="text-center py-8 text-slate-500 dark:text-slate-400">
+                <div className="text-center py-8 text-slate-400 dark:text-slate-400">
                     לא נמצאו פיצ'רים להגדרה
                 </div>
             )}

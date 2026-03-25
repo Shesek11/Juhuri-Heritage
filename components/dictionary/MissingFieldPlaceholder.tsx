@@ -77,7 +77,7 @@ const MissingFieldPlaceholder: React.FC<MissingFieldPlaceholderProps> = ({
               <button
                 onClick={handleUpvote}
                 disabled={upvoted || upvoting}
-                className={`flex items-center gap-1 px-2 py-0.5 rounded text-[10px] transition-colors ${
+                className={`flex items-center gap-1 px-2 py-0.5 rounded text-[11px] transition-colors ${
                   upvoted
                     ? 'bg-green-900/30 text-green-400'
                     : 'bg-white/5 text-slate-400 hover:bg-white/10 hover:text-green-400'
@@ -89,7 +89,7 @@ const MissingFieldPlaceholder: React.FC<MissingFieldPlaceholderProps> = ({
               </button>
               <button
                 onClick={() => setShowForm(true)}
-                className="flex items-center gap-1 px-2 py-0.5 rounded text-[10px] bg-white/5 text-slate-400 hover:bg-white/10 hover:text-indigo-400 transition-colors"
+                className="flex items-center gap-1 px-2 py-0.5 rounded text-[11px] bg-white/5 text-slate-400 hover:bg-white/10 hover:text-indigo-400 transition-colors"
               >
                 <Plus size={10} />
                 הצעה חלופית
@@ -133,7 +133,7 @@ const MissingFieldPlaceholder: React.FC<MissingFieldPlaceholderProps> = ({
       onClick={() => setShowForm(true)}
       className={`w-full flex items-center gap-2 ${
         compact ? 'py-1.5 px-2 text-xs' : 'py-2 px-3 text-sm'
-      } rounded-md border border-dashed border-slate-600/40 text-slate-500 hover:border-indigo-500/50 hover:text-indigo-400 hover:bg-indigo-500/5 transition-all cursor-pointer group/add`}
+      } rounded-md border border-dashed border-slate-600/40 text-slate-400 hover:border-indigo-500/50 hover:text-indigo-400 hover:bg-indigo-500/5 transition-all cursor-pointer group/add`}
     >
       <Plus size={compact ? 12 : 14} className="shrink-0 opacity-50 group-hover/add:opacity-100 transition-opacity" />
       <span>הוסף {label}</span>

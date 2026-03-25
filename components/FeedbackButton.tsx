@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import FocusTrap from 'focus-trap-react';
 import { MessageSquarePlus, Send, Loader2, X, CheckCircle } from 'lucide-react';
 import apiService from '../services/apiService';
 
@@ -58,7 +59,11 @@ const FeedbackButton: React.FC = () => {
       {/* Modal */}
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-black/40" onClick={() => setIsOpen(false)}>
+          <FocusTrap focusTrapOptions={{ allowOutsideClick: true, escapeDeactivates: true }}>
           <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="feedback-modal-title"
             className="w-full max-w-md bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-2xl overflow-hidden animate-in fade-in slide-in-from-bottom-4"
             onClick={e => e.stopPropagation()}
           >
@@ -66,12 +71,12 @@ const FeedbackButton: React.FC = () => {
               <div className="p-8 text-center space-y-3">
                 <CheckCircle className="mx-auto text-green-500" size={48} />
                 <p className="text-lg font-bold text-slate-200">תודה רבה!</p>
-                <p className="text-sm text-slate-500 dark:text-slate-400">ההודעה נשלחה בהצלחה</p>
+                <p className="text-sm text-slate-400 dark:text-slate-400">ההודעה נשלחה בהצלחה</p>
               </div>
             ) : (
               <form onSubmit={handleSubmit}>
                 <div className="flex items-center justify-between p-4 border-b border-white/10">
-                  <h3 className="font-bold text-slate-200">יש לכם הצעה? דיווח? שלחו לנו!</h3>
+                  <h3 id="feedback-modal-title" className="font-bold text-slate-200">יש לכם הצעה? דיווח? שלחו לנו!</h3>
                   <button type="button" onClick={() => setIsOpen(false)} className="text-slate-400 hover:text-slate-600">
                     <X size={20} />
                   </button>
@@ -132,6 +137,7 @@ const FeedbackButton: React.FC = () => {
               </form>
             )}
           </div>
+          </FocusTrap>
         </div>
       )}
     </>

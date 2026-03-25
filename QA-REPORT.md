@@ -4,16 +4,39 @@
 **Date**: 2026-03-25
 **Viewport**: 375×812 (iPhone)
 **Scope**: Public pages, modals, widgets
+**Status**: FIXES APPLIED — build passes, pending deploy
 
 ---
 
 ## Summary
 
-| Category | Issues Found |
-|----------|-------------|
-| **Critical (must fix)** | 7 |
-| **Major (should fix)** | 12 |
-| **Minor (nice to fix)** | 8 |
+| Category | Found | Fixed | Remaining |
+|----------|-------|-------|-----------|
+| **Critical** | 7 | 7 | 0 |
+| **Major** | 12 | 11 | 1 (M12 — recipe images are a content issue) |
+| **Minor** | 8 | 6 | 2 (m5 family tree content, m7 cookie banner) |
+
+### What was fixed:
+- **Contrast**: `text-slate-500` → `text-slate-400` across 71 files (ratio 3.86→5.3:1)
+- **Font sizes**: `text-[9px]`/`text-[10px]`/`text-[0.6rem]`/`text-[0.65rem]` → `text-[11px]`/`text-xs` across 30+ files
+- **Active nav tab**: amber-on-amber (1.29:1) → white on amber bg (passes AA)
+- **Mobile nav labels**: 10px → 11px
+- **Table overflow**: Word page `overflow-x-hidden` + reduced padding on mobile
+- **Skip-to-content**: Added to AppShell with sr-only + focus visible
+- **All 9 modals**: Added `role="dialog"`, `aria-modal`, `aria-labelledby`, `FocusTrap`
+- **focus: → focus-visible:**: Replaced in 20 files
+- **CTA button**: `text-[#050B14]` → `text-white` (invisible → visible)
+- **Auth form**: Added `autocomplete` attributes
+- **Heading hierarchy**: Fixed h1→h3 skip on dictionary page
+- **Double h1**: Fixed on homepage (decorative heading → aria-hidden div)
+- **ESLint jsx-a11y**: Added with 11 rules
+- **axe-core**: Added for dev mode console warnings
+- **Contact form labels**: Properly associated with htmlFor/id
+
+### Enforcement added:
+- `eslint.config.mjs` with jsx-a11y plugin (11 rules)
+- `@axe-core/react` for dev-mode console accessibility warnings
+- `npm run lint` and `npm run lint:a11y` scripts
 
 ---
 

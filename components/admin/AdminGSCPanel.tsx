@@ -165,7 +165,7 @@ const AdminGSCPanel: React.FC = () => {
                 {icon} {label}
             </div>
             <div className="text-2xl font-bold text-slate-100">{value}</div>
-            {sub && <div className="text-xs text-slate-500 mt-0.5">{sub}</div>}
+            {sub && <div className="text-xs text-slate-400 mt-0.5">{sub}</div>}
             {chartData && chartColor && <MiniChart data={chartData} color={chartColor} />}
         </div>
     );
@@ -262,7 +262,7 @@ const AdminGSCPanel: React.FC = () => {
                             </div>
                             <div className="max-h-80 overflow-y-auto">
                                 <table className="w-full text-sm">
-                                    <thead className="text-xs text-slate-500 border-b border-slate-700/30">
+                                    <thead className="text-xs text-slate-400 border-b border-slate-700/30">
                                         <tr>
                                             <th className="text-right px-4 py-2 font-medium">שאילתה</th>
                                             <th className="text-center px-2 py-2 font-medium">קליקים</th>
@@ -294,7 +294,7 @@ const AdminGSCPanel: React.FC = () => {
                             </div>
                             <div className="max-h-80 overflow-y-auto">
                                 <table className="w-full text-sm">
-                                    <thead className="text-xs text-slate-500 border-b border-slate-700/30">
+                                    <thead className="text-xs text-slate-400 border-b border-slate-700/30">
                                         <tr>
                                             <th className="text-right px-4 py-2 font-medium">דף</th>
                                             <th className="text-center px-2 py-2 font-medium">קליקים</th>
@@ -362,7 +362,7 @@ const AdminGSCPanel: React.FC = () => {
 
             {/* Empty state */}
             {!loading && performance && t && t.clicks === 0 && t.impressions === 0 && (
-                <div className="text-center py-8 text-slate-500">
+                <div className="text-center py-8 text-slate-400">
                     <Search size={32} className="mx-auto mb-2 opacity-50" />
                     <p>אין נתונים עדיין. גוגל מתחיל לסרוק - חזור בעוד כמה ימים.</p>
                 </div>
@@ -374,7 +374,7 @@ const AdminGSCPanel: React.FC = () => {
                     href="https://search.google.com/search-console?resource_id=https://jun-juhuri.com/"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-xs text-slate-500 hover:text-blue-400 transition-colors inline-flex items-center gap-1"
+                    className="text-xs text-slate-400 hover:text-blue-400 transition-colors inline-flex items-center gap-1"
                 >
                     פתח ב-Google Search Console <ExternalLink size={10} />
                 </a>

@@ -161,7 +161,7 @@ const ContributionGrid: React.FC<ContributionGridProps> = ({ onOpenWordList }) =
             <div className="font-semibold text-[0.85rem] text-white mb-0.5">{config.label}</div>
 
             {/* Count */}
-            <div className="text-[0.65rem] text-slate-500 mb-3">
+            <div className="text-xs text-slate-400 mb-3">
               {data.total > 0 ? `${data.total.toLocaleString()} מילים מחכות` : 'אין מילים'}
             </div>
 
@@ -179,7 +179,7 @@ const ContributionGrid: React.FC<ContributionGridProps> = ({ onOpenWordList }) =
                 </div>
 
                 {currentWord.subHint && (
-                  <div className={`text-[0.65rem] text-amber-500/60 mt-0.5 transition-opacity duration-300 ${fading[i] ? 'opacity-0' : 'opacity-100'}`}>
+                  <div className={`text-xs text-amber-500/60 mt-0.5 transition-opacity duration-300 ${fading[i] ? 'opacity-0' : 'opacity-100'}`}>
                     {currentWord.subHint}
                   </div>
                 )}

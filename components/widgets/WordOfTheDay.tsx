@@ -73,7 +73,7 @@ const WordOfTheDay: React.FC<WordOfTheDayProps> = ({ onSelectWord }) => {
                 </div>
                 <div>
                     <h3 className="font-bold text-sm text-white">המילה היומית</h3>
-                    <span className="text-[0.6rem] text-slate-500">{new Date().toLocaleDateString('he-IL')}</span>
+                    <span className="text-xs text-slate-400">{new Date().toLocaleDateString('he-IL')}</span>
                 </div>
             </div>
 
@@ -86,7 +86,7 @@ const WordOfTheDay: React.FC<WordOfTheDayProps> = ({ onSelectWord }) => {
                     <p className="text-sm text-slate-400 font-mono mb-1" dir="ltr">{latin}</p>
                 )}
                 {displayWord.pronunciationGuide && (
-                    <p className="text-xs text-slate-500 font-mono mb-2" dir="ltr">{displayWord.pronunciationGuide}</p>
+                    <p className="text-xs text-slate-400 font-mono mb-2" dir="ltr">{displayWord.pronunciationGuide}</p>
                 )}
                 <div className="text-base text-slate-300 font-medium mb-3">
                     {hebrew}
@@ -103,7 +103,7 @@ const WordOfTheDay: React.FC<WordOfTheDayProps> = ({ onSelectWord }) => {
 
             {/* Footer */}
             <div
-                className="px-5 py-3 bg-white/[0.03] border-t border-white/[0.05] text-slate-500 text-xs font-medium flex items-center justify-center gap-1.5"
+                className="px-5 py-3 bg-white/[0.03] border-t border-white/[0.05] text-slate-400 text-xs font-medium flex items-center justify-center gap-1.5"
             >
                 לכרטיס המלא
                 <ArrowLeft size={14} />

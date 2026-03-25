@@ -157,8 +157,8 @@ const WordPage: React.FC<WordPageProps> = ({
       </div>
 
       {/* Content — 3 zones + extras */}
-      <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-b-2xl border border-white/10 border-t-0">
-        <div className="p-6 md:p-8 space-y-0">
+      <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-b-2xl border border-white/10 border-t-0 overflow-x-hidden">
+        <div className="p-4 sm:p-6 md:p-8 space-y-0">
 
           {/* ZONE 2: Meaning — Hebrew + Russian + expanded definition */}
           <div className="pb-6">

@@ -42,7 +42,7 @@ const AboutPage: React.FC = () => {
               className={`flex-1 py-3.5 text-sm font-medium transition-colors flex items-center justify-center gap-2 border-b-2 ${
                 activeTab === tab.id
                   ? 'border-amber-500 text-amber-400'
-                  : 'border-transparent text-slate-500 hover:bg-white/5'
+                  : 'border-transparent text-slate-400 hover:bg-white/5'
               }`}
             >
               {tab.icon} {tab.label}
@@ -198,16 +198,16 @@ const AboutPage: React.FC = () => {
                 <div className="space-y-3">
                   <div className="p-3 rounded-lg border border-white/10 bg-white/5">
                     <p className="font-bold text-amber-400">המילון הג׳והורי-עברי הגדול</p>
-                    <p className="text-xs text-slate-500 mb-2">מרדכי אגרונוב (1997) — המקור הראשי לכתיב</p>
-                    <a href="https://merhav.nli.org.il/primo-explore/search?query=any,contains,%D7%9E%D7%A8%D7%93%D7%9B%D7%99%20%D7%90%D7%92%D7%A8%D7%95%D7%A0%D7%95%D7%91%20%D7%9E%D7%99%D7%9C%D7%95%D7%9F&vid=NLI&lang=he_IL" target="_blank" rel="noopener noreferrer" className="text-[10px] text-amber-500 hover:underline flex items-center gap-1"><ExternalLink size={10} /> הספרייה הלאומית</a>
+                    <p className="text-xs text-slate-400 mb-2">מרדכי אגרונוב (1997) — המקור הראשי לכתיב</p>
+                    <a href="https://merhav.nli.org.il/primo-explore/search?query=any,contains,%D7%9E%D7%A8%D7%93%D7%9B%D7%99%20%D7%90%D7%92%D7%A8%D7%95%D7%A0%D7%95%D7%91%20%D7%9E%D7%99%D7%9C%D7%95%D7%9F&vid=NLI&lang=he_IL" target="_blank" rel="noopener noreferrer" className="text-[11px] text-amber-500 hover:underline flex items-center gap-1"><ExternalLink size={10} /> הספרייה הלאומית</a>
                   </div>
                   <div className="p-3 rounded-lg border border-white/10 bg-white/5">
                     <p className="font-bold text-amber-400">מילון טאטי-רוסי</p>
-                    <p className="text-xs text-slate-500">יעקב אגרונוב ומיכאל דדשוב</p>
+                    <p className="text-xs text-slate-400">יעקב אגרונוב ומיכאל דדשוב</p>
                   </div>
                   <div className="p-3 rounded-lg border border-white/10 bg-white/5">
                     <p className="font-bold text-amber-400">מילון ג׳והורי-עברי (פולקלור)</p>
-                    <p className="text-xs text-slate-500">חניל (חנה) רפאל ויוסי בן-עמי — דגש על ניב קובה</p>
+                    <p className="text-xs text-slate-400">חניל (חנה) רפאל ויוסי בן-עמי — דגש על ניב קובה</p>
                   </div>
                 </div>
               </div>
@@ -221,11 +221,11 @@ const AboutPage: React.FC = () => {
                 <div className="space-y-3">
                   <div className="p-3 rounded-lg border border-white/10 bg-white/5">
                     <p className="font-bold text-amber-400">דקדוק השפה הג׳והורית</p>
-                    <p className="text-xs text-slate-500">פרידה יוסופובה — סמכות עליונה להטיות פעלים</p>
+                    <p className="text-xs text-slate-400">פרידה יוסופובה — סמכות עליונה להטיות פעלים</p>
                   </div>
                   <div className="p-3 rounded-lg border border-white/10 bg-white/5">
                     <p className="font-bold text-amber-400">חקר יהדות קווקז</p>
-                    <p className="text-xs text-slate-500">גרשון בן-אורן — הקשר תרבותי ודתי</p>
+                    <p className="text-xs text-slate-400">גרשון בן-אורן — הקשר תרבותי ודתי</p>
                   </div>
                 </div>
               </div>
@@ -238,7 +238,7 @@ const AboutPage: React.FC = () => {
                 </h4>
                 <div className="p-3 rounded-lg border border-white/10 bg-white/5">
                   <p className="font-bold text-amber-400">חומרים לחקר השפה היהודית-טאטית (1892)</p>
-                  <p className="text-xs text-slate-500">וילהלם מילר (Vs. Miller) — תיעוד היסטורי מוקדם</p>
+                  <p className="text-xs text-slate-400">וילהלם מילר (Vs. Miller) — תיעוד היסטורי מוקדם</p>
                 </div>
               </div>
 
@@ -254,13 +254,13 @@ const AboutPage: React.FC = () => {
                   </div>
                   <div>
                     <p className="text-sm font-bold text-slate-200 group-hover:text-amber-400 transition-colors">מרכז המורשת STMEGI</p>
-                    <p className="text-xs text-slate-500">לעיון במקורות הדיגיטליים</p>
+                    <p className="text-xs text-slate-400">לעיון במקורות הדיגיטליים</p>
                   </div>
                   <ExternalLink size={14} className="mr-auto text-slate-400" />
                 </a>
               </div>
 
-              <div className="text-[10px] text-slate-500 border-t border-white/10 pt-2 text-center">
+              <div className="text-[11px] text-slate-400 border-t border-white/10 pt-2 text-center">
                 <p>ט.ל.ח — המערכת משתמשת בבינה מלאכותית ומבצעת סינתזה של המקורות הנ&quot;ל.</p>
               </div>
             </div>

@@ -68,7 +68,7 @@ const DetailsSection: React.FC<DetailsSectionProps> = ({
                   <button
                     type="button"
                     onClick={() => onStartEdit('definition')}
-                    className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-200 dark:hover:bg-indigo-800/40 transition-colors opacity-100 md:opacity-0 md:group-hover:opacity-100"
+                    className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[11px] font-medium bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-200 dark:hover:bg-indigo-800/40 transition-colors opacity-100 md:opacity-0 md:group-hover:opacity-100"
                     title="הצע תיקון להגדרה"
                   >
                     <Pencil size={10} />
@@ -84,7 +84,7 @@ const DetailsSection: React.FC<DetailsSectionProps> = ({
         </div>
       ) : !defText ? (
         <div className="border-b border-white/10 pb-4">
-          <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-2">הגדרה</span>
+          <span className="text-xs font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider block mb-2">הגדרה</span>
           <MissingFieldPlaceholder
             fieldName="definition"
             entryId={entry.id}
@@ -101,7 +101,7 @@ const DetailsSection: React.FC<DetailsSectionProps> = ({
       {!hideRussian && (displayRussian ? (
         <div className="border-b border-white/10 pb-3 group">
           <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
-            <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">רוסית</span>
+            <span className="text-xs font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider">רוסית</span>
             {isRussianFromAI ? (
               <AIValueBadge
                 value={displayRussian}
@@ -119,7 +119,7 @@ const DetailsSection: React.FC<DetailsSectionProps> = ({
                   <button
                     type="button"
                     onClick={() => onStartEdit('russian')}
-                    className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-200 dark:hover:bg-indigo-800/40 transition-colors opacity-100 md:opacity-0 md:group-hover:opacity-100"
+                    className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[11px] font-medium bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-200 dark:hover:bg-indigo-800/40 transition-colors opacity-100 md:opacity-0 md:group-hover:opacity-100"
                     title="הצע תיקון לרוסית"
                   >
                     <Pencil size={10} />
@@ -135,7 +135,7 @@ const DetailsSection: React.FC<DetailsSectionProps> = ({
         </div>
       ) : (
         <div className="border-b border-white/10 pb-3">
-          <span className="text-xs font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider block mb-2">רוסית</span>
+          <span className="text-xs font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider block mb-2">רוסית</span>
           <MissingFieldPlaceholder
             fieldName="russian"
             entryId={entry.id}

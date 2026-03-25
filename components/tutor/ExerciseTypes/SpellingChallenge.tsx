@@ -47,7 +47,7 @@ export default function SpellingChallenge({ exercise, onAnswer, feedback, onPlay
       {/* Built word */}
       <div className="min-h-[56px] px-6 py-3 mb-6 border-b-2 border-amber-500/30 flex items-center gap-1 min-w-[200px] justify-center">
         {selectedOrder.length === 0 ? (
-          <span className="text-slate-500 text-lg">...</span>
+          <span className="text-slate-400 text-lg">...</span>
         ) : (
           selectedOrder.map((tileIdx, pos) => (
             <span key={pos} className="px-3 py-2 bg-amber-500/20 text-amber-300 rounded-lg text-xl font-bold border border-amber-500/30">

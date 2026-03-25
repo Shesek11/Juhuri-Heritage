@@ -60,7 +60,7 @@ export const VendorCard: React.FC<VendorCardProps> = ({ vendor, onClick }) => {
                         <h3 className="font-bold text-lg text-slate-100 leading-tight">
                             {vendor.name}
                         </h3>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-1">
+                        <p className="text-xs text-slate-400 dark:text-slate-400 flex items-center gap-1 mt-1">
                             {vendor.address}
                         </p>
                     </div>
@@ -85,14 +85,14 @@ export const VendorCard: React.FC<VendorCardProps> = ({ vendor, onClick }) => {
                                     alt={vendor.owner_name}
                                     className="w-6 h-6 rounded-full"
                                 />
-                                <span className="text-xs text-slate-500 dark:text-slate-400">{vendor.owner_name}</span>
+                                <span className="text-xs text-slate-400 dark:text-slate-400">{vendor.owner_name}</span>
                             </>
                         ) : (
-                            <span className="text-xs text-slate-400 dark:text-slate-500">דיווח קהילתי</span>
+                            <span className="text-xs text-slate-400 dark:text-slate-400">דיווח קהילתי</span>
                         )}
                     </div>
                     {vendor.review_count !== undefined && vendor.review_count > 0 && (
-                        <span className="text-xs text-slate-500 flex items-center gap-1">
+                        <span className="text-xs text-slate-400 flex items-center gap-1">
                             {vendor.review_count} ביקורות
                         </span>
                     )}

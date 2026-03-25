@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Volume2, Copy, Check, Share2, Settings2, Bot, Users, Pencil, Shield, Star } from 'lucide-react';
+import { Volume2, Copy, Check, Share2, Settings2, Bot, Users, Pencil, Shield, Star, Info } from 'lucide-react';
 import { DictionaryEntry, PendingSuggestion } from '../../types';
 import { partOfSpeechHebrew } from '../../utils/pos';
 import { generateSpeech } from '../../services/geminiService';
@@ -7,6 +7,7 @@ import { playBase64Audio } from '../../utils/audioUtils';
 import MissingFieldPlaceholder from '../dictionary/MissingFieldPlaceholder';
 import FieldEditForm from '../dictionary/FieldEditForm';
 import AIValueBadge from '../dictionary/AIValueBadge';
+import TransliterationGuideModal from '../dictionary/TransliterationGuideModal';
 
 interface WordHeroProps {
   entry: DictionaryEntry;
@@ -30,6 +31,7 @@ const WordHero: React.FC<WordHeroProps> = ({
   const [voice, setVoice] = useState<'Zephyr' | 'Fenrir'>('Zephyr');
   const [editingPOS, setEditingPOS] = useState(false);
   const [editingPronunciation, setEditingPronunciation] = useState(false);
+  const [showTranslitGuide, setShowTranslitGuide] = useState(false);
   const [editingDialect, setEditingDialect] = useState(false);
   const [dialects, setDialects] = useState<{id: number; name: string; description?: string}[]>([]);
   const [selectedDialect, setSelectedDialect] = useState('');
@@ -69,8 +71,8 @@ const WordHero: React.FC<WordHeroProps> = ({
     if (isPlaying) return;
     setIsPlaying(true);
     try {
-      const text = entry.translations?.[0]?.cyrillic || entry.translations?.[0]?.latin || entry.term;
-      const audioData = await generateSpeech(text, voice);
+      const text = entry.translations?.[0]?.latin || entry.translations?.[0]?.cyrillic || entry.term;
+      const audioData = await generateSpeech(text);
       await playBase64Audio(audioData);
     } catch {
       try {
@@ -130,7 +132,7 @@ const WordHero: React.FC<WordHeroProps> = ({
     ? 'text-indigo-400'
     : entry.verificationLevel === 'ai'
     ? 'text-amber-400'
-    : 'text-slate-500';
+    : 'text-slate-400';
 
   return (
     <div className="p-8 bg-gradient-to-br from-white/10 to-transparent border-b border-white/10 text-white relative">
@@ -288,6 +290,14 @@ const WordHero: React.FC<WordHeroProps> = ({
             <span className="flex items-center gap-1.5">
               <span className="text-indigo-400/60 text-xs">תעתיק לטיני:</span>
               <span className="font-mono" dir="ltr">{entry.translations[0].latin}</span>
+              <button
+                type="button"
+                onClick={() => setShowTranslitGuide(true)}
+                className="text-indigo-400/50 hover:text-indigo-300 transition-colors"
+                title="חוקי התעתיק"
+              >
+                <Info size={12} />
+              </button>
             </span>
           ) : entry.id && (
             <MissingFieldPlaceholder fieldName="latin" entryId={entry.id} compact />
@@ -344,33 +354,13 @@ const WordHero: React.FC<WordHeroProps> = ({
 
         {/* Action buttons row */}
         <div className="flex items-center gap-3 mt-2 flex-wrap">
-          {/* Voice selection + play */}
-          <div className="relative group/voice">
-            <button className="p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors" title="בחר קול">
-              <Settings2 size={18} />
-            </button>
-            <div className="absolute top-full left-0 mt-2 w-32 bg-[#0d1424]/90 backdrop-blur-xl rounded-lg shadow-xl p-1 hidden group-hover/voice:block z-20 text-slate-200 text-sm border border-white/10">
-              <button onClick={() => setVoice('Zephyr')} className={`w-full text-right px-3 py-2 rounded-md hover:bg-white/10 ${voice === 'Zephyr' ? 'font-bold text-indigo-400' : ''}`}>קול אישה</button>
-              <button onClick={() => setVoice('Fenrir')} className={`w-full text-right px-3 py-2 rounded-md hover:bg-white/10 ${voice === 'Fenrir' ? 'font-bold text-indigo-400' : ''}`}>קול גבר</button>
-            </div>
-          </div>
-
           <button
             onClick={handlePlay}
             className={`flex items-center gap-2 px-4 py-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors text-sm font-medium ${isPlaying ? 'animate-pulse' : ''}`}
-            title="השמע"
+            title="השמע הגייה"
           >
             <Volume2 size={18} />
             <span>השמע</span>
-          </button>
-
-          <button
-            onClick={copyToClipboard}
-            className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors text-sm font-medium"
-            title="העתק"
-          >
-            {copied ? <Check size={18} /> : <Copy size={18} />}
-            <span>העתק</span>
           </button>
 
           <button
@@ -407,6 +397,7 @@ const WordHero: React.FC<WordHeroProps> = ({
 
         {/* Per-field edit buttons are in MeaningSection and DialectComparison */}
       </div>
+      {showTranslitGuide && <TransliterationGuideModal onClose={() => setShowTranslitGuide(false)} />}
     </div>
   );
 };

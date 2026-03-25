@@ -111,7 +111,7 @@ const ApiSettingsPanel: React.FC = () => {
           <h3 className="text-lg font-medium text-slate-200">
             מפתחות API
           </h3>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
+          <p className="text-sm text-slate-400 dark:text-slate-400">
             ניהול מפתחות API מוצפנים. המפתחות מאוחסנים מוצפנים במסד הנתונים ולא נחשפים בדפדפן.
           </p>
         </div>
@@ -146,7 +146,7 @@ const ApiSettingsPanel: React.FC = () => {
           </div>
           <div className="flex-1">
             <h4 className="font-medium text-slate-200">Gemini API Key</h4>
-            <p className="text-sm text-slate-500 dark:text-slate-400">מפתח לשירותי Google Gemini AI (חיפוש, תרגום, TTS)</p>
+            <p className="text-sm text-slate-400 dark:text-slate-400">מפתח לשירותי Google Gemini AI (חיפוש, תרגום, TTS)</p>
           </div>
           {geminiSetting ? (
             <code className="text-sm bg-slate-100 dark:bg-slate-900 px-3 py-1 rounded font-mono text-slate-400">
@@ -242,7 +242,7 @@ const ApiSettingsPanel: React.FC = () => {
 
         {/* Last update */}
         {geminiSetting && (
-          <p className="text-xs text-slate-400 dark:text-slate-500">
+          <p className="text-xs text-slate-400 dark:text-slate-400">
             עודכן לאחרונה: {new Date(geminiSetting.updated_at).toLocaleString('he-IL')}
           </p>
         )}

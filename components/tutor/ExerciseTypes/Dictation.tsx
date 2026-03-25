@@ -42,7 +42,7 @@ export default function Dictation({ exercise, onAnswer, feedback, onPlayAudio, i
             placeholder="כתוב כאן..."
             disabled={!!feedback}
             autoFocus
-            className="flex-1 px-4 py-3 bg-white/5 border-2 border-white/10 rounded-xl text-white text-lg text-center outline-none focus:border-amber-500/50"
+            className="flex-1 px-4 py-3 bg-white/5 border-2 border-white/10 rounded-xl text-white text-lg text-center outline-none focus-visible:border-amber-500/50"
             dir="rtl"
           />
           <button

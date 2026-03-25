@@ -99,12 +99,12 @@ const MissingDialects: React.FC<MissingDialectsProps> = ({ onAddDialect, onOpenA
                                 </div>
                                 <div className="flex flex-wrap gap-1 mt-1">
                                     {entry.missingDialects.slice(0, 3).map((d, i) => (
-                                        <span key={i} className="text-[10px] bg-amber-500/10 text-amber-500 px-1.5 py-0.5 rounded border border-amber-500/20">
+                                        <span key={i} className="text-[11px] bg-amber-500/10 text-amber-500 px-1.5 py-0.5 rounded border border-amber-500/20">
                                             {d}
                                         </span>
                                     ))}
                                     {entry.missingDialects.length > 3 && (
-                                        <span className="text-[10px] text-slate-400">+{entry.missingDialects.length - 3}</span>
+                                        <span className="text-[11px] text-slate-400">+{entry.missingDialects.length - 3}</span>
                                     )}
                                 </div>
                             </div>

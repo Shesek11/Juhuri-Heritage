@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import FocusTrap from 'focus-trap-react';
 import { X, User as UserIcon, Lock, Save, Loader2, CheckCircle, AlertCircle, Award, Flame, Edit3, Star, TrendingUp, MessageSquare, Heart, ChevronDown, ChevronUp } from 'lucide-react';
 import { User } from '../types';
 import apiService from '../services/apiService';
@@ -125,7 +126,11 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user, onUp
             className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm animate-in fade-in duration-200 font-rubik"
             onClick={onClose}
         >
+            <FocusTrap focusTrapOptions={{ allowOutsideClick: true, escapeDeactivates: true }}>
             <div
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="profile-modal-title"
                 className="bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200 border border-white/10"
                 onClick={(e) => e.stopPropagation()}
             >
@@ -146,8 +151,8 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user, onUp
                         {getInitials(user.name)}
                     </div>
 
-                    <h2 className="mt-3 text-xl font-bold text-slate-800 dark:text-white">{user.name}</h2>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">{user.email}</p>
+                    <h2 id="profile-modal-title" className="mt-3 text-xl font-bold text-slate-800 dark:text-white">{user.name}</h2>
+                    <p className="text-sm text-slate-400 dark:text-slate-400">{user.email}</p>
 
                     <span className={`mt-2 px-3 py-1 rounded-full text-xs font-bold text-white ${roleBadge.bg} flex items-center gap-1`}>
                         <span>{roleBadge.icon}</span>
@@ -163,7 +168,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user, onUp
                             <Star className="text-indigo-500" size={20} />
                         </div>
                         <div className="text-xl font-bold text-indigo-600 dark:text-indigo-400">{(user.xp || 0).toLocaleString()}</div>
-                        <div className="text-xs text-slate-500 dark:text-slate-400">נקודות XP</div>
+                        <div className="text-xs text-slate-400 dark:text-slate-400">נקודות XP</div>
                     </div>
 
                     {/* Level Card */}
@@ -172,7 +177,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user, onUp
                             <Award className="text-amber-500" size={20} />
                         </div>
                         <div className="text-xl font-bold text-amber-600 dark:text-amber-400">Lv.{levelInfo.level}</div>
-                        <div className="text-xs text-slate-500 dark:text-slate-400">{levelTitle}</div>
+                        <div className="text-xs text-slate-400 dark:text-slate-400">{levelTitle}</div>
                     </div>
 
                     {/* Streak Card */}
@@ -181,13 +186,13 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user, onUp
                             <Flame className="text-red-500" size={20} />
                         </div>
                         <div className="text-xl font-bold text-red-500 dark:text-red-400">{user.currentStreak || 0}</div>
-                        <div className="text-xs text-slate-500 dark:text-slate-400">ימים רצופים</div>
+                        <div className="text-xs text-slate-400 dark:text-slate-400">ימים רצופים</div>
                     </div>
                 </div>
 
                 {/* XP Progress Bar */}
                 <div className="px-5 pb-4">
-                    <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400 mb-1">
+                    <div className="flex justify-between text-xs text-slate-400 dark:text-slate-400 mb-1">
                         <span>התקדמות לרמה {levelInfo.level + 1}</span>
                         <span>{levelInfo.xpToNext} XP נותרו</span>
                     </div>
@@ -208,7 +213,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user, onUp
                             </div>
                             <div>
                                 <div className="text-lg font-bold text-slate-800 dark:text-white">{user.contributionsCount || 0}</div>
-                                <div className="text-xs text-slate-500">תרומות למילון</div>
+                                <div className="text-xs text-slate-400">תרומות למילון</div>
                             </div>
                         </div>
                         <div className="text-right text-xs text-slate-400">
@@ -297,6 +302,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user, onUp
                     )}
                 </div>
             </div>
+            </FocusTrap>
         </div>
     );
 };

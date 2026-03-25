@@ -64,7 +64,7 @@ export const XPNotificationBubble: React.FC = () => {
     return (
         <div className="absolute -bottom-1 -left-1 min-w-[18px] h-[18px] px-1 bg-gradient-to-br from-amber-400 to-orange-600 rounded-full flex items-center justify-center gap-0.5 border-2 border-[#050B14] shadow-lg">
             <Star size={8} fill="white" className="text-white" />
-            <span className="text-[9px] font-bold text-white leading-none">{stats.level}</span>
+            <span className="text-[11px] font-bold text-white leading-none">{stats.level}</span>
         </div>
     );
 };
@@ -188,15 +188,15 @@ const XPDisplay: React.FC<{ variant?: 'menu' }> = ({ variant }) => {
                     <div className="grid grid-cols-3 gap-2 mb-4 text-center">
                         <div className="bg-slate-700/50 rounded-lg p-2">
                             <div className="text-lg font-bold text-amber-400">{stats.xp}</div>
-                            <div className="text-[10px] text-slate-400">XP</div>
+                            <div className="text-[11px] text-slate-400">XP</div>
                         </div>
                         <div className="bg-slate-700/50 rounded-lg p-2">
                             <div className="text-lg font-bold text-orange-400">{stats.streak}</div>
-                            <div className="text-[10px] text-slate-400">רצף</div>
+                            <div className="text-[11px] text-slate-400">רצף</div>
                         </div>
                         <div className="bg-slate-700/50 rounded-lg p-2">
                             <div className="text-lg font-bold text-green-400">{stats.contributions}</div>
-                            <div className="text-[10px] text-slate-400">תרומות</div>
+                            <div className="text-[11px] text-slate-400">תרומות</div>
                         </div>
                     </div>
                     <div className="grid grid-cols-3 gap-2">
@@ -210,7 +210,7 @@ const XPDisplay: React.FC<{ variant?: 'menu' }> = ({ variant }) => {
                                 title={badge.description}
                             >
                                 <div className="text-2xl">{badge.name.split(' ')[0]}</div>
-                                <div className="text-[9px] text-slate-300 truncate">
+                                <div className="text-[11px] text-slate-300 truncate">
                                     {badge.name.split(' ').slice(1).join(' ')}
                                 </div>
                             </div>

@@ -1,4 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
+import FocusTrap from 'focus-trap-react';
 import { CheckCircle, Edit3, Loader2, X as XIcon, Sparkles } from 'lucide-react';
 import apiService from '../../services/apiService';
 import { FIELD_LABELS } from '../../utils/fieldLabels';
@@ -73,13 +75,17 @@ const AIConfirmModal: React.FC<AIConfirmModalProps> = ({
     }
   };
 
-  return (
+  return createPortal(
     <div
       ref={backdropRef}
       className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm animate-in fade-in duration-200"
       onClick={(e) => { if (e.target === backdropRef.current) onClose(); }}
     >
+      <FocusTrap focusTrapOptions={{ allowOutsideClick: true, escapeDeactivates: true }}>
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="ai-confirm-modal-title"
         className="relative w-full max-w-sm mx-4 bg-[#0d1424] border border-white/15 rounded-2xl shadow-2xl p-5 space-y-4 animate-in zoom-in-95 duration-200"
         dir="rtl"
       >
@@ -88,6 +94,7 @@ const AIConfirmModal: React.FC<AIConfirmModalProps> = ({
           type="button"
           onClick={onClose}
           className="absolute top-3 left-3 text-slate-400 hover:text-white transition-colors"
+          title="סגור"
         >
           <XIcon size={16} />
         </button>
@@ -95,7 +102,7 @@ const AIConfirmModal: React.FC<AIConfirmModalProps> = ({
         {/* Title */}
         <div className="flex items-center gap-2">
           <Sparkles size={16} className="text-amber-400" />
-          <h3 className="text-sm font-bold text-white">הצעת AI — {label}</h3>
+          <h3 id="ai-confirm-modal-title" className="text-sm font-bold text-white">הצעת AI — {label}</h3>
         </div>
 
         {/* AI Value display */}
@@ -180,7 +187,9 @@ const AIConfirmModal: React.FC<AIConfirmModalProps> = ({
           </p>
         )}
       </div>
-    </div>
+      </FocusTrap>
+    </div>,
+    document.body
   );
 };
 

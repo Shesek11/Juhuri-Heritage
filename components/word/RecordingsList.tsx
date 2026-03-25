@@ -26,7 +26,7 @@ const RecordingsList: React.FC<RecordingsListProps> = ({ recordings, entryId }) 
 
   return (
     <div className="space-y-3">
-      <h3 className="text-sm uppercase tracking-wider text-slate-400 dark:text-slate-500 font-bold flex items-center gap-2">
+      <h3 className="text-sm uppercase tracking-wider text-slate-400 dark:text-slate-400 font-bold flex items-center gap-2">
         <Mic size={14} />
         הגיות מהקהילה
       </h3>
@@ -54,7 +54,7 @@ const RecordingsList: React.FC<RecordingsListProps> = ({ recordings, entryId }) 
                     </span>
                   )}
                 </div>
-                <span className="text-xs text-slate-500">{formatDuration(rec.duration)}</span>
+                <span className="text-xs text-slate-400">{formatDuration(rec.duration)}</span>
               </div>
 
               {typeof rec.upvotes === 'number' && (
@@ -67,7 +67,7 @@ const RecordingsList: React.FC<RecordingsListProps> = ({ recordings, entryId }) 
           ))}
         </div>
       ) : (
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-slate-400">
           אין עדיין הקלטות למילה זו. היו הראשונים להקליט!
         </p>
       )}

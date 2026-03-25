@@ -374,7 +374,7 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({
           {result && !loading && (
             <div className="animate-in slide-in-from-bottom-8 duration-500">
               {/* Results count */}
-              <div className="flex items-center justify-between text-sm text-slate-500 px-1 mb-3">
+              <div className="flex items-center justify-between text-sm text-slate-400 px-1 mb-3">
                 <span>{1 + additionalResults.length} תוצאות עבור "{query}"</span>
               </div>
 
@@ -403,7 +403,7 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({
 
               {/* Bottom actions — full width */}
               <div className="mt-4 bg-[#0d1424]/40 backdrop-blur-xl rounded-xl border border-dashed border-white/10 p-4">
-                <p className="text-sm text-slate-500 mb-3 text-center">לא מצאת מה שחיפשת?</p>
+                <p className="text-sm text-slate-400 mb-3 text-center">לא מצאת מה שחיפשת?</p>
                 <div className="flex flex-col sm:flex-row gap-2 justify-center">
                   <button
                     type="button"

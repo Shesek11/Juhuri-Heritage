@@ -178,7 +178,7 @@ export const RecipeDetailPage: React.FC<RecipeDetailPageProps> = ({ recipeId, on
         return (
             <div className="flex items-center justify-center min-h-screen">
                 <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
-                <span className="mr-3 text-slate-500">טוען מתכון...</span>
+                <span className="mr-3 text-slate-400">טוען מתכון...</span>
             </div>
         );
     }
@@ -190,7 +190,7 @@ export const RecipeDetailPage: React.FC<RecipeDetailPageProps> = ({ recipeId, on
                 <h2 className="text-2xl font-bold text-slate-700 dark:text-slate-300 mb-2">
                     המתכון לא נמצא
                 </h2>
-                <p className="text-slate-500 mb-6">{error || 'המתכון המבוקש אינו קיים'}</p>
+                <p className="text-slate-400 mb-6">{error || 'המתכון המבוקש אינו קיים'}</p>
                 <button
                     onClick={() => onClose()}
                     className="px-6 py-3 bg-amber-500 text-white rounded-lg hover:bg-amber-600"
@@ -229,7 +229,7 @@ export const RecipeDetailPage: React.FC<RecipeDetailPageProps> = ({ recipeId, on
             {/* Breadcrumb */}
             <div className="bg-[#0d1424]/60 backdrop-blur-xl border-b border-white/10 print:hidden">
                 <div className="max-w-5xl mx-auto px-4 py-3">
-                    <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+                    <div className="flex items-center gap-2 text-sm text-slate-400 dark:text-slate-400">
                         <button
                             onClick={() => onClose()}
                             className="hover:text-amber-600 dark:hover:text-amber-400"
@@ -382,7 +382,7 @@ export const RecipeDetailPage: React.FC<RecipeDetailPageProps> = ({ recipeId, on
                                                 value={newComment}
                                                 onChange={(e) => setNewComment(e.target.value)}
                                                 placeholder="שתף את המחשבות שלך על המתכון..."
-                                                className="w-full p-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-200 focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                                                className="w-full p-3 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-200 focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:border-transparent"
                                                 rows={3}
                                             />
                                             <button
@@ -428,7 +428,7 @@ export const RecipeDetailPage: React.FC<RecipeDetailPageProps> = ({ recipeId, on
                                             ))}
                                         </div>
                                     ) : (
-                                        <p className="text-slate-500 text-center py-4">
+                                        <p className="text-slate-400 text-center py-4">
                                             אין תגובות עדיין. היה הראשון להגיב!
                                         </p>
                                     )}
@@ -514,7 +514,7 @@ export const RecipeDetailPage: React.FC<RecipeDetailPageProps> = ({ recipeId, on
                                     </div>
                                 )}
                                 <div>
-                                    <p className="text-xs text-slate-500 dark:text-slate-400">מחבר המתכון</p>
+                                    <p className="text-xs text-slate-400 dark:text-slate-400">מחבר המתכון</p>
                                     <p className="font-medium text-slate-200">
                                         {recipe.author_name}
                                     </p>
@@ -608,7 +608,7 @@ export const RecipeDetailPage: React.FC<RecipeDetailPageProps> = ({ recipeId, on
                                 <h2 className="text-xl font-bold text-slate-800 dark:text-white">
                                     מחיקת מתכון
                                 </h2>
-                                <p className="text-sm text-slate-500 dark:text-slate-400">
+                                <p className="text-sm text-slate-400 dark:text-slate-400">
                                     פעולה זו אינה ניתנת לביטול
                                 </p>
                             </div>

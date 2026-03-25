@@ -22,7 +22,7 @@ const EditBtn: React.FC<{ onClick: () => void }> = ({ onClick }) => (
   <button
     type="button"
     onClick={onClick}
-    className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-200 dark:hover:bg-indigo-800/40 transition-colors opacity-100 md:opacity-0 md:group-hover:opacity-100 shrink-0"
+    className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[11px] font-medium bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-200 dark:hover:bg-indigo-800/40 transition-colors opacity-100 md:opacity-0 md:group-hover:opacity-100 shrink-0"
   >
     <Pencil size={10} /> ערוך
   </button>
@@ -59,7 +59,7 @@ const MeaningSection: React.FC<MeaningSectionProps> = ({
     <div className="space-y-3">
       {/* Hebrew translation */}
       <div className="flex items-start gap-2">
-        <span className="text-sm text-slate-500 mt-1.5 shrink-0 min-w-[100px]">עברית:</span>
+        <span className="text-sm text-slate-400 mt-1.5 shrink-0 min-w-[100px]">עברית:</span>
         {primaryHebrew ? (
           <div className="flex items-center gap-2 flex-wrap group flex-1">
             <span className="text-2xl font-bold text-slate-100 font-rubik">{primaryHebrew}</span>
@@ -92,7 +92,7 @@ const MeaningSection: React.FC<MeaningSectionProps> = ({
       {/* Russian translation */}
       {displayRussian ? (
         <div className="flex items-start gap-2 group">
-          <span className="text-sm text-slate-500 mt-0.5 shrink-0 min-w-[100px]">רוסית:</span>
+          <span className="text-sm text-slate-400 mt-0.5 shrink-0 min-w-[100px]">רוסית:</span>
           {isRussianFromAI ? (
             <AIValueBadge
               value={displayRussian}
@@ -110,7 +110,7 @@ const MeaningSection: React.FC<MeaningSectionProps> = ({
         </div>
       ) : (
         <div className="flex items-start gap-2">
-          <span className="text-sm text-slate-500 mt-0.5 shrink-0 min-w-[100px]">רוסית:</span>
+          <span className="text-sm text-slate-400 mt-0.5 shrink-0 min-w-[100px]">רוסית:</span>
           <div className="flex-1">
             <MissingFieldPlaceholder
               fieldName="russian"
@@ -128,7 +128,7 @@ const MeaningSection: React.FC<MeaningSectionProps> = ({
       {/* Expanded definition — with AIValueBadge if from enrichment */}
       {showDefinition && (
         <div className="flex items-start gap-2">
-          <span className="text-sm text-slate-500 mt-0.5 shrink-0 min-w-[100px]">תרגום (עברית):</span>
+          <span className="text-sm text-slate-400 mt-0.5 shrink-0 min-w-[100px]">תרגום (עברית):</span>
           {isDefinitionFromAI ? (
             <AIValueBadge
               value={displayDefinition!}
@@ -152,7 +152,7 @@ const MeaningSection: React.FC<MeaningSectionProps> = ({
       {/* AI loading skeleton for definition */}
       {!showDefinition && !defText && enrichmentLoading && (
         <div className="flex items-start gap-2">
-          <span className="text-sm text-slate-500 mt-0.5 shrink-0 min-w-[100px]">תרגום (עברית):</span>
+          <span className="text-sm text-slate-400 mt-0.5 shrink-0 min-w-[100px]">תרגום (עברית):</span>
           <div className="flex items-center gap-2 text-xs text-amber-400 flex-1">
             <Loader2 size={12} className="animate-spin" />
             <span>AI מתרגם...</span>

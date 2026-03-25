@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import FocusTrap from 'focus-trap-react';
 import { X, AlertTriangle, Send } from 'lucide-react';
 import { DictionaryEntry } from '../../types';
 import apiService from '../../services/apiService';
@@ -68,7 +69,11 @@ const ReportModal: React.FC<ReportModalProps> = ({ searchQuery, entry, onClose, 
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
+      <FocusTrap focusTrapOptions={{ allowOutsideClick: true, escapeDeactivates: true }}>
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="report-modal-title"
         className="bg-[#0d1424] border border-white/10 rounded-2xl w-full max-w-md shadow-2xl font-rubik"
         dir="rtl"
         onClick={(e) => e.stopPropagation()}
@@ -77,7 +82,7 @@ const ReportModal: React.FC<ReportModalProps> = ({ searchQuery, entry, onClose, 
         <div className="flex items-center justify-between p-5 border-b border-white/10">
           <div className="flex items-center gap-2">
             <AlertTriangle className="w-5 h-5 text-amber-400" />
-            <h2 className="text-lg font-bold text-white">דיווח על תרגום</h2>
+            <h2 id="report-modal-title" className="text-lg font-bold text-white">דיווח על תרגום</h2>
           </div>
           <button onClick={onClose} className="p-1.5 text-slate-400 hover:bg-white/5 rounded-lg transition-colors">
             <X className="w-5 h-5" />
@@ -115,7 +120,7 @@ const ReportModal: React.FC<ReportModalProps> = ({ searchQuery, entry, onClose, 
                 <span className="text-white">{entry.term}</span>
                 {primaryTranslation?.hebrew && (
                   <>
-                    <span className="text-slate-500">&larr;</span>
+                    <span className="text-slate-400">&larr;</span>
                     <span className="text-slate-300">{primaryTranslation.hebrew}</span>
                   </>
                 )}
@@ -191,6 +196,7 @@ const ReportModal: React.FC<ReportModalProps> = ({ searchQuery, entry, onClose, 
           </form>
         )}
       </div>
+      </FocusTrap>
     </div>
   );
 };

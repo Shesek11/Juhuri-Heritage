@@ -44,6 +44,7 @@ Field instructions:
 - "definition" — expanded definition in Hebrew.
 - "pronunciationGuide" — pronunciation guide using LATIN characters (e.g. "aa-yil", "sho-lum"). NOT Hebrew. Use hyphens to separate syllables.
 - "partOfSpeech" — part of speech in Hebrew (e.g. שם עצם, פועל, שם תואר).
+- "nikud" — add full Hebrew nikud (vowel marks) to the Hebrew text provided in knownFields.hebrew. Use the Latin transliteration from knownFields.latin to determine correct vowels. Return the same Hebrew text WITH nikud added.
 
 CRITICAL: For hebrew/hebrewTransliteration/latin/cyrillic fields, provide the JUHURI word in that script — NOT translations to those languages.`;
 
@@ -74,6 +75,9 @@ CRITICAL: For hebrew/hebrewTransliteration/latin/cyrillic fields, provide the JU
     }
     if (missingFields.includes('pronunciationGuide')) {
       enrichSchema.properties.pronunciationGuide = { type: "STRING", description: "מדריך הגייה באותיות לטיניות עם מקפים בין הברות" };
+    }
+    if (missingFields.includes('nikud')) {
+      enrichSchema.properties.nikud = { type: "STRING", description: "המילה בכתב עברי עם ניקוד מלא" };
     }
     if (missingFields.includes('partOfSpeech')) {
       enrichSchema.properties.partOfSpeech = { type: "STRING", description: "חלק דיבר בעברית" };

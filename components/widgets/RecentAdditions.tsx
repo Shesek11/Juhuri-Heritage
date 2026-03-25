@@ -34,7 +34,7 @@ const RecentAdditions: React.FC<RecentAdditionsProps> = ({ onSelectWord }) => {
                 </div>
                 <div>
                     <h3 className="font-bold text-sm text-white">נוספו לאחרונה</h3>
-                    <span className="text-[0.6rem] text-slate-500">20 מילים אחרונות</span>
+                    <span className="text-xs text-slate-400">20 מילים אחרונות</span>
                 </div>
             </div>
 
@@ -58,12 +58,12 @@ const RecentAdditions: React.FC<RecentAdditionsProps> = ({ onSelectWord }) => {
                                         {term.term || (term as any).hebrew || (term as any).latin || '—'}
                                     </div>
                                     {term.term && (term as any).hebrew && (
-                                        <div className="text-[0.65rem] text-slate-500 truncate">
+                                        <div className="text-xs text-slate-400 truncate">
                                             {(term as any).hebrew}
                                         </div>
                                     )}
                                     {!term.term && (term as any).latin && (
-                                        <div className="text-[0.65rem] text-slate-500 truncate font-mono" dir="ltr">
+                                        <div className="text-xs text-slate-400 truncate font-mono" dir="ltr">
                                             {(term as any).latin}
                                         </div>
                                     )}

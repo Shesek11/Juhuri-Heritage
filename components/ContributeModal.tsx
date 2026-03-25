@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import FocusTrap from 'focus-trap-react';
 import { X, Send, Loader2, CheckCircle, AlertCircle, Feather, Mic, Square, Play, Pause, RotateCcw, Search, Edit3, GitBranch } from 'lucide-react';
 import { verifySuggestion } from '../services/geminiService';
 import { addCustomEntry, getDialects } from '../services/storageService';
@@ -259,20 +260,21 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-in fade-in duration-200 font-rubik">
-      <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200 border border-white/10 max-h-[90vh] overflow-y-auto">
+      <FocusTrap focusTrapOptions={{ allowOutsideClick: true, escapeDeactivates: true }}>
+      <div role="dialog" aria-modal="true" aria-labelledby="contribute-modal-title" className="bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200 border border-white/10 max-h-[90vh] overflow-y-auto">
         {/* Header */}
         <div className="p-5 border-b border-white/10 flex justify-between items-center bg-gradient-to-r from-amber-50 to-orange-50 dark:from-slate-800 dark:to-slate-800">
           <div className="flex items-center gap-2 text-amber-800 dark:text-amber-400">
             <Feather size={22} />
-            <h3 className="font-bold text-lg">הוספת מילה חדשה</h3>
+            <h3 id="contribute-modal-title" className="font-bold text-lg">הוספת מילה חדשה</h3>
           </div>
-          <button onClick={onClose} className="p-1.5 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 transition-colors">
+          <button onClick={onClose} className="p-1.5 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 transition-colors">
             <X size={20} />
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
-          <p className="text-sm text-slate-500 dark:text-slate-400">
+          <p className="text-sm text-slate-400 dark:text-slate-400">
             עזרו לנו לתעד את השפה. הוסיפו מילה, פתגם או ביטוי שחסר במילון.
           </p>
 
@@ -316,10 +318,10 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
                   <div className="text-slate-600 dark:text-slate-300">{existingEntry.translations[0].hebrew}</div>
                 )}
                 {existingEntry.translations?.[0]?.latin && (
-                  <div className="text-slate-500 dark:text-slate-400 font-mono text-xs">{existingEntry.translations[0].latin}</div>
+                  <div className="text-slate-400 dark:text-slate-400 font-mono text-xs">{existingEntry.translations[0].latin}</div>
                 )}
                 {existingEntry.definitions?.[0] && (
-                  <div className="text-slate-500 dark:text-slate-400 text-xs mt-1">{existingEntry.definitions[0]}</div>
+                  <div className="text-slate-400 dark:text-slate-400 text-xs mt-1">{existingEntry.definitions[0]}</div>
                 )}
               </div>
 
@@ -395,7 +397,7 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
                 <button
                   type="button"
                   onClick={() => setDuplicateMode('found')}
-                  className="px-3 py-2 text-xs text-slate-500 hover:text-slate-700 transition-colors"
+                  className="px-3 py-2 text-xs text-slate-400 hover:text-slate-700 transition-colors"
                 >
                   חזור
                 </button>
@@ -566,6 +568,7 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
           )}
         </form>
       </div>
+      </FocusTrap>
     </div>
   );
 };

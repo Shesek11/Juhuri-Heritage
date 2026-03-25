@@ -108,7 +108,7 @@ export default function SpeedMatch({ exercise, onAnswer, feedback }: Props) {
         </div>
       </div>
 
-      <p className="text-xs text-slate-500 mt-4">{matched.size / 2} / {pairs.length}</p>
+      <p className="text-xs text-slate-400 mt-4">{matched.size / 2} / {pairs.length}</p>
     </div>
   );
 }

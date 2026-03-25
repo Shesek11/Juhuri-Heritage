@@ -64,7 +64,7 @@ const TranslationCard: React.FC<TranslationCardProps> = ({
         {/* Play button */}
         <button
           onClick={() => onPlay(t.cyrillic || t.latin || t.hebrew, `trans-${idx}`)}
-          className={`p-2 rounded-full text-slate-400 hover:text-indigo-600 dark:text-slate-500 dark:hover:text-indigo-400 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all self-start mt-1 shrink-0 ${isPlaying === `trans-${idx}` ? 'text-indigo-600 !opacity-100 animate-pulse' : ''}`}
+          className={`p-2 rounded-full text-slate-400 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all self-start mt-1 shrink-0 ${isPlaying === `trans-${idx}` ? 'text-indigo-600 !opacity-100 animate-pulse' : ''}`}
         >
           <Volume2 size={20} />
         </button>
@@ -90,7 +90,7 @@ const TranslationCard: React.FC<TranslationCardProps> = ({
                     <button
                       type="button"
                       onClick={() => onStartEdit('hebrew')}
-                      className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-200 dark:hover:bg-indigo-800/40 transition-colors opacity-100 md:opacity-0 md:group-hover:opacity-100"
+                      className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[11px] font-medium bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-200 dark:hover:bg-indigo-800/40 transition-colors opacity-100 md:opacity-0 md:group-hover:opacity-100"
                     >
                       <Pencil size={10} /> ערוך
                     </button>
@@ -133,7 +133,7 @@ const TranslationCard: React.FC<TranslationCardProps> = ({
                     <button
                       type="button"
                       onClick={() => onStartEdit('latin')}
-                      className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-200 dark:hover:bg-indigo-800/40 transition-colors opacity-100 md:opacity-0 md:group-hover:opacity-100"
+                      className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[11px] font-medium bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-200 dark:hover:bg-indigo-800/40 transition-colors opacity-100 md:opacity-0 md:group-hover:opacity-100"
                     >
                       <Pencil size={10} /> ערוך
                     </button>
@@ -165,7 +165,7 @@ const TranslationCard: React.FC<TranslationCardProps> = ({
                 inline
               />
             ) : (
-              <div className="text-lg text-slate-500 dark:text-slate-400 font-serif flex items-center gap-1">
+              <div className="text-lg text-slate-400 dark:text-slate-400 font-serif flex items-center gap-1">
                 <FieldSourceBadge source={entry.fieldSources?.cyrillic} />
                 {displayCyrillic}
                 <ConfirmAiButton entryId={entry.id} fieldName="cyrillic" value={displayCyrillic} source={entry.fieldSources?.cyrillic} />
@@ -173,7 +173,7 @@ const TranslationCard: React.FC<TranslationCardProps> = ({
                   <button
                     type="button"
                     onClick={() => onStartEdit('cyrillic')}
-                    className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-200 dark:hover:bg-indigo-800/40 transition-colors opacity-100 md:opacity-0 md:group-hover:opacity-100"
+                    className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[11px] font-medium bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-200 dark:hover:bg-indigo-800/40 transition-colors opacity-100 md:opacity-0 md:group-hover:opacity-100"
                   >
                     <Pencil size={10} /> ערוך
                   </button>

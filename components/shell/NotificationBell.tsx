@@ -86,7 +86,7 @@ const NotificationBell: React.FC = () => {
       >
         <Bell size={20} />
         {unreadCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center shadow-lg animate-in zoom-in">
+          <span className="absolute -top-0.5 -right-0.5 w-5 h-5 bg-red-500 text-white text-[11px] font-bold rounded-full flex items-center justify-center shadow-lg animate-in zoom-in">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
@@ -109,9 +109,9 @@ const NotificationBell: React.FC = () => {
 
           <div className="max-h-80 overflow-y-auto">
             {loading ? (
-              <div className="p-8 text-center text-slate-500 text-sm">טוען...</div>
+              <div className="p-8 text-center text-slate-400 text-sm">טוען...</div>
             ) : notifications.length === 0 ? (
-              <div className="p-8 text-center text-slate-500 text-sm">אין התראות</div>
+              <div className="p-8 text-center text-slate-400 text-sm">אין התראות</div>
             ) : (
               notifications.map(n => (
                 <button
@@ -137,7 +137,7 @@ const NotificationBell: React.FC = () => {
                       {n.message && (
                         <p className="text-xs text-slate-400 mt-0.5 line-clamp-2">{n.message}</p>
                       )}
-                      <p className="text-[10px] text-slate-500 mt-1">
+                      <p className="text-[11px] text-slate-400 mt-1">
                         {new Date(n.created_at).toLocaleDateString('he-IL')}
                       </p>
                     </div>

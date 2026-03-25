@@ -29,7 +29,7 @@ const FuzzyMatchBanner: React.FC<FuzzyMatchBannerProps> = ({ suggestions, onSele
               <span className="text-slate-400">{s.hebrew}</span>
             )}
             {s.partOfSpeech && (
-              <span className="text-[10px] text-indigo-300 bg-indigo-500/15 px-1.5 py-0.5 rounded-full">
+              <span className="text-[11px] text-indigo-300 bg-indigo-500/15 px-1.5 py-0.5 rounded-full">
                 {s.partOfSpeech}
               </span>
             )}

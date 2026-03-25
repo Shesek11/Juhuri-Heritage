@@ -91,7 +91,7 @@ export const MarketplacePage: React.FC = () => {
             <div className="flex flex-col items-center justify-center p-8 text-center min-h-[50vh]">
                 <Store size={64} className="text-slate-300 mb-4" />
                 <h2 className="text-2xl font-bold text-slate-700 dark:text-slate-200">השוק מתבשל...</h2>
-                <p className="text-slate-500 mt-2">פיצ'ר זה יהיה זמין בקרוב!</p>
+                <p className="text-slate-400 mt-2">פיצ'ר זה יהיה זמין בקרוב!</p>
             </div>
         );
     }
@@ -112,7 +112,7 @@ export const MarketplacePage: React.FC = () => {
                         </span>
                         <ChefHat size={24} className="text-orange-500" />
                     </h1>
-                    <p className="text-sm text-slate-500 font-medium">שוק האוכל הג'והורי</p>
+                    <p className="text-sm text-slate-400 font-medium">שוק האוכל הג'והורי</p>
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -151,7 +151,7 @@ export const MarketplacePage: React.FC = () => {
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         placeholder="חפש מאכלים, בשלנים..."
-                        className="w-full pl-4 pr-10 py-3 rounded-xl bg-[#0d1424]/60 backdrop-blur-xl border border-white/10 shadow-sm focus:ring-2 focus:ring-orange-500 outline-none"
+                        className="w-full pl-4 pr-10 py-3 rounded-xl bg-[#0d1424]/60 backdrop-blur-xl border border-white/10 shadow-sm focus-visible:ring-2 focus-visible:ring-orange-500 outline-none"
                     />
                 </form>
             </div>

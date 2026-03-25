@@ -92,7 +92,7 @@ const StatCard: React.FC<{
             <span>{label}</span>
         </div>
         <div className="text-2xl font-bold text-white">{value}</div>
-        {subtitle && <div className="text-xs text-slate-500 mt-1">{subtitle}</div>}
+        {subtitle && <div className="text-xs text-slate-400 mt-1">{subtitle}</div>}
         {chart && chart.length > 0 && <MiniChart data={chart} color={chartColor} />}
     </div>
 );
@@ -203,7 +203,7 @@ const AdminAnalyticsPanel: React.FC = () => {
                         <p>GA_MEASUREMENT_ID=G-XXXXXXXXXX</p>
                         <p>GA_PROPERTY_ID=123456789</p>
                     </div>
-                    <p className="text-slate-500 text-xs mt-3">
+                    <p className="text-slate-400 text-xs mt-3">
                         הוסף את juhuri-gsc@juhuri-heritage.iam.gserviceaccount.com כ-Viewer ב-GA4 Property
                     </p>
                 </div>
@@ -311,7 +311,7 @@ const AdminAnalyticsPanel: React.FC = () => {
                                 <span>מקורות תנועה</span>
                             </div>
                             {sources.length === 0 ? (
-                                <p className="text-slate-500 text-sm text-center py-4">אין נתונים</p>
+                                <p className="text-slate-400 text-sm text-center py-4">אין נתונים</p>
                             ) : (
                                 <div className="space-y-2">
                                     {sources.map((s, i) => (
@@ -342,7 +342,7 @@ const AdminAnalyticsPanel: React.FC = () => {
                                 <span>מכשירים</span>
                             </div>
                             {devices.length === 0 ? (
-                                <p className="text-slate-500 text-sm text-center py-4">אין נתונים</p>
+                                <p className="text-slate-400 text-sm text-center py-4">אין נתונים</p>
                             ) : (
                                 <div className="space-y-3">
                                     {devices.map((d, i) => {
@@ -363,7 +363,7 @@ const AdminAnalyticsPanel: React.FC = () => {
                                                         />
                                                     </div>
                                                 </div>
-                                                <span className="text-xs text-slate-500 w-12 text-left">{d.sessions}</span>
+                                                <span className="text-xs text-slate-400 w-12 text-left">{d.sessions}</span>
                                             </div>
                                         );
                                     })}
@@ -379,7 +379,7 @@ const AdminAnalyticsPanel: React.FC = () => {
                             <span>דפים מובילים</span>
                         </div>
                         {pages.length === 0 ? (
-                            <p className="text-slate-500 text-sm text-center py-4">אין נתונים</p>
+                            <p className="text-slate-400 text-sm text-center py-4">אין נתונים</p>
                         ) : (
                             <div className="overflow-x-auto">
                                 <table className="w-full text-xs">

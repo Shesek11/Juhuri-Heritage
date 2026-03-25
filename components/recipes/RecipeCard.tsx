@@ -79,13 +79,13 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, onClick, viewMod
                     )}
 
                     {recipe.description && (
-                        <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-2 mb-3">
+                        <p className="text-sm text-slate-400 dark:text-slate-400 line-clamp-2 mb-3">
                             {recipe.description}
                         </p>
                     )}
 
                     {/* Meta info */}
-                    <div className="flex items-center gap-4 text-xs text-slate-400 dark:text-slate-500">
+                    <div className="flex items-center gap-4 text-xs text-slate-400 dark:text-slate-400">
                         {totalTime > 0 && (
                             <span className="flex items-center gap-1">
                                 <Clock className="w-3.5 h-3.5" />
@@ -203,7 +203,7 @@ export const RecipeCard: React.FC<RecipeCardProps> = ({ recipe, onClick, viewMod
                     )}
 
                     {/* Meta info */}
-                    <div className="flex items-center gap-6 text-sm text-slate-500 dark:text-slate-400">
+                    <div className="flex items-center gap-6 text-sm text-slate-400 dark:text-slate-400">
                         {totalTime > 0 && (
                             <span className="flex items-center gap-1.5">
                                 <Clock className="w-4 h-4" />

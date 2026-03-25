@@ -78,7 +78,7 @@ const SearchResultCard: React.FC<SearchResultCardProps> = ({ entry, isBestMatch,
       dir="rtl"
     >
       {isBestMatch && (
-        <div className="absolute -top-2.5 right-4 px-2.5 py-0.5 bg-amber-500/20 text-amber-400 text-[10px] font-bold rounded-full border border-amber-500/30">
+        <div className="absolute -top-2.5 right-4 px-2.5 py-0.5 bg-amber-500/20 text-amber-400 text-[11px] font-bold rounded-full border border-amber-500/30">
           התאמה מיטבית
         </div>
       )}
@@ -92,7 +92,7 @@ const SearchResultCard: React.FC<SearchResultCardProps> = ({ entry, isBestMatch,
             </h3>
           ) : (
             /* Missing Hebrew transliteration — show placeholder */
-            <div className="flex items-center gap-1.5 px-3 py-1 border border-dashed border-slate-600/50 rounded-lg text-slate-500 text-sm">
+            <div className="flex items-center gap-1.5 px-3 py-1 border border-dashed border-slate-600/50 rounded-lg text-slate-400 text-sm">
               <Plus size={12} />
               <span>חסר תעתיק עברי</span>
             </div>
@@ -132,7 +132,7 @@ const SearchResultCard: React.FC<SearchResultCardProps> = ({ entry, isBestMatch,
           <span className="text-slate-400 text-sm font-mono" dir="ltr">{latinText}</span>
         )}
         {secondaryTerm && (
-          <span className="text-slate-500 text-xs font-serif" dir="ltr">{secondaryTerm}</span>
+          <span className="text-slate-400 text-xs font-serif" dir="ltr">{secondaryTerm}</span>
         )}
       </div>
 

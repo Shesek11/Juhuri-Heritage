@@ -129,7 +129,7 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
             value={query}
             onChange={e => setQuery(e.target.value)}
             placeholder="חפש מילה בעברית, ג'והורי, רוסית..."
-            className="w-full px-5 py-4 pr-14 text-lg rounded-2xl bg-[#0d1424]/60 backdrop-blur-xl border border-white/10 text-white placeholder-slate-500 focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500/50 outline-none transition-all font-rubik"
+            className="w-full px-5 py-4 pr-14 text-lg rounded-2xl bg-[#0d1424]/60 backdrop-blur-xl border border-white/10 text-white placeholder-slate-500 focus-visible:ring-2 focus-visible:ring-amber-500/50 focus-visible:border-amber-500/50 outline-none transition-all font-rubik"
             dir="auto"
           />
           <button
@@ -164,7 +164,7 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
       {!loading && !error && searched && results.length > 0 && (
         <div className="space-y-3">
           {/* Results header */}
-          <div className="flex items-center justify-between text-sm text-slate-500 px-1">
+          <div className="flex items-center justify-between text-sm text-slate-400 px-1">
             <span>{results.length} תוצאות עבור "{searchTerm}"</span>
           </div>
 
@@ -187,7 +187,7 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
 
           {/* Bottom actions */}
           <div className="bg-[#0d1424]/40 backdrop-blur-xl rounded-xl border border-dashed border-white/10 p-4">
-            <p className="text-sm text-slate-500 mb-3 text-center">לא מצאת מה שחיפשת?</p>
+            <p className="text-sm text-slate-400 mb-3 text-center">לא מצאת מה שחיפשת?</p>
             <div className="flex flex-col sm:flex-row gap-2 justify-center">
               <button
                 onClick={() => setShowNewTranslation(true)}

@@ -281,7 +281,7 @@ export const CookingMode: React.FC<CookingModeProps> = ({ recipe, servings, onCl
                             )}
 
                             {/* Keyboard Hints - Desktop only */}
-                            <div className="hidden md:block text-center text-sm text-slate-500 mt-4">
+                            <div className="hidden md:block text-center text-sm text-slate-400 mt-4">
                                 <p>השתמש במקשי החצים לניווט • רווח לסימון • ESC ליציאה</p>
                             </div>
                         </div>
