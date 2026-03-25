@@ -69,7 +69,7 @@ const FeaturesSection: React.FC<FeaturesSectionProps> = ({ featureFlags, isAdmin
       <div className="max-w-6xl mx-auto">
         <div className="flex items-center gap-3 mb-10 justify-center text-center">
           <div className="w-16 h-[1px] bg-gradient-to-l from-amber-500 to-transparent hidden sm:block"></div>
-          <h2 className="text-3xl font-bold text-white">גלו את הפלטפורמה</h2>
+          <h2 className="text-3xl font-bold text-white">מה מחכה לכם כאן</h2>
           <div className="w-16 h-[1px] bg-gradient-to-r from-amber-500 to-transparent hidden sm:block"></div>
         </div>
 
