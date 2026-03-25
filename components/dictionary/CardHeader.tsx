@@ -1,12 +1,10 @@
 import React, { useState } from 'react';
-import { Volume2, Copy, Check, Settings2, Bot, Users, Pencil } from 'lucide-react';
+import { Volume2, Bot, Users } from 'lucide-react';
 import { DictionaryEntry } from '../../types';
 import { partOfSpeechHebrew } from '../../utils/pos';
 import { generateSpeech } from '../../services/geminiService';
 import { playBase64Audio } from '../../utils/audioUtils';
-import MissingFieldPlaceholder from './MissingFieldPlaceholder';
-import FieldEditForm from './FieldEditForm';
-import AIValueBadge from './AIValueBadge';
+import EditableField from './EditableField';
 import type { PendingSuggestion } from '../../types';
 
 interface CardHeaderProps {
@@ -25,10 +23,7 @@ const CardHeader: React.FC<CardHeaderProps> = ({
   enrichedPartOfSpeech,
 }) => {
   const [isPlaying, setIsPlaying] = useState(false);
-  const [copied, setCopied] = useState(false);
-  const [voice, setVoice] = useState<'Zephyr' | 'Fenrir'>('Zephyr');
-  const [editingPOS, setEditingPOS] = useState(false);
-  const [editingPronunciation, setEditingPronunciation] = useState(false);
+  const [editingField, setEditingField] = useState<string | null>(null);
 
   const handlePlay = async () => {
     if (isPlaying) return;
@@ -48,20 +43,6 @@ const CardHeader: React.FC<CardHeaderProps> = ({
     }
     setIsPlaying(false);
   };
-
-  const copyToClipboard = () => {
-    const allText = `${entry.term}\n${entry.translations.map(t => `${t.hebrew} | ${t.latin} | ${t.cyrillic}`).join('\n')}`;
-    navigator.clipboard.writeText(allText);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const pronunciation = entry.pronunciationGuide || enrichedPronunciation;
-  const isPronunciationFromAI = !entry.pronunciationGuide && !!enrichedPronunciation;
-  const displayPOS = entry.partOfSpeech || enrichedPartOfSpeech;
-  const isPOSFromAI = !entry.partOfSpeech && !!enrichedPartOfSpeech;
-  const posSuggestion = pendingSuggestions.find(s => s.fieldName === 'partOfSpeech');
-  const pronSuggestion = pendingSuggestions.find(s => s.fieldName === 'pronunciationGuide');
 
   return (
     <div className="p-6 bg-gradient-to-br from-white/10 to-transparent border-b border-white/10 text-white relative">
@@ -87,32 +68,19 @@ const CardHeader: React.FC<CardHeaderProps> = ({
               </span>
             )}
             {/* Part of speech */}
-            {displayPOS ? (
-              isPOSFromAI ? (
-                <AIValueBadge
-                  value={partOfSpeechHebrew(displayPOS)}
-                  entryId={entry.id}
-                  fieldName="partOfSpeech"
-                  valueClassName="text-xs font-medium"
-                  inline
-                />
-              ) : (
-                <span className="inline-flex items-center px-2 py-1 bg-white/20 rounded-md text-xs font-medium backdrop-blur-sm">
-                  {partOfSpeechHebrew(displayPOS)}
-                </span>
-              )
-            ) : (
-              !editingPOS && entry.id && (
-                <button
-                  type="button"
-                  onClick={() => setEditingPOS(true)}
-                  className="inline-flex items-center gap-1 px-2 py-1 border border-dashed border-white/20 rounded-md text-xs text-slate-400 hover:border-indigo-400 hover:text-indigo-300 transition-colors"
-                >
-                  <Pencil size={10} />
-                  הוסף חלק דיבר
-                </button>
-              )
-            )}
+            <EditableField
+              entryId={entry.id}
+              fieldName="partOfSpeech"
+              dbValue={entry.partOfSpeech ? partOfSpeechHebrew(entry.partOfSpeech) : undefined}
+              aiValue={enrichedPartOfSpeech ? partOfSpeechHebrew(enrichedPartOfSpeech) : undefined}
+              isEnriching={enrichmentLoading && !entry.partOfSpeech}
+              pendingSuggestion={pendingSuggestions.find(s => s.fieldName === 'partOfSpeech')}
+              compact
+              valueClassName="text-xs font-medium"
+              isEditing={editingField === 'partOfSpeech'}
+              onStartEdit={() => setEditingField('partOfSpeech')}
+              onCloseEdit={() => setEditingField(null)}
+            />
           </div>
 
           {/* Source attribution */}
@@ -122,46 +90,25 @@ const CardHeader: React.FC<CardHeaderProps> = ({
             <span className="text-[11px] text-slate-400">באדיבות {(entry as any).sourceName || (entry as any).contributorName || 'הקהילה'}</span>
           )}
 
-          {/* POS edit form */}
-          {editingPOS && entry.id && (
-            <FieldEditForm
-              entryId={entry.id}
-              fieldName="partOfSpeech"
-              currentValue={entry.partOfSpeech || ''}
-              onClose={() => setEditingPOS(false)}
-              onSuccess={() => setEditingPOS(false)}
-            />
-          )}
-
           {/* Term */}
           <h2 className="text-4xl font-bold tracking-tight">{entry.term}</h2>
 
           {/* Pronunciation */}
-          {pronunciation ? (
-            isPronunciationFromAI ? (
-              <AIValueBadge
-                value={pronunciation}
-                entryId={entry.id}
-                fieldName="pronunciationGuide"
-                valueClassName="text-indigo-100 font-mono text-sm opacity-90"
-                inline
-              />
-            ) : (
-              <p className="text-indigo-100 font-mono text-sm opacity-90" dir="ltr" style={{ textAlign: 'right' }}>
-                {pronunciation}
-              </p>
-            )
-          ) : (
-            <div className="max-w-xs">
-              <MissingFieldPlaceholder
-                fieldName="pronunciationGuide"
-                entryId={entry.id}
-                pendingSuggestion={pronSuggestion}
-                isEnriching={enrichmentLoading}
-                compact
-              />
-            </div>
-          )}
+          <div className="max-w-xs">
+            <EditableField
+              entryId={entry.id}
+              fieldName="pronunciationGuide"
+              dbValue={entry.pronunciationGuide}
+              aiValue={enrichedPronunciation}
+              isEnriching={enrichmentLoading && !entry.pronunciationGuide}
+              pendingSuggestion={pendingSuggestions.find(s => s.fieldName === 'pronunciationGuide')}
+              compact
+              valueClassName="text-indigo-100 font-mono text-sm opacity-90"
+              isEditing={editingField === 'pronunciationGuide'}
+              onStartEdit={() => setEditingField('pronunciationGuide')}
+              onCloseEdit={() => setEditingField(null)}
+            />
+          </div>
         </div>
 
         {/* Controls */}

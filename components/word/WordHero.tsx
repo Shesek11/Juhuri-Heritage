@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Volume2, Copy, Check, Share2, Settings2, Bot, Users, Pencil, Shield, Star, Info } from 'lucide-react';
+import { Volume2, Copy, Check, Share2, Bot, Users, Pencil, Shield, Star } from 'lucide-react';
 import { DictionaryEntry, PendingSuggestion } from '../../types';
 import { partOfSpeechHebrew } from '../../utils/pos';
 import { generateSpeech } from '../../services/geminiService';
 import { playBase64Audio } from '../../utils/audioUtils';
-import MissingFieldPlaceholder from '../dictionary/MissingFieldPlaceholder';
-import FieldEditForm from '../dictionary/FieldEditForm';
-import AIValueBadge from '../dictionary/AIValueBadge';
+import EditableField from '../dictionary/EditableField';
 import TransliterationGuideModal from '../dictionary/TransliterationGuideModal';
 
 interface WordHeroProps {
@@ -111,10 +109,6 @@ const WordHero: React.FC<WordHeroProps> = ({
     }
   };
 
-  const pronunciation = entry.pronunciationGuide || enrichedPronunciation;
-  const isPronunciationFromAI = !entry.pronunciationGuide && !!enrichedPronunciation;
-  const displayPOS = entry.partOfSpeech || enrichedPartOfSpeech;
-  const isPOSFromAI = !entry.partOfSpeech && !!enrichedPartOfSpeech;
   const pronSuggestion = pendingSuggestions.find(s => s.fieldName === 'pronunciationGuide');
 
   // Trust signals
@@ -155,32 +149,18 @@ const WordHero: React.FC<WordHeroProps> = ({
               <Check size={12} /> מאגר קהילתי
             </span>
           )}
-          {displayPOS ? (
-            isPOSFromAI ? (
-              <AIValueBadge
-                value={partOfSpeechHebrew(displayPOS)}
-                entryId={entry.id}
-                fieldName="partOfSpeech"
-                valueClassName="text-xs font-medium"
-                inline
-              />
-            ) : (
-              <span className="inline-flex items-center px-2 py-1 bg-white/20 rounded-md text-xs font-medium backdrop-blur-sm">
-                {partOfSpeechHebrew(displayPOS)}
-              </span>
-            )
-          ) : (
-            !editingPOS && entry.id && (
-              <button
-                type="button"
-                onClick={() => setEditingPOS(true)}
-                className="inline-flex items-center gap-1 px-2 py-1 border border-dashed border-white/20 rounded-md text-xs text-slate-300 hover:border-indigo-400 hover:text-indigo-300 transition-colors"
-              >
-                <Pencil size={10} />
-                הוסף חלק דיבר
-              </button>
-            )
-          )}
+          <EditableField
+            entryId={entry.id}
+            fieldName="partOfSpeech"
+            dbValue={entry.partOfSpeech ? partOfSpeechHebrew(entry.partOfSpeech) : undefined}
+            aiValue={enrichedPartOfSpeech ? partOfSpeechHebrew(enrichedPartOfSpeech) : undefined}
+            isEnriching={enrichmentLoading && !entry.partOfSpeech}
+            compact
+            valueClassName="text-xs font-medium"
+            isEditing={editingPOS}
+            onStartEdit={() => setEditingPOS(true)}
+            onCloseEdit={() => setEditingPOS(false)}
+          />
           {/* Dialect badge */}
           {currentDialect && currentDialect !== 'General' ? (
             <button
@@ -244,38 +224,20 @@ const WordHero: React.FC<WordHeroProps> = ({
           <span className="text-xs text-slate-300">באדיבות {(entry as any).sourceName || (entry as any).contributorName || 'הקהילה'}</span>
         )}
 
-        {/* POS edit form */}
-        {editingPOS && entry.id && (
-          <FieldEditForm
-            entryId={entry.id}
-            fieldName="partOfSpeech"
-            currentValue={entry.partOfSpeech || ''}
-            onClose={() => setEditingPOS(false)}
-            onSuccess={() => setEditingPOS(false)}
-          />
-        )}
-
         {/* Term - Hebrew script is primary */}
         {/^[\u0590-\u05FF]/.test(entry.term) ? (
           <h1 className="text-5xl md:text-6xl font-bold tracking-tight leading-tight">{entry.term}</h1>
-        ) : enrichedHebrewTransliteration ? (
-          <AIValueBadge
-            value={enrichedHebrewTransliteration}
-            entryId={entry.id}
-            fieldName="hebrewTransliteration"
-            valueClassName="text-5xl md:text-6xl font-bold tracking-tight leading-tight"
-          />
         ) : (
-          /* Term is NOT in Hebrew — single CTA to add Hebrew transliteration */
           <div>
-            {entry.id && (
-              <MissingFieldPlaceholder
-                fieldName="hebrewTransliteration"
-                entryId={entry.id}
-                isEnriching={enrichmentLoading}
-                compact
-              />
-            )}
+            <EditableField
+              entryId={entry.id}
+              fieldName="hebrewTransliteration"
+              aiValue={enrichedHebrewTransliteration}
+              isEnriching={enrichmentLoading && !enrichedHebrewTransliteration}
+              latinHint={entry.translations?.[0]?.latin}
+              compact
+              valueClassName="text-5xl md:text-6xl font-bold tracking-tight leading-tight"
+            />
             {entry.term && (
               <h1 className="text-4xl md:text-5xl font-bold tracking-tight leading-tight font-serif text-slate-200 mt-2" dir="ltr">
                 {entry.term}
@@ -284,73 +246,43 @@ const WordHero: React.FC<WordHeroProps> = ({
           </div>
         )}
 
-        {/* Subtitle: Latin + Cyrillic transliterations + POS */}
+        {/* Subtitle: Latin + Cyrillic transliterations */}
         <div className="flex items-center gap-3 text-base text-indigo-200 flex-wrap">
-          {entry.translations?.[0]?.latin ? (
-            <span className="flex items-center gap-1.5">
-              <span className="text-slate-300 text-xs">תעתיק לטיני:</span>
-              <span className="font-mono" dir="ltr">{entry.translations[0].latin}</span>
-              <button
-                type="button"
-                onClick={() => setShowTranslitGuide(true)}
-                className="text-indigo-400/50 hover:text-indigo-300 transition-colors"
-                title="חוקי התעתיק"
-              >
-                <Info size={12} />
-              </button>
-            </span>
-          ) : entry.id && (
-            <MissingFieldPlaceholder fieldName="latin" entryId={entry.id} compact />
-          )}
+          <span className="flex items-center gap-1.5">
+            <span className="text-slate-300 text-xs">תעתיק לטיני:</span>
+            <EditableField
+              entryId={entry.id}
+              fieldName="latin"
+              dbValue={entry.translations?.[0]?.latin || undefined}
+              compact
+              valueClassName="font-mono text-indigo-200"
+            />
+          </span>
           {entry.translations?.[0]?.cyrillic && (
             <span className="flex items-center gap-1.5">
               <span className="text-slate-300 text-xs">תעתיק קירילי:</span>
               <span className="font-serif" dir="ltr">{entry.translations[0].cyrillic}</span>
             </span>
           )}
-          {/* POS already shown in badges row above — no duplicate here */}
         </div>
 
         {/* Pronunciation */}
-        {pronunciation ? (
-          <div className="flex items-center gap-1.5">
-            <span className="text-slate-300 text-xs">הגייה:</span>
-            {isPronunciationFromAI ? (
-              <AIValueBadge
-                value={pronunciation}
-                entryId={entry.id}
-                fieldName="pronunciationGuide"
-                valueClassName="text-indigo-100 font-mono text-sm opacity-90"
-                inline
-              />
-            ) : (
-              <span className="text-indigo-100 font-mono text-sm opacity-90" dir="ltr">{pronunciation}</span>
-            )}
-          </div>
-        ) : (
-          !editingPronunciation && (
-            <div className="max-w-xs">
-              <MissingFieldPlaceholder
-                fieldName="pronunciationGuide"
-                entryId={entry.id}
-                pendingSuggestion={pronSuggestion}
-                isEnriching={enrichmentLoading}
-                compact
-              />
-            </div>
-          )
-        )}
-
-        {/* Pronunciation edit form */}
-        {editingPronunciation && entry.id && (
-          <FieldEditForm
+        <div className="flex items-center gap-1.5">
+          <span className="text-slate-300 text-xs">הגייה:</span>
+          <EditableField
             entryId={entry.id}
             fieldName="pronunciationGuide"
-            currentValue={entry.pronunciationGuide || ''}
-            onClose={() => setEditingPronunciation(false)}
-            onSuccess={() => setEditingPronunciation(false)}
+            dbValue={entry.pronunciationGuide}
+            aiValue={enrichedPronunciation}
+            isEnriching={enrichmentLoading && !entry.pronunciationGuide}
+            pendingSuggestion={pronSuggestion}
+            compact
+            valueClassName="text-indigo-100 font-mono text-sm opacity-90"
+            isEditing={editingPronunciation}
+            onStartEdit={() => setEditingPronunciation(true)}
+            onCloseEdit={() => setEditingPronunciation(false)}
           />
-        )}
+        </div>
 
         {/* Action buttons row */}
         <div className="flex items-center gap-3 mt-2 flex-wrap">

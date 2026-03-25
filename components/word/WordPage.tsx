@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Sparkles } from 'lucide-react';
-import { DictionaryEntry, Translation, Example, PendingSuggestion } from '../../types';
+import { Sparkles, Copy, GitMerge, Check, X as XIcon } from 'lucide-react';
+import { DictionaryEntry, DuplicatePreview, Translation, Example, PendingSuggestion } from '../../types';
 import { generateSpeech } from '../../services/geminiService';
 import { playBase64Audio } from '../../utils/audioUtils';
 import { useAuth } from '../../contexts/AuthContext';
@@ -223,11 +223,115 @@ const WordPage: React.FC<WordPageProps> = ({
             </div>
           )}
 
+          {/* Possible Duplicates */}
+          {entry.possibleDuplicates && entry.possibleDuplicates.length > 0 && (
+            <div className="border-t border-white/10 pt-6 pb-6">
+              <PossibleDuplicates
+                entry={entry}
+                duplicates={entry.possibleDuplicates}
+                isAuthenticated={isAuthenticated}
+                onOpenAuthModal={onOpenAuthModal}
+              />
+            </div>
+          )}
+
           {/* Community Actions */}
           <div className="border-t border-white/10 pt-6">
             <CommunityActions entry={entry} onOpenAuthModal={onOpenAuthModal} />
           </div>
         </div>
+      </div>
+    </div>
+  );
+};
+
+// ──── Possible Duplicates section ────
+import apiService from '../../services/apiService';
+
+const PossibleDuplicates: React.FC<{
+  entry: DictionaryEntry;
+  duplicates: DuplicatePreview[];
+  isAuthenticated: boolean;
+  onOpenAuthModal: (reason?: string) => void;
+}> = ({ entry, duplicates, isAuthenticated, onOpenAuthModal }) => {
+  const [suggestingId, setSuggestingId] = useState<string | null>(null);
+  const [reason, setReason] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [submitted, setSubmitted] = useState<Set<string>>(new Set());
+
+  const handleSuggest = async (dupId: string) => {
+    if (!isAuthenticated) {
+      onOpenAuthModal('כדי להציע מיזוג ערכים, צריך להתחבר');
+      return;
+    }
+    setSubmitting(true);
+    try {
+      await apiService.post('/dictionary/duplicates/suggest', {
+        entryIdA: parseInt(entry.id || '0'),
+        entryIdB: parseInt(dupId),
+        reason: reason || undefined,
+      });
+      setSubmitted(prev => new Set(prev).add(dupId));
+      setSuggestingId(null);
+      setReason('');
+    } catch { /* ignore */ }
+    setSubmitting(false);
+  };
+
+  return (
+    <div dir="rtl">
+      <h3 className="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
+        <Copy className="w-4 h-4 text-orange-400" />
+        ערכים דומים
+      </h3>
+      <div className="space-y-2">
+        {duplicates.map(dup => (
+          <div key={dup.id} className="flex items-center justify-between bg-slate-800/40 rounded-lg px-3 py-2.5 border border-slate-700/50">
+            <a
+              href={`/word/${encodeURIComponent(dup.term)}`}
+              className="flex items-center gap-3 text-sm hover:text-amber-300 transition-colors"
+              onClick={e => e.stopPropagation()}
+            >
+              <span className="text-white font-medium">{dup.term}</span>
+              {dup.hebrew && <span className="text-slate-400">{dup.hebrew}</span>}
+              {dup.latin && <span className="text-slate-500 text-xs">{dup.latin}</span>}
+            </a>
+            {submitted.has(dup.id) ? (
+              <span className="flex items-center gap-1 text-emerald-400 text-xs"><Check className="w-3.5 h-3.5" /> הצעה נשלחה</span>
+            ) : suggestingId === dup.id ? (
+              <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
+                <input
+                  type="text"
+                  value={reason}
+                  onChange={e => setReason(e.target.value)}
+                  placeholder="סיבה (לא חובה)"
+                  className="px-2 py-1 bg-slate-900 border border-slate-600 rounded text-xs text-white w-28 placeholder-slate-500 focus:outline-none"
+                  dir="rtl"
+                />
+                <button
+                  type="button"
+                  onClick={() => handleSuggest(dup.id)}
+                  disabled={submitting}
+                  className="px-2 py-1 bg-amber-600 text-white rounded text-xs hover:bg-amber-700 disabled:opacity-50"
+                >
+                  {submitting ? '...' : 'שלח'}
+                </button>
+                <button type="button" onClick={() => setSuggestingId(null)} title="ביטול" className="text-slate-500 hover:text-white">
+                  <XIcon className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); setSuggestingId(dup.id); }}
+                className="flex items-center gap-1 text-orange-300/70 hover:text-orange-300 text-xs transition-colors"
+              >
+                <GitMerge className="w-3.5 h-3.5" />
+                הצע מיזוג
+              </button>
+            )}
+          </div>
+        ))}
       </div>
     </div>
   );

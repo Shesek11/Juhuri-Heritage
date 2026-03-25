@@ -24,7 +24,7 @@ const ContributeModal = lazy(() => import('../ContributeModal'));
 const ProfileModal = lazy(() => import('../ProfileModal'));
 const TranslationModal = lazy(() => import('../TranslationModal'));
 const WordListModal = lazy(() => import('../WordListModal'));
-const AdminDashboard = lazy(() => import('../AdminDashboard'));
+// AdminDashboard removed — admin is now at /admin route
 
 const LazyFallback = () => (
   <div className="flex items-center justify-center p-12">
@@ -127,15 +127,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   // UI State
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [isContributeOpen, setIsContributeOpen] = useState(false);
-  const isAdminHash = (hash: string) =>
-    hash.startsWith('dict_') || hash.startsWith('gen_') || hash.startsWith('seo_') || hash.startsWith('recipe_') || hash.startsWith('family_') || hash.startsWith('market_');
-
-  const [isAdminOpen, setIsAdminOpen] = useState(() => {
-    if (typeof window !== 'undefined' && window.location.hash) {
-      return isAdminHash(window.location.hash.slice(1));
-    }
-    return false;
-  });
+  // Admin is now a route (/admin/*), no modal state needed
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
 
@@ -199,39 +191,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     init();
   }, []);
 
-  // Sync admin open/close with URL hash
-  const openAdmin = (section?: string) => {
-    const hash = section || 'dict_active';
-    window.history.pushState(null, '', `#${hash}`);
-    setIsAdminOpen(true);
-  };
-
-  const closeAdmin = () => {
-    setIsAdminOpen(false);
-    // Replace current hash entry so Back doesn't re-open admin
-    window.history.replaceState(null, '', window.location.pathname + window.location.search);
-  };
-
-  // Listen for browser Back/Forward — close admin when hash leaves admin scope
+  // Reload dialects when navigating away from admin
   useEffect(() => {
-    const onPopState = () => {
-      const hash = window.location.hash.slice(1);
-      if (hash && isAdminHash(hash)) {
-        setIsAdminOpen(true);
-      } else {
-        setIsAdminOpen(false);
-      }
-    };
-    window.addEventListener('popstate', onPopState);
-    return () => window.removeEventListener('popstate', onPopState);
-  }, []);
-
-  // Reload dialects when admin closes
-  useEffect(() => {
-    if (!isAdminOpen) {
+    if (!pathname.startsWith('/admin')) {
       getDialects().then(setDialects).catch(console.error);
     }
-  }, [isAdminOpen]);
+  }, [pathname]);
 
   // Update theme class
   useEffect(() => {
@@ -267,6 +232,16 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   const isHomePage = pathname === '/';
   const isFullScreenPage = pathname === '/';
+  const isAdminPage = pathname.startsWith('/admin');
+
+  // Admin pages have their own full layout — skip AppShell chrome
+  if (isAdminPage) {
+    return (
+      <AppContext.Provider value={appContextValue}>
+        {children}
+      </AppContext.Provider>
+    );
+  }
 
   return (
     <AppContext.Provider value={appContextValue}>
@@ -387,13 +362,14 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
                       {/* Admin */}
                       {user && (user.role === 'admin' || user.role === 'approver') && (
-                        <button
-                          onClick={() => { openAdmin(); setIsMenuOpen(false); }}
+                        <Link
+                          href="/admin"
+                          onClick={() => setIsMenuOpen(false)}
                           className="w-full text-right px-3 py-2 text-sm text-purple-300 hover:bg-purple-500/10 flex items-center gap-2"
                         >
                           <LayoutDashboard size={14} />
                           ממשק ניהול
-                        </button>
+                        </Link>
                       )}
 
                       {/* Mobile Theme */}
@@ -464,11 +440,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         <Suspense fallback={null}>
           <ContributeModal isOpen={isContributeOpen} onClose={() => setIsContributeOpen(false)} user={user} />
         </Suspense>
-        {isAdminOpen && user && (
-          <Suspense fallback={<LazyFallback />}>
-            <AdminDashboard user={user} onClose={closeAdmin} />
-          </Suspense>
-        )}
         <AuthModal
           isOpen={isAuthModalOpen}
           onClose={() => { setIsAuthModalOpen(false); setAuthModalReason(undefined); }}

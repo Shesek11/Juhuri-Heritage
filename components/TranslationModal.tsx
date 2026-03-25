@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import FocusTrap from 'focus-trap-react';
 import { X, Loader2, Send, Mic, Square, Play, Pause, RotateCcw } from 'lucide-react';
 import apiService from '../services/apiService';
+import DictionaryInput from './dictionary/inputs/DictionaryInput';
 
 interface ExistingTranslation {
     id?: number;
@@ -201,26 +202,26 @@ const TranslationModal: React.FC<TranslationModalProps> = ({ entryId, term, onCl
                         {/* Term (Hebrew transliteration) */}
                         <div>
                             <label className="block text-sm font-medium mb-1 text-slate-300">תעתיק עברי (term)</label>
-                            <input
-                                type="text"
+                            <DictionaryInput
+                                fieldName="term"
                                 value={termField}
-                                onChange={(e) => setTermField(e.target.value)}
-                                className="w-full p-2.5 border border-white/10 rounded-lg bg-white/5 text-white placeholder-slate-500"
+                                onChange={setTermField}
+                                latinHint={latin}
                                 placeholder="הזן תעתיק עברי..."
-                                dir="rtl"
+                                className="w-full p-2.5 border border-white/10 rounded-lg bg-white/5 text-white placeholder-slate-500"
                             />
                         </div>
 
                         {/* Hebrew translation */}
                         <div>
                             <label className="block text-sm font-medium mb-1 text-slate-300">תרגום בעברית</label>
-                            <input
-                                type="text"
+                            <DictionaryInput
+                                fieldName="hebrew"
                                 value={hebrew}
-                                onChange={(e) => setHebrew(e.target.value)}
-                                className="w-full p-2.5 border border-white/10 rounded-lg bg-white/5 text-white placeholder-slate-500"
+                                onChange={setHebrew}
+                                latinHint={latin}
                                 placeholder="הזן תרגום בעברית..."
-                                dir="rtl"
+                                className="w-full p-2.5 border border-white/10 rounded-lg bg-white/5 text-white placeholder-slate-500"
                             />
                         </div>
 
@@ -228,24 +229,22 @@ const TranslationModal: React.FC<TranslationModalProps> = ({ entryId, term, onCl
                         <div className="grid grid-cols-2 gap-3">
                             <div>
                                 <label className="block text-sm font-medium mb-1 text-slate-300">תעתיק לטיני</label>
-                                <input
-                                    type="text"
+                                <DictionaryInput
+                                    fieldName="latin"
                                     value={latin}
-                                    onChange={(e) => setLatin(e.target.value)}
-                                    className="w-full p-2.5 border border-white/10 rounded-lg bg-white/5 text-white placeholder-slate-500"
+                                    onChange={setLatin}
                                     placeholder="Latin..."
-                                    dir="ltr"
+                                    className="w-full p-2.5 border border-white/10 rounded-lg bg-white/5 text-white placeholder-slate-500"
                                 />
                             </div>
                             <div>
                                 <label className="block text-sm font-medium mb-1 text-slate-300">קירילית</label>
-                                <input
-                                    type="text"
+                                <DictionaryInput
+                                    fieldName="cyrillic"
                                     value={cyrillic}
-                                    onChange={(e) => setCyrillic(e.target.value)}
-                                    className="w-full p-2.5 border border-white/10 rounded-lg bg-white/5 text-white placeholder-slate-500"
+                                    onChange={setCyrillic}
                                     placeholder="Кириллица..."
-                                    dir="ltr"
+                                    className="w-full p-2.5 border border-white/10 rounded-lg bg-white/5 text-white placeholder-slate-500"
                                 />
                             </div>
                         </div>

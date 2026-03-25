@@ -24,6 +24,7 @@
     "family-chart": "^0.9.0",
     "focus-trap-react": "^12.0.0",
     "googleapis": "^171.4.0",
+    "jose": "^6.2.2",
     "jsonwebtoken": "^9.0.2",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.562.0",

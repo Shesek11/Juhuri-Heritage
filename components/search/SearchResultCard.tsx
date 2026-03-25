@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, ThumbsUp, AlertTriangle, Shield, Users, Sparkles, Star, Plus } from 'lucide-react';
+import { ArrowLeft, ThumbsUp, AlertTriangle, Shield, Users, Sparkles, Star, Plus, Copy } from 'lucide-react';
 import { DictionaryEntry } from '../../types';
 import { partOfSpeechHebrew } from '../../utils/pos';
 import apiService from '../../services/apiService';
@@ -11,6 +11,7 @@ interface SearchResultCardProps {
   searchQuery: string;
   onReport: () => void;
   onNavigate: () => void;
+  onSuggestMerge?: (entry: DictionaryEntry) => void;
 }
 
 const verificationConfig: Record<string, { icon: React.ReactNode; label: string; color: string }> = {
@@ -23,7 +24,7 @@ const verificationConfig: Record<string, { icon: React.ReactNode; label: string;
 const isHebrew = (s: string) => /^[\u0590-\u05FF]/.test(s);
 const isCyrillic = (s: string) => /^[\u0400-\u04FF]/.test(s);
 
-const SearchResultCard: React.FC<SearchResultCardProps> = ({ entry, isBestMatch, searchQuery, onReport, onNavigate }) => {
+const SearchResultCard: React.FC<SearchResultCardProps> = ({ entry, isBestMatch, searchQuery, onReport, onNavigate, onSuggestMerge }) => {
   const { isAuthenticated } = useAuth();
   const [upvoted, setUpvoted] = useState(false);
   const [upvoteCount, setUpvoteCount] = useState(entry.translations[0]?.upvotes || 0);
@@ -162,6 +163,16 @@ const SearchResultCard: React.FC<SearchResultCardProps> = ({ entry, isBestMatch,
           <AlertTriangle className="w-3.5 h-3.5" />
           <span>לא מדויק</span>
         </button>
+
+        {entry.hasDuplicates && onSuggestMerge && (
+          <button
+            onClick={(e) => { e.stopPropagation(); onSuggestMerge(entry); }}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-orange-300/70 hover:bg-orange-500/10 rounded-lg text-xs transition-colors border border-transparent"
+          >
+            <Copy className="w-3 h-3" />
+            <span>נראה כפול?</span>
+          </button>
+        )}
 
         <button
           onClick={(e) => { e.stopPropagation(); onNavigate(); }}

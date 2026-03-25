@@ -1,11 +1,8 @@
 import React, { useState } from 'react';
-import { ThumbsUp, ThumbsDown, Pencil, Plus, Edit3, Volume2 } from 'lucide-react';
+import { ThumbsUp, ThumbsDown, Plus, Edit3, Volume2 } from 'lucide-react';
 import { Translation, DictionaryEntry, PendingSuggestion } from '../../types';
-import FieldSourceBadge from '../dictionary/FieldSourceBadge';
-import ConfirmAiButton from '../dictionary/ConfirmAiButton';
-import FieldEditForm from '../dictionary/FieldEditForm';
-import MissingFieldPlaceholder from '../dictionary/MissingFieldPlaceholder';
-import AIValueBadge from '../dictionary/AIValueBadge';
+import EditableField from '../dictionary/EditableField';
+
 interface EnrichmentData {
   hebrew?: string;
   latin?: string;
@@ -41,26 +38,14 @@ const DialectComparison: React.FC<DialectComparisonProps> = ({
 
   const latinSuggestion = pendingSuggestions.find(s => s.fieldName === 'latin');
   const cyrillicSuggestion = pendingSuggestions.find(s => s.fieldName === 'cyrillic');
-  const hebrewSuggestion = pendingSuggestions.find(s => s.fieldName === 'hebrew');
 
   // Primary translation (first one) for the large Hebrew/Russian display
   const primary = translations[0];
-  const displayHebrew = primary?.hebrew;
-  const displayRussian = entry.russian;
-
-  // Group translations by dialect
-  const dialects = translations.map((t, idx) => {
-    const displayLatin = t.latin || enrichmentData?.latin;
-    const displayCyrillic = t.cyrillic || enrichmentData?.cyrillic;
-    const isLatinFromAI = !t.latin && !!enrichmentData?.latin;
-    const isCyrillicFromAI = !t.cyrillic && !!enrichmentData?.cyrillic;
-    return { ...t, idx, displayLatin, displayCyrillic, isLatinFromAI, isCyrillicFromAI };
-  });
 
   return (
     <div>
       {/* Dialects table */}
-      {dialects.length > 0 && (
+      {translations.length > 0 && (
         <div>
           <h3 className="text-sm uppercase tracking-wider text-slate-300 dark:text-slate-300 font-bold mb-3">
             ניבים
@@ -78,108 +63,60 @@ const DialectComparison: React.FC<DialectComparisonProps> = ({
                 </tr>
               </thead>
               <tbody>
-                {dialects.map((d) => {
-                  const voteData = d.id ? translationVotes[d.id] : null;
+                {translations.map((t, idx) => {
+                  const voteData = t.id ? translationVotes[t.id] : null;
                   return (
-                    <tr key={d.id || d.idx} className="border-b border-white/5 hover:bg-white/5 transition-colors group/row">
+                    <tr key={t.id || idx} className="border-b border-white/5 hover:bg-white/5 transition-colors group/row">
                       {/* Dialect name */}
                       <td className="py-3 px-3">
                         <span className="text-indigo-400 font-bold text-xs bg-indigo-900/30 px-1.5 py-0.5 rounded">
-                          {d.dialect && d.dialect !== 'לא ידוע' && d.dialect !== 'General' ? d.dialect : '-'}
+                          {t.dialect && t.dialect !== 'לא ידוע' && t.dialect !== 'General' ? t.dialect : '-'}
                         </span>
                       </td>
 
                       {/* Latin */}
                       <td className="py-3 px-3">
-                        {d.displayLatin ? (
-                          d.isLatinFromAI ? (
-                            <AIValueBadge
-                              value={d.displayLatin}
-                              entryId={entry.id}
-                              fieldName="latin"
-                              valueClassName="font-mono text-slate-300"
-                              inline
-                            />
-                          ) : (
-                            <div className="flex items-center gap-1 font-mono text-slate-300">
-                              <FieldSourceBadge source={entry.fieldSources?.latin} />
-                              <span>{d.displayLatin}</span>
-                              <ConfirmAiButton entryId={entry.id} fieldName="latin" value={d.displayLatin} source={entry.fieldSources?.latin} />
-                              {entry.id && (
-                                <button
-                                  type="button"
-                                  onClick={() => setEditingField(`latin-${d.idx}`)}
-                                  className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[11px] font-medium bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-200 dark:hover:bg-indigo-800/40 transition-colors"
-                                  title="ערוך לטיני"
-                                >
-                                  <Pencil size={10} />
-                                </button>
-                              )}
-                            </div>
-                          )
-                        ) : (
-                          <MissingFieldPlaceholder
-                            fieldName="latin"
-                            entryId={entry.id}
-                            pendingSuggestion={latinSuggestion}
-                            isEnriching={enrichmentLoading && !d.latin}
-                            compact
-                          />
-                        )}
-                        {editingField === `latin-${d.idx}` && entry.id && (
-                          <FieldEditForm entryId={entry.id} fieldName="latin" currentValue={d.latin || ''} onClose={() => setEditingField(null)} onSuccess={() => setEditingField(null)} />
-                        )}
+                        <EditableField
+                          entryId={entry.id}
+                          fieldName="latin"
+                          dbValue={t.latin || undefined}
+                          aiValue={!t.latin ? enrichmentData?.latin : undefined}
+                          isEnriching={enrichmentLoading && !t.latin}
+                          pendingSuggestion={latinSuggestion}
+                          fieldSource={entry.fieldSources?.latin}
+                          compact
+                          valueClassName="font-mono text-slate-300"
+                          isEditing={editingField === `latin-${idx}`}
+                          onStartEdit={() => setEditingField(`latin-${idx}`)}
+                          onCloseEdit={() => setEditingField(null)}
+                        />
                       </td>
 
                       {/* Cyrillic */}
                       <td className="py-3 px-3">
-                        {d.displayCyrillic ? (
-                          d.isCyrillicFromAI ? (
-                            <AIValueBadge
-                              value={d.displayCyrillic}
-                              entryId={entry.id}
-                              fieldName="cyrillic"
-                              valueClassName="font-serif text-slate-300"
-                              inline
-                            />
-                          ) : (
-                            <div className="flex items-center gap-1 font-serif text-slate-300">
-                              <FieldSourceBadge source={entry.fieldSources?.cyrillic} />
-                              <span>{d.displayCyrillic}</span>
-                              <ConfirmAiButton entryId={entry.id} fieldName="cyrillic" value={d.displayCyrillic} source={entry.fieldSources?.cyrillic} />
-                              {entry.id && (
-                                <button
-                                  type="button"
-                                  onClick={() => setEditingField(`cyrillic-${d.idx}`)}
-                                  className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[11px] font-medium bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-200 dark:hover:bg-indigo-800/40 transition-colors"
-                                  title="ערוך קירילי"
-                                >
-                                  <Pencil size={10} />
-                                </button>
-                              )}
-                            </div>
-                          )
-                        ) : (
-                          <MissingFieldPlaceholder
-                            fieldName="cyrillic"
-                            entryId={entry.id}
-                            pendingSuggestion={cyrillicSuggestion}
-                            isEnriching={enrichmentLoading && !d.cyrillic}
-                            compact
-                          />
-                        )}
-                        {editingField === `cyrillic-${d.idx}` && entry.id && (
-                          <FieldEditForm entryId={entry.id} fieldName="cyrillic" currentValue={d.cyrillic || ''} onClose={() => setEditingField(null)} onSuccess={() => setEditingField(null)} />
-                        )}
+                        <EditableField
+                          entryId={entry.id}
+                          fieldName="cyrillic"
+                          dbValue={t.cyrillic || undefined}
+                          aiValue={!t.cyrillic ? enrichmentData?.cyrillic : undefined}
+                          isEnriching={enrichmentLoading && !t.cyrillic}
+                          pendingSuggestion={cyrillicSuggestion}
+                          fieldSource={entry.fieldSources?.cyrillic}
+                          compact
+                          valueClassName="font-serif text-slate-300"
+                          isEditing={editingField === `cyrillic-${idx}`}
+                          onStartEdit={() => setEditingField(`cyrillic-${idx}`)}
+                          onCloseEdit={() => setEditingField(null)}
+                        />
                       </td>
 
                       {/* Votes */}
                       <td className="py-3 px-3">
-                        {d.id && (
+                        {t.id && (
                           <div className="flex items-center gap-1">
                             <button
                               type="button"
-                              onClick={() => onVote(d.id!, 'up')}
+                              onClick={() => onVote(t.id!, 'up')}
                               className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs transition-all ${
                                 voteData?.userVote === 'up'
                                   ? 'bg-green-900/30 text-green-400'
@@ -192,7 +129,7 @@ const DialectComparison: React.FC<DialectComparisonProps> = ({
                             </button>
                             <button
                               type="button"
-                              onClick={() => onVote(d.id!, 'down')}
+                              onClick={() => onVote(t.id!, 'down')}
                               className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs transition-all ${
                                 voteData?.userVote === 'down'
                                   ? 'bg-red-900/30 text-red-400'
@@ -212,8 +149,8 @@ const DialectComparison: React.FC<DialectComparisonProps> = ({
                         <div className="flex items-center gap-1">
                           <button
                             type="button"
-                            onClick={() => onPlay(d.cyrillic || d.latin || d.hebrew, `dialect-${d.idx}`)}
-                            className={`p-1.5 rounded-full text-slate-300 hover:text-indigo-400 transition-colors ${isPlaying === `dialect-${d.idx}` ? 'text-indigo-400 animate-pulse' : ''}`}
+                            onClick={() => onPlay(t.cyrillic || t.latin || t.hebrew, `dialect-${idx}`)}
+                            className={`p-1.5 rounded-full text-slate-300 hover:text-indigo-400 transition-colors ${isPlaying === `dialect-${idx}` ? 'text-indigo-400 animate-pulse' : ''}`}
                             title="השמע"
                           >
                             <Volume2 size={14} />
@@ -221,7 +158,7 @@ const DialectComparison: React.FC<DialectComparisonProps> = ({
                           {entry.id && (
                             <button
                               type="button"
-                              onClick={() => onSuggestCorrection?.(d, entry.id!, entry.term)}
+                              onClick={() => onSuggestCorrection?.(t, entry.id!, entry.term)}
                               className="p-1.5 rounded-full text-slate-300 hover:text-amber-400 transition-colors"
                               title="הצע תיקון"
                             >

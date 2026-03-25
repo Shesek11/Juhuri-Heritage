@@ -8,6 +8,7 @@ const SECTION_DESCRIPTIONS: Record<string, string> = {
     dict_pending: 'הצעות תרגום ותיקוני שדות שממתינים לאישור מנהל.',
     dict_ai: 'שדות שמולאו אוטומטית על ידי AI. בחר ואשר כדי להפוך לתוכן קהילתי מאושר.',
     dict_dialects: 'ניהול רשימת הניבים (דיאלקטים) הזמינים במילון.',
+    dict_duplicates: 'זיהוי ומיזוג ערכים כפולים במילון. בחר זוג ערכים והחלט אילו שדות לשמור.',
     gen_users: 'ניהול משתמשים, שינוי תפקידים ואיפוס סיסמאות.',
     gen_logs: 'יומן אירועים מהמערכת: כניסות, שינויים, שגיאות.',
     gen_features: 'הפעלה/כיבוי של פיצ\'רים באתר. שינויים חלים מיד.',
@@ -37,6 +38,7 @@ import AdminFamilyPanel from './admin/AdminFamilyPanel';
 import AdminMarketplacePanel from './admin/AdminMarketplacePanel';
 import AdminSEOPanel from './admin/AdminSEOPanel';
 import AdminAnalyticsPanel from './admin/AdminAnalyticsPanel';
+import AdminDuplicatesPanel from './admin/AdminDuplicatesPanel';
 import { getCustomEntries, addCustomEntry, deleteCustomEntry, approveEntry, downloadTemplate, getDialects, addDialect, deleteDialect, getSystemLogs } from '../services/storageService';
 import { generateBatchEntries } from '../services/geminiService';
 import { getAllUsers, updateUserRole, deleteUser, updateUser } from '../services/authService';
@@ -324,7 +326,8 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                 { id: 'dict_active', label: 'מאגר פעיל' },
                 { id: 'dict_pending', label: 'אישורים', badge: pendingEntries.length },
                 { id: 'dict_ai', label: 'אישור AI' },
-                { id: 'dict_dialects', label: 'ניהול ניבים' }
+                { id: 'dict_dialects', label: 'ניהול ניבים' },
+                { id: 'dict_duplicates', label: 'כפילויות' }
             ]
         },
         {
@@ -721,7 +724,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                 <div className="max-w-7xl mx-auto flex justify-between items-center">
                     <div className="flex items-center gap-3">
                         <Database className="text-amber-400" />
-                        <h1 className="text-xl font-bold">שביבלן - ממשק ניהול</h1>
+                        <h1 className="text-xl font-bold">ממשק ניהול</h1>
                         <span className="text-sm text-slate-400">({user.name} - {user.role})</span>
                     </div>
                     <button onClick={onClose} className="text-sm bg-slate-800 hover:bg-slate-700 px-3 py-1.5 rounded transition-colors">יציאה לאתר</button>
@@ -1376,6 +1379,17 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                         </table>
                                     </div>
                                 </div>
+                            </div>
+                        )}
+
+                        {/* Dictionary: Duplicates Management */}
+                        {activeSection === 'dict_duplicates' && isAdmin && (
+                            <div className="flex-1 flex flex-col max-w-5xl">
+                                <h2 className="text-2xl font-bold text-white mb-4 flex items-center gap-2">
+                                    <Database size={24} className="text-amber-500" />
+                                    ניהול כפילויות
+                                </h2>
+                                <AdminDuplicatesPanel />
                             </div>
                         )}
 

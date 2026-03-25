@@ -4,6 +4,7 @@ import FocusTrap from 'focus-trap-react';
 import { CheckCircle, Edit3, Loader2, X as XIcon, Sparkles } from 'lucide-react';
 import apiService from '../../services/apiService';
 import { FIELD_LABELS } from '../../utils/fieldLabels';
+import DictionaryInput from './inputs/DictionaryInput';
 
 interface AIConfirmModalProps {
   entryId: string;
@@ -141,14 +142,12 @@ const AIConfirmModal: React.FC<AIConfirmModalProps> = ({
         ) : (
           /* Correct mode */
           <form onSubmit={handleCorrect} className="space-y-3">
-            <input
-              type="text"
+            <DictionaryInput
+              fieldName={fieldName}
               value={correctedValue}
-              onChange={(e) => setCorrectedValue(e.target.value)}
+              onChange={setCorrectedValue}
               placeholder="הערך הנכון..."
-              required
               autoFocus
-              dir="auto"
               className="w-full px-3 py-2 text-sm rounded-lg border border-slate-600 bg-white/5 text-white focus:ring-2 focus:ring-indigo-500 outline-none"
             />
             <input
