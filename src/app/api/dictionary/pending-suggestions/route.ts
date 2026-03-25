@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/src/lib/db';
+import { requireApprover } from '@/src/lib/auth';
 
 export async function GET(request: NextRequest) {
   try {
+    await requireApprover(request);
     const limit = parseInt(request.nextUrl.searchParams.get('limit') || '50') || 50;
     const [suggestions] = await pool.query(
       `SELECT ts.id, ts.entry_id, ts.dialect, ts.suggested_hebrew, ts.suggested_latin,

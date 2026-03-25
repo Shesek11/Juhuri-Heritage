@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/src/lib/db';
 import { getAuthUser } from '@/src/lib/auth';
+import { applyRateLimit } from '@/src/lib/rate-limit';
+
+const ADD_WORD_LIMIT = { windowMs: 15 * 60 * 1000, max: 5, message: 'יותר מדי בקשות, נסה שוב בעוד 15 דקות' };
 
 export async function POST(request: NextRequest) {
   try {
+    const limited = applyRateLimit(request, ADD_WORD_LIMIT);
+    if (limited) return limited;
+
     const { term } = await request.json();
 
     if (!term || !term.trim()) {
