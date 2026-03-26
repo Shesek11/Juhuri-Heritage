@@ -42,9 +42,12 @@ ssh "$SSH_HOST" "
   true
 "
 
+# Stop PM2 before upload to prevent crash loops during file replacement
+ssh "$SSH_HOST" "pm2 delete $PM2_NAME 2>/dev/null || true"
+
 tar czf - -C .next/standalone --exclude='.env*' . | ssh "$SSH_HOST" "
   cd $REMOTE_PATH &&
-  rm -rf .next node_modules &&
+  rm -rf .next node_modules server.js &&
   tar xzf -
 "
 echo "      Upload done ($(( SECONDS - START_TIME ))s)"
@@ -61,13 +64,12 @@ RESULT=$(ssh "$SSH_HOST" "
   # Uploads symlink
   [ -d uploads ] || ln -sf /var/www/jun-juhuri.com/uploads uploads
 
-  # Restart PM2
-  pm2 delete $PM2_NAME 2>/dev/null || true
+  # Start PM2 fresh
   PORT=5000 pm2 start server.js --name $PM2_NAME --cwd $REMOTE_PATH
   pm2 save
 
   # Wait and verify
-  sleep 2
+  sleep 4
   HTTP_CODE=\$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 http://localhost:5000/)
   echo \"HTTP:\$HTTP_CODE\"
 ")
