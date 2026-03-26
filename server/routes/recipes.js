@@ -14,12 +14,15 @@ router.get('/', async (req, res) => {
                    u.name as author_name,
                    u.avatar as author_avatar,
                    d.name as region_name,
-                   (SELECT url FROM recipe_photos WHERE recipe_id = r.id AND is_main = 1 LIMIT 1) as main_photo,
-                   (SELECT COUNT(*) FROM recipe_likes WHERE recipe_id = r.id) as like_count,
-                   (SELECT COUNT(*) FROM recipe_comments WHERE recipe_id = r.id) as comment_count
+                   rp.url as main_photo,
+                   COALESCE(rl.like_count, 0) as like_count,
+                   COALESCE(rc.comment_count, 0) as comment_count
             FROM recipes r
             LEFT JOIN users u ON r.user_id = u.id
             LEFT JOIN dialects d ON r.region_id = d.id
+            LEFT JOIN recipe_photos rp ON rp.recipe_id = r.id AND rp.is_main = 1
+            LEFT JOIN (SELECT recipe_id, COUNT(*) as like_count FROM recipe_likes GROUP BY recipe_id) rl ON rl.recipe_id = r.id
+            LEFT JOIN (SELECT recipe_id, COUNT(*) as comment_count FROM recipe_comments GROUP BY recipe_id) rc ON rc.recipe_id = r.id
             WHERE r.is_approved = 1
         `;
 

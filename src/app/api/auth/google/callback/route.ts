@@ -93,7 +93,10 @@ export async function GET(request: NextRequest) {
     let returnPath = '/';
     try {
       const decoded = Buffer.from(rawState, 'base64url').toString();
-      if (decoded.startsWith('/')) returnPath = decoded;
+      // Must start with / but NOT // (prevents open redirect to //evil.com)
+      if (decoded.startsWith('/') && !decoded.startsWith('//') && !decoded.includes('://')) {
+        returnPath = decoded;
+      }
     } catch {};
     const separator = returnPath.includes('?') ? '&' : '?';
     const response = NextResponse.redirect(`${SITE_URL}${returnPath}${separator}login=success`);

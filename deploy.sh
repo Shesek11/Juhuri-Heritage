@@ -15,6 +15,10 @@ START_TIME=$SECONDS
 
 echo "=== Deploy started ==="
 
+# 0. Security check
+echo "[0/3] Running security audit..."
+npm audit --production --audit-level=high 2>/dev/null || echo "WARN: npm audit found issues (non-blocking)"
+
 # 1. Build
 echo "[1/3] Building Next.js..."
 npx next build

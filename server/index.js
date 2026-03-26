@@ -123,6 +123,14 @@ app.use(passport.initialize());
 
 // --- API Routes (with specific rate limiters) ---
 app.use('/api/auth', authLimiter, require('./routes/auth'));
+const searchLimiter = rateLimit({
+    windowMs: 1 * 60 * 1000,
+    max: 30,
+    message: { error: 'יותר מדי חיפושים, נסה שוב בעוד דקה' },
+    standardHeaders: true,
+    legacyHeaders: false,
+});
+app.use('/api/dictionary/search', searchLimiter);
 app.use('/api/dictionary', require('./routes/dictionary'));
 app.use('/api/dialects', require('./routes/dialects'));
 app.use('/api/users', require('./routes/users'));
@@ -670,10 +678,18 @@ if (process.env.NODE_ENV === 'production') {
 app.use((err, req, res, next) => {
     console.error('Server Error:', err.message);
 
-    // Async file logging (non-blocking)
+    // Async file logging (non-blocking, with size cap)
     const logEntry = `${new Date().toISOString()} - ${err.message}\n${err.stack}\n\n`;
-    fs.appendFile('server_error.log', logEntry, (writeErr) => {
-        if (writeErr) console.error('Failed to write error log:', writeErr.message);
+    const LOG_FILE = 'server_error.log';
+    const MAX_LOG_SIZE = 10 * 1024 * 1024; // 10MB
+    fs.stat(LOG_FILE, (statErr, stats) => {
+        if (!statErr && stats.size > MAX_LOG_SIZE) {
+            fs.rename(LOG_FILE, `server_error.${Date.now()}.log`, () => {
+                fs.appendFile(LOG_FILE, logEntry, () => {});
+            });
+        } else {
+            fs.appendFile(LOG_FILE, logEntry, () => {});
+        }
     });
 
     res.status(500).json({
@@ -723,5 +739,20 @@ const gracefulShutdown = (signal) => {
 
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
+
+// --- Crash Protection ---
+process.on('unhandledRejection', (reason, promise) => {
+    console.error('Unhandled Rejection:', reason);
+    const logEntry = `${new Date().toISOString()} - UNHANDLED_REJECTION: ${reason?.stack || reason}\n\n`;
+    fs.appendFile('server_error.log', logEntry, () => {});
+});
+
+process.on('uncaughtException', (err) => {
+    console.error('Uncaught Exception:', err);
+    const logEntry = `${new Date().toISOString()} - UNCAUGHT_EXCEPTION: ${err.stack}\n\n`;
+    fs.appendFileSync('server_error.log', logEntry);
+    // Give time to flush logs, then exit (PM2 will restart)
+    setTimeout(() => process.exit(1), 1000);
+});
 
 module.exports = app;
