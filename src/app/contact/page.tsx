@@ -1,13 +1,11 @@
-'use client';
+import type { Metadata } from 'next';
+import ContactClient from './ContactClient';
 
-import { Suspense, lazy } from 'react';
-
-const ContactPage = lazy(() => import('../../../components/ContactPage'));
+export const metadata: Metadata = {
+  title: 'צור קשר',
+  description: 'צרו קשר עם צוות מורשת ג׳והורי — שאלות, הצעות, שיתופי פעולה',
+};
 
 export default function Contact() {
-  return (
-    <Suspense fallback={<div className="flex items-center justify-center p-12"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-amber-500" /></div>}>
-      <ContactPage />
-    </Suspense>
-  );
+  return <ContactClient />;
 }

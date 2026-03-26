@@ -31,31 +31,31 @@ const DEFAULT_META: Record<string, MetaTemplate> = {
     description: "מילון ג'והורי-עברי אינטראקטיבי לשימור שפת יהודי ההרים",
   },
   word: {
-    titleTemplate: '{term} — תרגום ג\'והורי | מורשת ג\'והורי',
+    titleTemplate: '{term} — תרגום ג\'והורי',
     description: 'הגדרה ותרגום של "{term}" במילון הג\'והורי-עברי',
   },
   recipes: {
-    titleTemplate: 'מתכונים קווקזיים מסורתיים | מורשת ג\'והורי',
+    titleTemplate: 'מתכונים קווקזיים מסורתיים',
     description: 'אוסף מתכונים אותנטיים מהמטבח הג\'והורי והקווקזי-יהודי',
   },
   recipe: {
-    titleTemplate: '{title} | מורשת ג\'והורי',
+    titleTemplate: '{title}',
     description: 'מתכון מסורתי: {title}',
   },
   marketplace: {
-    titleTemplate: 'שוק קהילתי | מורשת ג\'והורי',
+    titleTemplate: 'שוק קהילתי',
     description: 'שוק האוכל הג\'והורי — מצאו בשלנים ומאכלים קווקזיים אותנטיים',
   },
   vendor: {
-    titleTemplate: '{name} | מורשת ג\'והורי',
+    titleTemplate: '{name}',
     description: '{name} בשוק הקהילתי',
   },
   tutor: {
-    titleTemplate: 'מורה פרטי AI | מורשת ג\'והורי',
+    titleTemplate: 'מורה פרטי AI',
     description: 'למד ג\'והורי עם מורה פרטי מבוסס AI',
   },
   family: {
-    titleTemplate: 'שורשים — רשת קהילתית | מורשת ג\'והורי',
+    titleTemplate: 'שורשים — רשת קהילתית',
     description: 'גלה את הקשרים בין משפחות הקהילה הג\'והורית',
   },
 };
