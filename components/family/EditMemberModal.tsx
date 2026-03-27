@@ -411,10 +411,10 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
     const countryListRu = ['Израиль', 'Россия', 'Азербайджан', 'Грузия', 'США', 'Германия', 'Австрия', 'Франция', 'Узбекистан', 'Дагестан', 'Украина', 'Канада', 'Австралия', 'Великобритания'];
 
     return createPortal(
-        <div className="fixed inset-0 z-[9999] bg-black/60 flex items-start md:items-center justify-center pt-20 md:pt-4 px-4 pb-20 md:pb-4 backdrop-blur-sm overflow-y-auto" onClick={onClose}>
+        <div className="fixed inset-0 z-[9999] bg-black/60 flex items-center justify-center backdrop-blur-sm" onClick={onClose}>
             <datalist id="countries-he">{countryList.map(c => <option key={c} value={c} />)}</datalist>
             <datalist id="countries-ru">{countryListRu.map(c => <option key={c} value={c} />)}</datalist>
-            <div className="bg-[#0d1424] w-full max-w-lg max-h-[90vh] rounded-2xl shadow-2xl overflow-hidden border border-white/10 flex flex-col" dir="rtl" onClick={e => e.stopPropagation()}>
+            <div className="bg-[#0d1424] w-[95%] max-w-lg h-[95vh] rounded-2xl shadow-2xl overflow-hidden border border-white/10 flex flex-col" dir="rtl" onClick={e => e.stopPropagation()}>
                 <div className="p-4 border-b border-white/10 flex justify-between items-center bg-white/5">
                     <h2 className="text-xl font-bold text-white flex items-center gap-2">
                         {isEditing ? <Pencil className="text-indigo-400" size={20} /> : <UserPlus className="text-indigo-400" size={20} />}

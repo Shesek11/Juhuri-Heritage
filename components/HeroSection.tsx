@@ -36,7 +36,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ children, dialects = [], show
             <div className="absolute bottom-0 left-0 right-0 h-40 bg-gradient-to-t from-[#050B14]/80 to-transparent z-10 pointer-events-none" />
 
             {/* --- MAIN CONTENT --- */}
-            <div className="relative z-20 w-full max-w-4xl px-5 flex flex-col items-center text-center space-y-6 mt-10 overflow-hidden">
+            <div className="relative z-20 w-full max-w-[min(56rem,100%)] px-5 flex flex-col items-center text-center space-y-6 mt-10 min-w-0">
 
                 {/* Title Area */}
                 <div className="space-y-4 animate-in fade-in slide-in-from-top-8 duration-700">
@@ -57,7 +57,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ children, dialects = [], show
 
             {/* Bottom Section - Tributes & Dialects */}
             {showBottomContent && (
-                <div className="relative z-20 w-full max-w-5xl px-5 mt-16 mb-8">
+                <div className="relative z-20 w-full max-w-[min(80rem,100%)] px-5 mt-16 mb-8">
                     <div className="grid grid-cols-1 md:grid-cols-[auto_1fr_auto] items-center justify-items-center gap-6 md:gap-8 bg-[#0d1424]/40 border border-white/5 rounded-3xl p-6 md:p-10 backdrop-blur-md shadow-2xl">
 
                         {/* Grandma 1 - Desktop */}

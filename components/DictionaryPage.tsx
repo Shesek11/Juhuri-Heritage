@@ -334,7 +334,7 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({
         )}
       </HeroSection>
 
-      <div className="w-full max-w-5xl mx-auto px-5 mt-0 relative z-20">
+      <div className="w-full max-w-[min(64rem,100%)] mx-auto px-5 mt-0 relative z-20">
 
         {/* Floating CTA: Add Word Button */}
         <button
