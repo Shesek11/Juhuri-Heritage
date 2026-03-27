@@ -254,7 +254,7 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({
 
       {/* HERO SECTION */}
       <HeroSection dialects={dialects} showBottomContent={!result}>
-        <div className="w-full relative group max-w-2xl mx-auto">
+        <div className="w-full relative group max-w-2xl mx-auto px-4">
           <div className="absolute -inset-1 bg-gradient-to-r from-amber-500/30 to-yellow-600/30 rounded-[2rem] blur-md opacity-50 group-hover:opacity-80 transition duration-500"></div>
           <form onSubmit={handleSearch} className="relative flex bg-[#050B14]/70 border border-white/10 backdrop-blur-2xl rounded-full overflow-hidden p-2">
             <input
@@ -334,7 +334,7 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({
         )}
       </HeroSection>
 
-      <div className="w-full max-w-5xl mx-auto px-4 mt-0 relative z-20">
+      <div className="w-full max-w-5xl mx-auto px-5 mt-0 relative z-20">
 
         {/* Floating CTA: Add Word Button */}
         <button
