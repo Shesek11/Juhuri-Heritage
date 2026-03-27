@@ -262,7 +262,7 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="חפש במילון המורשת..."
-              className="flex-1 bg-transparent px-6 py-3 text-lg outline-none text-white placeholder:text-slate-400"
+              className="flex-1 min-w-0 bg-transparent px-4 sm:px-6 py-3 text-lg outline-none text-white placeholder:text-slate-400"
               disabled={loading}
             />
             <div className="flex items-center border-r border-white/10 pr-2 gap-2 pl-1">
