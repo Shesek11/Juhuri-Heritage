@@ -20,7 +20,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ children, dialects = [], show
     }, []);
 
     return (
-        <div className="relative w-full min-h-[40dvh] flex flex-col items-center justify-start pt-24 pb-8 overflow-hidden font-rubik">
+        <div className="relative w-full min-w-0 min-h-[40dvh] flex flex-col items-center justify-start pt-24 pb-8 overflow-hidden font-rubik">
 
             {/* --- PREMIUM BACKGROUND LAYERS --- */}
             {/* Background Pattern */}

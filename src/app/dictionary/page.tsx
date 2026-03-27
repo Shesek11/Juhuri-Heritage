@@ -10,7 +10,7 @@ export const metadata: Metadata = {
 
 export default function DictionaryPage() {
   return (
-    <main className="min-h-screen">
+    <main className="min-h-screen overflow-x-hidden min-w-0 w-full">
       <DictionarySearch />
     </main>
   );
