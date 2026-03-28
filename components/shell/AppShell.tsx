@@ -48,7 +48,7 @@ interface NavTabProps {
 const NavTab: React.FC<NavTabProps & { comingSoonLabel?: string }> = ({ href, icon, label, comingSoon, isActive, comingSoonLabel }) => (
   <Link
     href={href}
-    className={`group/tab relative flex flex-col items-center justify-center px-3 py-1 rounded-xl transition-all duration-300 ${
+    className={`group/tab relative flex flex-col items-center justify-center px-3 py-1 rounded-xl transition-all duration-300 self-stretch ${
       comingSoon ? 'opacity-60 hover:opacity-100' : ''
     } ${isActive
       ? 'bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-white border border-amber-500/30'
