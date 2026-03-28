@@ -45,11 +45,12 @@ interface NavTabProps {
   isActive: boolean;
 }
 
-// Full NavTab — icon + label (used in expanded row 2)
 const NavTab: React.FC<NavTabProps & { comingSoonLabel?: string }> = ({ href, icon, label, comingSoon, isActive, comingSoonLabel }) => (
   <Link
     href={href}
-    className={`flex items-center gap-1.5 px-3.5 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${isActive
+    className={`relative flex items-center gap-1.5 px-3 py-2 rounded-full text-[13px] font-medium transition-all whitespace-nowrap ${
+      comingSoon ? 'opacity-60' : ''
+    } ${isActive
       ? 'bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-white border border-amber-500/30 shadow-inner'
       : 'text-slate-300 hover:text-white hover:bg-white/5'
       }`}
@@ -57,26 +58,9 @@ const NavTab: React.FC<NavTabProps & { comingSoonLabel?: string }> = ({ href, ic
     {icon}
     <span>{label}</span>
     {comingSoon && (
-      <span className="px-1 py-0.5 text-[10px] bg-blue-500 text-white rounded-full font-bold leading-none">
+      <span className="absolute -top-1 start-1/2 -translate-x-1/2 px-1 py-px text-[8px] bg-blue-500 text-white rounded font-bold leading-none whitespace-nowrap">
         {comingSoonLabel}
       </span>
-    )}
-  </Link>
-);
-
-// Compact NavTab — icon only (used in collapsed row 1 when scrolled)
-const NavTabIcon: React.FC<{ href: string; icon: React.ReactNode; label: string; isActive: boolean; comingSoon?: boolean }> = ({ href, icon, label, isActive, comingSoon }) => (
-  <Link
-    href={href}
-    title={label}
-    className={`relative p-2 rounded-full transition-all ${isActive
-      ? 'bg-amber-500/20 text-amber-400'
-      : 'text-slate-400 hover:text-white hover:bg-white/10'
-      }`}
-  >
-    {icon}
-    {comingSoon && (
-      <span className="absolute -top-0.5 -end-0.5 w-2 h-2 bg-blue-500 rounded-full" />
     )}
   </Link>
 );
@@ -378,37 +362,35 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           }}
         />
 
-        {/* Header / Nav */}
-        <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b ${isScrolled ? 'bg-[#050B14]/95 backdrop-blur-2xl border-white/10 shadow-lg' : 'bg-transparent border-transparent'}`}>
-          {/* Row 1: Logo + (compact nav when scrolled) + Actions */}
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
+        {/* Header / Nav — single row */}
+        <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b ${isScrolled ? 'bg-[#050B14]/95 backdrop-blur-2xl border-white/10 shadow-lg py-1' : 'bg-transparent border-transparent py-3'}`}>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-12 flex items-center gap-2">
 
             {/* Logo */}
-            <Link href="/" className={`flex items-center gap-2.5 transition-all duration-300 shrink-0 ${!isScrolled ? 'bg-[#0d1424]/60 backdrop-blur-md rounded-full ps-1 pe-3 py-1 border border-white/5' : ''}`}>
+            <Link href="/" className="flex items-center gap-2 shrink-0">
               <img src={siteLogo || '/images/logo-transparent.png'} alt={t('logo')} className="w-8 h-8 object-contain" />
-              <span className={`text-lg font-bold text-white transition-all duration-300 ${isScrolled ? 'hidden' : 'hidden lg:block'}`}>{t('logo')}</span>
             </Link>
 
-            {/* Compact nav icons — visible only when scrolled (desktop) */}
-            <nav className={`hidden md:flex items-center gap-0.5 p-1 rounded-full bg-white/5 mx-3 transition-all duration-300 ${isScrolled ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none absolute'}`} aria-label={t('mainNav')}>
-              <NavTabIcon href="/" icon={<Home size={16} />} label={t('home')} isActive={isActive('/')} />
-              {orderedFeatures.filter(f => f.show_in_nav !== false).map(f => (
-                <NavTabIcon
-                  key={f.feature_key}
-                  href={f.link || '#'}
-                  icon={iconMap[f.icon || ''] || <BookOpen size={16} />}
-                  label={getFeatureName(f)}
-                  isActive={isActive(f.link || '') || (f.link === '/dictionary' && pathWithoutLocale.startsWith('/word/'))}
-                  comingSoon={f.status === 'coming_soon'}
-                />
-              ))}
+            {/* Desktop nav — single row */}
+            <nav className="hidden md:flex items-center flex-1 min-w-0 justify-center" aria-label={t('mainNav')}>
+              <div className="flex items-center p-0.5 rounded-full gap-0.5 bg-white/5 backdrop-blur-sm border border-white/5">
+                <NavTab href="/" icon={<Home size={15} />} label={t('home')} isActive={isActive('/')} />
+                {orderedFeatures.filter(f => f.show_in_nav !== false).map(f => (
+                  <NavTab
+                    key={f.feature_key}
+                    href={f.link || '#'}
+                    icon={iconMap[f.icon || ''] || <BookOpen size={15} />}
+                    label={getFeatureName(f)}
+                    isActive={isActive(f.link || '') || (f.link === '/dictionary' && pathWithoutLocale.startsWith('/word/'))}
+                    comingSoon={f.status === 'coming_soon'}
+                    comingSoonLabel={tc('comingSoon')}
+                  />
+                ))}
+              </div>
             </nav>
 
-            {/* Spacer */}
-            <div className="flex-1" />
-
             {/* Actions */}
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex items-center gap-1.5 shrink-0">
               <LanguageSwitcher />
               <NotificationBell />
               {/* User Menu */}
@@ -516,26 +498,6 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 )}
               </div>
             </div>
-          </div>
-
-          {/* Row 2: Full nav tabs with labels — hidden when scrolled (desktop only) */}
-          <div className={`hidden md:block overflow-hidden transition-all duration-300 ${isScrolled ? 'max-h-0 opacity-0' : 'max-h-16 opacity-100'}`}>
-            <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-2" aria-label={t('mainNav')}>
-              <div className="flex items-center justify-center p-1 rounded-full gap-1 bg-[#0d1424]/60 backdrop-blur-md border border-white/5 shadow-lg">
-                <NavTab href="/" icon={<Home size={16} />} label={t('home')} isActive={isActive('/')} />
-                {orderedFeatures.filter(f => f.show_in_nav !== false).map(f => (
-                  <NavTab
-                    key={f.feature_key}
-                    href={f.link || '#'}
-                    icon={iconMap[f.icon || ''] || <BookOpen size={16} />}
-                    label={getFeatureName(f)}
-                    isActive={isActive(f.link || '') || (f.link === '/dictionary' && pathWithoutLocale.startsWith('/word/'))}
-                    comingSoon={f.status === 'coming_soon'}
-                    comingSoonLabel={tc('comingSoon')}
-                  />
-                ))}
-              </div>
-            </nav>
           </div>
 
           {/* Mobile Navigation Bar */}

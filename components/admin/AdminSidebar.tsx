@@ -13,8 +13,6 @@ import {
     Mail,
     ChevronUp,
     ChevronDown,
-    PanelLeftClose,
-    PanelLeftOpen,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
@@ -109,19 +107,15 @@ function buildMenuSections(t: (key: string) => string): MenuSection[] {
 
 interface AdminSidebarProps {
     userRole: string;
+    isCollapsed?: boolean;
+    onToggleCollapse?: () => void;
 }
 
-export default function AdminSidebar({ userRole }: AdminSidebarProps) {
+export default function AdminSidebar({ userRole, isCollapsed = false, onToggleCollapse }: AdminSidebarProps) {
     const pathname = usePathname();
     const t = useTranslations('admin');
     const [expanded, setExpanded] = useState<Record<string, boolean>>({});
     const [badges, setBadges] = useState<Record<string, number>>({});
-    const [isCollapsed, setIsCollapsed] = useState(() => {
-        if (typeof window !== 'undefined') {
-            return localStorage.getItem('admin-sidebar-collapsed') === 'true';
-        }
-        return false;
-    });
     const MENU_SECTIONS = buildMenuSections(t);
 
     useEffect(() => {
@@ -152,19 +146,11 @@ export default function AdminSidebar({ userRole }: AdminSidebarProps) {
 
     const toggleSection = (id: string) => {
         if (isCollapsed) {
-            // Clicking a section icon when collapsed: expand sidebar + that section
-            setIsCollapsed(false);
-            localStorage.setItem('admin-sidebar-collapsed', 'false');
+            onToggleCollapse?.();
             setExpanded((prev) => ({ ...prev, [id]: true }));
         } else {
             setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
         }
-    };
-
-    const toggleCollapse = () => {
-        const next = !isCollapsed;
-        setIsCollapsed(next);
-        localStorage.setItem('admin-sidebar-collapsed', String(next));
     };
 
     const visibleSections = MENU_SECTIONS.filter(
@@ -236,14 +222,6 @@ export default function AdminSidebar({ userRole }: AdminSidebarProps) {
                 })}
             </nav>
 
-            {/* Collapse toggle button */}
-            <button
-                onClick={toggleCollapse}
-                className="flex items-center justify-center py-3 border-t border-white/5 text-slate-500 hover:text-white transition-colors"
-                title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            >
-                {isCollapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
-            </button>
         </aside>
     );
 }
