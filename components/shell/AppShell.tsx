@@ -48,29 +48,28 @@ interface NavTabProps {
 const NavTab: React.FC<NavTabProps & { comingSoonLabel?: string }> = ({ href, icon, label, comingSoon, isActive, comingSoonLabel }) => (
   <Link
     href={href}
-    className={`group/tab relative flex flex-col items-center justify-center px-2.5 py-1.5 rounded-xl transition-all duration-300 h-full ${
+    className={`group/tab relative flex flex-col items-center justify-center px-3 py-1 rounded-xl transition-all duration-300 ${
       comingSoon ? 'opacity-60 hover:opacity-100' : ''
     } ${isActive
       ? 'bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-white border border-amber-500/30'
       : 'text-slate-300 hover:text-white hover:bg-white/5'
       }`}
   >
-    {/* Icon row — expands on hover to show label beside icon */}
-    <div className="flex items-center gap-0 group-hover/tab:gap-1.5 transition-all duration-300">
-      <span className="shrink-0 [&>svg]:w-5 [&>svg]:h-5">{icon}</span>
-      <span className="max-w-0 overflow-hidden opacity-0 group-hover/tab:max-w-[10rem] group-hover/tab:opacity-100 transition-all duration-300 whitespace-nowrap text-sm font-medium">
-        {label}
-      </span>
+    {/* Default state: icon + caption stacked vertically */}
+    <span className="shrink-0 [&>svg]:w-5 [&>svg]:h-5 group-hover/tab:hidden">{icon}</span>
+    <span className="text-xs font-medium mt-0.5 group-hover/tab:hidden">
+      {label}
+    </span>
+    {/* Hover state: icon + label side by side, full height centered */}
+    <div className="hidden group-hover/tab:flex items-center gap-1.5">
+      <span className="shrink-0 [&>svg]:w-4 [&>svg]:h-4">{icon}</span>
+      <span className="whitespace-nowrap text-sm font-medium">{label}</span>
       {comingSoon && (
-        <span className="max-w-0 overflow-hidden opacity-0 group-hover/tab:max-w-[6rem] group-hover/tab:opacity-100 transition-all duration-300 whitespace-nowrap text-[10px] font-bold text-white bg-blue-500/80 rounded-full px-0 group-hover/tab:px-1.5 group-hover/tab:py-0.5">
+        <span className="text-[10px] font-bold text-white bg-blue-500/80 rounded-full px-1.5 py-0.5 whitespace-nowrap">
           {comingSoonLabel}
         </span>
       )}
     </div>
-    {/* Caption below icon — larger default, fades out on hover */}
-    <span className="text-[11px] leading-tight font-medium group-hover/tab:opacity-0 group-hover/tab:h-0 group-hover/tab:overflow-hidden transition-all duration-300">
-      {label}
-    </span>
     {/* Coming Soon dot — visible only in default state */}
     {comingSoon && (
       <span className="absolute top-0.5 end-0.5 w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse group-hover/tab:opacity-0 transition-opacity duration-300" />
@@ -387,7 +386,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
             {/* Desktop nav — single row */}
             <nav className="hidden md:flex items-center flex-1 min-w-0 justify-center" aria-label={t('mainNav')}>
-              <div className="flex items-stretch p-1.5 rounded-2xl gap-0.5 bg-white/5 backdrop-blur-sm border border-white/5">
+              <div className="flex items-center p-1.5 rounded-2xl gap-0.5 bg-white/5 backdrop-blur-sm border border-white/5">
                 <NavTab href="/" icon={<Home size={16} />} label={t('home')} isActive={isActive('/')} />
                 {orderedFeatures.filter(f => f.show_in_nav !== false).map(f => (
                   <NavTab
