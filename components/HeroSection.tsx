@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { HeartHandshake } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 interface HeroSectionProps {
     children: React.ReactNode;
@@ -8,6 +9,7 @@ interface HeroSectionProps {
 }
 
 const HeroSection: React.FC<HeroSectionProps> = ({ children, dialects = [], showBottomContent = true }) => {
+    const t = useTranslations('dictionary');
     const [scrollY, setScrollY] = useState(0);
 
     useEffect(() => {
@@ -41,10 +43,10 @@ const HeroSection: React.FC<HeroSectionProps> = ({ children, dialects = [], show
                 {/* Title Area */}
                 <div className="space-y-4 animate-in fade-in slide-in-from-top-8 duration-700">
                     <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold text-transparent bg-clip-text bg-gradient-to-b from-white to-slate-300 drop-shadow-2xl tracking-tight leading-normal">
-                        מילון ג׳והורי
+                        {t('heroTitle')}
                     </h1>
                     <p className="text-xl md:text-2xl text-slate-300 max-w-2xl mx-auto font-light drop-shadow-lg">
-                        משמרים את השפה, המורשת והתרבות של יהודי הקווקז
+                        {t('heroSubtitle')}
                     </p>
                 </div>
 
@@ -74,10 +76,10 @@ const HeroSection: React.FC<HeroSectionProps> = ({ children, dialects = [], show
                                 <HeartHandshake size={28} />
                             </div>
                             <h2 className="text-xl md:text-2xl font-bold text-white mb-3 drop-shadow-md">
-                                המילון שיאפשר לך לדבר עם סבתא
+                                {t('heroHeading')}
                             </h2>
                             <p className="text-sm md:text-base text-slate-300 leading-relaxed font-light">
-                                השפה שלנו היא הזיכרון שלנו. הקלידו מילה או השתמשו בהקלטה כדי לגלות את העושר של השפה הג'והורית, לשמר את הניבים השונים ולהתחבר מחדש למסורת.
+                                {t('heroDescription')}
                             </p>
                             {dialects.length > 0 && (
                                 <div className="mt-6 flex flex-wrap gap-2 justify-center text-xs text-amber-200/80">

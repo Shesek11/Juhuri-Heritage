@@ -48,8 +48,8 @@ interface NavTabProps {
 const NavTab: React.FC<NavTabProps & { comingSoonLabel?: string }> = ({ href, icon, label, comingSoon, isActive, comingSoonLabel }) => (
   <Link
     href={href}
-    className={`group/tab relative flex items-center gap-1.5 px-4 py-2.5 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
-      comingSoon ? 'opacity-50 hover:opacity-80' : ''
+    className={`group/tab relative flex items-center gap-1.5 px-4 py-2.5 rounded-full text-sm font-medium transition-all whitespace-nowrap overflow-hidden ${
+      comingSoon ? 'opacity-60 hover:opacity-100' : ''
     } ${isActive
       ? 'bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-white border border-amber-500/30 shadow-inner'
       : 'text-slate-300 hover:text-white hover:bg-white/5'
@@ -59,8 +59,8 @@ const NavTab: React.FC<NavTabProps & { comingSoonLabel?: string }> = ({ href, ic
     <span>{label}</span>
     {comingSoon && (
       <>
-        <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse group-hover/tab:hidden" />
-        <span className="hidden group-hover/tab:inline text-[10px] text-blue-300 font-bold">
+        <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse shrink-0 group-hover/tab:opacity-0 transition-opacity" />
+        <span className="absolute inset-0 flex items-center justify-center rounded-full bg-blue-600/90 backdrop-blur-sm text-[11px] text-white font-bold opacity-0 group-hover/tab:opacity-100 transition-opacity duration-200">
           {comingSoonLabel}
         </span>
       </>
@@ -376,8 +376,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             </Link>
 
             {/* Desktop nav — single row */}
-            <nav className="hidden md:flex items-center flex-1 min-w-0 justify-center" aria-label={t('mainNav')}>
-              <div className="flex items-center p-1 rounded-full gap-0.5 bg-white/5 backdrop-blur-sm border border-white/5">
+            <nav className="hidden md:flex items-center flex-1 min-w-0 justify-center overflow-hidden" aria-label={t('mainNav')}>
+              <div className="flex items-center p-1 rounded-full gap-0.5 bg-white/5 backdrop-blur-sm border border-white/5 max-w-full overflow-hidden">
                 <NavTab href="/" icon={<Home size={16} />} label={t('home')} isActive={isActive('/')} />
                 {orderedFeatures.filter(f => f.show_in_nav !== false).map(f => (
                   <NavTab

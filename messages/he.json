@@ -84,6 +84,12 @@
     }
   },
   "dictionary": {
+    "heroTitle": "מילון ג׳והורי",
+    "heroSubtitle": "משמרים את השפה, המורשת והתרבות של יהודי הקווקז",
+    "heroHeading": "המילון שיאפשר לך לדבר עם סבתא",
+    "heroDescription": "השפה שלנו היא הזיכרון שלנו. הקלידו מילה או השתמשו בהקלטה כדי לגלות את העושר של השפה הג'והורית, לשמר את הניבים השונים ולהתחבר מחדש למסורת.",
+    "recentSearches": "חיפושים אחרונים",
+    "clearAll": "נקה הכל",
     "searching": "מחפש במילון...",
     "notFoundMessage": "המילה \"{term}\" לא נמצאה במילון.",
     "searchError": "שגיאה בחיפוש. נסה שוב.",
@@ -96,7 +102,18 @@
     "notFoundCta": "לא מצאת מה שחיפשת?",
     "suggestTranslation": "הצע תרגום חדש ל",
     "addNewWord": "הוסף מילה חדשה למילון",
-    "mergeAuth": "כדי להציע מיזוג ערכים, צריך להתחבר"
+    "mergeAuth": "כדי להציע מיזוג ערכים, צריך להתחבר",
+    "addJuhuri": "הוסף ג'והורי",
+    "translateToHebrew": "תרגם לעברית",
+    "completeDialects": "השלם ניבים",
+    "recordPronunciation": "הקלט הגייה",
+    "hintKnowHow": "יודעים איך אומרים?",
+    "hintWhatHebrew": "מה זה בעברית?",
+    "hintWhichDialect": "באיזה ניב זה?",
+    "hintRecordIt": "הקליטו את ההגייה",
+    "wordsWaiting": "{count} מילים מחכות",
+    "noWords": "אין מילים",
+    "missingPrefix": "חסר: {dialect}"
   },
   "metadata": {
     "siteName": "מורשת ג'והורי",

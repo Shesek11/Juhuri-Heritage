@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { Languages, BookText, Globe, Mic, Loader2 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import apiService from '../../services/apiService';
 
 interface RotatingWord {
@@ -10,40 +11,37 @@ interface RotatingWord {
 
 interface CardConfig {
   category: 'hebrew-only' | 'juhuri-only' | 'missing-dialects' | 'missing-audio';
-  label: string;
+  labelKey: string;
   icon: React.ReactNode;
-  staticHint: string;
-  buildSubHint?: (entry: any) => string | null;
+  hintKey: string;
+  buildSubHintKey?: string;
 }
 
 const CARD_CONFIGS: CardConfig[] = [
   {
     category: 'hebrew-only',
-    label: 'הוסף ג\'והורי',
+    labelKey: 'addJuhuri',
     icon: <Languages size={22} />,
-    staticHint: 'יודעים איך אומרים?',
+    hintKey: 'hintKnowHow',
   },
   {
     category: 'juhuri-only',
-    label: 'תרגם לעברית',
+    labelKey: 'translateToHebrew',
     icon: <BookText size={22} />,
-    staticHint: 'מה זה בעברית?',
+    hintKey: 'hintWhatHebrew',
   },
   {
     category: 'missing-dialects',
-    label: 'השלם ניבים',
+    labelKey: 'completeDialects',
     icon: <Globe size={22} />,
-    staticHint: 'באיזה ניב זה?',
-    buildSubHint: (entry: any) => {
-      const missing = entry.missingDialects?.[0];
-      return missing ? `חסר: ${missing}` : null;
-    },
+    hintKey: 'hintWhichDialect',
+    buildSubHintKey: 'missingPrefix',
   },
   {
     category: 'missing-audio',
-    label: 'הקלט הגייה',
+    labelKey: 'recordPronunciation',
     icon: <Mic size={22} />,
-    staticHint: 'הקליטו את ההגייה',
+    hintKey: 'hintRecordIt',
   },
 ];
 
@@ -54,6 +52,7 @@ interface ContributionGridProps {
 }
 
 const ContributionGrid: React.FC<ContributionGridProps> = ({ onOpenWordList }) => {
+  const t = useTranslations('dictionary');
   const [cardData, setCardData] = useState<{ words: RotatingWord[]; total: number; currentIndex: number }[]>(
     CARD_CONFIGS.map(() => ({ words: [], total: 0, currentIndex: 0 }))
   );
@@ -72,7 +71,7 @@ const ContributionGrid: React.FC<ContributionGridProps> = ({ onOpenWordList }) =
             id: e.id,
             // Use term if Hebrew, otherwise fall back to latin/cyrillic/hebrew translation
             term: (e.term && /^[\u0590-\u05FF]/.test(e.term)) ? e.term : (e.latin || e.cyrillic || e.hebrew || e.term || ''),
-            subHint: config.buildSubHint?.(e) || undefined,
+            subHint: config.buildSubHintKey && e.missingDialects?.[0] ? t(config.buildSubHintKey, { dialect: e.missingDialects[0] }) : undefined,
           }))
           .filter((w: RotatingWord) => w.term && w.term.length <= 25);
         return { words, total: res.total || 0 };
@@ -124,7 +123,7 @@ const ContributionGrid: React.FC<ContributionGridProps> = ({ onOpenWordList }) =
     const config = CARD_CONFIGS[cardIndex];
     const data = cardData[cardIndex];
     const currentWord = data.words[data.currentIndex];
-    onOpenWordList(config.category, config.label, data.total, currentWord?.term);
+    onOpenWordList(config.category, t(config.labelKey), data.total, currentWord?.term);
   };
 
   if (loading) {
@@ -158,11 +157,11 @@ const ContributionGrid: React.FC<ContributionGridProps> = ({ onOpenWordList }) =
             </div>
 
             {/* Label */}
-            <div className="font-semibold text-[0.85rem] text-white mb-0.5">{config.label}</div>
+            <div className="font-semibold text-[0.85rem] text-white mb-0.5">{t(config.labelKey)}</div>
 
             {/* Count */}
             <div className="text-xs text-slate-400 mb-3">
-              {data.total > 0 ? `${data.total.toLocaleString()} מילים מחכות` : 'אין מילים'}
+              {data.total > 0 ? t('wordsWaiting', { count: data.total.toLocaleString() }) : t('noWords')}
             </div>
 
             {/* Rotating word area — fixed height, truncated */}
@@ -175,7 +174,7 @@ const ContributionGrid: React.FC<ContributionGridProps> = ({ onOpenWordList }) =
                     {currentWord.term}
                   </span>
                   <span className="mx-1 text-slate-600">&mdash;</span>
-                  <span>{config.staticHint}</span>
+                  <span>{t(config.hintKey)}</span>
                 </div>
 
                 {currentWord.subHint && (

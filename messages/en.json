@@ -84,6 +84,12 @@
     }
   },
   "dictionary": {
+    "heroTitle": "Juhuri Dictionary",
+    "heroSubtitle": "Preserving the language, heritage, and culture of the Caucasian Jews",
+    "heroHeading": "The dictionary that lets you speak with grandma",
+    "heroDescription": "Our language is our memory. Type a word or use voice recording to discover the richness of the Juhuri language, preserve its dialects, and reconnect with tradition.",
+    "recentSearches": "Recent searches",
+    "clearAll": "Clear all",
     "searching": "Searching dictionary...",
     "notFoundMessage": "The word \"{term}\" was not found in the dictionary.",
     "searchError": "Search error. Please try again.",
@@ -96,7 +102,18 @@
     "notFoundCta": "Didn't find what you were looking for?",
     "suggestTranslation": "Suggest a new translation for",
     "addNewWord": "Add a new word to the dictionary",
-    "mergeAuth": "Sign in to suggest merging entries"
+    "mergeAuth": "Sign in to suggest merging entries",
+    "addJuhuri": "Add Juhuri",
+    "translateToHebrew": "Translate to Hebrew",
+    "completeDialects": "Complete dialects",
+    "recordPronunciation": "Record pronunciation",
+    "hintKnowHow": "Know how to say it?",
+    "hintWhatHebrew": "What is it in Hebrew?",
+    "hintWhichDialect": "Which dialect?",
+    "hintRecordIt": "Record the pronunciation",
+    "wordsWaiting": "{count} words waiting",
+    "noWords": "No words",
+    "missingPrefix": "Missing: {dialect}"
   },
   "metadata": {
     "siteName": "Juhuri Heritage",
