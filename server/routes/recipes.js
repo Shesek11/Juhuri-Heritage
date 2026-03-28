@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../config/db');
 const { authenticate, requireRole } = require('../middleware/auth');
+const { logEvent } = require('../utils/logEvent');
 
 // Get all approved recipes (public)
 router.get('/', async (req, res) => {
@@ -288,10 +289,19 @@ router.post('/', authenticate, async (req, res) => {
             );
         }
 
+        const isAutoApproved = req.user.role === 'admin';
+        await logEvent(
+            isAutoApproved ? 'RECIPE_ADDED' : 'RECIPE_SUBMITTED',
+            isAutoApproved ? `נוצר מתכון: ${title}` : `נשלח מתכון לאישור: ${title}`,
+            req.user,
+            { recipeId, title, autoApproved: isAutoApproved },
+            req
+        );
+
         res.status(201).json({
             success: true,
             recipe_id: recipeId,
-            message: req.user.role === 'admin' ? 'המתכון נוצר ואושר' : 'המתכון נשלח לאישור'
+            message: isAutoApproved ? 'המתכון נוצר ואושר' : 'המתכון נשלח לאישור'
         });
     } catch (err) {
         console.error('Error creating recipe:', err);
@@ -374,6 +384,8 @@ router.put('/:id', authenticate, async (req, res) => {
             }
         }
 
+        await logEvent('RECIPE_UPDATED', `עודכן מתכון #${id}: ${title}`, req.user, { recipeId: id, title }, req);
+
         res.json({ success: true, message: 'המתכון עודכן בהצלחה' });
     } catch (err) {
         console.error('Error updating recipe:', err);
@@ -400,6 +412,8 @@ router.delete('/:id', authenticate, async (req, res) => {
         }
 
         await pool.query('DELETE FROM recipes WHERE id = ?', [id]);
+
+        await logEvent('RECIPE_DELETED', `נמחק מתכון #${id}`, req.user, { recipeId: id }, req);
 
         res.json({ success: true, message: 'המתכון נמחק' });
     } catch (err) {
@@ -639,11 +653,7 @@ router.post('/admin/:id/approve', authenticate, requireRole(['admin', 'moderator
         await pool.query('UPDATE recipes SET is_approved = 1 WHERE id = ?', [id]);
 
         // Log the action
-        await pool.query(
-            `INSERT INTO system_logs (event_type, description, user_id, user_name, metadata)
-             VALUES ('APPROVAL', ?, ?, ?, ?)`,
-            ['Recipe approved', req.user.id, req.user.name, JSON.stringify({ recipe_id: id })]
-        );
+        await logEvent('APPROVAL', 'Recipe approved', req.user, { recipe_id: id }, req);
 
         res.json({ success: true, message: 'המתכון אושר' });
     } catch (err) {

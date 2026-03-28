@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const router = express.Router();
 const db = require('../config/db');
 const { authenticate, generateToken } = require('../middleware/auth');
+const { logEvent } = require('../utils/logEvent');
 const passport = require('passport');
 const { body, validationResult } = require('express-validator');
 
@@ -95,10 +96,7 @@ router.post('/register', [
         const userId = result.insertId;
 
         // Log event
-        await db.query(
-            `INSERT INTO system_logs (event_type, description, user_id, user_name) VALUES (?, ?, ?, ?)`,
-            ['USER_REGISTER', `משתמש חדש נרשם: ${name}`, userId, name]
-        );
+        await logEvent('USER_REGISTER', `משתמש חדש נרשם: ${name}`, { id: userId, name }, { email: email.toLowerCase() }, req);
 
         // Get full user data
         const [users] = await db.query(
@@ -171,10 +169,7 @@ router.post('/login', [
         );
 
         // Log event
-        await db.query(
-            `INSERT INTO system_logs (event_type, description, user_id, user_name) VALUES (?, ?, ?, ?)`,
-            ['USER_LOGIN', `משתמש התחבר: ${user.name}`, user.id, user.name]
-        );
+        await logEvent('USER_LOGIN', `משתמש התחבר: ${user.name}`, { id: user.id, name: user.name }, null, req);
 
         // Prepare safe user object (without password)
         const safeUser = {

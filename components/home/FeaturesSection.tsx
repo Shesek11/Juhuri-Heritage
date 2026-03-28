@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
+import { Link } from '@/src/i18n/navigation';
 import {
   BookOpen, GraduationCap, ChefHat, Store, TreeDeciduous, Music
 } from 'lucide-react';

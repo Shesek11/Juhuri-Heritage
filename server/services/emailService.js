@@ -2,16 +2,19 @@ const pool = require('../config/db');
 
 const EMAIL_API_URL = 'https://api.emailit.com/v2/emails';
 const API_KEY = process.env.EMAILIT_API_KEY;
-const DEFAULT_FROM = process.env.EMAIL_FROM || 'Juhuri Heritage <info@jun-juhuri.com>';
+const DEFAULT_FROM = 'info@jun-juhuri.com';
 
 /**
  * Send raw email via EmailIt API
  */
-async function sendEmail({ to, subject, html, from }) {
+async function sendEmail({ to, subject, html, from, templateSlug }) {
     if (!API_KEY) {
         console.warn('EMAILIT_API_KEY not set, skipping email');
         return null;
     }
+
+    const fromAddr = from || DEFAULT_FROM;
+    const toList = Array.isArray(to) ? to : [to];
 
     const res = await fetch(EMAIL_API_URL, {
         method: 'POST',
@@ -19,15 +22,29 @@ async function sendEmail({ to, subject, html, from }) {
             'Authorization': `Bearer ${API_KEY}`,
             'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-            from: from || DEFAULT_FROM,
-            to: Array.isArray(to) ? to : [to],
-            subject,
-            html,
-        }),
+        body: JSON.stringify({ from: fromAddr, to: toList, subject, html }),
     });
 
     const data = await res.json();
+
+    // Log the email attempt
+    try {
+        await pool.query(
+            `INSERT INTO email_logs (direction, from_address, to_address, subject, template_slug, status, emailit_id, error_message)
+             VALUES ('outgoing', ?, ?, ?, ?, ?, ?, ?)`,
+            [
+                fromAddr,
+                toList.join(', '),
+                subject,
+                templateSlug || null,
+                res.ok ? (data.status || 'accepted') : 'failed',
+                data.id || null,
+                res.ok ? null : JSON.stringify(data),
+            ]
+        );
+    } catch (logErr) {
+        console.error('Failed to log email:', logErr.message);
+    }
 
     if (!res.ok) {
         throw new Error(`EmailIt error: ${JSON.stringify(data)}`);
@@ -70,9 +87,8 @@ async function sendTemplateEmail(slug, { to, variables = {} }) {
     }
 
     const template = rows[0];
-    const fromStr = template.from_name
-        ? `${template.from_name} <${template.from_email}>`
-        : template.from_email;
+    // EmailIt API only accepts plain email address, no display name
+    const fromStr = template.from_email;
 
     const resolvedTo = to || template.to_address;
     if (!resolvedTo) {
@@ -85,6 +101,7 @@ async function sendTemplateEmail(slug, { to, variables = {} }) {
         subject: interpolate(template.subject, variables),
         html: interpolate(template.html_body, variables),
         from: fromStr,
+        templateSlug: slug,
     });
 }
 

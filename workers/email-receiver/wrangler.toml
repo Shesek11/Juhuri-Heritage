@@ -1,0 +1,7 @@
+name = "juhuri-email-receiver"
+main = "src/index.ts"
+compatibility_date = "2024-09-01"
+account_id = "e4f32173ab862c4c7cce6e65dc2640d4"
+
+[vars]
+WEBHOOK_URL = "https://jun-juhuri.com/api/webhooks/emailit-inbound"

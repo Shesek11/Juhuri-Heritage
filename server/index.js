@@ -238,10 +238,10 @@ app.get('/sitemap-words.xml', async (req, res) => {
         res.header('Content-Type', 'application/xml');
         res.header('Cache-Control', 'public, max-age=3600');
         const [entries] = await db.query(
-            `SELECT term, updated_at FROM dictionary_entries WHERE status = 'active' ORDER BY updated_at DESC`
+            `SELECT hebrew_script, updated_at FROM dictionary_entries WHERE status = 'active' ORDER BY updated_at DESC`
         );
         res.send(buildUrlsetXml(entries.map(e => ({
-            loc: `${SITE_URL}/word/${encodeURIComponent(e.term)}`,
+            loc: `${SITE_URL}/word/${encodeURIComponent(e.hebrew_script)}`,
             lastmod: toDate(e.updated_at),
             changefreq: 'monthly',
             priority: '0.5'
@@ -335,18 +335,18 @@ const injectMetaTags = async (req, res, indexHtml) => {
         if (wordMatch) {
             const term = decodeURIComponent(wordMatch[1]);
             const [entries] = await db.query(
-                `SELECT de.term, de.russian, de.english, de.part_of_speech, de.pronunciation_guide,
-                        t.hebrew, t.latin, t.cyrillic
+                `SELECT de.hebrew_script, de.hebrew_short, de.russian_short, de.english_short, de.part_of_speech,
+                        t.hebrew_script as t_hebrew_script, t.latin_script, t.cyrillic_script, t.pronunciation_guide
                  FROM dictionary_entries de
-                 LEFT JOIN translations t ON de.id = t.entry_id
-                 WHERE de.term = ? AND de.status = 'active' LIMIT 1`,
+                 LEFT JOIN dialect_scripts t ON de.id = t.entry_id
+                 WHERE de.hebrew_script = ? AND de.status = 'active' LIMIT 1`,
                 [term]
             );
             if (entries.length) {
                 const e = entries[0];
                 isValidPage = true;
                 title = `${term} - תרגום ג'והורי | מורשת ג'והורי`;
-                const meanings = [e.hebrew, e.russian, e.english].filter(Boolean).join(' | ');
+                const meanings = [e.hebrew_short, e.russian_short, e.english_short].filter(Boolean).join(' | ');
                 description = meanings
                     ? `${term}: ${meanings} - מילון ג'והורי-עברי`
                     : `חפש את המשמעות של "${term}" במילון הג'והורי-עברי`;
@@ -362,13 +362,13 @@ const injectMetaTags = async (req, res, indexHtml) => {
                         "inLanguage": ["jdt", "he", "ru"]
                     }
                 };
-                if (e.latin) ldData.termCode = e.latin;
+                if (e.latin_script) ldData.termCode = e.latin_script;
                 jsonLd = JSON.stringify(ldData);
                 bodyContent = `<h1>${term}</h1>`;
-                if (e.hebrew) bodyContent += `<p>עברית: ${e.hebrew}</p>`;
-                if (e.russian) bodyContent += `<p>Русский: ${e.russian}</p>`;
-                if (e.english) bodyContent += `<p>English: ${e.english}</p>`;
-                if (e.latin) bodyContent += `<p>Latin: ${e.latin}</p>`;
+                if (e.hebrew_short) bodyContent += `<p>עברית: ${e.hebrew_short}</p>`;
+                if (e.russian_short) bodyContent += `<p>Русский: ${e.russian_short}</p>`;
+                if (e.english_short) bodyContent += `<p>English: ${e.english_short}</p>`;
+                if (e.latin_script) bodyContent += `<p>Latin: ${e.latin_script}</p>`;
                 if (e.part_of_speech) bodyContent += `<p>חלק דיבור: ${e.part_of_speech}</p>`;
             }
         } else if (recipeMatch) {

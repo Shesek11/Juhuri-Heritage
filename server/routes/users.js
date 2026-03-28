@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const router = express.Router();
 const db = require('../config/db');
 const { authenticate, requireAdmin, generateToken } = require('../middleware/auth');
+const { logEvent } = require('../utils/logEvent');
 
 // POST /api/users/sync - Sync Auth0 user with local DB
 router.post('/sync', async (req, res) => {
@@ -16,12 +17,12 @@ router.post('/sync', async (req, res) => {
         // Upsert user: Insert if new, update name/email/last_login if exists
         // Note: We do NOT update 'role' here to prevent resetting admins to users
         await db.query(`
-            INSERT INTO users (id, email, name, role, joined_at, last_login, contributions_count, xp, level, current_streak)
+            INSERT INTO users (id, email, name, role, joined_at, last_login_date, contributions_count, xp, level, current_streak)
             VALUES (?, ?, ?, 'user', NOW(), NOW(), 0, 0, 1, 0)
             ON DUPLICATE KEY UPDATE
             name = VALUES(name),
             email = VALUES(email),
-            last_login = NOW()
+            last_login_date = NOW()
         `, [id, email, name || email.split('@')[0]]);
 
         // Fetch the full user object (including role, xp, etc.) to return to client
@@ -62,10 +63,23 @@ router.post('/sync', async (req, res) => {
 router.get('/', authenticate, requireAdmin, async (req, res) => {
     try {
         const [users] = await db.query(
-            `SELECT id, email, name, role, joined_at, contributions_count, xp, level, current_streak 
+            `SELECT id, email, name, role, joined_at, last_login_date, contributions_count, xp, level, current_streak
              FROM users ORDER BY joined_at DESC`
         );
-        res.json({ users });
+        res.json({
+            users: users.map(u => ({
+                id: String(u.id),
+                email: u.email,
+                name: u.name,
+                role: u.role,
+                joinedAt: u.joined_at ? new Date(u.joined_at).toISOString() : null,
+                lastLoginDate: u.last_login_date ? new Date(u.last_login_date).toISOString() : null,
+                contributionsCount: u.contributions_count || 0,
+                xp: u.xp || 0,
+                level: u.level || 1,
+                currentStreak: u.current_streak || 0,
+            }))
+        });
     } catch (err) {
         console.error('Get users error:', err);
         res.status(500).json({ error: 'שגיאה בטעינת משתמשים' });
@@ -90,16 +104,7 @@ router.put('/:id/role', authenticate, requireAdmin, async (req, res) => {
 
         await db.query('UPDATE users SET role = ? WHERE id = ?', [role, id]);
 
-        await db.query(
-            `INSERT INTO system_logs (event_type, description, user_id, user_name, metadata) VALUES (?, ?, ?, ?, ?)`,
-            [
-                'USER_ROLE_CHANGE',
-                `שונה תפקיד למשתמש ${users[0].name} ל-${role}`,
-                req.user.id,
-                req.user.name,
-                JSON.stringify({ targetId: id, role })
-            ]
-        );
+        await logEvent('USER_ROLE_CHANGE', `שונה תפקיד למשתמש ${users[0].name} ל-${role}`, req.user, { targetId: id, targetName: users[0].name, role }, req);
 
         res.json({ success: true });
     } catch (err) {
@@ -119,10 +124,7 @@ router.put('/:id/reset-password', authenticate, requireAdmin, async (req, res) =
         await db.query('UPDATE users SET password_hash = ? WHERE id = ?', [passwordHash, id]);
 
         // Log password reset (without exposing the password)
-        await db.query(
-            `INSERT INTO system_logs (event_type, description, user_id, user_name) VALUES (?, ?, ?, ?)`,
-            ['PASSWORD_RESET', `Admin reset password for user ${id}`, req.user.id, req.user.name]
-        ).catch(() => {});
+        await logEvent('USER_PASSWORD_RESET', `איפוס סיסמה למשתמש ${id}`, req.user, { targetId: id }, req);
 
         res.json({ success: true, newPassword });
     } catch (err) {
@@ -149,10 +151,7 @@ router.delete('/:id', authenticate, requireAdmin, async (req, res) => {
 
         await db.query('DELETE FROM users WHERE id = ?', [id]);
 
-        await db.query(
-            `INSERT INTO system_logs (event_type, description, user_id, user_name, metadata) VALUES (?, ?, ?, ?, ?)`,
-            ['USER_DELETED', `נמחק משתמש: ${users[0].name}`, req.user.id, req.user.name, JSON.stringify({ targetId: id })]
-        );
+        await logEvent('USER_DELETED', `נמחק משתמש: ${users[0].name}`, req.user, { targetId: id, targetName: users[0].name }, req);
 
         res.json({ success: true });
     } catch (err) {

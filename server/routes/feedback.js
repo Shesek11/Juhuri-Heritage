@@ -3,6 +3,8 @@ const router = express.Router();
 const pool = require('../config/db');
 const { authenticate, requireRole } = require('../middleware/auth');
 const { body, validationResult } = require('express-validator');
+const { sendFeedbackNotification } = require('../services/emailService');
+const { logEvent } = require('../utils/logEvent');
 
 const validate = (req, res, next) => {
     const errors = validationResult(req);
@@ -29,6 +31,12 @@ router.post('/', [
             'INSERT INTO site_feedback (category, message, user_name, user_email, page_url) VALUES (?, ?, ?, ?, ?)',
             [category || 'suggestion', message.trim(), userName?.trim() || null, userEmail?.trim() || null, pageUrl || null]
         );
+
+        // Send email notification (don't block response on failure)
+        sendFeedbackNotification({ category: category || 'suggestion', message: message.trim(), userName: userName?.trim(), userEmail: userEmail?.trim(), pageUrl })
+            .catch(err => console.error('Failed to send feedback email:', err));
+
+        await logEvent('FEEDBACK_SENT', `התקבלה הודעת משוב (${category || 'suggestion'})`, null, { category: category || 'suggestion', userName: userName?.trim() || null, pageUrl: pageUrl || null }, req);
 
         res.json({ success: true, message: 'תודה! ההודעה נשלחה בהצלחה' });
     } catch (err) {
@@ -69,6 +77,8 @@ router.put('/admin/:id', authenticate, requireRole(['admin']), async (req, res) 
             'UPDATE site_feedback SET status = ?, admin_note = ? WHERE id = ?',
             [status, adminNote || null, id]
         );
+
+        await logEvent('FEEDBACK_STATUS_CHANGED', `עודכן סטטוס משוב #${id} ל-${status}`, req.user, { feedbackId: id, status, hasNote: !!adminNote }, req);
 
         res.json({ success: true });
     } catch (err) {

@@ -1,5 +1,6 @@
 import React from 'react';
 import { useTranslations } from 'next-intl';
+import { Link } from '@/src/i18n/navigation';
 import { ArrowLeft } from 'lucide-react';
 import { partOfSpeechHebrew } from '../../utils/pos';
 
@@ -26,7 +27,7 @@ const RelatedWords: React.FC<RelatedWordsProps> = ({ relatedWords }) => {
 
       <div className="flex flex-wrap gap-2">
         {relatedWords.map((word) => (
-          <a
+          <Link
             key={word.id}
             href={`/word/${encodeURIComponent(word.hebrewScript)}`}
             className="group/related flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-indigo-500/40 transition-all"
@@ -45,7 +46,7 @@ const RelatedWords: React.FC<RelatedWordsProps> = ({ relatedWords }) => {
               </span>
             </div>
             <ArrowLeft size={14} className="text-slate-600 group-hover/related:text-indigo-400 transition-colors shrink-0" />
-          </a>
+          </Link>
         ))}
       </div>
     </div>

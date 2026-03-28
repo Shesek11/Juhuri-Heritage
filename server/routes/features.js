@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../config/db');
 const { authenticate, requireAdmin } = require('../middleware/auth');
+const { logEvent } = require('../utils/logEvent');
 
 // Get all feature flags (Admin only)
 router.get('/', authenticate, requireAdmin, async (req, res) => {
@@ -36,16 +37,7 @@ router.put('/:key', authenticate, requireAdmin, async (req, res) => {
         }
 
         // Log the change
-        await pool.query(
-            `INSERT INTO system_logs (event_type, description, user_id, user_name, metadata) 
-             VALUES ('FEATURE_FLAG_CHANGED', ?, ?, ?, ?)`,
-            [
-                `Feature "${key}" changed to "${status}"`,
-                req.user.id,
-                req.user.name,
-                JSON.stringify({ feature_key: key, new_status: status })
-            ]
-        );
+        await logEvent('FEATURE_FLAG_CHANGED', `Feature "${key}" changed to "${status}"`, req.user, { feature_key: key, new_status: status }, req);
 
         res.json({ success: true, feature_key: key, status });
     } catch (err) {

@@ -1,6 +1,7 @@
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const db = require('./db');
+const { logEvent } = require('../utils/logEvent');
 
 // Serialize/Deserialize users not strictly needed for stateless JWT, 
 // but Passport requires it if using sessions. We will likely skip sessions 
@@ -37,10 +38,8 @@ passport.use(new GoogleStrategy({
             let user = existingUsers[0];
 
             if (user) {
-                // User exists, update Google ID/Photo if missing?
-                // For now, just return the user.
-                // Optionally update last login
                 await db.query('UPDATE users SET last_login_date = NOW() WHERE id = ?', [user.id]);
+                await logEvent('USER_LOGIN_OAUTH', `התחבר דרך גוגל: ${user.name}`, { id: user.id, name: user.name }, { email }, null);
                 return done(null, user);
             }
 
@@ -55,10 +54,7 @@ passport.use(new GoogleStrategy({
             );
 
             // Log registration
-            await db.query(
-                `INSERT INTO system_logs (event_type, description, user_id, user_name) VALUES (?, ?, ?, ?)`,
-                ['USER_REGISTER_OAUTH', `נרשם דרך גוגל: ${name}`, result.insertId, name]
-            );
+            await logEvent('USER_REGISTER_OAUTH', `נרשם דרך גוגל: ${name}`, { id: result.insertId, name }, { email }, null);
 
             // Fetch the new user to return
             const [newUsers] = await db.query('SELECT * FROM users WHERE id = ?', [result.insertId]);

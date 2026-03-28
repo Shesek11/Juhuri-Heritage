@@ -102,7 +102,7 @@ class DirectDatabaseImporter {
     async _importEntry(entry, progress) {
         // Check if entry already exists
         const [existing] = await this.connection.query(
-            'SELECT id FROM dictionary_entries WHERE term = ?',
+            'SELECT id FROM dictionary_entries WHERE hebrew_script = ?',
             [entry.juhuri]
         );
 
@@ -115,43 +115,35 @@ class DirectDatabaseImporter {
         // Insert dictionary entry
         const [result] = await this.connection.query(
             `INSERT INTO dictionary_entries
-            (term, detected_language, pronunciation_guide, source, source_name, status, notes, confidence, translation_source, created_at)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+            (hebrew_script, detected_language, source, source_name, status, notes, confidence, translation_source, russian_short, hebrew_long, created_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
             [
                 entry.juhuri,
                 'Juhuri',
-                entry.latin || null,
                 entry.source || 'מאגר',
                 entry.sourceName || entry.source_name || null,
                 'active',  // Import directly as active
                 entry.notes || '',
                 entry.confidence || 0.9,
-                entry.translation_source || 'Import'
+                entry.translation_source || 'Import',
+                entry.russian || null,
+                entry.definition || null
             ]
         );
 
         const entryId = result.insertId;
 
-        // Insert translation
+        // Insert dialect script
         await this.connection.query(
-            `INSERT INTO translations (entry_id, dialect, hebrew, latin, cyrillic, created_at)
-            VALUES (?, ?, ?, ?, ?, NOW())`,
+            `INSERT INTO dialect_scripts (entry_id, dialect_id, hebrew_script, latin_script, cyrillic_script, pronunciation_guide, created_at)
+            VALUES (?, NULL, ?, ?, '', ?, NOW())`,
             [
                 entryId,
-                entry.dialect || 'General',
                 entry.hebrew || '',
                 entry.latin || '',
-                entry.russian || ''
+                entry.latin || null
             ]
         );
-
-        // Insert definitions if present
-        if (entry.definition) {
-            await this.connection.query(
-                `INSERT INTO definitions (entry_id, definition, created_at) VALUES (?, ?, NOW())`,
-                [entryId, entry.definition]
-            );
-        }
 
         // Insert examples if present
         if (entry.examples && entry.examples.length > 0) {

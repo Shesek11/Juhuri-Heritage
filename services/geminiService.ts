@@ -18,32 +18,32 @@ export const searchDictionary = async (query: string): Promise<SearchResult> => 
       const entry: DictionaryEntry = { ...localResult.entry, source: localResult.entry.source || 'מאגר' };
 
       // Collect known and missing fields for AI enrichment
-      const t = entry.translations?.[0];
+      const ds = entry.dialectScripts?.[0];
       const knownFields: Record<string, string> = {};
       const missingFields: string[] = [];
 
       // Known fields (priority order: russian > hebrew > latin for context)
-      if (entry.russian) knownFields.russian = entry.russian;
-      if (t?.hebrew) knownFields.hebrew = t.hebrew;
-      if (t?.latin) knownFields.latin = t.latin;
-      if (t?.cyrillic) knownFields.cyrillic = t.cyrillic;
-      if (entry.definitions?.[0]) knownFields.definition = entry.definitions[0];
-      if (entry.pronunciationGuide) knownFields.pronunciationGuide = entry.pronunciationGuide;
+      if (entry.russianShort) knownFields.russianShort = entry.russianShort;
+      if (ds?.hebrewScript) knownFields.hebrewShort = ds.hebrewScript;
+      if (ds?.latinScript) knownFields.latinScript = ds.latinScript;
+      if (ds?.cyrillicScript) knownFields.cyrillicScript = ds.cyrillicScript;
+      if (entry.hebrewLong) knownFields.hebrewLong = entry.hebrewLong;
+      if (ds?.pronunciationGuide) knownFields.pronunciationGuide = ds.pronunciationGuide;
       if (entry.partOfSpeech) knownFields.partOfSpeech = entry.partOfSpeech;
 
       // Missing fields
-      if (!entry.term) missingFields.push('hebrewTransliteration');
-      if (!t?.hebrew) missingFields.push('hebrew');
-      if (!t?.latin) missingFields.push('latin');
-      if (!t?.cyrillic) missingFields.push('cyrillic');
-      if (!entry.russian) missingFields.push('russian');
-      if (!entry.pronunciationGuide) missingFields.push('pronunciationGuide');
+      if (!entry.hebrewScript) missingFields.push('hebrewTransliteration');
+      if (!ds?.hebrewScript) missingFields.push('hebrewShort');
+      if (!ds?.latinScript) missingFields.push('latinScript');
+      if (!ds?.cyrillicScript) missingFields.push('cyrillicScript');
+      if (!entry.russianShort) missingFields.push('russianShort');
+      if (!ds?.pronunciationGuide) missingFields.push('pronunciationGuide');
       if (!entry.partOfSpeech) missingFields.push('partOfSpeech');
-      if (!entry.definitions || entry.definitions.length === 0) missingFields.push('definition');
+      if (!entry.hebrewLong) missingFields.push('hebrewLong');
 
       // Need at least one known field to provide context, and at least one missing field
       let enrichmentPromise: Promise<Record<string, any> | null> | undefined;
-      const hasContext = knownFields.russian || knownFields.hebrew || knownFields.latin;
+      const hasContext = knownFields.russianShort || knownFields.hebrewShort || knownFields.latinScript;
       if (missingFields.length > 0 && hasContext) {
         enrichmentPromise = geminiApi.enrich(missingFields, knownFields)
           .then((res: any) => res.enrichment || null)

@@ -1,13 +1,14 @@
 
-export interface Translation {
+export interface DialectScript {
   id?: number; // Database ID for voting
   dialect: string; // e.g., "General", "Derbent", "Quba"
-  hebrew: string; // Text in Hebrew script
-  latin: string; // Text in Latin/English script
-  cyrillic: string; // Text in Cyrillic script
+  hebrewScript: string; // Juhuri word in Hebrew script per dialect
+  latinScript: string; // Juhuri word in Latin script per dialect
+  cyrillicScript: string; // Juhuri word in Cyrillic script per dialect
+  pronunciationGuide?: string; // Pronunciation guide per dialect
   upvotes?: number; // Community upvote count
   downvotes?: number; // Community downvote count
-  userVote?: 'up' | 'down' | null; // Current user's vote on this translation
+  userVote?: 'up' | 'down' | null; // Current user's vote on this dialect script
 }
 
 export interface Example {
@@ -21,14 +22,17 @@ export interface FieldSources {
 }
 
 export interface DictionaryEntry {
-  term: string;
+  hebrewScript: string;
   detectedLanguage: 'Hebrew' | 'Juhuri' | 'English' | 'Russian';
-  translations: Translation[];
-  definitions: string[];
+  dialectScripts: DialectScript[];
   examples: Example[];
-  pronunciationGuide?: string;
   partOfSpeech?: string;
-  russian?: string;
+  hebrewShort?: string;
+  hebrewLong?: string | null;
+  russianShort?: string;
+  russianLong?: string | null;
+  englishShort?: string;
+  englishLong?: string | null;
   isCustom?: boolean;
   source?: 'AI' | 'מאגר' | 'קהילה';
   sourceName?: string;
@@ -65,9 +69,9 @@ export interface SearchResponse {
 
 export interface FuzzySuggestion {
   id: string;
-  term: string;
-  hebrew: string;
-  latin?: string;
+  hebrewScript: string;
+  hebrewShort: string;
+  latinScript?: string;
   partOfSpeech?: string;
 }
 
@@ -117,21 +121,21 @@ export interface PendingSuggestion {
 
 export interface DuplicatePreview {
   id: string;
-  term: string;
-  hebrew?: string;
-  latin?: string;
+  hebrewScript: string;
+  hebrewShort?: string;
+  latinScript?: string;
 }
 
 export interface MergeSuggestion {
   id: number;
   entryIdA: number;
   entryIdB: number;
-  termA: string;
-  termB: string;
-  hebrewA?: string;
-  hebrewB?: string;
-  latinA?: string;
-  latinB?: string;
+  hebrewScriptA: string;
+  hebrewScriptB: string;
+  hebrewShortA?: string;
+  hebrewShortB?: string;
+  latinScriptA?: string;
+  latinScriptB?: string;
   reason?: string;
   userName?: string;
   status: 'pending' | 'approved' | 'rejected';
@@ -161,16 +165,26 @@ export interface ContributeFormData {
 }
 
 // --- System Logs ---
-export type EventType = 'ENTRY_ADDED' | 'ENTRY_APPROVED' | 'ENTRY_DELETED' | 'ENTRY_REJECTED' | 'USER_LOGIN' | 'USER_REGISTER' | 'USER_ROLE_CHANGE' | 'USER_DELETED' | 'DIALECT_ADDED';
+export type EventType =
+  | 'ENTRY_ADDED' | 'ENTRY_APPROVED' | 'ENTRY_DELETED' | 'ENTRY_REJECTED' | 'ENTRY_MERGED'
+  | 'USER_LOGIN' | 'USER_LOGIN_OAUTH' | 'USER_REGISTER' | 'USER_REGISTER_OAUTH'
+  | 'USER_ROLE_CHANGE' | 'USER_DELETED' | 'USER_PASSWORD_RESET'
+  | 'DIALECT_ADDED'
+  | 'FEATURE_FLAG_CHANGED' | 'SETTING_CHANGED'
+  | 'SEO_SETTINGS_CHANGED' | 'SEO_ROBOTS_CHANGED' | 'SEO_LLMS_CHANGED' | 'SEO_META_CHANGED' | 'SEO_REDIRECTS_CHANGED'
+  | 'APPROVAL' | 'EMAIL_TEMPLATE_CHANGED'
+  | 'RECIPE_ADDED' | 'RECIPE_APPROVED' | 'RECIPE_DELETED';
 
 export interface SystemEvent {
   id: string;
   type: EventType;
-  description: string; // Human readable description
-  userId: string; // ID of the actor
-  userName: string; // Name of the actor (cached for display)
-  timestamp: number;
-  metadata?: any; // Extra data like term ID, target user ID etc.
+  description: string;
+  userId: string | null;
+  userName: string | null;
+  userEmail?: string | null;
+  timestamp: string | number;
+  ipAddress?: string | null;
+  metadata?: Record<string, any> | null;
 }
 
 // --- Dialect Management ---
@@ -272,8 +286,8 @@ export interface CurriculumSection {
 
 export interface WordMastery {
   entryId: number;
-  term: string;
-  hebrewTranslation: string;
+  hebrewScript: string;
+  hebrewShort: string;
   box: number; // 1-5 Leitner box
   nextReview: string;
   timesCorrect: number;
@@ -308,10 +322,10 @@ export interface TutorProgress {
 
 export interface TutorWord {
   id: number;
-  term: string;
-  hebrew: string;
-  latin?: string;
-  pronunciation?: string;
+  hebrewScript: string;
+  hebrewShort: string;
+  latinScript?: string;
+  pronunciationGuide?: string;
   example?: string;
   exampleTranslation?: string;
 }

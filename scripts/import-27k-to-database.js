@@ -59,16 +59,14 @@ async function run() {
     await conn.query('SET FOREIGN_KEY_CHECKS = 0');
     await conn.query('DELETE FROM field_sources');
     await conn.query('DELETE FROM examples');
-    await conn.query('DELETE FROM definitions');
-    await conn.query('DELETE FROM translations');
+    await conn.query('DELETE FROM dialect_scripts');
     await conn.query('DELETE FROM dictionary_entries');
     await conn.query('SET FOREIGN_KEY_CHECKS = 1');
     console.log('✅ Old data deleted');
 
     // Reset auto-increment
     await conn.query('ALTER TABLE dictionary_entries AUTO_INCREMENT = 1');
-    await conn.query('ALTER TABLE translations AUTO_INCREMENT = 1');
-    await conn.query('ALTER TABLE definitions AUTO_INCREMENT = 1');
+    await conn.query('ALTER TABLE dialect_scripts AUTO_INCREMENT = 1');
 
     // =====================
     // STEP 2: Import in batches
@@ -95,44 +93,36 @@ async function run() {
           const detectedLanguage = detectLanguage(term);
           const pronunciationGuide = entry.pronunciationGuide || null;
           const partOfSpeech = entry.partOfSpeech || null;
-          const russian = entry.russian || null;
-          const definition = entry.definition || null;
-          const hebrew = entry.hebrew || null;
-          const latin = entry.latin || null;
+          const russianShort = entry.russian || entry.russianShort || null;
+          const hebrewLong = entry.definition || entry.hebrewLong || null;
+          const hebrewShort = entry.hebrew || entry.hebrewShort || null;
+          const latinScript = entry.latin || entry.latinScript || null;
           const sourceInfo = entry.sources ? JSON.stringify(entry.sources) : null;
 
           // Insert dictionary_entry
           const [result] = await conn.query(
             `INSERT INTO dictionary_entries
-             (term, detected_language, pronunciation_guide, part_of_speech, russian, source, source_name, status, source_info)
+             (hebrew_script, detected_language, part_of_speech, russian_short, hebrew_long, source, source_name, status, source_info)
              VALUES (?, ?, ?, ?, ?, 'מאגר', ?, 'active', ?)`,
-            [term, detectedLanguage, pronunciationGuide, partOfSpeech, russian, entry.sourceName || entry.source_name || null, sourceInfo]
+            [term, detectedLanguage, partOfSpeech, russianShort, hebrewLong, entry.sourceName || entry.source_name || null, sourceInfo]
           );
 
           const entryId = result.insertId;
 
-          // Insert translation (dialect_id = NULL for unknown)
+          // Insert dialect_script (dialect_id = NULL for unknown)
           await conn.query(
-            `INSERT INTO translations (entry_id, dialect_id, hebrew, latin, cyrillic)
-             VALUES (?, NULL, ?, ?, '')`,
-            [entryId, hebrew, latin]
+            `INSERT INTO dialect_scripts (entry_id, dialect_id, hebrew_script, latin_script, cyrillic_script, pronunciation_guide)
+             VALUES (?, NULL, ?, ?, '', ?)`,
+            [entryId, hebrewShort, latinScript, pronunciationGuide]
           );
-
-          // Insert definition
-          if (definition) {
-            await conn.query(
-              `INSERT INTO definitions (entry_id, definition) VALUES (?, ?)`,
-              [entryId, definition]
-            );
-          }
 
           // Track field sources for this entry
           const fields = [];
-          if (term) fields.push('term');
-          if (hebrew) fields.push('hebrew');
-          if (russian) fields.push('russian');
-          if (latin) fields.push('latin');
-          if (definition) fields.push('definition');
+          if (term) fields.push('hebrewScript');
+          if (hebrewShort) fields.push('hebrewShort');
+          if (russianShort) fields.push('russianShort');
+          if (latinScript) fields.push('latinScript');
+          if (hebrewLong) fields.push('hebrewLong');
           if (pronunciationGuide) fields.push('pronunciationGuide');
           if (partOfSpeech) fields.push('partOfSpeech');
 
@@ -174,26 +164,24 @@ async function run() {
     // STEP 3: Verify
     // =====================
     const [[{ entryCount }]] = await conn.query('SELECT COUNT(*) as entryCount FROM dictionary_entries');
-    const [[{ transCount }]] = await conn.query('SELECT COUNT(*) as transCount FROM translations');
-    const [[{ defCount }]] = await conn.query('SELECT COUNT(*) as defCount FROM definitions');
+    const [[{ dsCount }]] = await conn.query('SELECT COUNT(*) as dsCount FROM dialect_scripts');
     const [[{ fsCount }]] = await conn.query('SELECT COUNT(*) as fsCount FROM field_sources');
 
     console.log(`\n📊 Database counts:`);
     console.log(`   dictionary_entries: ${entryCount}`);
-    console.log(`   translations:      ${transCount}`);
-    console.log(`   definitions:       ${defCount}`);
+    console.log(`   dialect_scripts:   ${dsCount}`);
     console.log(`   field_sources:     ${fsCount}`);
 
     // Test search
     const [testResults] = await conn.query(
-      `SELECT de.term, t.hebrew, de.russian
+      `SELECT de.hebrew_script, ds.hebrew_script as ds_hebrew, de.russian_short
        FROM dictionary_entries de
-       JOIN translations t ON de.id = t.entry_id
-       WHERE de.term LIKE '%סאלום%' OR t.hebrew LIKE '%שלום%'
+       JOIN dialect_scripts ds ON de.id = ds.entry_id
+       WHERE de.hebrew_script LIKE '%סאלום%' OR ds.hebrew_script LIKE '%שלום%'
        LIMIT 3`
     );
     console.log(`\n🔍 Test search "שלום/סאלום":`);
-    testResults.forEach(r => console.log(`   ${r.term} → ${r.hebrew} (${r.russian || '-'})`));
+    testResults.forEach(r => console.log(`   ${r.hebrew_script} → ${r.ds_hebrew} (${r.russian_short || '-'})`));
 
   } finally {
     conn.release();

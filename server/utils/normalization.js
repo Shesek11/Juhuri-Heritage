@@ -14,12 +14,15 @@ function stripNiqqud(s) {
 }
 
 /**
- * Normalize a term for duplicate detection.
+ * Normalize a Hebrew-script string for duplicate detection.
  * Returns lowercase, niqqud-stripped, whitespace-normalized string.
  */
-function normalizeTerm(term) {
+function normalizeHebrewScript(term) {
     if (!term) return '';
     return stripNiqqud(term).toLowerCase();
 }
 
-module.exports = { stripNiqqud, normalizeTerm };
+// Backward-compatible alias
+const normalizeTerm = normalizeHebrewScript;
+
+module.exports = { stripNiqqud, normalizeHebrewScript, normalizeTerm };

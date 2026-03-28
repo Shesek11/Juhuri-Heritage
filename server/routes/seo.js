@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const pool = require('../config/db');
 const { authenticate, requireAdmin } = require('../middleware/auth');
+const { logEvent } = require('../utils/logEvent');
 const multer = require('multer');
 const fs = require('fs');
 const path = require('path');
@@ -85,11 +86,7 @@ router.put('/settings', authenticate, requireAdmin, async (req, res) => {
         }
 
         // Audit log
-        await pool.query(
-            `INSERT INTO system_logs (event_type, description, user_id, user_name, metadata)
-             VALUES ('SEO_SETTINGS_CHANGED', ?, ?, ?, ?)`,
-            ['הגדרות SEO עודכנו', req.user.id, req.user.name, JSON.stringify({ keys: Object.keys(settings) })]
-        );
+        await logEvent('SEO_SETTINGS_CHANGED', 'הגדרות SEO עודכנו', req.user, { keys: Object.keys(settings) }, req);
 
         res.json({ success: true });
     } catch (err) {
@@ -159,11 +156,7 @@ router.put('/robots', authenticate, requireAdmin, async (req, res) => {
             fs.writeFileSync(distPath, content, 'utf8');
         }
 
-        await pool.query(
-            `INSERT INTO system_logs (event_type, description, user_id, user_name, metadata)
-             VALUES ('SEO_ROBOTS_CHANGED', ?, ?, ?, ?)`,
-            ['robots.txt עודכן', req.user.id, req.user.name, JSON.stringify({ length: content.length })]
-        );
+        await logEvent('SEO_ROBOTS_CHANGED', 'robots.txt עודכן', req.user, { length: content.length }, req);
 
         res.json({ success: true });
     } catch (err) {
@@ -351,11 +344,7 @@ router.put('/meta-defaults', authenticate, requireAdmin, async (req, res) => {
             [JSON.stringify(meta), req.user.id]
         );
 
-        await pool.query(
-            `INSERT INTO system_logs (event_type, description, user_id, user_name)
-             VALUES ('SEO_META_CHANGED', 'תבניות Meta עודכנו', ?, ?)`,
-            [req.user.id, req.user.name]
-        );
+        await logEvent('SEO_META_CHANGED', 'תבניות Meta עודכנו', req.user, null, req);
 
         res.json({ success: true });
     } catch (err) {
@@ -420,11 +409,7 @@ router.put('/llms', authenticate, requireAdmin, async (req, res) => {
             fs.writeFileSync(distPath, content, 'utf8');
         }
 
-        await pool.query(
-            `INSERT INTO system_logs (event_type, description, user_id, user_name, metadata)
-             VALUES ('SEO_LLMS_CHANGED', ?, ?, ?, ?)`,
-            ['llms.txt עודכן', req.user.id, req.user.name, JSON.stringify({ length: content.length })]
-        );
+        await logEvent('SEO_LLMS_CHANGED', 'llms.txt עודכן', req.user, { length: content.length }, req);
 
         res.json({ success: true });
     } catch (err) {
@@ -493,11 +478,7 @@ router.post('/assets/:type', authenticate, requireAdmin, (req, res) => {
                 fs.copyFileSync(req.file.path, path.join(distDir, req.file.filename));
             }
 
-            await pool.query(
-                `INSERT INTO system_logs (event_type, description, user_id, user_name, metadata)
-                 VALUES ('SEO_ASSET_CHANGED', ?, ?, ?, ?)`,
-                [`נכס ${req.params.type} עודכן`, req.user.id, req.user.name, JSON.stringify({ url: assetUrl })]
-            );
+            await logEvent('SEO_ASSET_CHANGED', `נכס ${req.params.type} עודכן`, req.user, { url: assetUrl }, req);
 
             res.json({ success: true, url: assetUrl });
         } catch (dbErr) {

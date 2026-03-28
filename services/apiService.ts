@@ -205,8 +205,16 @@ export const progressApi = {
 
 // --- Logs API ---
 export const logsApi = {
-    get: (limit?: number, eventType?: string) =>
-        request(`/logs?limit=${limit || 100}${eventType ? `&eventType=${eventType}` : ''}`),
+    get: (params?: { limit?: number; eventType?: string; userId?: string; from?: string; to?: string; search?: string }) => {
+        const p = new URLSearchParams();
+        if (params?.limit) p.set('limit', String(params.limit));
+        if (params?.eventType) p.set('eventType', params.eventType);
+        if (params?.userId) p.set('userId', params.userId);
+        if (params?.from) p.set('from', params.from);
+        if (params?.to) p.set('to', params.to);
+        if (params?.search) p.set('search', params.search);
+        return request(`/logs?${p.toString()}`);
+    },
 };
 
 const apiService = {

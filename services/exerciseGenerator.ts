@@ -21,12 +21,12 @@ function pickRandom<T>(arr: T[], count: number): T[] {
 
 function getDistractors(targetWord: TutorWord, allWords: TutorWord[], count: number = 3): string[] {
   const others = allWords.filter(w => w.id !== targetWord.id);
-  return pickRandom(others, count).map(w => w.hebrew);
+  return pickRandom(others, count).map(w => w.hebrewShort);
 }
 
 function getDistractorTerms(targetWord: TutorWord, allWords: TutorWord[], count: number = 3): string[] {
   const others = allWords.filter(w => w.id !== targetWord.id);
-  return pickRandom(others, count).map(w => w.term);
+  return pickRandom(others, count).map(w => w.hebrewScript);
 }
 
 let exerciseCounter = 0;
@@ -39,15 +39,15 @@ function makeId(): string {
 
 function generateMultipleChoice(word: TutorWord, allWords: TutorWord[]): Exercise {
   const distractors = getDistractors(word, allWords);
-  const options = shuffleArray([word.hebrew, ...distractors]);
+  const options = shuffleArray([word.hebrewShort, ...distractors]);
   return {
     id: makeId(),
     type: 'multiple_choice',
-    question: word.term,
+    question: word.hebrewScript,
     options,
-    correctAnswer: word.hebrew,
-    audioText: word.term,
-    explanation: word.pronunciation ? `הגייה: ${word.pronunciation}` : undefined,
+    correctAnswer: word.hebrewShort,
+    audioText: word.hebrewScript,
+    explanation: word.pronunciationGuide ? `הגייה: ${word.pronunciationGuide}` : undefined,
   };
 }
 
@@ -58,111 +58,111 @@ function generateMatchingPairs(words: TutorWord[]): Exercise {
     type: 'matching_pairs',
     question: 'חבר כל מילה לתרגום שלה',
     correctAnswer: '',
-    pairs: selected.map(w => ({ term: w.term, translation: w.hebrew })),
+    pairs: selected.map(w => ({ term: w.hebrewScript, translation: w.hebrewShort })),
   };
 }
 
 function generateAudioRecognition(word: TutorWord, allWords: TutorWord[]): Exercise {
   const distractorTerms = getDistractorTerms(word, allWords);
-  const options = shuffleArray([word.term, ...distractorTerms]);
+  const options = shuffleArray([word.hebrewScript, ...distractorTerms]);
   return {
     id: makeId(),
     type: 'audio_recognition',
     question: 'הקשב ובחר את המילה שנאמרה',
     options,
-    correctAnswer: word.term,
-    audioText: word.term,
+    correctAnswer: word.hebrewScript,
+    audioText: word.hebrewScript,
   };
 }
 
 function generateContextAssociation(word: TutorWord, allWords: TutorWord[]): Exercise {
   const distractors = getDistractors(word, allWords);
-  const options = shuffleArray([word.hebrew, ...distractors]);
-  const hint = word.example || word.pronunciation || '';
+  const options = shuffleArray([word.hebrewShort, ...distractors]);
+  const hint = word.example || word.pronunciationGuide || '';
   return {
     id: makeId(),
     type: 'context_association',
-    question: `${word.term}${hint ? `\n💡 ${hint}` : ''}`,
+    question: `${word.hebrewScript}${hint ? `\n💡 ${hint}` : ''}`,
     options,
-    correctAnswer: word.hebrew,
-    audioText: word.term,
+    correctAnswer: word.hebrewShort,
+    audioText: word.hebrewScript,
     explanation: word.example ? `דוגמה: ${word.example}` : undefined,
   };
 }
 
 function generateWordBankHeToJu(word: TutorWord, allWords: TutorWord[]): Exercise {
-  const letters = word.term.split('');
+  const letters = word.hebrewScript.split('');
   const extraLetters = pickRandom(
-    allWords.filter(w => w.id !== word.id).flatMap(w => w.term.split('')),
+    allWords.filter(w => w.id !== word.id).flatMap(w => w.hebrewScript.split('')),
     Math.min(3, Math.ceil(letters.length * 0.5))
   );
   const tiles = shuffleArray([...letters, ...extraLetters]);
   return {
     id: makeId(),
     type: 'word_bank_he_to_ju',
-    question: word.hebrew,
-    correctAnswer: word.term,
+    question: word.hebrewShort,
+    correctAnswer: word.hebrewScript,
     tiles,
-    audioText: word.term,
-    explanation: word.pronunciation ? `הגייה: ${word.pronunciation}` : undefined,
+    audioText: word.hebrewScript,
+    explanation: word.pronunciationGuide ? `הגייה: ${word.pronunciationGuide}` : undefined,
   };
 }
 
 function generateWordBankJuToHe(word: TutorWord, allWords: TutorWord[]): Exercise {
-  const letters = word.hebrew.split('');
+  const letters = word.hebrewShort.split('');
   const extraLetters = pickRandom(
-    allWords.filter(w => w.id !== word.id).flatMap(w => w.hebrew.split('')),
+    allWords.filter(w => w.id !== word.id).flatMap(w => w.hebrewShort.split('')),
     Math.min(3, Math.ceil(letters.length * 0.5))
   );
   const tiles = shuffleArray([...letters, ...extraLetters]);
   return {
     id: makeId(),
     type: 'word_bank_ju_to_he',
-    question: word.term,
-    correctAnswer: word.hebrew,
+    question: word.hebrewScript,
+    correctAnswer: word.hebrewShort,
     tiles,
-    audioText: word.term,
+    audioText: word.hebrewScript,
   };
 }
 
 function generateFillBlank(word: TutorWord, allWords: TutorWord[]): Exercise {
-  const sentence = word.example || `_____ (${word.hebrew})`;
+  const sentence = word.example || `_____ (${word.hebrewShort})`;
   const distractorTerms = getDistractorTerms(word, allWords, 3);
-  const options = shuffleArray([word.term, ...distractorTerms]);
+  const options = shuffleArray([word.hebrewScript, ...distractorTerms]);
   return {
     id: makeId(),
     type: 'fill_blank',
     question: 'השלם את החסר',
-    sentence: sentence.replace(word.term, '_____') || `_____ = ${word.hebrew}`,
+    sentence: sentence.replace(word.hebrewScript, '_____') || `_____ = ${word.hebrewShort}`,
     options,
-    correctAnswer: word.term,
-    audioText: word.term,
-    blank: word.term,
+    correctAnswer: word.hebrewScript,
+    audioText: word.hebrewScript,
+    blank: word.hebrewScript,
   };
 }
 
 function generateSpellingChallenge(word: TutorWord): Exercise {
-  const letters = shuffleArray(word.term.split(''));
+  const letters = shuffleArray(word.hebrewScript.split(''));
   return {
     id: makeId(),
     type: 'spelling_challenge',
-    question: `איית: ${word.hebrew}`,
-    correctAnswer: word.term,
+    question: `איית: ${word.hebrewShort}`,
+    correctAnswer: word.hebrewScript,
     tiles: letters,
-    audioText: word.term,
+    audioText: word.hebrewScript,
   };
 }
 
 function generateListenSelect(word: TutorWord, allWords: TutorWord[]): Exercise {
   const distractors = getDistractors(word, allWords);
-  const options = shuffleArray([word.hebrew, ...distractors]);
+  const options = shuffleArray([word.hebrewShort, ...distractors]);
   return {
     id: makeId(),
     type: 'listen_select',
     question: 'הקשב ובחר את התרגום הנכון',
     options,
-    correctAnswer: word.hebrew,
-    audioText: word.term,
+    correctAnswer: word.hebrewShort,
+    audioText: word.hebrewScript,
   };
 }
 
@@ -171,9 +171,9 @@ function generateDictation(word: TutorWord): Exercise {
     id: makeId(),
     type: 'dictation',
     question: 'הקשב וכתוב את המילה',
-    correctAnswer: word.term,
-    audioText: word.term,
-    explanation: `${word.term} = ${word.hebrew}`,
+    correctAnswer: word.hebrewScript,
+    audioText: word.hebrewScript,
+    explanation: `${word.hebrewScript} = ${word.hebrewShort}`,
   };
 }
 
@@ -184,28 +184,28 @@ function generateSpeedMatch(words: TutorWord[]): Exercise {
     type: 'speed_match',
     question: 'חבר במהירות!',
     correctAnswer: '',
-    pairs: selected.map(w => ({ term: w.term, translation: w.hebrew })),
+    pairs: selected.map(w => ({ term: w.hebrewScript, translation: w.hebrewShort })),
   };
 }
 
 function generateTrueFalseFlash(word: TutorWord, allWords: TutorWord[]): Exercise {
   const isCorrect = Math.random() > 0.4; // 60% correct, 40% false
-  let shownTranslation = word.hebrew;
+  let shownTranslation = word.hebrewShort;
 
   if (!isCorrect) {
-    const others = allWords.filter(w => w.id !== word.id && w.hebrew !== word.hebrew);
+    const others = allWords.filter(w => w.id !== word.id && w.hebrewShort !== word.hebrewShort);
     if (others.length > 0) {
-      shownTranslation = others[Math.floor(Math.random() * others.length)].hebrew;
+      shownTranslation = others[Math.floor(Math.random() * others.length)].hebrewShort;
     }
   }
 
   return {
     id: makeId(),
     type: 'true_false_flash',
-    question: `${word.term} = ${shownTranslation}`,
+    question: `${word.hebrewScript} = ${shownTranslation}`,
     correctAnswer: isCorrect ? 'true' : 'false',
     isCorrect,
-    audioText: word.term,
+    audioText: word.hebrewScript,
   };
 }
 
@@ -245,11 +245,11 @@ export function generateLesson(
     exercises.push({
       id: makeId(),
       type: 'multiple_choice',
-      question: word.term,
-      options: shuffleArray([word.hebrew, ...getDistractors(word, allWords)]),
-      correctAnswer: word.hebrew,
-      audioText: word.term,
-      explanation: `${word.term} = ${word.hebrew}${word.pronunciation ? ` (${word.pronunciation})` : ''}`,
+      question: word.hebrewScript,
+      options: shuffleArray([word.hebrewShort, ...getDistractors(word, allWords)]),
+      correctAnswer: word.hebrewShort,
+      audioText: word.hebrewScript,
+      explanation: `${word.hebrewScript} = ${word.hebrewShort}${word.pronunciationGuide ? ` (${word.pronunciationGuide})` : ''}`,
     });
   }
 

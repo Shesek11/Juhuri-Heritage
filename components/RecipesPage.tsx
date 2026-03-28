@@ -4,7 +4,8 @@
 // Main page for browsing recipes
 
 import React, { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
+import { useRouter } from '@/src/i18n/navigation';
 import { useTranslations } from 'next-intl';
 import { Search, ChefHat, Plus, Filter, Grid, List, Loader2, RefreshCw } from 'lucide-react';
 import { recipesService, Recipe, RecipeTag, RecipesResponse } from '../services/recipesService';

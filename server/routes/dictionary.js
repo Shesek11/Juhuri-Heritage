@@ -3,7 +3,8 @@ const router = express.Router();
 const db = require('../config/db');
 const { authenticate, requireApprover, optionalAuth } = require('../middleware/auth');
 const { body, query: queryParam, param, validationResult } = require('express-validator');
-const { normalizeTerm } = require('../utils/normalization');
+const { normalizeHebrewScript } = require('../utils/normalization');
+const { logEvent, getClientIp } = require('../utils/logEvent');
 
 // Validation middleware helper
 const validate = (req, res, next) => {
@@ -30,23 +31,23 @@ router.get('/search', [
              FROM dictionary_entries de
              LEFT JOIN users u ON de.contributor_id = u.id
              LEFT JOIN users a ON de.approved_by = a.id
-             LEFT JOIN translations t ON de.id = t.entry_id
+             LEFT JOIN dialect_scripts t ON de.id = t.entry_id
              WHERE de.status = 'active'
-               AND (de.term LIKE ?
-                    OR MATCH(t.hebrew) AGAINST(? IN BOOLEAN MODE)
-                    OR t.hebrew LIKE ?
-                    OR t.latin LIKE ?
-                    OR t.cyrillic LIKE ?
-                    OR de.russian LIKE ?)
+               AND (de.hebrew_script LIKE ?
+                    OR MATCH(t.hebrew_script) AGAINST(? IN BOOLEAN MODE)
+                    OR t.hebrew_script LIKE ?
+                    OR t.latin_script LIKE ?
+                    OR t.cyrillic_script LIKE ?
+                    OR de.russian_short LIKE ?)
              GROUP BY de.id
              ORDER BY
                 CASE
-                  WHEN de.term = ? THEN 0
-                  WHEN t.hebrew = ? THEN 1
-                  WHEN t.latin = ? THEN 1
-                  WHEN t.cyrillic = ? THEN 1
-                  WHEN de.term LIKE ? THEN 2
-                  WHEN t.hebrew LIKE ? THEN 3
+                  WHEN de.hebrew_script = ? THEN 0
+                  WHEN t.hebrew_script = ? THEN 1
+                  WHEN t.latin_script = ? THEN 1
+                  WHEN t.cyrillic_script = ? THEN 1
+                  WHEN de.hebrew_script LIKE ? THEN 2
+                  WHEN t.hebrew_script LIKE ? THEN 3
                   ELSE 4
                 END,
                 community_score DESC,
@@ -65,21 +66,16 @@ router.get('/search', [
 
         // Fetch all related data in parallel (5 queries at once instead of sequential)
         const [
-            [translations],
-            [definitions],
+            [dialectScripts],
             [examples],
             [fieldSourceRows],
             [pendingSuggestionRows]
         ] = await Promise.all([
             db.query(
                 `SELECT t.*, COALESCE(d.name, '') as dialect
-                 FROM translations t
+                 FROM dialect_scripts t
                  LEFT JOIN dialects d ON t.dialect_id = d.id
                  WHERE t.entry_id = ?`,
-                [entry.id]
-            ),
-            db.query(
-                'SELECT definition FROM definitions WHERE entry_id = ?',
                 [entry.id]
             ),
             db.query(
@@ -91,8 +87,8 @@ router.get('/search', [
                 [entry.id]
             ),
             db.query(
-                `SELECT id, field_name, suggested_hebrew, suggested_latin,
-                        suggested_cyrillic, suggested_russian, reason,
+                `SELECT id, field_name, suggested_hebrew_short, suggested_latin_script,
+                        suggested_cyrillic_script, suggested_russian_short, reason,
                         user_id, created_at
                  FROM translation_suggestions
                  WHERE entry_id = ? AND status = 'pending'`,
@@ -107,15 +103,15 @@ router.get('/search', [
         // Map pending suggestions to a per-field lookup
         const pendingSuggestions = pendingSuggestionRows.map(s => ({
             id: s.id,
-            fieldName: s.field_name || (s.suggested_hebrew ? 'hebrew' : s.suggested_latin ? 'latin' : s.suggested_cyrillic ? 'cyrillic' : s.suggested_russian ? 'russian' : 'hebrew'),
-            suggestedValue: s.suggested_hebrew || s.suggested_latin || s.suggested_cyrillic || s.suggested_russian || '',
+            fieldName: s.field_name || (s.suggested_hebrew_short ? 'hebrewScript' : s.suggested_latin_script ? 'latinScript' : s.suggested_cyrillic_script ? 'cyrillicScript' : s.suggested_russian_short ? 'russianShort' : 'hebrewScript'),
+            suggestedValue: s.suggested_hebrew_short || s.suggested_latin_script || s.suggested_cyrillic_script || s.suggested_russian_short || '',
             userId: s.user_id ? String(s.user_id) : undefined,
             createdAt: s.created_at,
             reason: s.reason,
         }));
 
         // Compute community signals
-        const communityScore = translations.reduce((sum, t) => sum + (t.upvotes || 0) - (t.downvotes || 0), 0);
+        const communityScore = dialectScripts.reduce((sum, t) => sum + (t.upvotes || 0) - (t.downvotes || 0), 0);
         const verificationLevel = entry.approved_by ? 'verified'
             : entry.source === 'קהילה' ? 'community'
             : entry.source === 'AI' ? 'ai'
@@ -123,23 +119,27 @@ router.get('/search', [
 
         const result = {
             id: String(entry.id),
-            term: entry.term,
+            hebrewScript: entry.hebrew_script,
             detectedLanguage: entry.detected_language,
             sourceName: entry.source_name || null,
-            translations: translations.map(t => ({
+            hebrewShort: entry.hebrew_short || null,
+            hebrewLong: entry.hebrew_long || null,
+            russianShort: entry.russian_short || null,
+            russianLong: entry.russian_long || null,
+            englishShort: entry.english_short || null,
+            englishLong: entry.english_long || null,
+            dialectScripts: dialectScripts.map(t => ({
                 id: t.id,
                 dialect: t.dialect,
-                hebrew: t.hebrew,
-                latin: t.latin,
-                cyrillic: t.cyrillic,
+                hebrewScript: t.hebrew_script,
+                latinScript: t.latin_script,
+                cyrillicScript: t.cyrillic_script,
+                pronunciationGuide: t.pronunciation_guide || null,
                 upvotes: t.upvotes || 0,
                 downvotes: t.downvotes || 0,
             })),
-            definitions: definitions.map(d => d.definition),
             examples,
-            pronunciationGuide: entry.pronunciation_guide,
             partOfSpeech: entry.part_of_speech,
-            russian: entry.russian,
             isCustom: true,
             source: entry.source,
             status: entry.status,
@@ -156,48 +156,44 @@ router.get('/search', [
             const additionalIds = additionalEntries.map(e => e.id);
             const placeholders = additionalIds.map(() => '?').join(',');
 
-            // Batch: get all translations and definitions in 2 queries instead of 2*N
+            // Batch: get all dialect_scripts in 1 query instead of N
             const [allTrans] = await db.query(
                 `SELECT t.*, COALESCE(d.name, '') as dialect
-                 FROM translations t LEFT JOIN dialects d ON t.dialect_id = d.id
+                 FROM dialect_scripts t LEFT JOIN dialects d ON t.dialect_id = d.id
                  WHERE t.entry_id IN (${placeholders})`, additionalIds
-            );
-            const [allDefs] = await db.query(
-                `SELECT entry_id, definition FROM definitions WHERE entry_id IN (${placeholders})`, additionalIds
             );
 
             // Group by entry_id
             const transMap = {};
-            const defsMap = {};
             for (const t of allTrans) {
                 (transMap[t.entry_id] ||= []).push(t);
-            }
-            for (const d of allDefs) {
-                (defsMap[d.entry_id] ||= []).push(d.definition);
             }
 
             for (const e of additionalEntries) {
                 const trans = transMap[e.id] || [];
-                const defs = defsMap[e.id] || [];
                 const score = trans.reduce((sum, t) => sum + (t.upvotes || 0) - (t.downvotes || 0), 0);
                 const vLevel = e.approved_by ? 'verified'
                     : e.source === 'קהילה' ? 'community'
                     : e.source === 'AI' ? 'ai' : 'unverified';
                 allResults.push({
                     id: String(e.id),
-                    term: e.term,
+                    hebrewScript: e.hebrew_script,
                     detectedLanguage: e.detected_language,
                     sourceName: e.source_name || null,
-                    translations: trans.map(t => ({
-                        id: t.id, dialect: t.dialect, hebrew: t.hebrew,
-                        latin: t.latin, cyrillic: t.cyrillic,
+                    hebrewShort: e.hebrew_short || null,
+                    hebrewLong: e.hebrew_long || null,
+                    russianShort: e.russian_short || null,
+                    russianLong: e.russian_long || null,
+                    englishShort: e.english_short || null,
+                    englishLong: e.english_long || null,
+                    dialectScripts: trans.map(t => ({
+                        id: t.id, dialect: t.dialect, hebrewScript: t.hebrew_script,
+                        latinScript: t.latin_script, cyrillicScript: t.cyrillic_script,
+                        pronunciationGuide: t.pronunciation_guide || null,
                         upvotes: t.upvotes || 0, downvotes: t.downvotes || 0,
                     })),
-                    definitions: defs,
                     examples: [],
-                    pronunciationGuide: e.pronunciation_guide,
                     partOfSpeech: e.part_of_speech,
-                    russian: e.russian,
                     isCustom: true,
                     source: e.source,
                     status: e.status,
@@ -207,23 +203,23 @@ router.get('/search', [
             }
         }
 
-        // Check for duplicates: entries sharing term_normalized with other active entries
-        const normalizedTerms = [...new Set(entries.map(e => e.term_normalized).filter(Boolean))];
+        // Check for duplicates: entries sharing hebrew_script_normalized with other active entries
+        const normalizedTerms = [...new Set(entries.map(e => e.hebrew_script_normalized).filter(Boolean))];
         let dupNormSet = new Set();
         if (normalizedTerms.length > 0) {
             const [dupRows] = await db.query(
-                `SELECT term_normalized FROM dictionary_entries
-                 WHERE status = 'active' AND term_normalized IN (${normalizedTerms.map(() => '?').join(',')})
-                 GROUP BY term_normalized HAVING COUNT(*) > 1`,
+                `SELECT hebrew_script_normalized FROM dictionary_entries
+                 WHERE status = 'active' AND hebrew_script_normalized IN (${normalizedTerms.map(() => '?').join(',')})
+                 GROUP BY hebrew_script_normalized HAVING COUNT(*) > 1`,
                 normalizedTerms
             );
-            dupNormSet = new Set(dupRows.map(r => r.term_normalized));
+            dupNormSet = new Set(dupRows.map(r => r.hebrew_script_normalized));
         }
 
         // Add hasDuplicates flag to each result
         for (let i = 0; i < allResults.length; i++) {
             const e = entries[i < entries.length ? i : 0];
-            allResults[i].hasDuplicates = dupNormSet.has(e?.term_normalized);
+            allResults[i].hasDuplicates = dupNormSet.has(e?.hebrew_script_normalized);
         }
 
         res.json({ found: true, entry: result, results: allResults });
@@ -243,7 +239,7 @@ router.get('/entry/:term', async (req, res) => {
             `SELECT de.*, u.name as contributor_name
              FROM dictionary_entries de
              LEFT JOIN users u ON de.contributor_id = u.id
-             WHERE de.status = 'active' AND de.term = ?
+             WHERE de.status = 'active' AND de.hebrew_script = ?
              LIMIT 1`,
             [term]
         );
@@ -256,8 +252,7 @@ router.get('/entry/:term', async (req, res) => {
 
         // Fetch all data in parallel (including word-page-specific data)
         const [
-            [translations],
-            [definitions],
+            [dialectScripts],
             [examples],
             [fieldSourceRows],
             [pendingSuggestionRows],
@@ -268,25 +263,24 @@ router.get('/entry/:term', async (req, res) => {
         ] = await Promise.all([
             db.query(
                 `SELECT t.*, COALESCE(d.name, '') as dialect
-                 FROM translations t
+                 FROM dialect_scripts t
                  LEFT JOIN dialects d ON t.dialect_id = d.id
                  WHERE t.entry_id = ?`,
                 [entry.id]
             ),
-            db.query('SELECT definition FROM definitions WHERE entry_id = ?', [entry.id]),
             db.query('SELECT origin, translated, transliteration FROM examples WHERE entry_id = ?', [entry.id]),
             db.query('SELECT field_name, source_type FROM field_sources WHERE entry_id = ?', [entry.id]),
             db.query(
-                `SELECT id, field_name, suggested_hebrew, suggested_latin,
-                        suggested_cyrillic, suggested_russian, reason,
+                `SELECT id, field_name, suggested_hebrew_short, suggested_latin_script,
+                        suggested_cyrillic_script, suggested_russian_short, reason,
                         user_id, created_at
                  FROM translation_suggestions
                  WHERE entry_id = ? AND status = 'pending'`,
                 [entry.id]
             ),
             db.query(
-                `SELECT rw.relation_type, de.id, de.term, de.part_of_speech,
-                        (SELECT t.hebrew FROM translations t WHERE t.entry_id = de.id LIMIT 1) as hebrew
+                `SELECT rw.relation_type, de.id, de.hebrew_script, de.part_of_speech,
+                        (SELECT t.hebrew_script FROM dialect_scripts t WHERE t.entry_id = de.id LIMIT 1) as dialect_hebrew_script
                  FROM related_words rw
                  JOIN dictionary_entries de ON de.id = rw.related_entry_id
                  WHERE rw.entry_id = ? AND de.status = 'active'
@@ -295,16 +289,16 @@ router.get('/entry/:term', async (req, res) => {
             ),
             db.query('SELECT COUNT(*) as count FROM entry_likes WHERE entry_id = ?', [entry.id]),
             db.query('SELECT COUNT(*) as count FROM comments WHERE entry_id = ? AND status = ?', [entry.id, 'approved']),
-            // Possible duplicates: entries with same normalized term
-            entry.term_normalized
+            // Possible duplicates: entries with same normalized hebrew_script
+            entry.hebrew_script_normalized
                 ? db.query(
-                    `SELECT de.id, de.term,
-                            (SELECT t.hebrew FROM translations t WHERE t.entry_id = de.id LIMIT 1) as hebrew,
-                            (SELECT t.latin FROM translations t WHERE t.entry_id = de.id LIMIT 1) as latin
+                    `SELECT de.id, de.hebrew_script,
+                            (SELECT t.hebrew_script FROM dialect_scripts t WHERE t.entry_id = de.id LIMIT 1) as dialect_hebrew_script,
+                            (SELECT t.latin_script FROM dialect_scripts t WHERE t.entry_id = de.id LIMIT 1) as latin_script
                      FROM dictionary_entries de
-                     WHERE de.term_normalized = ? AND de.id != ? AND de.status = 'active'
+                     WHERE de.hebrew_script_normalized = ? AND de.id != ? AND de.status = 'active'
                      LIMIT 5`,
-                    [entry.term_normalized, entry.id]
+                    [entry.hebrew_script_normalized, entry.id]
                 )
                 : Promise.resolve([[]]),
         ]);
@@ -324,14 +318,14 @@ router.get('/entry/:term', async (req, res) => {
 
         const pendingSuggestions = pendingSuggestionRows.map(s => ({
             id: s.id,
-            fieldName: s.field_name || (s.suggested_hebrew ? 'hebrew' : s.suggested_latin ? 'latin' : s.suggested_cyrillic ? 'cyrillic' : s.suggested_russian ? 'russian' : 'hebrew'),
-            suggestedValue: s.suggested_hebrew || s.suggested_latin || s.suggested_cyrillic || s.suggested_russian || '',
+            fieldName: s.field_name || (s.suggested_hebrew_short ? 'hebrewScript' : s.suggested_latin_script ? 'latinScript' : s.suggested_cyrillic_script ? 'cyrillicScript' : s.suggested_russian_short ? 'russianShort' : 'hebrewScript'),
+            suggestedValue: s.suggested_hebrew_short || s.suggested_latin_script || s.suggested_cyrillic_script || s.suggested_russian_short || '',
             userId: s.user_id ? String(s.user_id) : undefined,
             createdAt: s.created_at,
             reason: s.reason,
         }));
 
-        const communityScore = translations.reduce((sum, t) => sum + (t.upvotes || 0) - (t.downvotes || 0), 0);
+        const communityScore = dialectScripts.reduce((sum, t) => sum + (t.upvotes || 0) - (t.downvotes || 0), 0);
         const verificationLevel = entry.approved_by ? 'verified'
             : entry.source === 'קהילה' ? 'community'
             : entry.source === 'AI' ? 'ai' : 'unverified';
@@ -340,23 +334,27 @@ router.get('/entry/:term', async (req, res) => {
             found: true,
             entry: {
                 id: String(entry.id),
-                term: entry.term,
+                hebrewScript: entry.hebrew_script,
                 detectedLanguage: entry.detected_language,
                 sourceName: entry.source_name || null,
-                translations: translations.map(t => ({
+                hebrewShort: entry.hebrew_short || null,
+                hebrewLong: entry.hebrew_long || null,
+                russianShort: entry.russian_short || null,
+                russianLong: entry.russian_long || null,
+                englishShort: entry.english_short || null,
+                englishLong: entry.english_long || null,
+                dialectScripts: dialectScripts.map(t => ({
                     id: t.id,
                     dialect: t.dialect,
-                    hebrew: t.hebrew,
-                    latin: t.latin,
-                    cyrillic: t.cyrillic,
+                    hebrewScript: t.hebrew_script,
+                    latinScript: t.latin_script,
+                    cyrillicScript: t.cyrillic_script,
+                    pronunciationGuide: t.pronunciation_guide || null,
                     upvotes: t.upvotes || 0,
                     downvotes: t.downvotes || 0,
                 })),
-                definitions: definitions.map(d => d.definition),
                 examples,
-                pronunciationGuide: entry.pronunciation_guide,
                 partOfSpeech: entry.part_of_speech,
-                russian: entry.russian,
                 isCustom: true,
                 source: entry.source,
                 fieldSources,
@@ -367,16 +365,16 @@ router.get('/entry/:term', async (req, res) => {
                 commentsCount: commentsData[0]?.count || 0,
                 relatedWords: relatedRows.map(r => ({
                     id: String(r.id),
-                    term: r.term,
-                    hebrew: r.hebrew,
+                    hebrewScript: r.hebrew_script,
+                    dialectHebrewScript: r.dialect_hebrew_script,
                     partOfSpeech: r.part_of_speech,
                     relationType: r.relation_type,
                 })),
                 possibleDuplicates: possibleDuplicateRows.map(d => ({
                     id: String(d.id),
-                    term: d.term,
-                    hebrew: d.hebrew,
-                    latin: d.latin,
+                    hebrewScript: d.hebrew_script,
+                    dialectHebrewScript: d.dialect_hebrew_script,
+                    latinScript: d.latin_script,
                 })),
             }
         });
@@ -403,8 +401,8 @@ router.get('/word-of-day', async (req, res) => {
         // Get total count of active entries with Hebrew translation
         const [[{ total }]] = await db.query(
             `SELECT COUNT(*) as total FROM dictionary_entries de
-             JOIN translations t ON de.id = t.entry_id
-             WHERE de.status = 'active' AND t.hebrew IS NOT NULL AND TRIM(t.hebrew) != ''`
+             JOIN dialect_scripts t ON de.id = t.entry_id
+             WHERE de.status = 'active' AND t.hebrew_script IS NOT NULL AND TRIM(t.hebrew_script) != ''`
         );
 
         if (total === 0) {
@@ -419,12 +417,13 @@ router.get('/word-of-day', async (req, res) => {
 
         // Get the word at that offset
         const [entries] = await db.query(
-            `SELECT de.id, de.term, de.detected_language, de.pronunciation_guide,
-                    t.hebrew, t.latin, t.cyrillic, COALESCE(d.name, '') as dialect
+            `SELECT de.id, de.hebrew_script, de.detected_language,
+                    t.hebrew_script as dialect_hebrew_script, t.latin_script, t.cyrillic_script,
+                    t.pronunciation_guide, COALESCE(d.name, '') as dialect
              FROM dictionary_entries de
-             JOIN translations t ON de.id = t.entry_id
+             JOIN dialect_scripts t ON de.id = t.entry_id
              LEFT JOIN dialects d ON t.dialect_id = d.id
-             WHERE de.status = 'active' AND t.hebrew IS NOT NULL AND t.hebrew != ''
+             WHERE de.status = 'active' AND t.hebrew_script IS NOT NULL AND t.hebrew_script != ''
              ORDER BY de.id
              LIMIT 1 OFFSET ?`,
             [offset]
@@ -438,14 +437,14 @@ router.get('/word-of-day', async (req, res) => {
         res.json({
             word: {
                 id: entry.id,
-                term: entry.term,
+                hebrewScript: entry.hebrew_script,
                 detectedLanguage: entry.detected_language,
                 pronunciationGuide: entry.pronunciation_guide,
-                translations: [{
+                dialectScripts: [{
                     dialect: entry.dialect,
-                    hebrew: entry.hebrew,
-                    latin: entry.latin,
-                    cyrillic: entry.cyrillic
+                    hebrewScript: entry.dialect_hebrew_script,
+                    latinScript: entry.latin_script,
+                    cyrillicScript: entry.cyrillic_script
                 }]
             }
         });
@@ -460,17 +459,26 @@ router.get('/recent', async (req, res) => {
     try {
         const limit = parseInt(req.query.limit) || 10;
 
-        const [entries] = await db.query(
-            `SELECT de.id, de.term, de.detected_language, de.created_at,
-                    t.hebrew, t.latin
+        const [rows] = await db.query(
+            `SELECT de.id, de.hebrew_script, de.detected_language, de.created_at,
+                    t.hebrew_script as t_hebrew_script, t.latin_script
              FROM dictionary_entries de
-             LEFT JOIN translations t ON de.id = t.entry_id
+             LEFT JOIN dialect_scripts t ON de.id = t.entry_id
              WHERE de.status = 'active'
              GROUP BY de.id
              ORDER BY de.created_at DESC
              LIMIT ?`,
             [limit]
         );
+
+        const entries = rows.map(e => ({
+            id: e.id,
+            hebrewScript: e.hebrew_script,
+            detectedLanguage: e.detected_language,
+            createdAt: e.created_at,
+            hebrewShort: e.t_hebrew_script,
+            latinScript: e.latin_script,
+        }));
 
         res.json({ entries });
     } catch (err) {
@@ -518,7 +526,7 @@ router.get('/entries', authenticate, requireApprover, async (req, res) => {
         }
 
         if (search && search.trim()) {
-            conditions.push('(de.term LIKE ? OR t_search.hebrew LIKE ?)');
+            conditions.push('(de.hebrew_script LIKE ? OR t_search.hebrew_script LIKE ?)');
             params.push(`%${search.trim()}%`, `%${search.trim()}%`);
         }
 
@@ -528,25 +536,26 @@ router.get('/entries', authenticate, requireApprover, async (req, res) => {
         const [[{ total }]] = await db.query(
             `SELECT COUNT(DISTINCT de.id) as total
              FROM dictionary_entries de
-             LEFT JOIN translations t_search ON de.id = t_search.entry_id
+             LEFT JOIN dialect_scripts t_search ON de.id = t_search.entry_id
              ${whereClause}`,
             params
         );
 
-        // Get page of entries with their first translation (single JOIN instead of N+1)
+        // Get page of entries with their first dialect_script (single JOIN instead of N+1)
         const [entries] = await db.query(
-            `SELECT de.id, de.term, de.detected_language, de.pronunciation_guide,
-                    de.part_of_speech, de.russian, de.source, de.source_name, de.status, de.created_at,
+            `SELECT de.id, de.hebrew_script, de.detected_language,
+                    de.hebrew_short, de.hebrew_long, de.russian_short, de.russian_long,
+                    de.english_short, de.english_long,
+                    de.part_of_speech, de.source, de.source_name, de.status, de.created_at,
                     u.name as contributor_name,
-                    t.id as trans_id, t.hebrew, t.latin, t.cyrillic,
-                    COALESCE(d.name, '') as dialect,
-                    def.definition
+                    t.id as trans_id, t.hebrew_script as dialect_hebrew_script, t.latin_script, t.cyrillic_script,
+                    t.pronunciation_guide,
+                    COALESCE(d.name, '') as dialect
              FROM dictionary_entries de
              LEFT JOIN users u ON de.contributor_id = u.id
-             LEFT JOIN translations t ON de.id = t.entry_id
-             LEFT JOIN translations t_search ON de.id = t_search.entry_id
+             LEFT JOIN dialect_scripts t ON de.id = t.entry_id
+             LEFT JOIN dialect_scripts t_search ON de.id = t_search.entry_id
              LEFT JOIN dialects d ON t.dialect_id = d.id
-             LEFT JOIN definitions def ON de.id = def.entry_id
              ${whereClause}
              GROUP BY de.id
              ORDER BY de.created_at DESC
@@ -558,21 +567,25 @@ router.get('/entries', authenticate, requireApprover, async (req, res) => {
         const result = entries.map(e => {
             const obj = {
                 id: String(e.id),
-                term: e.term,
+                hebrewScript: e.hebrew_script,
                 detectedLanguage: e.detected_language,
-                pronunciationGuide: e.pronunciation_guide,
+                hebrewShort: e.hebrew_short || null,
+                hebrewLong: e.hebrew_long || null,
+                russianShort: e.russian_short || null,
+                russianLong: e.russian_long || null,
+                englishShort: e.english_short || null,
+                englishLong: e.english_long || null,
+                pronunciationGuide: e.pronunciation_guide || null,
                 partOfSpeech: e.part_of_speech,
-                russian: e.russian,
                 source: e.source,
                 status: e.status,
-                translations: [{
+                dialectScripts: [{
                     id: e.trans_id,
                     dialect: e.dialect,
-                    hebrew: e.hebrew || '',
-                    latin: e.latin || '',
-                    cyrillic: e.cyrillic || '',
+                    hebrewScript: e.dialect_hebrew_script || '',
+                    latinScript: e.latin_script || '',
+                    cyrillicScript: e.cyrillic_script || '',
                 }],
-                definitions: e.definition ? [e.definition] : [],
             };
             obj.sourceName = e.source_name || '';
             obj.contributorName = e.contributor_name || '';
@@ -605,9 +618,9 @@ router.post('/entries', optionalAuth, [
         // Insert entry
         const [result] = await db.query(
             `INSERT INTO dictionary_entries
-             (term, term_normalized, detected_language, source, status, contributor_id)
-             VALUES (?, ?, ?, 'User', ?, ?)`,
-            [term, normalizeTerm(term), detectedLanguage || 'Hebrew', status, req.user?.id || null]
+             (hebrew_script, hebrew_script_normalized, detected_language, hebrew_long, source, status, contributor_id)
+             VALUES (?, ?, ?, ?, 'User', ?, ?)`,
+            [term, normalizeHebrewScript(term), detectedLanguage || 'Hebrew', notes || null, status, req.user?.id || null]
         );
 
         const entryId = result.insertId;
@@ -619,19 +632,11 @@ router.post('/entries', optionalAuth, [
             dialectId = dialects[0].id;
         }
 
-        // Insert translation
+        // Insert dialect_script
         await db.query(
-            `INSERT INTO translations (entry_id, dialect_id, hebrew, latin) VALUES (?, ?, ?, ?)`,
+            `INSERT INTO dialect_scripts (entry_id, dialect_id, hebrew_script, latin_script) VALUES (?, ?, ?, ?)`,
             [entryId, dialectId, translation, '']
         );
-
-        // Insert definition if notes provided
-        if (notes) {
-            await db.query(
-                'INSERT INTO definitions (entry_id, definition) VALUES (?, ?)',
-                [entryId, notes]
-            );
-        }
 
         // Update contributor count
         if (req.user?.id) {
@@ -642,15 +647,12 @@ router.post('/entries', optionalAuth, [
         }
 
         // Log event
-        await db.query(
-            `INSERT INTO system_logs (event_type, description, user_id, user_name, metadata) VALUES (?, ?, ?, ?, ?)`,
-            [
-                'ENTRY_ADDED',
-                status === 'pending' ? `הוצעה מילה חדשה: ${term}` : `נוספה מילה למאגר: ${term}`,
-                req.user?.id || null,
-                req.user?.name || 'אורח',
-                JSON.stringify({ term })
-            ]
+        await logEvent(
+            'ENTRY_ADDED',
+            status === 'pending' ? `הוצעה מילה חדשה: ${term}` : `נוספה מילה למאגר: ${term}`,
+            req.user || { id: null, name: 'אורח' },
+            { term, entryId, status },
+            req
         );
 
         statsCache = { data: null, expiry: 0 };
@@ -678,14 +680,13 @@ router.post('/entries/batch', authenticate, requireApprover, async (req, res) =>
             // Insert entry
             const [result] = await db.query(
                 `INSERT INTO dictionary_entries
-                 (term, term_normalized, detected_language, pronunciation_guide, source, source_name, status, contributor_id, approved_by, approved_at)
-                 VALUES (?, ?, ?, ?, ?, ?, 'active', ?, ?, NOW())
-                 ON DUPLICATE KEY UPDATE term = term`,
+                 (hebrew_script, hebrew_script_normalized, detected_language, source, source_name, status, contributor_id, approved_by, approved_at)
+                 VALUES (?, ?, ?, ?, ?, 'active', ?, ?, NOW())
+                 ON DUPLICATE KEY UPDATE hebrew_script = hebrew_script`,
                 [
                     entry.term,
-                    normalizeTerm(entry.term),
+                    normalizeHebrewScript(entry.term),
                     entry.detectedLanguage || 'Hebrew',
-                    entry.pronunciationGuide || null,
                     entry.source || 'מאגר',
                     entry.sourceName || null,
                     req.user.id,
@@ -697,29 +698,27 @@ router.post('/entries/batch', authenticate, requireApprover, async (req, res) =>
             // so we need to look up the existing entry's ID
             let entryId = result.insertId;
             if (!entryId) {
-                const [existing] = await db.query('SELECT id FROM dictionary_entries WHERE term = ?', [entry.term]);
+                const [existing] = await db.query('SELECT id FROM dictionary_entries WHERE hebrew_script = ?', [entry.term]);
                 if (existing.length === 0) continue;
                 entryId = existing[0].id;
             }
 
-            // Insert translations
+            // Insert dialect_scripts
             if (entry.translations) {
                 for (const t of entry.translations) {
                     const [dialects] = await db.query('SELECT id FROM dialects WHERE name = ?', [t.dialect || 'General']);
                     const dialectId = dialects[0]?.id || 6;
 
                     await db.query(
-                        `INSERT INTO translations (entry_id, dialect_id, hebrew, latin, cyrillic) VALUES (?, ?, ?, ?, ?)`,
+                        `INSERT INTO dialect_scripts (entry_id, dialect_id, hebrew_script, latin_script, cyrillic_script) VALUES (?, ?, ?, ?, ?)`,
                         [entryId, dialectId, t.hebrew || '', t.latin || '', t.cyrillic || '']
                     );
                 }
             }
 
-            // Insert definitions
-            if (entry.definitions) {
-                for (const def of entry.definitions) {
-                    await db.query('INSERT INTO definitions (entry_id, definition) VALUES (?, ?)', [entryId, def]);
-                }
+            // Insert hebrew_long if definitions provided
+            if (entry.definitions && entry.definitions.length > 0) {
+                await db.query('UPDATE dictionary_entries SET hebrew_long = ? WHERE id = ?', [entry.definitions.join('\n'), entryId]);
             }
 
             // Insert examples
@@ -736,6 +735,9 @@ router.post('/entries/batch', authenticate, requireApprover, async (req, res) =>
         }
 
         statsCache = { data: null, expiry: 0 };
+
+        await logEvent('ENTRIES_BATCH_ADDED', `נוספו ${addedCount} מילים בקבוצה`, req.user, { addedCount, totalRequested: entries.length }, req);
+
         res.json({ success: true, addedCount });
     } catch (err) {
         console.error('Batch add error:', err);
@@ -749,16 +751,13 @@ router.put('/entries/:term/approve', authenticate, requireApprover, async (req, 
         const { term } = req.params;
 
         await db.query(
-            `UPDATE dictionary_entries 
-             SET status = 'active', approved_by = ?, approved_at = NOW() 
-             WHERE term = ?`,
+            `UPDATE dictionary_entries
+             SET status = 'active', approved_by = ?, approved_at = NOW()
+             WHERE hebrew_script = ?`,
             [req.user.id, term]
         );
 
-        await db.query(
-            `INSERT INTO system_logs (event_type, description, user_id, user_name, metadata) VALUES (?, ?, ?, ?, ?)`,
-            ['ENTRY_APPROVED', `אושרה מילה: ${term}`, req.user.id, req.user.name, JSON.stringify({ term })]
-        );
+        await logEvent('ENTRY_APPROVED', `אושרה מילה: ${term}`, req.user, { term }, req);
 
         statsCache = { data: null, expiry: 0 };
         res.json({ success: true });
@@ -774,22 +773,19 @@ router.delete('/entries/:term', authenticate, requireApprover, async (req, res) 
         const { term } = req.params;
 
         // Get entry to determine log type
-        const [entries] = await db.query('SELECT * FROM dictionary_entries WHERE term = ?', [term]);
+        const [entries] = await db.query('SELECT * FROM dictionary_entries WHERE hebrew_script = ?', [term]);
         const entry = entries[0];
 
         if (!entry) {
             return res.status(404).json({ error: 'מילה לא נמצאה' });
         }
 
-        await db.query('DELETE FROM dictionary_entries WHERE term = ?', [term]);
+        await db.query('DELETE FROM dictionary_entries WHERE hebrew_script = ?', [term]);
 
         const eventType = entry.status === 'pending' ? 'ENTRY_REJECTED' : 'ENTRY_DELETED';
         const description = entry.status === 'pending' ? `נדחתה הצעה למילה: ${term}` : `נמחקה מילה מהמאגר: ${term}`;
 
-        await db.query(
-            `INSERT INTO system_logs (event_type, description, user_id, user_name, metadata) VALUES (?, ?, ?, ?, ?)`,
-            [eventType, description, req.user.id, req.user.name, JSON.stringify({ term })]
-        );
+        await logEvent(eventType, description, req.user, { term }, req);
 
         statsCache = { data: null, expiry: 0 };
         res.json({ success: true });
@@ -883,23 +879,27 @@ router.post('/entries/:id/comments', authenticate, [
 router.put('/translations/:id', authenticate, requireApprover, async (req, res) => {
     try {
         const { id } = req.params;
-        const { hebrew, latin, cyrillic, dialectId } = req.body;
+        const { hebrewScript, latinScript, cyrillicScript, dialectId, pronunciationGuide } = req.body;
 
         const updates = [];
         const values = [];
 
-        if (hebrew !== undefined) {
-            updates.push('hebrew = ?');
-            values.push(hebrew);
+        if (hebrewScript !== undefined) {
+            updates.push('hebrew_script = ?');
+            values.push(hebrewScript);
         }
 
-        if (latin !== undefined) {
-            updates.push('latin = ?');
-            values.push(latin);
+        if (latinScript !== undefined) {
+            updates.push('latin_script = ?');
+            values.push(latinScript);
         }
-        if (cyrillic !== undefined) {
-            updates.push('cyrillic = ?');
-            values.push(cyrillic);
+        if (cyrillicScript !== undefined) {
+            updates.push('cyrillic_script = ?');
+            values.push(cyrillicScript);
+        }
+        if (pronunciationGuide !== undefined) {
+            updates.push('pronunciation_guide = ?');
+            values.push(pronunciationGuide);
         }
         if (dialectId !== undefined) {
             updates.push('dialect_id = ?');
@@ -913,9 +913,11 @@ router.put('/translations/:id', authenticate, requireApprover, async (req, res) 
         values.push(id);
 
         await db.query(
-            `UPDATE translations SET ${updates.join(', ')} WHERE id = ?`,
+            `UPDATE dialect_scripts SET ${updates.join(', ')} WHERE id = ?`,
             values
         );
+
+        await logEvent('TRANSLATION_UPDATED', `עודכן תרגום #${id}`, req.user, { translationId: id, fields: Object.keys(req.body).filter(k => k !== 'id') }, req);
 
         res.json({ success: true });
     } catch (err) {
@@ -945,7 +947,7 @@ router.post('/translations/:id/vote', authenticate, async (req, res) => {
                 await db.query('DELETE FROM translation_votes WHERE id = ?', [existingVote.id]);
                 // Update counts
                 const countField = existingVote.vote_type === 'up' ? 'upvotes' : 'downvotes';
-                await db.query(`UPDATE translations SET ${countField} = GREATEST(${countField} - 1, 0) WHERE id = ?`, [id]);
+                await db.query(`UPDATE dialect_scripts SET ${countField} = GREATEST(${countField} - 1, 0) WHERE id = ?`, [id]);
             }
         } else if (existingVote) {
             // Update existing vote
@@ -954,7 +956,7 @@ router.post('/translations/:id/vote', authenticate, async (req, res) => {
                 // Update counts: decrement old, increment new
                 const oldField = existingVote.vote_type === 'up' ? 'upvotes' : 'downvotes';
                 const newField = voteType === 'up' ? 'upvotes' : 'downvotes';
-                await db.query(`UPDATE translations SET ${oldField} = GREATEST(${oldField} - 1, 0), ${newField} = ${newField} + 1 WHERE id = ?`, [id]);
+                await db.query(`UPDATE dialect_scripts SET ${oldField} = GREATEST(${oldField} - 1, 0), ${newField} = ${newField} + 1 WHERE id = ?`, [id]);
             }
         } else {
             // Insert new vote
@@ -964,7 +966,7 @@ router.post('/translations/:id/vote', authenticate, async (req, res) => {
             );
             // Update counts
             const countField = voteType === 'up' ? 'upvotes' : 'downvotes';
-            await db.query(`UPDATE translations SET ${countField} = ${countField} + 1 WHERE id = ?`, [id]);
+            await db.query(`UPDATE dialect_scripts SET ${countField} = ${countField} + 1 WHERE id = ?`, [id]);
         }
 
         // Award XP for first vote on this translation
@@ -980,7 +982,7 @@ router.post('/translations/:id/vote', authenticate, async (req, res) => {
                 [id]
             );
             if (scoreRow?.score <= -3) {
-                await db.query('UPDATE translations SET flagged = TRUE WHERE id = ?', [id]);
+                await db.query('UPDATE dialect_scripts SET flagged = TRUE WHERE id = ?', [id]);
             }
         }
 
@@ -1001,7 +1003,7 @@ router.post('/entries/:id/confirm-ai-field', optionalAuth, async (req, res) => {
             return res.status(400).json({ error: 'נדרש שם שדה וערך' });
         }
 
-        const allowedFields = ['hebrew', 'latin', 'cyrillic', 'russian', 'definition', 'pronunciationGuide', 'examples'];
+        const allowedFields = ['hebrewScript', 'latinScript', 'cyrillicScript', 'russianShort', 'hebrewLong', 'pronunciationGuide', 'examples'];
         if (!allowedFields.includes(fieldName)) {
             return res.status(400).json({ error: 'שדה לא חוקי' });
         }
@@ -1011,22 +1013,18 @@ router.post('/entries/:id/confirm-ai-field', optionalAuth, async (req, res) => {
         if (entryRows.length === 0) return res.status(404).json({ error: 'ערך לא נמצא' });
 
         // Save the AI value to the appropriate table
-        if (['hebrew', 'latin', 'cyrillic'].includes(fieldName)) {
+        const dsFieldMap = { hebrewScript: 'hebrew_script', latinScript: 'latin_script', cyrillicScript: 'cyrillic_script' };
+        if (dsFieldMap[fieldName]) {
             await db.query(
-                `UPDATE translations SET ${fieldName} = ? WHERE entry_id = ? LIMIT 1`,
+                `UPDATE dialect_scripts SET ${dsFieldMap[fieldName]} = ? WHERE entry_id = ? LIMIT 1`,
                 [value.trim(), id]
             );
-        } else if (fieldName === 'russian') {
-            await db.query('UPDATE dictionary_entries SET russian = ? WHERE id = ?', [value.trim(), id]);
-        } else if (fieldName === 'definition') {
-            const [existingDefs] = await db.query('SELECT id FROM definitions WHERE entry_id = ? LIMIT 1', [id]);
-            if (existingDefs.length > 0) {
-                await db.query('UPDATE definitions SET definition = ? WHERE id = ?', [value.trim(), existingDefs[0].id]);
-            } else {
-                await db.query('INSERT INTO definitions (entry_id, definition) VALUES (?, ?)', [id, value.trim()]);
-            }
+        } else if (fieldName === 'russianShort') {
+            await db.query('UPDATE dictionary_entries SET russian_short = ? WHERE id = ?', [value.trim(), id]);
+        } else if (fieldName === 'hebrewLong') {
+            await db.query('UPDATE dictionary_entries SET hebrew_long = ? WHERE id = ?', [value.trim(), id]);
         } else if (fieldName === 'pronunciationGuide') {
-            await db.query('UPDATE dictionary_entries SET pronunciation_guide = ? WHERE id = ?', [value.trim(), id]);
+            await db.query('UPDATE dialect_scripts SET pronunciation_guide = ? WHERE entry_id = ? LIMIT 1', [value.trim(), id]);
         }
         // For examples - they're complex objects, skip DB save for now (they remain AI-only in response)
 
@@ -1059,16 +1057,16 @@ router.post('/entries/:id/suggest-field', optionalAuth, async (req, res) => {
             return res.status(400).json({ error: 'נדרש שם שדה וערך מוצע' });
         }
 
-        const allowedFields = ['hebrew', 'latin', 'cyrillic', 'russian', 'definition', 'pronunciationGuide', 'partOfSpeech', 'dialect'];
+        const allowedFields = ['hebrewScript', 'latinScript', 'cyrillicScript', 'russianShort', 'hebrewLong', 'pronunciationGuide', 'partOfSpeech', 'dialect'];
         if (!allowedFields.includes(fieldName)) {
             return res.status(400).json({ error: 'שדה לא חוקי' });
         }
 
         // Get entry and its existing dialect
         const [entryRows] = await db.query(
-            `SELECT de.term, COALESCE(d.name, 'General') as dialect_name
+            `SELECT de.hebrew_script, COALESCE(d.name, 'General') as dialect_name
              FROM dictionary_entries de
-             LEFT JOIN translations t ON de.id = t.entry_id
+             LEFT JOIN dialect_scripts t ON de.id = t.entry_id
              LEFT JOIN dialects d ON t.dialect_id = d.id
              WHERE de.id = ?
              LIMIT 1`,
@@ -1080,7 +1078,7 @@ router.post('/entries/:id/suggest-field', optionalAuth, async (req, res) => {
 
         await db.query(
             `INSERT INTO translation_suggestions
-             (entry_id, user_id, user_name, dialect, field_name, suggested_hebrew, suggested_latin, suggested_cyrillic, suggested_russian, reason, status)
+             (entry_id, user_id, user_name, dialect, field_name, suggested_hebrew_short, suggested_latin_script, suggested_cyrillic_script, suggested_russian_short, reason, status)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
             [
                 id,
@@ -1088,10 +1086,10 @@ router.post('/entries/:id/suggest-field', optionalAuth, async (req, res) => {
                 req.user?.name || 'אורח',
                 dialect,
                 fieldName,
-                fieldName === 'hebrew' ? suggestedValue.trim() : (currentValue || ''),
-                fieldName === 'latin' ? suggestedValue.trim() : '',
-                fieldName === 'cyrillic' ? suggestedValue.trim() : '',
-                fieldName === 'russian' ? suggestedValue.trim() : '',
+                fieldName === 'hebrewScript' ? suggestedValue.trim() : (currentValue || ''),
+                fieldName === 'latinScript' ? suggestedValue.trim() : '',
+                fieldName === 'cyrillicScript' ? suggestedValue.trim() : '',
+                fieldName === 'russianShort' ? suggestedValue.trim() : '',
                 reason || `תיקון שדה ${fieldName}: "${currentValue || ''}" → "${suggestedValue.trim()}"`,
             ]
         );
@@ -1164,8 +1162,8 @@ router.post('/entries/:id/suggest', authenticate, suggestionAudioUpload.single('
         }
 
         await db.query(
-            `INSERT INTO translation_suggestions 
-             (entry_id, translation_id, user_id, user_name, dialect, suggested_hebrew, suggested_latin, suggested_cyrillic, reason, audio_url, audio_duration)
+            `INSERT INTO translation_suggestions
+             (entry_id, translation_id, user_id, user_name, dialect, suggested_hebrew_short, suggested_latin_script, suggested_cyrillic_script, reason, audio_url, audio_duration)
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
             [id, translationId || null, req.user.id, req.user.name, dialect, hebrew, latin || '', cyrillic || '', reason || '', audioUrl, audioDuration || null]
         );
@@ -1185,9 +1183,9 @@ router.post('/entries/:id/suggest', authenticate, suggestionAudioUpload.single('
 router.get('/needs-translation', async (req, res) => {
     try {
         const [entries] = await db.query(
-            `SELECT de.id, de.term, de.detected_language
+            `SELECT de.id, de.hebrew_script, de.detected_language
              FROM dictionary_entries de
-             LEFT JOIN translations t ON de.id = t.entry_id
+             LEFT JOIN dialect_scripts t ON de.id = t.entry_id
              WHERE de.status = 'active' AND t.id IS NULL
              LIMIT 5`
         );
@@ -1209,16 +1207,16 @@ router.get('/missing-dialects', async (req, res) => {
         const [allDialects] = await db.query('SELECT id, name FROM dialects');
         const dialectIds = allDialects.map(d => d.id);
 
-        const searchCondition = search ? 'AND de.term LIKE ?' : '';
+        const searchCondition = search ? 'AND de.hebrew_script LIKE ?' : '';
         const searchParams = search ? [`%${search}%`] : [];
 
         // Find entries that don't have all dialects
         const [entries] = await db.query(
-            `SELECT de.id, de.term, de.detected_language,
+            `SELECT de.id, de.hebrew_script, de.detected_language,
                     GROUP_CONCAT(DISTINCT d.name) as existing_dialects,
                     COUNT(DISTINCT t.dialect_id) as dialect_count
              FROM dictionary_entries de
-             JOIN translations t ON de.id = t.entry_id
+             JOIN dialect_scripts t ON de.id = t.entry_id
              JOIN dialects d ON t.dialect_id = d.id
              WHERE de.status = 'active'
              ${searchCondition}
@@ -1233,7 +1231,7 @@ router.get('/missing-dialects', async (req, res) => {
             `SELECT COUNT(*) as total FROM (
                 SELECT de.id, COUNT(DISTINCT t.dialect_id) as dialect_count
                 FROM dictionary_entries de
-                JOIN translations t ON de.id = t.entry_id
+                JOIN dialect_scripts t ON de.id = t.entry_id
                 WHERE de.status = 'active'
                 ${searchCondition}
                 GROUP BY de.id
@@ -1248,7 +1246,7 @@ router.get('/missing-dialects', async (req, res) => {
             const missing = allDialects.filter(d => !existing.includes(d.name)).map(d => d.name);
             return {
                 id: e.id,
-                term: e.term,
+                hebrewScript: e.hebrew_script,
                 detectedLanguage: e.detected_language,
                 existingDialects: existing,
                 missingDialects: missing
@@ -1284,17 +1282,17 @@ router.get('/stats', async (req, res) => {
         ] = await Promise.all([
             db.query(`
                 SELECT COUNT(DISTINCT de.id) as count FROM dictionary_entries de
-                JOIN translations t ON de.id = t.entry_id
+                JOIN dialect_scripts t ON de.id = t.entry_id
                 WHERE de.status = 'active'
-                AND t.hebrew IS NOT NULL AND t.hebrew != ''
-                AND (t.latin IS NULL OR t.latin = '')
+                AND t.hebrew_script IS NOT NULL AND t.hebrew_script != ''
+                AND (t.latin_script IS NULL OR t.latin_script = '')
             `),
             db.query(`
                 SELECT COUNT(DISTINCT de.id) as count FROM dictionary_entries de
-                JOIN translations t ON de.id = t.entry_id
+                JOIN dialect_scripts t ON de.id = t.entry_id
                 WHERE de.status = 'active'
                 AND de.detected_language = 'Juhuri'
-                AND (t.hebrew IS NULL OR t.hebrew = '')
+                AND (t.hebrew_script IS NULL OR t.hebrew_script = '')
             `),
             db.query('SELECT COUNT(*) as dialectCount FROM dialects'),
             db.query(`SELECT COUNT(*) as count FROM dictionary_entries WHERE status = 'active'`),
@@ -1309,7 +1307,7 @@ router.get('/stats', async (req, res) => {
             SELECT COUNT(*) as count FROM (
                 SELECT de.id, COUNT(DISTINCT t.dialect_id) as dialect_count
                 FROM dictionary_entries de
-                JOIN translations t ON de.id = t.entry_id
+                JOIN dialect_scripts t ON de.id = t.entry_id
                 WHERE de.status = 'active'
                 GROUP BY de.id
                 HAVING dialect_count < ?
@@ -1319,8 +1317,9 @@ router.get('/stats', async (req, res) => {
         // Missing audio count
         const [[missingAudio]] = await db.query(`
             SELECT COUNT(DISTINCT de.id) as count FROM dictionary_entries de
+            JOIN dialect_scripts ds ON de.id = ds.entry_id
             WHERE de.status = 'active'
-            AND (de.pronunciation_guide IS NOT NULL AND de.pronunciation_guide != '')
+            AND (ds.pronunciation_guide IS NOT NULL AND ds.pronunciation_guide != '')
         `);
 
         // Pending suggestions
@@ -1359,16 +1358,16 @@ router.get('/hebrew-only', async (req, res) => {
         const offset = parseInt(req.query.offset) || 0;
         const search = req.query.search?.trim();
 
-        const searchCondition = search ? 'AND (de.term LIKE ? OR t.hebrew LIKE ?)' : '';
+        const searchCondition = search ? 'AND (de.hebrew_script LIKE ? OR t.hebrew_script LIKE ?)' : '';
         const searchParams = search ? [`%${search}%`, `%${search}%`] : [];
 
         const [entries] = await db.query(`
-            SELECT de.id, de.term, de.detected_language, t.hebrew
+            SELECT de.id, de.hebrew_script, de.detected_language, t.hebrew_script as dialect_hebrew_script
             FROM dictionary_entries de
-            JOIN translations t ON de.id = t.entry_id
+            JOIN dialect_scripts t ON de.id = t.entry_id
             WHERE de.status = 'active'
-            AND t.hebrew IS NOT NULL AND t.hebrew != ''
-            AND (t.latin IS NULL OR t.latin = '')
+            AND t.hebrew_script IS NOT NULL AND t.hebrew_script != ''
+            AND (t.latin_script IS NULL OR t.latin_script = '')
             ${searchCondition}
             GROUP BY de.id
             ORDER BY de.created_at DESC
@@ -1377,10 +1376,10 @@ router.get('/hebrew-only', async (req, res) => {
 
         const [[{ total }]] = await db.query(`
             SELECT COUNT(DISTINCT de.id) as total FROM dictionary_entries de
-            JOIN translations t ON de.id = t.entry_id
+            JOIN dialect_scripts t ON de.id = t.entry_id
             WHERE de.status = 'active'
-            AND t.hebrew IS NOT NULL AND t.hebrew != ''
-            AND (t.latin IS NULL OR t.latin = '')
+            AND t.hebrew_script IS NOT NULL AND t.hebrew_script != ''
+            AND (t.latin_script IS NULL OR t.latin_script = '')
             ${searchCondition}
         `, searchParams);
 
@@ -1398,16 +1397,16 @@ router.get('/juhuri-only', async (req, res) => {
         const offset = parseInt(req.query.offset) || 0;
         const search = req.query.search?.trim();
 
-        const searchCondition = search ? 'AND (de.term LIKE ? OR t.latin LIKE ?)' : '';
+        const searchCondition = search ? 'AND (de.hebrew_script LIKE ? OR t.latin_script LIKE ?)' : '';
         const searchParams = search ? [`%${search}%`, `%${search}%`] : [];
 
         const [entries] = await db.query(`
-            SELECT de.id, de.term, de.detected_language, t.latin, t.cyrillic
+            SELECT de.id, de.hebrew_script, de.detected_language, t.latin_script, t.cyrillic_script
             FROM dictionary_entries de
-            JOIN translations t ON de.id = t.entry_id
+            JOIN dialect_scripts t ON de.id = t.entry_id
             WHERE de.status = 'active'
             AND de.detected_language = 'Juhuri'
-            AND (t.hebrew IS NULL OR t.hebrew = '')
+            AND (t.hebrew_script IS NULL OR t.hebrew_script = '')
             ${searchCondition}
             GROUP BY de.id
             ORDER BY de.created_at DESC
@@ -1416,10 +1415,10 @@ router.get('/juhuri-only', async (req, res) => {
 
         const [[{ total }]] = await db.query(`
             SELECT COUNT(DISTINCT de.id) as total FROM dictionary_entries de
-            JOIN translations t ON de.id = t.entry_id
+            JOIN dialect_scripts t ON de.id = t.entry_id
             WHERE de.status = 'active'
             AND de.detected_language = 'Juhuri'
-            AND (t.hebrew IS NULL OR t.hebrew = '')
+            AND (t.hebrew_script IS NULL OR t.hebrew_script = '')
             ${searchCondition}
         `, searchParams);
 
@@ -1437,29 +1436,29 @@ router.get('/missing-audio', async (req, res) => {
         const offset = parseInt(req.query.offset) || 0;
         const search = req.query.search?.trim();
 
-        const searchCondition = search ? 'AND (de.term LIKE ? OR t.hebrew LIKE ?)' : '';
+        const searchCondition = search ? 'AND (de.hebrew_script LIKE ? OR t.hebrew_script LIKE ?)' : '';
         const searchParams = search ? [`%${search}%`, `%${search}%`] : [];
 
-        // Only return entries that have a pronunciation_guide but no audio file path,
+        // Only return entries that have a pronunciation_guide in dialect_scripts but no audio file path,
         // prioritizing entries with Hebrew translations (more useful to record)
         const [entries] = await db.query(`
-            SELECT de.id, de.term, de.detected_language, t.hebrew, t.latin
+            SELECT de.id, de.hebrew_script, de.detected_language, t.hebrew_script as dialect_hebrew_script, t.latin_script
             FROM dictionary_entries de
-            LEFT JOIN translations t ON de.id = t.entry_id
+            LEFT JOIN dialect_scripts t ON de.id = t.entry_id
             WHERE de.status = 'active'
-              AND (de.pronunciation_guide IS NOT NULL AND de.pronunciation_guide != '')
+              AND (t.pronunciation_guide IS NOT NULL AND t.pronunciation_guide != '')
               ${searchCondition}
             GROUP BY de.id
-            ORDER BY CASE WHEN t.hebrew IS NOT NULL AND t.hebrew != '' THEN 0 ELSE 1 END, de.created_at DESC
+            ORDER BY CASE WHEN t.hebrew_script IS NOT NULL AND t.hebrew_script != '' THEN 0 ELSE 1 END, de.created_at DESC
             LIMIT ? OFFSET ?
         `, [...searchParams, limit, offset]);
 
         const [[{ total }]] = await db.query(`
             SELECT COUNT(DISTINCT de.id) as total
             FROM dictionary_entries de
-            LEFT JOIN translations t ON de.id = t.entry_id
+            LEFT JOIN dialect_scripts t ON de.id = t.entry_id
             WHERE de.status = 'active'
-              AND (de.pronunciation_guide IS NOT NULL AND de.pronunciation_guide != '')
+              AND (t.pronunciation_guide IS NOT NULL AND t.pronunciation_guide != '')
               ${searchCondition}
         `, searchParams);
 
@@ -1487,15 +1486,15 @@ router.get('/ai-fields', async (req, res) => {
 
         // Get entries with their AI field details
         const [entries] = await db.query(
-            `SELECT de.id, de.term, de.pronunciation_guide,
+            `SELECT de.id, de.hebrew_script,
                     GROUP_CONCAT(DISTINCT fs.field_name ORDER BY fs.field_name SEPARATOR ', ') as ai_fields,
-                    t.hebrew, t.latin, t.cyrillic
+                    t.hebrew_script as dialect_hebrew_script, t.latin_script, t.cyrillic_script, t.pronunciation_guide
              FROM field_sources fs
              JOIN dictionary_entries de ON fs.entry_id = de.id
-             LEFT JOIN translations t ON de.id = t.entry_id
+             LEFT JOIN dialect_scripts t ON de.id = t.entry_id
              WHERE fs.source_type = 'ai'
              GROUP BY de.id
-             ORDER BY de.term
+             ORDER BY de.hebrew_script
              LIMIT ? OFFSET ?`,
             [limit, offset]
         );
@@ -1528,6 +1527,8 @@ router.post('/bulk-confirm-ai', authenticate, requireApprover, async (req, res) 
             entryIds
         );
 
+        await logEvent('AI_FIELDS_CONFIRMED', `אושרו ${result.affectedRows} שדות AI`, req.user, { entryIds, confirmedCount: result.affectedRows }, req);
+
         res.json({
             success: true,
             confirmed: result.affectedRows,
@@ -1544,11 +1545,11 @@ router.get('/pending-suggestions', async (req, res) => {
     try {
         const limit = req.query.limit ? parseInt(req.query.limit) : 50; // Default 50 for admin, widget can pass limit=10
         const [suggestions] = await db.query(
-            `SELECT ts.id, ts.entry_id, ts.dialect, ts.suggested_hebrew, ts.suggested_latin,
-                    ts.suggested_cyrillic, ts.user_id, ts.status, ts.created_at,
+            `SELECT ts.id, ts.entry_id, ts.dialect, ts.suggested_hebrew_short, ts.suggested_latin_script,
+                    ts.suggested_cyrillic_script, ts.user_id, ts.status, ts.created_at,
                     ts.audio_url, ts.audio_duration, ts.translation_id,
-                    ts.field_name, ts.suggested_russian, ts.reason, ts.user_name,
-                    de.term,
+                    ts.field_name, ts.suggested_russian_short, ts.reason, ts.user_name,
+                    de.hebrew_script,
                     u.name as contributor_name
              FROM translation_suggestions ts
              JOIN dictionary_entries de ON ts.entry_id = de.id
@@ -1592,32 +1593,27 @@ router.put('/suggestions/:id/approve', authenticate, requireApprover, async (req
 
             // Determine the suggested value based on which field columns have data
             let suggestedValue = '';
-            if (fieldName === 'hebrew') suggestedValue = suggestion.suggested_hebrew;
-            else if (fieldName === 'latin') suggestedValue = suggestion.suggested_latin;
-            else if (fieldName === 'cyrillic') suggestedValue = suggestion.suggested_cyrillic;
-            else if (fieldName === 'russian') suggestedValue = suggestion.suggested_russian;
-            else if (fieldName === 'definition') suggestedValue = suggestion.suggested_hebrew; // stored in suggested_hebrew for definition
-            else if (fieldName === 'pronunciationGuide') suggestedValue = suggestion.suggested_hebrew;
-            else if (fieldName === 'partOfSpeech') suggestedValue = suggestion.suggested_hebrew;
+            if (fieldName === 'hebrewScript') suggestedValue = suggestion.suggested_hebrew_short;
+            else if (fieldName === 'latinScript') suggestedValue = suggestion.suggested_latin_script;
+            else if (fieldName === 'cyrillicScript') suggestedValue = suggestion.suggested_cyrillic_script;
+            else if (fieldName === 'russianShort') suggestedValue = suggestion.suggested_russian_short;
+            else if (fieldName === 'hebrewLong') suggestedValue = suggestion.suggested_hebrew_short; // stored in suggested_hebrew_short for hebrewLong
+            else if (fieldName === 'pronunciationGuide') suggestedValue = suggestion.suggested_hebrew_short;
+            else if (fieldName === 'partOfSpeech') suggestedValue = suggestion.suggested_hebrew_short;
 
             // Update the appropriate table/column
-            if (['hebrew', 'latin', 'cyrillic'].includes(fieldName)) {
+            const dsFieldMap = { hebrewScript: 'hebrew_script', latinScript: 'latin_script', cyrillicScript: 'cyrillic_script' };
+            if (dsFieldMap[fieldName]) {
                 await connection.query(
-                    `UPDATE translations SET ${fieldName} = ? WHERE entry_id = ? LIMIT 1`,
+                    `UPDATE dialect_scripts SET ${dsFieldMap[fieldName]} = ? WHERE entry_id = ? LIMIT 1`,
                     [suggestedValue, entryId]
                 );
-            } else if (fieldName === 'russian') {
-                await connection.query('UPDATE dictionary_entries SET russian = ? WHERE id = ?', [suggestedValue, entryId]);
-            } else if (fieldName === 'definition') {
-                // Update or insert definition
-                const [existingDefs] = await connection.query('SELECT id FROM definitions WHERE entry_id = ? LIMIT 1', [entryId]);
-                if (existingDefs.length > 0) {
-                    await connection.query('UPDATE definitions SET definition = ? WHERE id = ?', [suggestedValue, existingDefs[0].id]);
-                } else {
-                    await connection.query('INSERT INTO definitions (entry_id, definition) VALUES (?, ?)', [entryId, suggestedValue]);
-                }
+            } else if (fieldName === 'russianShort') {
+                await connection.query('UPDATE dictionary_entries SET russian_short = ? WHERE id = ?', [suggestedValue, entryId]);
+            } else if (fieldName === 'hebrewLong') {
+                await connection.query('UPDATE dictionary_entries SET hebrew_long = ? WHERE id = ?', [suggestedValue, entryId]);
             } else if (fieldName === 'pronunciationGuide') {
-                await connection.query('UPDATE dictionary_entries SET pronunciation_guide = ? WHERE id = ?', [suggestedValue, entryId]);
+                await connection.query('UPDATE dialect_scripts SET pronunciation_guide = ? WHERE entry_id = ? LIMIT 1', [suggestedValue, entryId]);
             } else if (fieldName === 'partOfSpeech') {
                 await connection.query('UPDATE dictionary_entries SET part_of_speech = ? WHERE id = ?', [suggestedValue, entryId]);
             }
@@ -1635,13 +1631,13 @@ router.put('/suggestions/:id/approve', authenticate, requireApprover, async (req
 
             if (suggestion.translation_id) {
                 await connection.query(
-                    `UPDATE translations SET hebrew = ?, latin = ?, cyrillic = ? WHERE id = ?`,
-                    [suggestion.suggested_hebrew, suggestion.suggested_latin, suggestion.suggested_cyrillic, suggestion.translation_id]
+                    `UPDATE dialect_scripts SET hebrew_script = ?, latin_script = ?, cyrillic_script = ? WHERE id = ?`,
+                    [suggestion.suggested_hebrew_short, suggestion.suggested_latin_script, suggestion.suggested_cyrillic_script, suggestion.translation_id]
                 );
             } else {
                 await connection.query(
-                    `INSERT INTO translations (entry_id, dialect_id, hebrew, latin, cyrillic) VALUES (?, ?, ?, ?, ?)`,
-                    [suggestion.entry_id, dialectId, suggestion.suggested_hebrew, suggestion.suggested_latin, suggestion.suggested_cyrillic]
+                    `INSERT INTO dialect_scripts (entry_id, dialect_id, hebrew_script, latin_script, cyrillic_script) VALUES (?, ?, ?, ?, ?)`,
+                    [suggestion.entry_id, dialectId, suggestion.suggested_hebrew_short, suggestion.suggested_latin_script, suggestion.suggested_cyrillic_script]
                 );
             }
         }
@@ -1664,9 +1660,10 @@ router.put('/suggestions/:id/approve', authenticate, requireApprover, async (req
         connection.release();
 
         // Notify suggester (after commit, non-blocking)
+        const [[entryRow]] = await db.query('SELECT hebrew_script FROM dictionary_entries WHERE id = ?', [suggestion.entry_id]);
+        const termName = entryRow?.hebrew_script || '';
+
         if (suggestion.user_id) {
-            const [[entryRow]] = await db.query('SELECT term FROM dictionary_entries WHERE id = ?', [suggestion.entry_id]);
-            const termName = entryRow?.term || '';
             createNotification(
                 suggestion.user_id,
                 'suggestion_approved',
@@ -1675,6 +1672,8 @@ router.put('/suggestions/:id/approve', authenticate, requireApprover, async (req
                 `/word/${encodeURIComponent(termName)}`
             );
         }
+
+        await logEvent('SUGGESTION_APPROVED', `אושרה הצעה #${id} לערך "${termName}"`, req.user, { suggestionId: id, entryId: suggestion.entry_id, term: termName, fieldName: suggestion.field_name || null }, req);
 
         res.json({ success: true });
     } catch (err) {
@@ -1699,9 +1698,10 @@ router.put('/suggestions/:id/reject', authenticate, requireApprover, async (req,
         );
 
         // Notify suggester (non-blocking)
+        const [[entryRow]] = await db.query('SELECT hebrew_script FROM dictionary_entries WHERE id = ?', [suggestion?.entry_id]);
+        const termName = entryRow?.hebrew_script || '';
+
         if (suggestion?.user_id) {
-            const [[entryRow]] = await db.query('SELECT term FROM dictionary_entries WHERE id = ?', [suggestion.entry_id]);
-            const termName = entryRow?.term || '';
             createNotification(
                 suggestion.user_id,
                 'suggestion_rejected',
@@ -1710,6 +1710,8 @@ router.put('/suggestions/:id/reject', authenticate, requireApprover, async (req,
                 `/word/${encodeURIComponent(termName)}`
             );
         }
+
+        await logEvent('SUGGESTION_REJECTED', `נדחתה הצעה #${id} לערך "${termName}"`, req.user, { suggestionId: id, entryId: suggestion?.entry_id, term: termName }, req);
 
         res.json({ success: true });
     } catch (err) {
@@ -1764,19 +1766,34 @@ router.post('/entries/add-untranslated', authenticate, requireApprover, async (r
         // Try with needs_translation column, fall back to without it if column doesn't exist
         try {
             const [result] = await db.query(
-                `INSERT INTO dictionary_entries (term, term_normalized, detected_language, pronunciation_guide, source, status, needs_translation, contributor_id)
-                 VALUES (?, ?, ?, ?, 'קהילה', 'active', TRUE, ?)`,
-                [term, normalizeTerm(term), detectedLanguage || 'Hebrew', pronunciationGuide || null, req.user.id]
+                `INSERT INTO dictionary_entries (hebrew_script, hebrew_script_normalized, detected_language, source, status, needs_translation, contributor_id)
+                 VALUES (?, ?, ?, 'קהילה', 'active', TRUE, ?)`,
+                [term, normalizeHebrewScript(term), detectedLanguage || 'Hebrew', req.user.id]
             );
+            // If pronunciationGuide provided, add it to a dialect_scripts row
+            if (pronunciationGuide) {
+                await db.query(
+                    `INSERT INTO dialect_scripts (entry_id, dialect_id, pronunciation_guide) VALUES (?, 6, ?)`,
+                    [result.insertId, pronunciationGuide]
+                );
+            }
+            await logEvent('ENTRY_ADDED', `נוספה מילה ללא תרגום: ${term}`, req.user, { term, entryId: result.insertId, untranslated: true }, req);
             res.json({ success: true, entryId: result.insertId });
         } catch (colErr) {
             // If needs_translation column doesn't exist, insert without it
             if (colErr.code === 'ER_BAD_FIELD_ERROR') {
                 const [result] = await db.query(
-                    `INSERT INTO dictionary_entries (term, term_normalized, detected_language, pronunciation_guide, source, status, contributor_id)
-                     VALUES (?, ?, ?, ?, 'קהילה', 'active', ?)`,
-                    [term, normalizeTerm(term), detectedLanguage || 'Hebrew', pronunciationGuide || null, req.user.id]
+                    `INSERT INTO dictionary_entries (hebrew_script, hebrew_script_normalized, detected_language, source, status, contributor_id)
+                     VALUES (?, ?, ?, 'קהילה', 'active', ?)`,
+                    [term, normalizeHebrewScript(term), detectedLanguage || 'Hebrew', req.user.id]
                 );
+                if (pronunciationGuide) {
+                    await db.query(
+                        `INSERT INTO dialect_scripts (entry_id, dialect_id, pronunciation_guide) VALUES (?, 6, ?)`,
+                        [result.insertId, pronunciationGuide]
+                    );
+                }
+                await logEvent('ENTRY_ADDED', `נוספה מילה ללא תרגום: ${term}`, req.user, { term, entryId: result.insertId, untranslated: true }, req);
                 res.json({ success: true, entryId: result.insertId, note: 'migration_needed' });
             } else {
                 throw colErr;
@@ -1806,7 +1823,7 @@ router.post('/entries/:id/suggest-example', optionalAuth, [
         const { origin, translated, transliteration } = req.body;
 
         // Verify entry exists
-        const [entryRows] = await db.query('SELECT id, term FROM dictionary_entries WHERE id = ?', [id]);
+        const [entryRows] = await db.query('SELECT id, hebrew_script FROM dictionary_entries WHERE id = ?', [id]);
         if (entryRows.length === 0) {
             return res.status(404).json({ error: 'ערך לא נמצא' });
         }
@@ -1832,7 +1849,7 @@ router.post('/entries/:id/suggest-example', optionalAuth, [
             if (words.length > 0) {
                 const placeholders = words.map(() => '?').join(',');
                 const [matchedEntries] = await db.query(
-                    `SELECT id FROM dictionary_entries WHERE term IN (${placeholders}) AND status = 'active'`,
+                    `SELECT id FROM dictionary_entries WHERE hebrew_script IN (${placeholders}) AND status = 'active'`,
                     words
                 );
                 for (const matched of matchedEntries) {
@@ -1898,7 +1915,7 @@ router.get('/entries/:id/community-examples', async (req, res) => {
 router.get('/pending-examples', authenticate, requireApprover, async (req, res) => {
     try {
         const [examples] = await db.query(
-            `SELECT ce.*, de.term
+            `SELECT ce.*, de.hebrew_script
              FROM community_examples ce
              LEFT JOIN dictionary_entries de ON ce.entry_id = de.id
              WHERE ce.status = 'pending'
@@ -1930,7 +1947,7 @@ router.put('/examples/:id/approve', authenticate, requireApprover, async (req, r
             if (words.length > 0) {
                 const placeholders = words.map(() => '?').join(',');
                 const [matchedEntries] = await db.query(
-                    `SELECT id FROM dictionary_entries WHERE term IN (${placeholders}) AND status = 'active'`,
+                    `SELECT id FROM dictionary_entries WHERE hebrew_script IN (${placeholders}) AND status = 'active'`,
                     words
                 );
                 for (const matched of matchedEntries) {
@@ -1947,6 +1964,8 @@ router.put('/examples/:id/approve', authenticate, requireApprover, async (req, r
             }
         }
 
+        await logEvent('EXAMPLE_APPROVED', `אושר פתגם #${id}`, req.user, { exampleId: id }, req);
+
         res.json({ success: true });
     } catch (err) {
         console.error('Approve example error:', err);
@@ -1959,6 +1978,9 @@ router.put('/examples/:id/reject', authenticate, requireApprover, async (req, re
     try {
         const { id } = req.params;
         await db.query('UPDATE community_examples SET status = ? WHERE id = ?', ['rejected', id]);
+
+        await logEvent('EXAMPLE_REJECTED', `נדחה פתגם #${id}`, req.user, { exampleId: id }, req);
+
         res.json({ success: true });
     } catch (err) {
         console.error('Reject example error:', err);
@@ -1975,25 +1997,25 @@ router.get('/similar', async (req, res) => {
 
         // Search by SOUNDEX, substring match, and partial overlap
         const [results] = await db.query(
-            `SELECT DISTINCT de.id, de.term, de.part_of_speech,
-                    (SELECT t.hebrew FROM translations t WHERE t.entry_id = de.id LIMIT 1) as hebrew,
-                    (SELECT t.latin FROM translations t WHERE t.entry_id = de.id AND t.latin IS NOT NULL LIMIT 1) as latin,
+            `SELECT DISTINCT de.id, de.hebrew_script, de.part_of_speech,
+                    (SELECT t.hebrew_script FROM dialect_scripts t WHERE t.entry_id = de.id LIMIT 1) as dialect_hebrew_script,
+                    (SELECT t.latin_script FROM dialect_scripts t WHERE t.entry_id = de.id AND t.latin_script IS NOT NULL LIMIT 1) as latin_script,
                     CASE
-                      WHEN SOUNDEX(de.term) = SOUNDEX(?) THEN 1
-                      WHEN de.term LIKE CONCAT('%', ?, '%') THEN 2
+                      WHEN SOUNDEX(de.hebrew_script) = SOUNDEX(?) THEN 1
+                      WHEN de.hebrew_script LIKE CONCAT('%', ?, '%') THEN 2
                       ELSE 3
                     END as match_rank
              FROM dictionary_entries de
-             LEFT JOIN translations t ON de.id = t.entry_id
+             LEFT JOIN dialect_scripts t ON de.id = t.entry_id
              WHERE de.status = 'active'
-               AND de.term != ?
-               AND (SOUNDEX(de.term) = SOUNDEX(?)
-                    OR SOUNDEX(t.hebrew) = SOUNDEX(?)
-                    OR de.term LIKE CONCAT('%', ?, '%')
-                    OR t.hebrew LIKE CONCAT('%', ?, '%')
-                    OR t.latin LIKE CONCAT('%', ?, '%'))
+               AND de.hebrew_script != ?
+               AND (SOUNDEX(de.hebrew_script) = SOUNDEX(?)
+                    OR SOUNDEX(t.hebrew_script) = SOUNDEX(?)
+                    OR de.hebrew_script LIKE CONCAT('%', ?, '%')
+                    OR t.hebrew_script LIKE CONCAT('%', ?, '%')
+                    OR t.latin_script LIKE CONCAT('%', ?, '%'))
              GROUP BY de.id
-             ORDER BY match_rank, de.term
+             ORDER BY match_rank, de.hebrew_script
              LIMIT ?`,
             [term, term, term, term, term, term, term, term, limit]
         );
@@ -2001,9 +2023,9 @@ router.get('/similar', async (req, res) => {
         res.json({
             suggestions: results.map(r => ({
                 id: String(r.id),
-                term: r.term,
-                hebrew: r.hebrew,
-                latin: r.latin,
+                hebrewScript: r.hebrew_script,
+                dialectHebrewScript: r.dialect_hebrew_script,
+                latinScript: r.latin_script,
                 partOfSpeech: r.part_of_speech,
             }))
         });
@@ -2077,10 +2099,10 @@ router.get('/users/me/contributions', authenticate, async (req, res) => {
             [[userRow]]
         ] = await Promise.all([
             db.query(
-                `SELECT ts.id, ts.field_name, ts.suggested_hebrew, ts.suggested_latin,
-                        ts.suggested_cyrillic, ts.suggested_russian, ts.status,
+                `SELECT ts.id, ts.field_name, ts.suggested_hebrew_short, ts.suggested_latin_script,
+                        ts.suggested_cyrillic_script, ts.suggested_russian_short, ts.status,
                         ts.report_type, ts.created_at, ts.reviewed_at,
-                        de.term as entry_term
+                        de.hebrew_script as entry_term
                  FROM translation_suggestions ts
                  LEFT JOIN dictionary_entries de ON ts.entry_id = de.id
                  WHERE ts.user_id = ?
@@ -2088,7 +2110,7 @@ router.get('/users/me/contributions', authenticate, async (req, res) => {
                 [userId]
             ),
             db.query(
-                `SELECT id, term, status, created_at, approved_at
+                `SELECT id, hebrew_script, status, created_at, approved_at
                  FROM dictionary_entries
                  WHERE contributor_id = ?
                  ORDER BY created_at DESC LIMIT 50`,
@@ -2112,7 +2134,7 @@ router.get('/users/me/contributions', authenticate, async (req, res) => {
                 id: s.id,
                 entryTerm: s.entry_term,
                 fieldName: s.field_name,
-                suggestedValue: s.suggested_hebrew || s.suggested_latin || s.suggested_cyrillic || s.suggested_russian || '',
+                suggestedValue: s.suggested_hebrew_short || s.suggested_latin_script || s.suggested_cyrillic_script || s.suggested_russian_short || '',
                 status: s.status,
                 reportType: s.report_type,
                 createdAt: s.created_at,
@@ -2120,7 +2142,7 @@ router.get('/users/me/contributions', authenticate, async (req, res) => {
             })),
             entries: entries.map(e => ({
                 id: String(e.id),
-                term: e.term,
+                hebrewScript: e.hebrew_script,
                 status: e.status,
                 createdAt: e.created_at,
                 approvedAt: e.approved_at,
@@ -2155,29 +2177,29 @@ router.get('/duplicates', authenticate, requireApprover, async (req, res) => {
 
         // Find groups by normalized term
         let termQuery = `
-            SELECT term_normalized, GROUP_CONCAT(id ORDER BY id) as ids, COUNT(*) as cnt
+            SELECT hebrew_script_normalized, GROUP_CONCAT(id ORDER BY id) as ids, COUNT(*) as cnt
             FROM dictionary_entries
-            WHERE status = 'active' AND term_normalized IS NOT NULL AND term_normalized != ''
+            WHERE status = 'active' AND hebrew_script_normalized IS NOT NULL AND hebrew_script_normalized != ''
         `;
         const termParams = [];
         if (search) {
-            termQuery += ` AND (term LIKE ? OR term_normalized LIKE ?)`;
-            termParams.push(`%${search}%`, `%${normalizeTerm(search)}%`);
+            termQuery += ` AND (hebrew_script LIKE ? OR hebrew_script_normalized LIKE ?)`;
+            termParams.push(`%${search}%`, `%${normalizeHebrewScript(search)}%`);
         }
-        termQuery += ` GROUP BY term_normalized HAVING cnt > 1 ORDER BY cnt DESC`;
+        termQuery += ` GROUP BY hebrew_script_normalized HAVING cnt > 1 ORDER BY cnt DESC`;
 
         const [termGroups] = await db.query(termQuery, termParams);
 
         // Find groups by latin match (only entries not already grouped by term)
         let latinQuery = `
-            SELECT LOWER(t.latin) as latin_key, GROUP_CONCAT(DISTINCT de.id ORDER BY de.id) as ids, COUNT(DISTINCT de.id) as cnt
-            FROM translations t
+            SELECT LOWER(t.latin_script) as latin_key, GROUP_CONCAT(DISTINCT de.id ORDER BY de.id) as ids, COUNT(DISTINCT de.id) as cnt
+            FROM dialect_scripts t
             JOIN dictionary_entries de ON t.entry_id = de.id
-            WHERE de.status = 'active' AND t.latin IS NOT NULL AND t.latin != ''
+            WHERE de.status = 'active' AND t.latin_script IS NOT NULL AND t.latin_script != ''
         `;
         const latinParams = [];
         if (search) {
-            latinQuery += ` AND (de.term LIKE ? OR t.latin LIKE ?)`;
+            latinQuery += ` AND (de.hebrew_script LIKE ? OR t.latin_script LIKE ?)`;
             latinParams.push(`%${search}%`, `%${search}%`);
         }
         latinQuery += ` GROUP BY latin_key HAVING cnt > 1 ORDER BY cnt DESC`;
@@ -2193,7 +2215,7 @@ router.get('/duplicates', authenticate, requireApprover, async (req, res) => {
             const key = ids.sort().join(',');
             if (!seenIds.has(key)) {
                 seenIds.add(key);
-                groups.push({ matchType: 'term', matchKey: g.term_normalized, ids });
+                groups.push({ matchType: 'term', matchKey: g.hebrew_script_normalized, ids });
             }
         }
 
@@ -2216,9 +2238,9 @@ router.get('/duplicates', authenticate, requireApprover, async (req, res) => {
         }
 
         const [entries] = await db.query(
-            `SELECT de.id, de.term, de.term_normalized, de.part_of_speech, de.source_name, de.source, de.created_at,
-                    (SELECT JSON_ARRAYAGG(JSON_OBJECT('hebrew', t.hebrew, 'latin', t.latin, 'cyrillic', t.cyrillic, 'dialect', COALESCE(d.name, '')))
-                     FROM translations t LEFT JOIN dialects d ON t.dialect_id = d.id WHERE t.entry_id = de.id) as translations_json
+            `SELECT de.id, de.hebrew_script, de.hebrew_script_normalized, de.part_of_speech, de.source_name, de.source, de.created_at,
+                    (SELECT JSON_ARRAYAGG(JSON_OBJECT('hebrewScript', t.hebrew_script, 'latinScript', t.latin_script, 'cyrillicScript', t.cyrillic_script, 'dialect', COALESCE(d.name, '')))
+                     FROM dialect_scripts t LEFT JOIN dialects d ON t.dialect_id = d.id WHERE t.entry_id = de.id) as translations_json
              FROM dictionary_entries de
              WHERE de.id IN (${allIds.map(() => '?').join(',')})`,
             allIds
@@ -2228,8 +2250,8 @@ router.get('/duplicates', authenticate, requireApprover, async (req, res) => {
         for (const e of entries) {
             entryMap[e.id] = {
                 id: String(e.id),
-                term: e.term,
-                termNormalized: e.term_normalized,
+                hebrewScript: e.hebrew_script,
+                termNormalized: e.hebrew_script_normalized,
                 partOfSpeech: e.part_of_speech,
                 sourceName: e.source_name,
                 source: e.source,
@@ -2266,8 +2288,7 @@ router.get('/duplicates/compare', authenticate, requireApprover, async (req, res
 
         const [
             [entries],
-            [translations],
-            [definitions],
+            [dialectScriptsAll],
             [examples],
             [likesData],
             [commentsData],
@@ -2282,12 +2303,11 @@ router.get('/duplicates/compare', authenticate, requireApprover, async (req, res
             ),
             db.query(
                 `SELECT t.*, COALESCE(d.name, '') as dialect
-                 FROM translations t
+                 FROM dialect_scripts t
                  LEFT JOIN dialects d ON t.dialect_id = d.id
                  WHERE t.entry_id IN (${placeholders})`,
                 ids
             ),
-            db.query(`SELECT * FROM definitions WHERE entry_id IN (${placeholders})`, ids),
             db.query(`SELECT * FROM examples WHERE entry_id IN (${placeholders})`, ids),
             db.query(
                 `SELECT entry_id, COUNT(*) as count FROM entry_likes WHERE entry_id IN (${placeholders}) GROUP BY entry_id`,
@@ -2309,29 +2329,32 @@ router.get('/duplicates/compare', authenticate, requireApprover, async (req, res
 
         const result = entries.map(e => ({
             id: String(e.id),
-            term: e.term,
-            termNormalized: e.term_normalized,
+            hebrewScript: e.hebrew_script,
+            termNormalized: e.hebrew_script_normalized,
             detectedLanguage: e.detected_language,
-            pronunciationGuide: e.pronunciation_guide,
             partOfSpeech: e.part_of_speech,
-            russian: e.russian,
-            english: e.english,
+            hebrewShort: e.hebrew_short || null,
+            hebrewLong: e.hebrew_long || null,
+            russianShort: e.russian_short || null,
+            russianLong: e.russian_long || null,
+            englishShort: e.english_short || null,
+            englishLong: e.english_long || null,
             source: e.source,
             sourceName: e.source_name,
             status: e.status,
             contributorName: e.contributor_name,
             createdAt: e.created_at,
-            translations: translations.filter(t => t.entry_id === e.id).map(t => ({
+            dialectScripts: dialectScriptsAll.filter(t => t.entry_id === e.id).map(t => ({
                 id: t.id,
                 dialect: t.dialect,
                 dialectId: t.dialect_id,
-                hebrew: t.hebrew,
-                latin: t.latin,
-                cyrillic: t.cyrillic,
+                hebrewScript: t.hebrew_script,
+                latinScript: t.latin_script,
+                cyrillicScript: t.cyrillic_script,
+                pronunciationGuide: t.pronunciation_guide || null,
                 upvotes: t.upvotes || 0,
                 downvotes: t.downvotes || 0,
             })),
-            definitions: definitions.filter(d => d.entry_id === e.id).map(d => d.definition),
             examples: examples.filter(ex => ex.entry_id === e.id).map(ex => ({
                 origin: ex.origin,
                 translated: ex.translated,
@@ -2373,28 +2396,26 @@ router.post('/duplicates/merge', authenticate, requireApprover, [
         }
 
         // 1. Snapshot the deleted entry
-        const [deleteTranslations] = await conn.query(
-            `SELECT t.*, COALESCE(d.name, '') as dialect_name FROM translations t LEFT JOIN dialects d ON t.dialect_id = d.id WHERE t.entry_id = ?`,
+        const [deleteDialectScripts] = await conn.query(
+            `SELECT t.*, COALESCE(d.name, '') as dialect_name FROM dialect_scripts t LEFT JOIN dialects d ON t.dialect_id = d.id WHERE t.entry_id = ?`,
             [deleteId]
         );
-        const [deleteDefinitions] = await conn.query('SELECT * FROM definitions WHERE entry_id = ?', [deleteId]);
         const [deleteExamples] = await conn.query('SELECT * FROM examples WHERE entry_id = ?', [deleteId]);
 
         const snapshot = {
             entry: deleteEntry,
-            translations: deleteTranslations,
-            definitions: deleteDefinitions,
+            dialectScripts: deleteDialectScripts,
             examples: deleteExamples,
         };
 
         await conn.query(
             'INSERT INTO merge_log (kept_entry_id, deleted_entry_id, deleted_term, merge_details, merged_by) VALUES (?, ?, ?, ?, ?)',
-            [keepId, deleteId, deleteEntry.term, JSON.stringify(snapshot), req.user.id]
+            [keepId, deleteId, deleteEntry.hebrew_script, JSON.stringify(snapshot), req.user.id]
         );
 
         // 2. Apply field overrides to kept entry
         if (fieldOverrides && typeof fieldOverrides === 'object') {
-            const allowedFields = ['term', 'pronunciation_guide', 'part_of_speech', 'russian', 'english', 'detected_language'];
+            const allowedFields = ['hebrew_script', 'part_of_speech', 'russian_short', 'english_short', 'detected_language', 'hebrew_short', 'hebrew_long', 'russian_long', 'english_long'];
             const updates = [];
             const values = [];
             for (const [field, value] of Object.entries(fieldOverrides)) {
@@ -2404,28 +2425,23 @@ router.post('/duplicates/merge', authenticate, requireApprover, [
                 }
             }
             if (updates.length > 0) {
-                // Also update term_normalized if term changed
-                if (fieldOverrides.term) {
-                    updates.push('term_normalized = ?');
-                    values.push(normalizeTerm(fieldOverrides.term));
+                // Also update hebrew_script_normalized if hebrew_script changed
+                if (fieldOverrides.hebrew_script) {
+                    updates.push('hebrew_script_normalized = ?');
+                    values.push(normalizeHebrewScript(fieldOverrides.hebrew_script));
                 }
                 values.push(keepId);
                 await conn.query(`UPDATE dictionary_entries SET ${updates.join(', ')} WHERE id = ?`, values);
             }
         }
 
-        // 3. Move translations
-        await conn.query('UPDATE translations SET entry_id = ? WHERE entry_id = ?', [keepId, deleteId]);
+        // 3. Move dialect_scripts
+        await conn.query('UPDATE dialect_scripts SET entry_id = ? WHERE entry_id = ?', [keepId, deleteId]);
 
-        // 4. Move unique definitions
-        const [keepDefs] = await conn.query('SELECT definition FROM definitions WHERE entry_id = ?', [keepId]);
-        const keepDefSet = new Set(keepDefs.map(d => d.definition));
-        for (const d of deleteDefinitions) {
-            if (!keepDefSet.has(d.definition)) {
-                await conn.query('INSERT INTO definitions (entry_id, definition) VALUES (?, ?)', [keepId, d.definition]);
-            }
+        // 4. Merge hebrew_long if the kept entry doesn't have one but the deleted does
+        if (!keepEntry.hebrew_long && deleteEntry.hebrew_long) {
+            await conn.query('UPDATE dictionary_entries SET hebrew_long = ? WHERE id = ?', [deleteEntry.hebrew_long, keepId]);
         }
-        await conn.query('DELETE FROM definitions WHERE entry_id = ?', [deleteId]);
 
         // 5. Move examples
         await conn.query('UPDATE examples SET entry_id = ? WHERE entry_id = ?', [keepId, deleteId]);
@@ -2511,23 +2527,24 @@ router.post('/duplicates/merge', authenticate, requireApprover, [
         // 7. Delete the doomed entry
         await conn.query('DELETE FROM dictionary_entries WHERE id = ?', [deleteId]);
 
-        // 8. Update term_normalized on kept entry (if not already done via overrides)
-        if (!fieldOverrides?.term) {
+        // 8. Update hebrew_script_normalized on kept entry (if not already done via overrides)
+        if (!fieldOverrides?.hebrew_script) {
             await conn.query(
-                'UPDATE dictionary_entries SET term_normalized = ? WHERE id = ?',
-                [normalizeTerm(keepEntry.term), keepId]
+                'UPDATE dictionary_entries SET hebrew_script_normalized = ? WHERE id = ?',
+                [normalizeHebrewScript(keepEntry.hebrew_script), keepId]
             );
         }
 
         // 9. Log to system_logs
         await conn.query(
-            `INSERT INTO system_logs (event_type, description, user_id, user_name, metadata)
-             VALUES ('ENTRY_MERGED', ?, ?, ?, ?)`,
+            `INSERT INTO system_logs (event_type, description, user_id, user_name, metadata, ip_address)
+             VALUES ('ENTRY_MERGED', ?, ?, ?, ?, ?)`,
             [
-                `מוזגו ערכים: "${keepEntry.term}" (${keepId}) ← "${deleteEntry.term}" (${deleteId})`,
+                `מוזגו ערכים: "${keepEntry.hebrew_script}" (${keepId}) ← "${deleteEntry.hebrew_script}" (${deleteId})`,
                 req.user.id,
                 req.user.name,
-                JSON.stringify({ keepId, deleteId, deletedTerm: deleteEntry.term })
+                JSON.stringify({ keepId, deleteId, deletedTerm: deleteEntry.hebrew_script }),
+                getClientIp(req)
             ]
         );
 
@@ -2589,11 +2606,11 @@ router.get('/duplicates/suggestions', authenticate, requireApprover, async (req,
     try {
         const [suggestions] = await db.query(
             `SELECT ms.*,
-                    a.term as term_a, b.term as term_b,
-                    (SELECT t.hebrew FROM translations t WHERE t.entry_id = ms.entry_id_a LIMIT 1) as hebrew_a,
-                    (SELECT t.hebrew FROM translations t WHERE t.entry_id = ms.entry_id_b LIMIT 1) as hebrew_b,
-                    (SELECT t.latin FROM translations t WHERE t.entry_id = ms.entry_id_a LIMIT 1) as latin_a,
-                    (SELECT t.latin FROM translations t WHERE t.entry_id = ms.entry_id_b LIMIT 1) as latin_b
+                    a.hebrew_script as term_a, b.hebrew_script as term_b,
+                    (SELECT t.hebrew_script FROM dialect_scripts t WHERE t.entry_id = ms.entry_id_a LIMIT 1) as hebrew_a,
+                    (SELECT t.hebrew_script FROM dialect_scripts t WHERE t.entry_id = ms.entry_id_b LIMIT 1) as hebrew_b,
+                    (SELECT t.latin_script FROM dialect_scripts t WHERE t.entry_id = ms.entry_id_a LIMIT 1) as latin_a,
+                    (SELECT t.latin_script FROM dialect_scripts t WHERE t.entry_id = ms.entry_id_b LIMIT 1) as latin_b
              FROM merge_suggestions ms
              JOIN dictionary_entries a ON ms.entry_id_a = a.id
              JOIN dictionary_entries b ON ms.entry_id_b = b.id
@@ -2628,9 +2645,9 @@ router.get('/duplicates/count', authenticate, requireApprover, async (req, res) 
     try {
         const [[{ count: termCount }]] = await db.query(
             `SELECT COUNT(*) as count FROM (
-                SELECT term_normalized FROM dictionary_entries
-                WHERE status = 'active' AND term_normalized IS NOT NULL AND term_normalized != ''
-                GROUP BY term_normalized HAVING COUNT(*) > 1
+                SELECT hebrew_script_normalized FROM dictionary_entries
+                WHERE status = 'active' AND hebrew_script_normalized IS NOT NULL AND hebrew_script_normalized != ''
+                GROUP BY hebrew_script_normalized HAVING COUNT(*) > 1
             ) as dup_groups`
         );
         const [[{ count: suggestionsCount }]] = await db.query(

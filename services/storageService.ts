@@ -1,17 +1,17 @@
 
-import { DictionaryEntry, Translation, DialectItem, SystemEvent, EventType, User } from '../types';
+import { DictionaryEntry, DialectScript, DialectItem, SystemEvent, EventType, User } from '../types';
 import { dictionaryApi, dialectsApi, logsApi } from './apiService';
 
 // --- System Logging ---
 // Logging is now handled automatically by the backend
 
-export const getSystemLogs = async (): Promise<SystemEvent[]> => {
+export const getSystemLogs = async (params?: { limit?: number; eventType?: string; userId?: string; from?: string; to?: string; search?: string }): Promise<{ logs: SystemEvent[]; users: { id: string; name: string; email: string }[] }> => {
   try {
-    const response = await logsApi.get(200);
-    return response.logs || [];
+    const response = await logsApi.get({ limit: 200, ...params });
+    return { logs: response.logs || [], users: response.users || [] };
   } catch (err) {
     console.error('Failed to get logs:', err);
-    return [];
+    return { logs: [], users: [] };
   }
 };
 
@@ -48,12 +48,12 @@ export const saveCustomEntries = async (entries: DictionaryEntry[]): Promise<voi
 };
 
 export const addCustomEntry = async (entry: DictionaryEntry, actor?: User | null): Promise<void> => {
-  const translation = entry.translations?.[0];
+  const ds = entry.dialectScripts?.[0];
   await dictionaryApi.addEntry({
-    term: entry.term,
-    translation: translation?.hebrew || '',
-    dialect: translation?.dialect || 'General',
-    notes: entry.definitions?.[0] || ''
+    term: entry.hebrewScript,
+    translation: ds?.hebrewScript || '',
+    dialect: ds?.dialect || 'General',
+    notes: entry.hebrewLong || ''
   });
 };
 
@@ -118,26 +118,26 @@ export const parseExcelData = (text: string): DictionaryEntry[] => {
     const cols = row.split('\t');
     if (cols.length < 2) return;
 
-    const term = cols[0]?.trim();
-    const hebrew = cols[1]?.trim() || '';
-    const latin = cols[2]?.trim() || '';
+    const hebrewScript = cols[0]?.trim();
+    const hebrewShort = cols[1]?.trim() || '';
+    const latinScript = cols[2]?.trim() || '';
     const dialect = cols[3]?.trim() || 'General';
     const definition = cols[4]?.trim() || '';
-    const cyrillic = cols[5]?.trim() || '';
+    const cyrillicScript = cols[5]?.trim() || '';
 
-    if (term) {
-      const translation: Translation = {
+    if (hebrewScript) {
+      const dialectScript: DialectScript = {
         dialect,
-        hebrew,
-        latin,
-        cyrillic
+        hebrewScript: hebrewShort,
+        latinScript,
+        cyrillicScript
       };
 
       const entry: DictionaryEntry = {
-        term,
+        hebrewScript,
         detectedLanguage: 'Hebrew',
-        translations: [translation],
-        definitions: definition ? [definition] : [],
+        dialectScripts: [dialectScript],
+        hebrewLong: definition || null,
         examples: [],
         isCustom: true,
         source: 'מאגר',

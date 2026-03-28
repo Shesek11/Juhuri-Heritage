@@ -1,7 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
+import { useRouter } from '@/src/i18n/navigation';
 import { useTranslations } from 'next-intl';
 import { Search, Loader2, Mic, Plus, GitMerge, X, Check } from 'lucide-react';
 import { DictionaryEntry, FuzzySuggestion } from '../../types';

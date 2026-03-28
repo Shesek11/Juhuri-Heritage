@@ -26,13 +26,13 @@ export function buildWebsiteJsonLd() {
   };
 }
 
-export function buildOrganizationJsonLd() {
+export function buildOrganizationJsonLd(logoPath?: string | null) {
   return {
     '@type': 'Organization',
     '@id': `${SITE_URL}/#organization`,
     name: SITE_NAME,
     url: SITE_URL,
-    logo: `${SITE_URL}/images/og-default.png`,
+    logo: logoPath ? `${SITE_URL}${logoPath}` : `${SITE_URL}/images/logo.png`,
     sameAs: [],
   };
 }
@@ -50,19 +50,19 @@ export function buildBreadcrumbJsonLd(items: { name: string; url: string }[]) {
 }
 
 export function buildDefinedTermJsonLd(entry: {
-  term: string;
-  russian?: string;
-  english?: string;
-  hebrew?: string;
+  hebrewScript: string;
+  hebrewShort?: string;
+  russianShort?: string;
+  englishShort?: string;
   partOfSpeech?: string;
   pronunciationGuide?: string;
 }) {
-  const meanings = [entry.hebrew, entry.russian, entry.english].filter(Boolean).join(' | ');
+  const meanings = [entry.hebrewShort, entry.russianShort, entry.englishShort].filter(Boolean).join(' | ');
   return {
     '@type': 'DefinedTerm',
-    '@id': `${SITE_URL}/word/${encodeURIComponent(entry.term)}`,
-    name: entry.term,
-    description: meanings || entry.term,
+    '@id': `${SITE_URL}/word/${encodeURIComponent(entry.hebrewScript)}`,
+    name: entry.hebrewScript,
+    description: meanings || entry.hebrewScript,
     inDefinedTermSet: {
       '@type': 'DefinedTermSet',
       '@id': `${SITE_URL}/#dictionary`,

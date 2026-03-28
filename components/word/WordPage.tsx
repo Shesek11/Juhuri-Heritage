@@ -251,6 +251,7 @@ const WordPage: React.FC<WordPageProps> = ({
 
 // ──── Possible Duplicates section ────
 import apiService from '../../services/apiService';
+import { Link } from '@/src/i18n/navigation';
 
 const PossibleDuplicates: React.FC<{
   entry: DictionaryEntry;
@@ -294,7 +295,7 @@ const PossibleDuplicates: React.FC<{
       <div className="space-y-2">
         {duplicates.map(dup => (
           <div key={dup.id} className="flex items-center justify-between bg-slate-800/40 rounded-lg px-3 py-2.5 border border-slate-700/50">
-            <a
+            <Link
               href={`/word/${encodeURIComponent(dup.hebrewScript)}`}
               className="flex items-center gap-3 text-sm hover:text-amber-300 transition-colors"
               onClick={e => e.stopPropagation()}
@@ -302,7 +303,7 @@ const PossibleDuplicates: React.FC<{
               <span className="text-white font-medium">{dup.hebrewScript}</span>
               {dup.hebrewShort && <span className="text-slate-400">{dup.hebrewShort}</span>}
               {dup.latinScript && <span className="text-slate-500 text-xs">{dup.latinScript}</span>}
-            </a>
+            </Link>
             {submitted.has(dup.id) ? (
               <span className="flex items-center gap-1 text-emerald-400 text-xs"><Check className="w-3.5 h-3.5" /> {t('mergeSuggestionSent')}</span>
             ) : suggestingId === dup.id ? (

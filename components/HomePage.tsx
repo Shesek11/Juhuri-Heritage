@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter } from '@/src/i18n/navigation';
 import HeroSection from './home/HeroSection';
 import FeaturesSection from './home/FeaturesSection';
 import CTASection from './home/CTASection';

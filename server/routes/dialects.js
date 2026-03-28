@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../config/db');
 const { authenticate, requireAdmin } = require('../middleware/auth');
+const { logEvent } = require('../utils/logEvent');
 
 // GET /api/dialects
 router.get('/', async (req, res) => {
@@ -31,10 +32,7 @@ router.post('/', authenticate, requireAdmin, async (req, res) => {
             [name, description || '']
         );
 
-        await db.query(
-            `INSERT INTO system_logs (event_type, description, user_id, user_name, metadata) VALUES (?, ?, ?, ?, ?)`,
-            ['DIALECT_ADDED', `נוסף ניב חדש: ${description || name}`, req.user.id, req.user.name, JSON.stringify({ name })]
-        );
+        await logEvent('DIALECT_ADDED', `נוסף ניב חדש: ${description || name}`, req.user, { name }, req);
 
         res.json({ success: true, id: result.insertId });
     } catch (err) {
