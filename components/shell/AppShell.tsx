@@ -48,9 +48,8 @@ interface NavTabProps {
 const NavTab: React.FC<NavTabProps & { comingSoonLabel?: string }> = ({ href, icon, label, comingSoon, isActive, comingSoonLabel }) => (
   <Link
     href={href}
-    title={comingSoon ? comingSoonLabel : undefined}
-    className={`relative flex items-center gap-1.5 px-4 py-2.5 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
-      comingSoon ? 'opacity-40 hover:opacity-70' : ''
+    className={`group/tab relative flex items-center gap-1.5 px-4 py-2.5 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
+      comingSoon ? 'opacity-50 hover:opacity-80' : ''
     } ${isActive
       ? 'bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-white border border-amber-500/30 shadow-inner'
       : 'text-slate-300 hover:text-white hover:bg-white/5'
@@ -59,7 +58,12 @@ const NavTab: React.FC<NavTabProps & { comingSoonLabel?: string }> = ({ href, ic
     {icon}
     <span>{label}</span>
     {comingSoon && (
-      <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
+      <>
+        <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse group-hover/tab:hidden" />
+        <span className="hidden group-hover/tab:inline text-[10px] text-blue-300 font-bold">
+          {comingSoonLabel}
+        </span>
+      </>
     )}
   </Link>
 );

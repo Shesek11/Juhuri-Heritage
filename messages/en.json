@@ -95,7 +95,8 @@
     "resultsFor": "Results for",
     "notFoundCta": "Didn't find what you were looking for?",
     "suggestTranslation": "Suggest a new translation for",
-    "addNewWord": "Add a new word to the dictionary"
+    "addNewWord": "Add a new word to the dictionary",
+    "mergeAuth": "Sign in to suggest merging entries"
   },
   "metadata": {
     "siteName": "Juhuri Heritage",

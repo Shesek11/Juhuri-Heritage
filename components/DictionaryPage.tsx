@@ -237,9 +237,9 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({
   };
 
   // Build SEO data based on whether we have a result
-  const seoTitle = result ? `${result.hebrewScript} - תרגום ג'והורי` : undefined;
+  const seoTitle = result ? `${result.hebrewScript} - ${t('resultsFor')}` : undefined;
   const seoDescription = result
-    ? `תרגום ומשמעות של "${result.hebrewScript}" במילון הג'והורי-עברי`
+    ? `${result.hebrewScript} - ${t('resultsFor')} ${result.hebrewShort || ''}`
     : undefined;
   const seoCanonicalPath = result ? `/word/${encodeURIComponent(result.hebrewScript)}` : '/';
   const seoJsonLd = result
@@ -347,7 +347,7 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({
           className="fixed bottom-6 left-6 z-40 flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white rounded-full shadow-xl shadow-amber-500/30 hover:shadow-amber-500/50 hover:scale-105 transition-all font-bold text-sm group"
         >
           <Plus size={20} className="group-hover:rotate-90 transition-transform" />
-          <span className="hidden sm:inline">הוסף מילה</span>
+          <span className="hidden sm:inline">{t('addNewWord')}</span>
         </button>
 
         {/* Widgets — Only show if not searching (result is null) and not loading */}
@@ -484,7 +484,7 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({
           candidates={[...(result && result.id !== mergeSourceEntry.id ? [result] : []), ...additionalResults.filter(r => r.id !== mergeSourceEntry.id)]}
           isAuthenticated={isAuthenticated}
           onClose={() => setMergeSourceEntry(null)}
-          onNeedAuth={() => onOpenAuthModal('כדי להציע מיזוג ערכים, צריך להתחבר')}
+          onNeedAuth={() => onOpenAuthModal(t('mergeAuth'))}
         />
       )}
     </>
@@ -499,6 +499,8 @@ const SuggestMergeInlineModal: React.FC<{
   onClose: () => void;
   onNeedAuth: () => void;
 }> = ({ sourceEntry, candidates, isAuthenticated, onClose, onNeedAuth }) => {
+  const ts = useTranslations('search');
+  const tc = useTranslations('common');
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [reason, setReason] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -532,22 +534,22 @@ const SuggestMergeInlineModal: React.FC<{
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
-      <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-md w-full" dir="rtl" onClick={e => e.stopPropagation()}>
+      <div className="bg-slate-900 border border-slate-700 rounded-2xl p-6 max-w-md w-full" onClick={e => e.stopPropagation()}>
         {submitted ? (
           <div className="text-center py-4">
             <div className="text-emerald-400 text-3xl mb-2">✓</div>
-            <p className="text-white font-medium mb-1">ההצעה נשלחה</p>
-            <p className="text-slate-400 text-sm mb-4">מנהל יבדוק את ההצעה. תודה!</p>
-            <button type="button" onClick={onClose} className="px-4 py-2 bg-slate-700 text-white rounded-lg text-sm hover:bg-slate-600">סגור</button>
+            <p className="text-white font-medium mb-1">{ts('mergeSent')}</p>
+            <p className="text-slate-400 text-sm mb-4">{ts('mergeSentDetail')}</p>
+            <button type="button" onClick={onClose} className="px-4 py-2 bg-slate-700 text-white rounded-lg text-sm hover:bg-slate-600">{tc('close')}</button>
           </div>
         ) : (
           <>
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-white">הצעת מיזוג</h3>
-              <button type="button" onClick={onClose} title="סגור" className="text-slate-400 hover:text-white">✕</button>
+              <h3 className="text-lg font-bold text-white">{ts('mergeTitle')}</h3>
+              <button type="button" onClick={onClose} title={tc('close')} className="text-slate-400 hover:text-white">✕</button>
             </div>
             <p className="text-slate-300 text-sm mb-3">
-              בחר ערכים כפולים של <strong className="text-white">"{sourceEntry.hebrewScript}"</strong>:
+              {ts('mergeInstruction', { term: sourceEntry.hebrewScript })}
             </p>
             <div className="space-y-2 mb-4 max-h-60 overflow-y-auto">
               {candidates.map(c => {
@@ -567,14 +569,14 @@ const SuggestMergeInlineModal: React.FC<{
                 );
               })}
             </div>
-            <textarea value={reason} onChange={e => setReason(e.target.value)} placeholder="סיבה (לא חובה)" rows={2}
-              className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm placeholder-slate-500 focus:border-amber-500/50 focus:outline-none resize-none mb-4" dir="rtl" />
+            <textarea value={reason} onChange={e => setReason(e.target.value)} placeholder={ts('mergeReason')} rows={2}
+              className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm placeholder-slate-500 focus:border-amber-500/50 focus:outline-none resize-none mb-4" />
             <div className="flex gap-3">
               <button type="button" onClick={handleSubmit} disabled={selectedIds.size === 0 || submitting}
                 className="flex-1 px-4 py-2.5 bg-amber-600 text-white rounded-lg font-medium hover:bg-amber-700 disabled:opacity-50 text-sm">
-                {submitting ? 'שולח...' : `שלח הצעה${selectedIds.size > 1 ? ` (${selectedIds.size})` : ''}`}
+                {submitting ? tc('loading') : selectedIds.size > 1 ? ts('mergeSendCount', { count: selectedIds.size }) : ts('mergeSend')}
               </button>
-              <button type="button" onClick={onClose} className="px-4 py-2.5 bg-slate-700 text-slate-300 rounded-lg hover:bg-slate-600 text-sm">ביטול</button>
+              <button type="button" onClick={onClose} className="px-4 py-2.5 bg-slate-700 text-slate-300 rounded-lg hover:bg-slate-600 text-sm">{tc('cancel')}</button>
             </div>
           </>
         )}
