@@ -45,10 +45,11 @@ interface NavTabProps {
   isActive: boolean;
 }
 
+// Full NavTab — icon + label (used in expanded row 2)
 const NavTab: React.FC<NavTabProps & { comingSoonLabel?: string }> = ({ href, icon, label, comingSoon, isActive, comingSoonLabel }) => (
   <Link
     href={href}
-    className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-[13px] font-medium transition-all whitespace-nowrap ${isActive
+    className={`flex items-center gap-1.5 px-3.5 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${isActive
       ? 'bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-white border border-amber-500/30 shadow-inner'
       : 'text-slate-300 hover:text-white hover:bg-white/5'
       }`}
@@ -59,6 +60,23 @@ const NavTab: React.FC<NavTabProps & { comingSoonLabel?: string }> = ({ href, ic
       <span className="px-1 py-0.5 text-[10px] bg-blue-500 text-white rounded-full font-bold leading-none">
         {comingSoonLabel}
       </span>
+    )}
+  </Link>
+);
+
+// Compact NavTab — icon only (used in collapsed row 1 when scrolled)
+const NavTabIcon: React.FC<{ href: string; icon: React.ReactNode; label: string; isActive: boolean; comingSoon?: boolean }> = ({ href, icon, label, isActive, comingSoon }) => (
+  <Link
+    href={href}
+    title={label}
+    className={`relative p-2 rounded-full transition-all ${isActive
+      ? 'bg-amber-500/20 text-amber-400'
+      : 'text-slate-400 hover:text-white hover:bg-white/10'
+      }`}
+  >
+    {icon}
+    {comingSoon && (
+      <span className="absolute -top-0.5 -end-0.5 w-2 h-2 bg-blue-500 rounded-full" />
     )}
   </Link>
 );
@@ -361,38 +379,37 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         />
 
         {/* Header / Nav */}
-        <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b ${isScrolled ? 'bg-[#050B14]/90 backdrop-blur-2xl border-white/10 py-1 shadow-lg' : 'bg-transparent border-transparent py-4'}`}>
+        <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b ${isScrolled ? 'bg-[#050B14]/95 backdrop-blur-2xl border-white/10 shadow-lg' : 'bg-transparent border-transparent'}`}>
+          {/* Row 1: Logo + (compact nav when scrolled) + Actions */}
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
 
-            {/* Right: Logo */}
-            <Link href="/" className={`flex items-center gap-3 transition-all duration-300 border ${!isScrolled ? 'bg-[#0d1424]/60 backdrop-blur-md rounded-full ps-1 pe-4 py-1 border-white/5' : 'border-transparent'}`}>
-              <img src={siteLogo || '/images/logo-transparent.png'} alt={t('logo')} className="w-9 h-9 object-contain" />
-              <span className="text-lg font-bold text-white hidden lg:block">{t('logo')}</span>
+            {/* Logo */}
+            <Link href="/" className={`flex items-center gap-2.5 transition-all duration-300 shrink-0 ${!isScrolled ? 'bg-[#0d1424]/60 backdrop-blur-md rounded-full ps-1 pe-3 py-1 border border-white/5' : ''}`}>
+              <img src={siteLogo || '/images/logo-transparent.png'} alt={t('logo')} className="w-8 h-8 object-contain" />
+              <span className={`text-lg font-bold text-white transition-all duration-300 ${isScrolled ? 'hidden' : 'hidden lg:block'}`}>{t('logo')}</span>
             </Link>
 
-            {/* Center: Navigation Tabs (Desktop) */}
-            <nav className="hidden md:flex items-center min-w-0 flex-1 mx-4 justify-center" aria-label={t('mainNav')}>
-              <div className={`flex items-center p-1 rounded-full gap-0.5 transition-all duration-300 border overflow-x-auto scrollbar-hide ${!isScrolled ? 'bg-[#0d1424]/60 backdrop-blur-md border-white/5 shadow-lg' : 'bg-white/5 border-transparent backdrop-blur-sm'}`}>
-                <NavTab href="/" icon={<Home size={16} />} label={t('home')} isActive={isActive('/')} />
-                {orderedFeatures.filter(f => f.show_in_nav !== false).map(f => (
-                  <NavTab
-                    key={f.feature_key}
-                    href={f.link || '#'}
-                    icon={iconMap[f.icon || ''] || <BookOpen size={16} />}
-                    label={getFeatureName(f)}
-                    isActive={isActive(f.link || '') || (f.link === '/dictionary' && pathWithoutLocale.startsWith('/word/'))}
-                    comingSoon={f.status === 'coming_soon'}
-                    comingSoonLabel={tc('comingSoon')}
-                  />
-                ))}
-              </div>
+            {/* Compact nav icons — visible only when scrolled (desktop) */}
+            <nav className={`hidden md:flex items-center gap-0.5 p-1 rounded-full bg-white/5 mx-3 transition-all duration-300 ${isScrolled ? 'opacity-100 scale-100' : 'opacity-0 scale-95 pointer-events-none absolute'}`} aria-label={t('mainNav')}>
+              <NavTabIcon href="/" icon={<Home size={16} />} label={t('home')} isActive={isActive('/')} />
+              {orderedFeatures.filter(f => f.show_in_nav !== false).map(f => (
+                <NavTabIcon
+                  key={f.feature_key}
+                  href={f.link || '#'}
+                  icon={iconMap[f.icon || ''] || <BookOpen size={16} />}
+                  label={getFeatureName(f)}
+                  isActive={isActive(f.link || '') || (f.link === '/dictionary' && pathWithoutLocale.startsWith('/word/'))}
+                  comingSoon={f.status === 'coming_soon'}
+                />
+              ))}
             </nav>
 
-            {/* Left: Actions */}
-            <div className="flex items-center gap-2">
-              {/* Language Switcher */}
+            {/* Spacer */}
+            <div className="flex-1" />
+
+            {/* Actions */}
+            <div className="flex items-center gap-2 shrink-0">
               <LanguageSwitcher />
-              {/* Notification Bell */}
               <NotificationBell />
               {/* User Menu */}
               <div className="relative" onClick={e => e.stopPropagation()}>
@@ -499,6 +516,26 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                 )}
               </div>
             </div>
+          </div>
+
+          {/* Row 2: Full nav tabs with labels — hidden when scrolled (desktop only) */}
+          <div className={`hidden md:block overflow-hidden transition-all duration-300 ${isScrolled ? 'max-h-0 opacity-0' : 'max-h-16 opacity-100'}`}>
+            <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-2" aria-label={t('mainNav')}>
+              <div className="flex items-center justify-center p-1 rounded-full gap-1 bg-[#0d1424]/60 backdrop-blur-md border border-white/5 shadow-lg">
+                <NavTab href="/" icon={<Home size={16} />} label={t('home')} isActive={isActive('/')} />
+                {orderedFeatures.filter(f => f.show_in_nav !== false).map(f => (
+                  <NavTab
+                    key={f.feature_key}
+                    href={f.link || '#'}
+                    icon={iconMap[f.icon || ''] || <BookOpen size={16} />}
+                    label={getFeatureName(f)}
+                    isActive={isActive(f.link || '') || (f.link === '/dictionary' && pathWithoutLocale.startsWith('/word/'))}
+                    comingSoon={f.status === 'coming_soon'}
+                    comingSoonLabel={tc('comingSoon')}
+                  />
+                ))}
+              </div>
+            </nav>
           </div>
 
           {/* Mobile Navigation Bar */}

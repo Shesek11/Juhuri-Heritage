@@ -13,6 +13,8 @@ import {
     Mail,
     ChevronUp,
     ChevronDown,
+    PanelLeftClose,
+    PanelLeftOpen,
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 
@@ -114,9 +116,14 @@ export default function AdminSidebar({ userRole }: AdminSidebarProps) {
     const t = useTranslations('admin');
     const [expanded, setExpanded] = useState<Record<string, boolean>>({});
     const [badges, setBadges] = useState<Record<string, number>>({});
+    const [isCollapsed, setIsCollapsed] = useState(() => {
+        if (typeof window !== 'undefined') {
+            return localStorage.getItem('admin-sidebar-collapsed') === 'true';
+        }
+        return false;
+    });
     const MENU_SECTIONS = buildMenuSections(t);
 
-    // Fetch pending counts on mount
     useEffect(() => {
         (async () => {
             try {
@@ -134,7 +141,6 @@ export default function AdminSidebar({ userRole }: AdminSidebarProps) {
         })();
     }, []);
 
-    // Auto-expand the section that contains the active link
     useEffect(() => {
         const activeSection = MENU_SECTIONS.find((section) =>
             section.items.some((item) => pathname === item.href)
@@ -145,7 +151,20 @@ export default function AdminSidebar({ userRole }: AdminSidebarProps) {
     }, [pathname]);
 
     const toggleSection = (id: string) => {
-        setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
+        if (isCollapsed) {
+            // Clicking a section icon when collapsed: expand sidebar + that section
+            setIsCollapsed(false);
+            localStorage.setItem('admin-sidebar-collapsed', 'false');
+            setExpanded((prev) => ({ ...prev, [id]: true }));
+        } else {
+            setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
+        }
+    };
+
+    const toggleCollapse = () => {
+        const next = !isCollapsed;
+        setIsCollapsed(next);
+        localStorage.setItem('admin-sidebar-collapsed', String(next));
     };
 
     const visibleSections = MENU_SECTIONS.filter(
@@ -153,8 +172,8 @@ export default function AdminSidebar({ userRole }: AdminSidebarProps) {
     );
 
     return (
-        <aside className="w-64 bg-[#0d1424]/60 backdrop-blur-xl border-e border-white/10 overflow-y-auto shrink-0">
-            <nav className="py-4">
+        <aside className={`${isCollapsed ? 'w-16' : 'w-64'} bg-[#0d1424]/60 backdrop-blur-xl border-e border-white/10 overflow-y-auto shrink-0 transition-all duration-300 flex flex-col`}>
+            <nav className="py-4 flex-1">
                 {visibleSections.map((section) => {
                     const isExpanded = expanded[section.id] ?? false;
                     const hasActiveChild = section.items.some((item) => pathname === item.href);
@@ -164,7 +183,8 @@ export default function AdminSidebar({ userRole }: AdminSidebarProps) {
                             {/* Section header */}
                             <button
                                 onClick={() => toggleSection(section.id)}
-                                className={`w-full flex items-center justify-between px-4 py-2.5 text-sm transition-colors ${
+                                title={isCollapsed ? section.label : undefined}
+                                className={`w-full flex items-center ${isCollapsed ? 'justify-center px-2' : 'justify-between px-4'} py-2.5 text-sm transition-colors ${
                                     hasActiveChild
                                         ? 'text-amber-400'
                                         : 'text-slate-300 hover:text-white'
@@ -174,17 +194,19 @@ export default function AdminSidebar({ userRole }: AdminSidebarProps) {
                                     <span className={hasActiveChild ? 'text-amber-400' : 'text-slate-500'}>
                                         {section.icon}
                                     </span>
-                                    <span className="font-medium">{section.label}</span>
+                                    {!isCollapsed && <span className="font-medium">{section.label}</span>}
                                 </div>
-                                {isExpanded ? (
-                                    <ChevronUp size={14} className="text-slate-500" />
-                                ) : (
-                                    <ChevronDown size={14} className="text-slate-500" />
+                                {!isCollapsed && (
+                                    isExpanded ? (
+                                        <ChevronUp size={14} className="text-slate-500" />
+                                    ) : (
+                                        <ChevronDown size={14} className="text-slate-500" />
+                                    )
                                 )}
                             </button>
 
-                            {/* Section items */}
-                            {isExpanded && (
+                            {/* Section items — hidden when collapsed */}
+                            {!isCollapsed && isExpanded && (
                                 <div className="ms-4 border-s border-white/5">
                                     {section.items.map((item) => {
                                         const isActive = pathname === item.href;
@@ -213,6 +235,15 @@ export default function AdminSidebar({ userRole }: AdminSidebarProps) {
                     );
                 })}
             </nav>
+
+            {/* Collapse toggle button */}
+            <button
+                onClick={toggleCollapse}
+                className="flex items-center justify-center py-3 border-t border-white/5 text-slate-500 hover:text-white transition-colors"
+                title={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            >
+                {isCollapsed ? <PanelLeftOpen size={16} /> : <PanelLeftClose size={16} />}
+            </button>
         </aside>
     );
 }
