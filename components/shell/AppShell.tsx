@@ -48,8 +48,8 @@ interface NavTabProps {
 const NavTab: React.FC<NavTabProps & { comingSoonLabel?: string }> = ({ href, icon, label, comingSoon, isActive, comingSoonLabel }) => (
   <Link
     href={href}
-    className={`relative flex items-center gap-1.5 px-3 py-2 rounded-full text-[13px] font-medium transition-all whitespace-nowrap ${
-      comingSoon ? 'opacity-60' : ''
+    className={`relative flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
+      comingSoon ? 'opacity-50 hover:opacity-80' : ''
     } ${isActive
       ? 'bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-white border border-amber-500/30 shadow-inner'
       : 'text-slate-300 hover:text-white hover:bg-white/5'
@@ -58,7 +58,7 @@ const NavTab: React.FC<NavTabProps & { comingSoonLabel?: string }> = ({ href, ic
     {icon}
     <span>{label}</span>
     {comingSoon && (
-      <span className="absolute -top-1 start-1/2 -translate-x-1/2 px-1 py-px text-[8px] bg-blue-500 text-white rounded font-bold leading-none whitespace-nowrap">
+      <span className="absolute -top-2.5 inset-x-0 mx-auto w-fit px-1 py-px text-[7px] bg-blue-500/90 text-white rounded font-bold leading-tight tracking-wide uppercase">
         {comingSoonLabel}
       </span>
     )}
@@ -364,22 +364,23 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
         {/* Header / Nav — single row */}
         <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b ${isScrolled ? 'bg-[#050B14]/95 backdrop-blur-2xl border-white/10 shadow-lg py-1' : 'bg-transparent border-transparent py-3'}`}>
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-12 flex items-center gap-2">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center gap-3">
 
             {/* Logo */}
-            <Link href="/" className="flex items-center gap-2 shrink-0">
-              <img src={siteLogo || '/images/logo-transparent.png'} alt={t('logo')} className="w-8 h-8 object-contain" />
+            <Link href="/" className={`flex items-center gap-2.5 shrink-0 transition-all ${!isScrolled ? 'bg-[#0d1424]/60 backdrop-blur-md rounded-full ps-1 pe-3 py-1 border border-white/5' : ''}`}>
+              <img src={siteLogo || '/images/logo-transparent.png'} alt={t('logo')} className="w-9 h-9 object-contain" />
+              <span className="text-lg font-bold text-white hidden xl:block">{t('logo')}</span>
             </Link>
 
             {/* Desktop nav — single row */}
-            <nav className="hidden md:flex items-center flex-1 min-w-0 justify-center" aria-label={t('mainNav')}>
-              <div className="flex items-center p-0.5 rounded-full gap-0.5 bg-white/5 backdrop-blur-sm border border-white/5">
-                <NavTab href="/" icon={<Home size={15} />} label={t('home')} isActive={isActive('/')} />
+            <nav className="hidden md:flex items-center flex-1 min-w-0 justify-center overflow-hidden" aria-label={t('mainNav')}>
+              <div className="flex items-center p-1 rounded-full gap-0.5 bg-white/5 backdrop-blur-sm border border-white/5 overflow-x-auto scrollbar-hide">
+                <NavTab href="/" icon={<Home size={16} />} label={t('home')} isActive={isActive('/')} />
                 {orderedFeatures.filter(f => f.show_in_nav !== false).map(f => (
                   <NavTab
                     key={f.feature_key}
                     href={f.link || '#'}
-                    icon={iconMap[f.icon || ''] || <BookOpen size={15} />}
+                    icon={iconMap[f.icon || ''] || <BookOpen size={16} />}
                     label={getFeatureName(f)}
                     isActive={isActive(f.link || '') || (f.link === '/dictionary' && pathWithoutLocale.startsWith('/word/'))}
                     comingSoon={f.status === 'coming_soon'}

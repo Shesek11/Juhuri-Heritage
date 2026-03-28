@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Link } from '@/src/i18n/navigation';
-import { Database, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { Database, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { useAuth } from '../../../../contexts/AuthContext';
 import { useTranslations, useLocale } from 'next-intl';
 import AdminSidebar from '../../../../components/admin/AdminSidebar';
@@ -60,7 +60,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                         className="p-1.5 rounded-lg hover:bg-white/10 text-slate-400 hover:text-white transition-colors"
                         title={sidebarCollapsed ? 'Expand' : 'Collapse'}
                     >
-                        {sidebarCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
+                        {sidebarCollapsed
+                            ? (dir === 'rtl' ? <ChevronsLeft size={18} /> : <ChevronsRight size={18} />)
+                            : (dir === 'rtl' ? <ChevronsRight size={18} /> : <ChevronsLeft size={18} />)
+                        }
                     </button>
                     <Database size={20} className="text-amber-500" />
                     <h1 className="text-lg font-bold text-white">{t('adminPanel')}</h1>
