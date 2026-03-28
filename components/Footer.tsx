@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link';
+import { Link } from '@/src/i18n/navigation';
 import { Scroll, Facebook, Instagram, Youtube, HeartHandshake } from 'lucide-react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useAppContext } from './shell/AppContext';

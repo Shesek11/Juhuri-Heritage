@@ -1,9 +1,9 @@
 'use client';
 
 import React, { useState, useEffect, useCallback, Suspense, lazy } from 'react';
-import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTranslations, useLocale } from 'next-intl';
+import { Link } from '@/src/i18n/navigation';
 import { useAuth } from '../../contexts/AuthContext';
 import { DialectItem } from '../../types';
 import { getDialects } from '../../services/storageService';

@@ -70,7 +70,7 @@ RESULT=$(ssh "$SSH_HOST" "
 
   # Wait and verify
   sleep 4
-  HTTP_CODE=\$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 http://localhost:5000/)
+  HTTP_CODE=\$(curl -s -o /dev/null -w '%{http_code}' --max-time 10 http://localhost:5000/he)
   echo \"HTTP:\$HTTP_CODE\"
 ")
 
