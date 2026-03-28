@@ -76,7 +76,7 @@ const PendingApprovals: React.FC<PendingApprovalsProps> = ({ onViewDetails }) =>
                         <button
                             key={suggestion.id}
                             onClick={() => onViewDetails(suggestion.id)}
-                            className="w-full text-right flex items-center justify-between p-3 rounded-xl hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all group border border-transparent hover:border-emerald-200 dark:hover:border-emerald-800"
+                            className="w-full text-start flex items-center justify-between p-3 rounded-xl hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all group border border-transparent hover:border-emerald-200 dark:hover:border-emerald-800"
                         >
                             <div className="flex-1 min-w-0">
                                 <div className="flex items-center gap-2">
@@ -94,7 +94,7 @@ const PendingApprovals: React.FC<PendingApprovalsProps> = ({ onViewDetails }) =>
                                     {t('suggestedBy')} {suggestion.user_name}
                                 </div>
                             </div>
-                            <div className="bg-emerald-100 dark:bg-emerald-900/30 p-2 rounded-lg text-emerald-600 dark:text-emerald-400 opacity-0 group-hover:opacity-100 transition-all mr-2">
+                            <div className="bg-emerald-100 dark:bg-emerald-900/30 p-2 rounded-lg text-emerald-600 dark:text-emerald-400 opacity-0 group-hover:opacity-100 transition-all ms-2">
                                 <ThumbsUp size={18} />
                             </div>
                         </button>

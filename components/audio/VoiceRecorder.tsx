@@ -196,7 +196,7 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ entryId, dialectId, onRec
                             onClick={togglePlayback}
                             className="w-14 h-14 rounded-full bg-indigo-500 hover:bg-indigo-600 flex items-center justify-center transition-colors text-white shadow-lg"
                         >
-                            {isPlaying ? <Pause size={24} /> : <Play size={24} className="mr-[-2px]" />}
+                            {isPlaying ? <Pause size={24} /> : <Play size={24} className="ms-[-2px]" />}
                         </button>
 
                         <button

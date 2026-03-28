@@ -10,13 +10,13 @@ export async function GET(
     const term = decodeURIComponent(rawTerm).trim();
     if (!term) return NextResponse.json({ error: 'נדרש מונח' }, { status: 400 });
 
-    // Support lookup by numeric ID (for entries with empty term)
+    // Support lookup by numeric ID (for entries with empty hebrew_script)
     const isNumericId = /^\d+$/.test(term);
     const [entries] = await pool.query(
       `SELECT de.*, u.name as contributor_name
        FROM dictionary_entries de
        LEFT JOIN users u ON de.contributor_id = u.id
-       WHERE de.status = 'active' AND ${isNumericId ? '(de.id = ? OR de.term = ?)' : 'de.term = ?'}
+       WHERE de.status = 'active' AND ${isNumericId ? '(de.id = ? OR de.hebrew_script = ?)' : 'de.hebrew_script = ?'}
        LIMIT 1`,
       isNumericId ? [term, term] : [term]
     ) as any[];
@@ -28,25 +28,23 @@ export async function GET(
     const entry = entries[0];
 
     const [
-      [translations],
-      [definitions],
+      [dialectScripts],
       [examples],
       [fieldSourceRows],
       [pendingSuggestionRows]
     ] = await Promise.all([
       pool.query(
         `SELECT t.*, COALESCE(d.name, '') as dialect
-         FROM translations t
+         FROM dialect_scripts t
          LEFT JOIN dialects d ON t.dialect_id = d.id
          WHERE t.entry_id = ?`,
         [entry.id]
       ),
-      pool.query('SELECT definition FROM definitions WHERE entry_id = ?', [entry.id]),
       pool.query('SELECT origin, translated, transliteration FROM examples WHERE entry_id = ?', [entry.id]),
       pool.query('SELECT field_name, source_type FROM field_sources WHERE entry_id = ?', [entry.id]),
       pool.query(
-        `SELECT id, field_name, suggested_hebrew, suggested_latin,
-                suggested_cyrillic, suggested_russian, reason,
+        `SELECT id, field_name, suggested_hebrew_short, suggested_latin_script,
+                suggested_cyrillic_script, suggested_russian_short, reason,
                 user_id, created_at
          FROM translation_suggestions
          WHERE entry_id = ? AND status = 'pending'`,
@@ -61,8 +59,8 @@ export async function GET(
 
     const pendingSuggestions = pendingSuggestionRows.map((s: any) => ({
       id: s.id,
-      fieldName: s.field_name || (s.suggested_hebrew ? 'hebrew' : s.suggested_latin ? 'latin' : s.suggested_cyrillic ? 'cyrillic' : s.suggested_russian ? 'russian' : 'hebrew'),
-      suggestedValue: s.suggested_hebrew || s.suggested_latin || s.suggested_cyrillic || s.suggested_russian || '',
+      fieldName: s.field_name || (s.suggested_hebrew_short ? 'hebrew' : s.suggested_latin_script ? 'latin' : s.suggested_cyrillic_script ? 'cyrillic' : s.suggested_russian_short ? 'russian' : 'hebrew'),
+      suggestedValue: s.suggested_hebrew_short || s.suggested_latin_script || s.suggested_cyrillic_script || s.suggested_russian_short || '',
       userId: s.user_id ? String(s.user_id) : undefined,
       createdAt: s.created_at,
       reason: s.reason,
@@ -72,22 +70,26 @@ export async function GET(
       found: true,
       entry: {
         id: String(entry.id),
-        term: entry.term,
+        hebrewScript: entry.hebrew_script,
         detectedLanguage: entry.detected_language,
-        translations: translations.map((t: any) => ({
+        dialectScripts: dialectScripts.map((t: any) => ({
           id: t.id,
           dialect: t.dialect,
-          hebrew: t.hebrew,
-          latin: t.latin,
-          cyrillic: t.cyrillic,
+          hebrewScript: t.hebrew_script,
+          latinScript: t.latin_script,
+          cyrillicScript: t.cyrillic_script,
+          pronunciationGuide: t.pronunciation_guide,
           upvotes: t.upvotes || 0,
           downvotes: t.downvotes || 0,
         })),
-        definitions: definitions.map((d: any) => d.definition),
+        hebrewLong: entry.hebrew_long,
+        hebrewShort: entry.hebrew_short,
         examples,
-        pronunciationGuide: entry.pronunciation_guide,
         partOfSpeech: entry.part_of_speech,
-        russian: entry.russian,
+        russianShort: entry.russian_short,
+        russianLong: entry.russian_long,
+        englishShort: entry.english_short,
+        englishLong: entry.english_long,
         isCustom: true,
         source: entry.source,
         sourceName: entry.source_name || '',

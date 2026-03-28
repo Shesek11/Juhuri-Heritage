@@ -39,7 +39,7 @@ function useGamificationData() {
                 setStats(statsRes);
                 setBadges(badgesRes.badges || []);
             } catch (err) {
-                console.error('Failed to fetch gamification data:', err);
+                if (process.env.NODE_ENV === 'development') console.error('Failed to fetch gamification data:', err);
             } finally {
                 setIsLoading(false);
             }
@@ -48,7 +48,7 @@ function useGamificationData() {
         fetchData();
 
         apiService.post('/gamification/check-login-streak', {})
-            .catch(err => console.error('Failed to check login streak:', err));
+            .catch(() => {});
 
     }, [isAuthenticated, user?.id]);
 

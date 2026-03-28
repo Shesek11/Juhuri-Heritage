@@ -29,12 +29,12 @@ const CardHeader: React.FC<CardHeaderProps> = ({
     if (isPlaying) return;
     setIsPlaying(true);
     try {
-      const text = entry.translations?.[0]?.latin || entry.translations?.[0]?.cyrillic || entry.term;
+      const text = entry.dialectScripts?.[0]?.latinScript || entry.dialectScripts?.[0]?.cyrillicScript || entry.hebrewScript;
       const audioData = await generateSpeech(text);
       await playBase64Audio(audioData);
     } catch (error) {
       try {
-        const utterance = new SpeechSynthesisUtterance(entry.term);
+        const utterance = new SpeechSynthesisUtterance(entry.hebrewScript);
         utterance.lang = 'he-IL';
         utterance.onend = () => setIsPlaying(false);
         window.speechSynthesis.speak(utterance);
@@ -91,16 +91,16 @@ const CardHeader: React.FC<CardHeaderProps> = ({
           )}
 
           {/* Term */}
-          <h2 className="text-4xl font-bold tracking-tight">{entry.term}</h2>
+          <h2 className="text-4xl font-bold tracking-tight">{entry.hebrewScript}</h2>
 
           {/* Pronunciation */}
           <div className="max-w-xs">
             <EditableField
               entryId={entry.id}
               fieldName="pronunciationGuide"
-              dbValue={entry.pronunciationGuide}
+              dbValue={entry.dialectScripts?.[0]?.pronunciationGuide}
               aiValue={enrichedPronunciation}
-              isEnriching={enrichmentLoading && !entry.pronunciationGuide}
+              isEnriching={enrichmentLoading && !entry.dialectScripts?.[0]?.pronunciationGuide}
               pendingSuggestion={pendingSuggestions.find(s => s.fieldName === 'pronunciationGuide')}
               compact
               valueClassName="text-indigo-100 font-mono text-sm opacity-90"

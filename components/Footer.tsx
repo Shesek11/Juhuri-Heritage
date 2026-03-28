@@ -2,12 +2,12 @@
 
 import React from 'react';
 import { Link } from '@/src/i18n/navigation';
-import { Scroll, Facebook, Instagram, Youtube, HeartHandshake } from 'lucide-react';
+import { Facebook, Instagram, Youtube, HeartHandshake } from 'lucide-react';
 import { useTranslations, useLocale } from 'next-intl';
 import { useAppContext } from './shell/AppContext';
 
 const Footer: React.FC = () => {
-  const { orderedFeatures } = useAppContext();
+  const { orderedFeatures, siteLogo } = useAppContext();
   const t = useTranslations('footer');
   const ts = useTranslations('shell');
   const tc = useTranslations('common');
@@ -30,11 +30,9 @@ const Footer: React.FC = () => {
 
       <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-10 relative z-10">
         {/* Brand */}
-        <div className="flex flex-col items-center md:items-start text-center md:text-right">
+        <div className="flex flex-col items-center md:items-start text-center md:text-start">
           <Link href="/" className="flex items-center gap-3 mb-3 group">
-            <div className="w-9 h-9 bg-gradient-to-br from-amber-400 to-orange-600 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/20 group-hover:shadow-amber-500/40 transition-shadow duration-500">
-              <Scroll size={18} className="text-[#050B14]" />
-            </div>
+            <img src={siteLogo || '/images/logo-transparent.png'} alt={t('brand')} className="w-9 h-9 object-contain" />
             <span className="text-xl font-bold text-white group-hover:text-amber-400 transition-colors duration-300">{t('brand')}</span>
           </Link>
           <p className="text-slate-300 text-sm leading-relaxed max-w-xs mb-4">
@@ -56,7 +54,7 @@ const Footer: React.FC = () => {
               <li key={f.feature_key}>
                 <Link href={f.link!} className={linkClass}>
                   {getFeatureName(f)}
-                  {f.status === 'coming_soon' && <span className="text-xs text-blue-400 mr-1">({tc('comingSoon')})</span>}
+                  {f.status === 'coming_soon' && <span className="text-xs text-blue-400 ms-1">({tc('comingSoon')})</span>}
                 </Link>
               </li>
             ))}

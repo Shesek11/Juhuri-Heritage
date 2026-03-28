@@ -151,7 +151,7 @@ export const MarketplacePage: React.FC = () => {
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                         placeholder="חפש מאכלים, בשלנים..."
-                        className="w-full pl-4 pr-10 py-3 rounded-xl bg-[#0d1424]/60 backdrop-blur-xl border border-white/10 shadow-sm focus-visible:ring-2 focus-visible:ring-orange-500 outline-none"
+                        className="w-full pe-4 ps-10 py-3 rounded-xl bg-[#0d1424]/60 backdrop-blur-xl border border-white/10 shadow-sm focus-visible:ring-2 focus-visible:ring-orange-500 outline-none"
                     />
                 </form>
             </div>
@@ -160,7 +160,7 @@ export const MarketplacePage: React.FC = () => {
                 {/* List View (Mobile: Conditional, Desktop: Side Panel) */}
                 <div className={`
                     bg-white/5/50
-                    md:w-[400px] md:border-l border-white/10
+                    md:w-[400px] md:border-e border-white/10
                     flex flex-col
                     ${viewMode === 'map' ? 'hidden md:flex' : 'flex-1'}
                 `}>

@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/src/lib/db';
 import { getAuthUser } from '@/src/lib/auth';
+import { logEvent } from '@/src/lib/logEvent';
+import { fireEventEmail } from '@/src/lib/email';
 
 export async function POST(
   request: NextRequest,
@@ -18,7 +20,7 @@ export async function POST(
       return NextResponse.json({ error: 'הטקסט ארוך מדי' }, { status: 400 });
     }
 
-    const [entryRows] = await pool.query('SELECT id, term FROM dictionary_entries WHERE id = ?', [id]) as any[];
+    const [entryRows] = await pool.query('SELECT id, hebrew_script FROM dictionary_entries WHERE id = ?', [id]) as any[];
     if (entryRows.length === 0) {
       return NextResponse.json({ error: 'ערך לא נמצא' }, { status: 404 });
     }
@@ -44,7 +46,7 @@ export async function POST(
       if (words.length > 0) {
         const placeholders = words.map(() => '?').join(',');
         const [matchedEntries] = await pool.query(
-          `SELECT id FROM dictionary_entries WHERE term IN (${placeholders}) AND status = 'active'`,
+          `SELECT id FROM dictionary_entries WHERE hebrew_script IN (${placeholders}) AND status = 'active'`,
           words
         ) as any[];
         for (const matched of matchedEntries) {
@@ -61,6 +63,9 @@ export async function POST(
     if (user?.id) {
       await pool.query('UPDATE users SET xp = xp + 20 WHERE id = ?', [user.id]);
     }
+
+    await logEvent('DICTIONARY_EXAMPLE_SUGGESTED', `Example suggested for entry ${id}`, user, { entryId: id, exampleId }, request);
+    fireEventEmail('example-submitted', { variables: { userName: user?.name || 'אורח', term: entryRows[0].hebrew_script, entryId: String(id) } });
 
     return NextResponse.json({ success: true, message: 'הפתגם נשלח לאישור. תודה!' });
   } catch (error) {

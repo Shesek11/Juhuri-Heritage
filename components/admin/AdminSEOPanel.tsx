@@ -672,7 +672,7 @@ export const AdminSEOPanel: React.FC = () => {
 
             <div className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg text-sm text-purple-700 dark:text-purple-300">
                 <strong>מה זה llms.txt?</strong> קובץ שמסביר למנועי AI מה האתר שלך, מה הוא מציע, ואיך להשתמש בו. זה עוזר ל-AI להציג את האתר שלך בתשובות.
-                <a href="https://llmstxt.org" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 mr-2 underline">
+                <a href="https://llmstxt.org" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 ms-2 underline">
                     מידע נוסף <ExternalLink size={12} />
                 </a>
             </div>

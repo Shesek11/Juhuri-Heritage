@@ -59,7 +59,7 @@ export default function AdminDialectsPage() {
 
             <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-lg shadow border border-white/10 overflow-hidden">
                 <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
-                    <table className="w-full text-sm text-right">
+                    <table className="w-full text-sm text-start">
                         <thead className="bg-slate-800 text-slate-300 font-medium sticky top-0 z-10">
                             <tr>
                                 <th className="p-4">מזהה / שם</th>

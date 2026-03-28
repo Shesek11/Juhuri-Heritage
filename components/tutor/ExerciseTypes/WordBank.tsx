@@ -74,7 +74,7 @@ export default function WordBank({ exercise, onAnswer, feedback, onPlayAudio, is
           ))
         )}
         {selectedTiles.length > 0 && !feedback && (
-          <button onClick={handleReset} className="mr-2 p-1 text-slate-400 hover:text-slate-300">
+          <button onClick={handleReset} className="ms-2 p-1 text-slate-400 hover:text-slate-300">
             <RotateCcw size={16} />
           </button>
         )}

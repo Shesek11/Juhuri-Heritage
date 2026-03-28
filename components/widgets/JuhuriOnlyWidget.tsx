@@ -75,7 +75,7 @@ const JuhuriOnlyWidget: React.FC<JuhuriOnlyWidgetProps> = ({ onAddTranslation, o
                             <button
                                 key={entry.id}
                                 onClick={() => handleAddClick(entry)}
-                                className="w-full text-right flex items-center justify-between p-3 rounded-xl hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all group border border-transparent hover:border-emerald-200 dark:hover:border-emerald-800"
+                                className="w-full text-start flex items-center justify-between p-3 rounded-xl hover:bg-emerald-50 dark:hover:bg-emerald-900/20 transition-all group border border-transparent hover:border-emerald-200 dark:hover:border-emerald-800"
                             >
                                 <div>
                                     <div className="font-bold text-slate-200 group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">

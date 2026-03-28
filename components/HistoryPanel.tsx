@@ -33,10 +33,10 @@ const HistoryPanel: React.FC<HistoryPanelProps> = ({ history, onSelect, onClear 
             onClick={() => onSelect(item)}
             className="flex items-center gap-2 bg-[#0d1424]/60 backdrop-blur-xl border border-white/10 px-3 py-2 rounded-lg hover:border-indigo-300 dark:hover:border-indigo-700 hover:shadow-sm transition-all text-sm text-slate-700 dark:text-slate-200"
           >
-            <span className="font-medium">{item.term}</span>
+            <span className="font-medium">{item.hebrewScript}</span>
             <ArrowRightLeft size={12} className="text-slate-400" />
             <span className="text-slate-400 dark:text-slate-400 truncate max-w-[100px]">
-              {item.translations[0]?.hebrew || item.translations[0]?.latin}
+              {item.hebrewShort || item.dialectScripts[0]?.latinScript}
             </span>
           </button>
         ))}

@@ -102,7 +102,7 @@ const HeroSection: React.FC<HeroSectionProps> = ({ scrollY, searchTerm, setSearc
             <div className="absolute -inset-2 bg-gradient-to-r from-amber-500/40 via-orange-500/30 to-amber-500/40 rounded-full blur-2xl opacity-60 group-hover:opacity-100 transition duration-700"></div>
 
             {/* Search Container */}
-            <div className="relative flex items-center bg-[#0d1424]/90 border border-amber-500/30 hover:border-amber-400 rounded-full p-1.5 pr-5 transition-all duration-500 shadow-[0_20px_50px_-12px_rgba(245,158,11,0.4)] backdrop-blur-3xl">
+            <div className="relative flex items-center bg-[#0d1424]/90 border border-amber-500/30 hover:border-amber-400 rounded-full p-1.5 ps-5 transition-all duration-500 shadow-[0_20px_50px_-12px_rgba(245,158,11,0.4)] backdrop-blur-3xl">
               <input
                 type="text"
                 placeholder={t('searchPlaceholder')}

@@ -37,16 +37,16 @@ export async function GET(request: NextRequest) {
     const [rows]: any = await pool.query(`
       SELECT
         wm.entry_id as id,
-        de.term,
-        t.hebrew,
-        t.latin,
-        de.pronunciation_guide as pronunciation,
+        de.hebrew_script,
+        t.hebrew_script as t_hebrew_script,
+        t.latin_script,
+        t.pronunciation_guide as pronunciation,
         wm.box,
         wm.times_correct,
         wm.times_incorrect
       FROM word_mastery wm
       JOIN dictionary_entries de ON de.id = wm.entry_id
-      LEFT JOIN translations t ON t.entry_id = de.id
+      LEFT JOIN dialect_scripts t ON t.entry_id = de.id
       WHERE wm.user_id = ? AND wm.next_review <= NOW()
       GROUP BY de.id
       ORDER BY wm.box ASC, wm.next_review ASC

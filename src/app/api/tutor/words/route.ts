@@ -26,15 +26,15 @@ export async function GET(request: NextRequest) {
     const [rows]: any = await pool.query(`
       SELECT
         de.id,
-        de.term,
-        de.pronunciation_guide as pronunciation,
-        t.hebrew,
-        t.latin,
+        de.hebrew_script,
+        t.pronunciation_guide as pronunciation,
+        t.hebrew_script as t_hebrew_script,
+        t.latin_script,
         e.origin as example,
         e.translated as exampleTranslation
       FROM unit_words uw
       JOIN dictionary_entries de ON de.id = uw.entry_id
-      LEFT JOIN translations t ON t.entry_id = de.id
+      LEFT JOIN dialect_scripts t ON t.entry_id = de.id
       LEFT JOIN examples e ON e.entry_id = de.id
       WHERE uw.unit_id = ?
         AND de.status = 'active'

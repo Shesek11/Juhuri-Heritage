@@ -25,12 +25,12 @@ const DetailsSection: React.FC<DetailsSectionProps> = ({
   enrichedRussian,
   hideRussian = false,
 }) => {
-  const defSuggestion = pendingSuggestions.find(s => s.fieldName === 'definition');
-  const rusSuggestion = pendingSuggestions.find(s => s.fieldName === 'russian');
+  const defSuggestion = pendingSuggestions.find(s => s.fieldName === 'hebrewLong');
+  const rusSuggestion = pendingSuggestions.find(s => s.fieldName === 'russianShort');
 
   // Dedup: skip definition if it's identical to the first Hebrew translation
-  const defText = entry.definitions.length > 0 ? entry.definitions.join('; ') : '';
-  const firstHebrew = entry.translations?.[0]?.hebrew || '';
+  const defText = entry.hebrewLong || '';
+  const firstHebrew = entry.hebrewShort || '';
   const showDefinition = defText && defText !== firstHebrew;
 
   // AI enriched values
@@ -43,28 +43,28 @@ const DetailsSection: React.FC<DetailsSectionProps> = ({
         <div className="border-b border-white/10 pb-4">
           <EditableField
             entryId={entry.id}
-            fieldName="definition"
+            fieldName="hebrewLong"
             dbValue={showDefinition ? defText : undefined}
             aiValue={isDefinitionFromAI ? enrichedDefinition : undefined}
             isEnriching={enrichmentLoading && !defText}
             pendingSuggestion={defSuggestion}
-            fieldSource={entry.fieldSources?.definition}
+            fieldSource={entry.fieldSources?.hebrewLong}
             valueClassName="text-slate-200 text-lg leading-relaxed font-medium"
-            isEditing={editingField === 'definition'}
-            onStartEdit={() => onStartEdit('definition')}
+            isEditing={editingField === 'hebrewLong'}
+            onStartEdit={() => onStartEdit('hebrewLong')}
             onCloseEdit={onCloseEdit}
           />
         </div>
       ) : !defText ? (
         <div className="border-b border-white/10 pb-4">
-          <span className="text-xs font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider block mb-2">הגדרה</span>
+          <span className="text-xs font-bold text-slate-300 dark:text-slate-300 uppercase tracking-wider block mb-2">הגדרה</span>
           <EditableField
             entryId={entry.id}
-            fieldName="definition"
+            fieldName="hebrewLong"
             pendingSuggestion={defSuggestion}
             isEnriching={enrichmentLoading}
-            isEditing={editingField === 'definition'}
-            onStartEdit={() => onStartEdit('definition')}
+            isEditing={editingField === 'hebrewLong'}
+            onStartEdit={() => onStartEdit('hebrewLong')}
             onCloseEdit={onCloseEdit}
           />
         </div>
@@ -76,25 +76,25 @@ const DetailsSection: React.FC<DetailsSectionProps> = ({
       {/* Russian — hidden when already shown in parent (e.g., WordPage DialectComparison) */}
       {!hideRussian && (
         <div className="border-b border-white/10 pb-3">
-          {!entry.russian && !enrichedRussian && (
-            <span className="text-xs font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider block mb-2">רוסית</span>
+          {!entry.russianShort && !enrichedRussian && (
+            <span className="text-xs font-bold text-slate-300 dark:text-slate-300 uppercase tracking-wider block mb-2">רוסית</span>
           )}
-          {(entry.russian || enrichedRussian) && (
+          {(entry.russianShort || enrichedRussian) && (
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-xs font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider">רוסית</span>
+              <span className="text-xs font-bold text-slate-300 dark:text-slate-300 uppercase tracking-wider">רוסית</span>
             </div>
           )}
           <EditableField
             entryId={entry.id}
-            fieldName="russian"
-            dbValue={entry.russian}
+            fieldName="russianShort"
+            dbValue={entry.russianShort}
             aiValue={enrichedRussian}
-            isEnriching={enrichmentLoading && !entry.russian}
+            isEnriching={enrichmentLoading && !entry.russianShort}
             pendingSuggestion={rusSuggestion}
-            fieldSource={entry.fieldSources?.russian}
+            fieldSource={entry.fieldSources?.russianShort}
             valueClassName="font-serif text-lg"
-            isEditing={editingField === 'russian'}
-            onStartEdit={() => onStartEdit('russian')}
+            isEditing={editingField === 'russianShort'}
+            onStartEdit={() => onStartEdit('russianShort')}
             onCloseEdit={onCloseEdit}
           />
         </div>

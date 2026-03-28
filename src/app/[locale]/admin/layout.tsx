@@ -43,7 +43,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 <div className="flex items-center gap-4">
                     <span className="text-sm text-slate-400">
                         {user.name || user.email}
-                        <span className="text-xs text-slate-500 mr-2">({user.role})</span>
+                        <span className="text-xs text-slate-500 ms-2">({user.role})</span>
                     </span>
                     <Link
                         href="/"

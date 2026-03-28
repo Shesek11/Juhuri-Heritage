@@ -4,8 +4,8 @@ import React, { useState, useEffect } from 'react';
 import { Bot, CheckCircle, Loader2 } from 'lucide-react';
 
 const ADMIN_FIELD_LABELS: Record<string, string> = {
-    hebrew: 'עברית', latin: 'לטיני', cyrillic: 'קירילי', russian: 'רוסית',
-    definition: 'הגדרה', pronunciationGuide: 'הגייה', partOfSpeech: 'חלק דיבר', dialect: 'ניב',
+    hebrewShort: 'עברית', latinScript: 'לטיני', cyrillicScript: 'קירילי', russianShort: 'רוסית',
+    hebrewLong: 'הגדרה', pronunciationGuide: 'הגייה', partOfSpeech: 'חלק דיבר', dialect: 'ניב',
 };
 
 export default function AdminAiFieldsPage() {
@@ -67,7 +67,7 @@ export default function AdminAiFieldsPage() {
 
             <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-lg shadow border border-white/10 overflow-hidden">
                 <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
-                    <table className="w-full text-sm text-right">
+                    <table className="w-full text-sm text-start">
                         <thead className="bg-slate-800 text-slate-300 font-medium sticky top-0 z-10">
                             <tr>
                                 <th className="p-3 w-10">
@@ -102,11 +102,11 @@ export default function AdminAiFieldsPage() {
                                                 const next = new Set(selectedAiEntries);
                                                 if (e.target.checked) next.add(entry.id); else next.delete(entry.id);
                                                 setSelectedAiEntries(next);
-                                            }} title={`בחר ${entry.term}`} />
+                                            }} title={`בחר ${entry.hebrewScript}`} />
                                     </td>
-                                    <td className="p-3 font-bold text-lg">{entry.term}</td>
-                                    <td className="p-3">{entry.hebrew || '—'}</td>
-                                    <td className="p-3 font-mono text-xs">{entry.latin || '—'}</td>
+                                    <td className="p-3 font-bold text-lg">{entry.hebrewScript}</td>
+                                    <td className="p-3">{entry.hebrewShort || '—'}</td>
+                                    <td className="p-3 font-mono text-xs">{entry.latinScript || '—'}</td>
                                     <td className="p-3">
                                         <div className="flex flex-wrap gap-1">
                                             {entry.ai_fields?.split(', ').map((field: string) => (

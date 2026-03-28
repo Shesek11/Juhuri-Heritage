@@ -14,7 +14,7 @@ export async function GET(request: NextRequest) {
         c.guest_name,
         c.created_at,
         c.entry_id,
-        de.term as entry_term
+        de.hebrew_script as entry_term
       FROM comments c
       LEFT JOIN dictionary_entries de ON c.entry_id = de.id
       WHERE c.status = 'pending'

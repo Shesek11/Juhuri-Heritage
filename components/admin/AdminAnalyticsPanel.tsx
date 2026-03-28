@@ -199,7 +199,7 @@ const AdminAnalyticsPanel: React.FC = () => {
                     <p className="text-slate-400 text-sm mb-3">
                         הגדר GA_MEASUREMENT_ID ו-GA_PROPERTY_ID בקובץ .env בשרת
                     </p>
-                    <div className="bg-slate-800 rounded-lg p-3 text-left text-xs font-mono text-slate-300 space-y-1">
+                    <div className="bg-slate-800 rounded-lg p-3 text-end text-xs font-mono text-slate-300 space-y-1">
                         <p>GA_MEASUREMENT_ID=G-XXXXXXXXXX</p>
                         <p>GA_PROPERTY_ID=123456789</p>
                     </div>
@@ -266,7 +266,7 @@ const AdminAnalyticsPanel: React.FC = () => {
             {loading ? (
                 <div className="flex items-center justify-center py-12">
                     <Loader2 className="w-6 h-6 text-amber-400 animate-spin" />
-                    <span className="mr-2 text-slate-400">טוען נתוני Analytics...</span>
+                    <span className="ms-2 text-slate-400">טוען נתוני Analytics...</span>
                 </div>
             ) : overview ? (
                 <>
@@ -363,7 +363,7 @@ const AdminAnalyticsPanel: React.FC = () => {
                                                         />
                                                     </div>
                                                 </div>
-                                                <span className="text-xs text-slate-400 w-12 text-left">{d.sessions}</span>
+                                                <span className="text-xs text-slate-400 w-12 text-end">{d.sessions}</span>
                                             </div>
                                         );
                                     })}
@@ -385,10 +385,10 @@ const AdminAnalyticsPanel: React.FC = () => {
                                 <table className="w-full text-xs">
                                     <thead>
                                         <tr className="text-slate-400 border-b border-white/5">
-                                            <th className="text-right pb-2 font-medium">נתיב</th>
-                                            <th className="text-left pb-2 font-medium">צפיות</th>
-                                            <th className="text-left pb-2 font-medium">משתמשים</th>
-                                            <th className="text-left pb-2 font-medium hidden sm:table-cell">זמן ממוצע</th>
+                                            <th className="text-start pb-2 font-medium">נתיב</th>
+                                            <th className="text-end pb-2 font-medium">צפיות</th>
+                                            <th className="text-end pb-2 font-medium">משתמשים</th>
+                                            <th className="text-end pb-2 font-medium hidden sm:table-cell">זמן ממוצע</th>
                                         </tr>
                                     </thead>
                                     <tbody>

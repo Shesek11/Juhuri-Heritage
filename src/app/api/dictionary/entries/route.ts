@@ -23,7 +23,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (search && search.trim()) {
-      conditions.push('(de.term LIKE ? OR t_search.hebrew LIKE ?)');
+      conditions.push('(de.hebrew_script LIKE ? OR t_search.hebrew_script LIKE ?)');
       params.push(`%${search.trim()}%`, `%${search.trim()}%`);
     }
 
@@ -32,24 +32,24 @@ export async function GET(request: NextRequest) {
     const [[{ total }]] = await pool.query(
       `SELECT COUNT(DISTINCT de.id) as total
        FROM dictionary_entries de
-       LEFT JOIN translations t_search ON de.id = t_search.entry_id
+       LEFT JOIN dialect_scripts t_search ON de.id = t_search.entry_id
        ${whereClause}`,
       params
     ) as any[];
 
     const [entries] = await pool.query(
-      `SELECT de.id, de.term, de.detected_language, de.pronunciation_guide,
-              de.part_of_speech, de.russian, de.source, de.source_name, de.status, de.created_at,
+      `SELECT de.id, de.hebrew_script, de.detected_language,
+              de.part_of_speech, de.russian_short, de.source, de.source_name, de.status, de.created_at,
+              de.hebrew_short, de.hebrew_long, de.russian_long, de.english_short, de.english_long,
               u.name as contributor_name,
-              t.id as trans_id, t.hebrew, t.latin, t.cyrillic,
-              COALESCE(d.name, '') as dialect,
-              def.definition
+              t.id as trans_id, t.hebrew_script as t_hebrew_script, t.latin_script as t_latin_script, t.cyrillic_script as t_cyrillic_script,
+              t.pronunciation_guide as t_pronunciation_guide,
+              COALESCE(d.name, '') as dialect
        FROM dictionary_entries de
        LEFT JOIN users u ON de.contributor_id = u.id
-       LEFT JOIN translations t ON de.id = t.entry_id
-       LEFT JOIN translations t_search ON de.id = t_search.entry_id
+       LEFT JOIN dialect_scripts t ON de.id = t.entry_id
+       LEFT JOIN dialect_scripts t_search ON de.id = t_search.entry_id
        LEFT JOIN dialects d ON t.dialect_id = d.id
-       LEFT JOIN definitions def ON de.id = def.entry_id
        ${whereClause}
        GROUP BY de.id
        ORDER BY de.created_at DESC
@@ -59,23 +59,27 @@ export async function GET(request: NextRequest) {
 
     const result = entries.map((e: any) => ({
       id: String(e.id),
-      term: e.term,
+      hebrewScript: e.hebrew_script,
       detectedLanguage: e.detected_language,
-      pronunciationGuide: e.pronunciation_guide,
       partOfSpeech: e.part_of_speech,
-      russian: e.russian,
+      russianShort: e.russian_short,
+      russianLong: e.russian_long,
+      hebrewShort: e.hebrew_short,
+      hebrewLong: e.hebrew_long,
+      englishShort: e.english_short,
+      englishLong: e.english_long,
       source: e.source,
       sourceName: e.source_name || '',
       status: e.status,
       contributorName: e.contributor_name || '',
-      translations: [{
+      dialectScripts: [{
         id: e.trans_id,
         dialect: e.dialect,
-        hebrew: e.hebrew || '',
-        latin: e.latin || '',
-        cyrillic: e.cyrillic || '',
+        hebrewScript: e.t_hebrew_script || '',
+        latinScript: e.t_latin_script || '',
+        cyrillicScript: e.t_cyrillic_script || '',
+        pronunciationGuide: e.t_pronunciation_guide || '',
       }],
-      definitions: e.definition ? [e.definition] : [],
     }));
 
     return NextResponse.json({ entries: result, total, page, limit, totalPages: Math.ceil(total / limit) });
@@ -109,7 +113,7 @@ export async function POST(request: NextRequest) {
 
     const [result] = await pool.query(
       `INSERT INTO dictionary_entries
-       (term, detected_language, source, status, contributor_id)
+       (hebrew_script, detected_language, source, status, contributor_id)
        VALUES (?, ?, 'קהילה', ?, ?)`,
       [term.trim(), detectedLanguage || 'Hebrew', status, user?.id || null]
     ) as any[];
@@ -123,14 +127,14 @@ export async function POST(request: NextRequest) {
     }
 
     await pool.query(
-      `INSERT INTO translations (entry_id, dialect_id, hebrew, latin) VALUES (?, ?, ?, ?)`,
+      `INSERT INTO dialect_scripts (entry_id, dialect_id, hebrew_script, latin_script) VALUES (?, ?, ?, ?)`,
       [entryId, dialectId, translation.trim(), '']
     );
 
     if (notes) {
       await pool.query(
-        'INSERT INTO definitions (entry_id, definition) VALUES (?, ?)',
-        [entryId, notes]
+        'UPDATE dictionary_entries SET hebrew_long = ? WHERE id = ?',
+        [notes, entryId]
       );
     }
 

@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
     const [recordings] = await pool.query(`
       SELECT
         ar.*,
-        de.term as entry_term
+        de.hebrew_script as entry_term
       FROM audio_recordings ar
       LEFT JOIN dictionary_entries de ON ar.entry_id = de.id
       WHERE ar.status = 'pending'

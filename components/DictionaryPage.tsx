@@ -106,7 +106,7 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({
 
   const addToHistory = (entry: DictionaryEntry) => {
     const newItem: HistoryItem = { ...entry, timestamp: Date.now(), id: Date.now().toString() };
-    const updated = [newItem, ...history.filter(h => h.term !== entry.term)].slice(0, 10);
+    const updated = [newItem, ...history.filter(h => h.hebrewScript !== entry.hebrewScript)].slice(0, 10);
     setHistory(updated);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
   };
@@ -132,7 +132,7 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({
 
       // Handle enrichment promise (if returned)
       if (searchResult.enrichmentPromise) {
-        const entryTerm = entry.term;
+        const entryTerm = entry.hebrewScript;
         enrichmentEntryRef.current = entryTerm;
         setEnrichmentLoading(true);
         searchResult.enrichmentPromise.then(data => {
@@ -160,7 +160,7 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({
         setError('שגיאה בחיפוש. נסה שוב.');
       }
       setResult(null);
-      console.error(err);
+      if (process.env.NODE_ENV === 'development') console.error(err);
     } finally {
       setLoading(false);
     }
@@ -169,9 +169,9 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({
   const selectResult = (entry: DictionaryEntry) => {
     setResult(entry);
     setAdditionalResults([]);
-    setQuery(entry.term);
+    setQuery(entry.hebrewScript);
     addToHistory(entry);
-    router.replace(`/dictionary?q=${encodeURIComponent(entry.term)}`, { scroll: false });
+    router.replace(`/dictionary?q=${encodeURIComponent(entry.hebrewScript)}`, { scroll: false });
   };
 
   const handleSearch = async (e?: React.FormEvent, specificTerm?: string) => {
@@ -207,11 +207,11 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({
           setResult(data);
           setAdditionalResults([]);
           addToHistory(data);
-          setQuery(data.term);
-          router.replace(`/dictionary?q=${encodeURIComponent(data.term)}`, { scroll: false });
+          setQuery(data.hebrewScript);
+          router.replace(`/dictionary?q=${encodeURIComponent(data.hebrewScript)}`, { scroll: false });
         } catch (err) {
           setError('לא הצלחנו לזהות את הדיבור. נסה שוב, בקול ברור.');
-          console.error(err);
+          if (process.env.NODE_ENV === 'development') console.error(err);
         } finally {
           setLoading(false);
           stream.getTracks().forEach(track => track.stop());
@@ -221,7 +221,7 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({
       mediaRecorder.start();
       setIsRecording(true);
     } catch (err) {
-      console.error('Error accessing microphone:', err);
+      if (process.env.NODE_ENV === 'development') console.error('Error accessing microphone:', err);
       setError('נדרשת גישה למיקרופון כדי להקליט.');
     }
   };
@@ -234,13 +234,13 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({
   };
 
   // Build SEO data based on whether we have a result
-  const seoTitle = result ? `${result.term} - תרגום ג'והורי` : undefined;
+  const seoTitle = result ? `${result.hebrewScript} - תרגום ג'והורי` : undefined;
   const seoDescription = result
-    ? `תרגום ומשמעות של "${result.term}" במילון הג'והורי-עברי`
+    ? `תרגום ומשמעות של "${result.hebrewScript}" במילון הג'והורי-עברי`
     : undefined;
-  const seoCanonicalPath = result ? `/word/${encodeURIComponent(result.term)}` : '/';
+  const seoCanonicalPath = result ? `/word/${encodeURIComponent(result.hebrewScript)}` : '/';
   const seoJsonLd = result
-    ? buildDefinedTermJsonLd(result.term, result.translations?.[0]?.hebrew || result.term)
+    ? buildDefinedTermJsonLd(result.hebrewScript, result.hebrewShort || result.hebrewScript)
     : undefined;
 
   return (
@@ -265,7 +265,7 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({
               className="flex-1 min-w-0 bg-transparent px-4 sm:px-6 py-3 text-lg outline-none text-white placeholder:text-slate-400"
               disabled={loading}
             />
-            <div className="flex items-center border-r border-white/10 pr-2 gap-2 pl-1">
+            <div className="flex items-center border-s border-white/10 ps-2 gap-2 pe-1">
               <button
                 type="button"
                 onMouseDown={startRecording}
@@ -277,13 +277,15 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({
                   ? 'bg-red-500 text-white scale-110 shadow-[0_0_20px_rgba(239,68,68,0.5)]'
                   : 'text-slate-400 hover:bg-white/5 hover:text-amber-500'
                   }`}
-                title="לחיצה ארוכה להקלטה"
+                title="לחיצה ארוכה להקלט��"
+                aria-label="הקלטה קולית"
               >
                 <Mic size={24} className={isRecording ? 'animate-pulse' : ''} />
               </button>
               <button
                 type="submit"
                 disabled={loading}
+                aria-label="חיפוש"
                 className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-[#050B14] p-3 rounded-full transition-all shadow-[0_0_15px_rgba(245,158,11,0.3)] disabled:opacity-50 hover:scale-105"
               >
                 {loading ? <Loader2 className="animate-spin" size={24} /> : <Search size={24} />}
@@ -326,8 +328,8 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({
               history={history}
               onClear={clearHistory}
               onSelect={(item) => {
-                setQuery(item.term);
-                handleSearch(undefined, item.term);
+                setQuery(item.hebrewScript);
+                handleSearch(undefined, item.hebrewScript);
               }}
             />
           </div>
@@ -388,7 +390,7 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({
                   isBestMatch
                   searchQuery={query}
                   onReport={() => setReportEntry(result)}
-                  onNavigate={() => router.push(`/word/${encodeURIComponent(result.term || result.id || '')}`)}
+                  onNavigate={() => router.push(`/word/${encodeURIComponent(result.hebrewScript || result.id || '')}`)}
                   onSuggestMerge={result.hasDuplicates ? (e) => setMergeSourceEntry(e) : undefined}
                 />
 
@@ -399,7 +401,7 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({
                     entry={entry}
                     searchQuery={query}
                     onReport={() => setReportEntry(entry)}
-                    onNavigate={() => router.push(`/word/${encodeURIComponent(entry.term || entry.id || '')}`)}
+                    onNavigate={() => router.push(`/word/${encodeURIComponent(entry.hebrewScript || entry.id || '')}`)}
                     onSuggestMerge={entry.hasDuplicates ? (e) => setMergeSourceEntry(e) : undefined}
                   />
                 ))}
@@ -440,7 +442,7 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({
           onSubmit={async (data) => {
             try {
               await apiService.post(`/dictionary/entries/${reportEntry.id}/suggest-field`, {
-                fieldName: 'hebrew',
+                fieldName: 'hebrewShort',
                 value: data.betterTranslation || '',
                 reason: `[דיווח: ${data.reportType}] ${data.explanation || ''}`,
                 reportType: 'report',
@@ -542,22 +544,22 @@ const SuggestMergeInlineModal: React.FC<{
               <button type="button" onClick={onClose} title="סגור" className="text-slate-400 hover:text-white">✕</button>
             </div>
             <p className="text-slate-300 text-sm mb-3">
-              בחר ערכים כפולים של <strong className="text-white">"{sourceEntry.term}"</strong>:
+              בחר ערכים כפולים של <strong className="text-white">"{sourceEntry.hebrewScript}"</strong>:
             </p>
             <div className="space-y-2 mb-4 max-h-60 overflow-y-auto">
               {candidates.map(c => {
-                const t = c.translations?.[0];
+                const t = c.dialectScripts?.[0];
                 const isSelected = selectedIds.has(c.id || '');
                 return (
                   <button key={c.id} type="button" onClick={() => toggleId(c.id || '')}
-                    className={`w-full text-right px-3 py-2.5 rounded-lg border transition-all text-sm flex items-center gap-2 ${
+                    className={`w-full text-start px-3 py-2.5 rounded-lg border transition-all text-sm flex items-center gap-2 ${
                       isSelected ? 'bg-amber-500/15 border-amber-500/30 text-white' : 'bg-slate-800/50 border-slate-700 text-slate-300 hover:border-slate-600'
                     }`}>
                     <div className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 ${
                       isSelected ? 'bg-amber-500 border-amber-400 text-white' : 'border-slate-600'
                     }`}>{isSelected && '✓'}</div>
-                    <span className="font-medium">{c.term}</span>
-                    {t?.hebrew && <span className="text-slate-400 mr-1">{t.hebrew}</span>}
+                    <span className="font-medium">{c.hebrewScript}</span>
+                    {c.hebrewShort && <span className="text-slate-400 ms-1">{c.hebrewShort}</span>}
                   </button>
                 );
               })}

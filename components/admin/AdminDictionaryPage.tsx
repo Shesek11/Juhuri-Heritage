@@ -1,11 +1,11 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Database, Search, FileSpreadsheet, Plus, Sparkles, Loader2, Save, Trash2, X, Download } from 'lucide-react';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Database, Search, FileSpreadsheet, Plus, Sparkles, Loader2, Save, Trash2, X, Download, SlidersHorizontal } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { getCustomEntries, addCustomEntry, deleteCustomEntry, approveEntry, getDialects, downloadTemplate } from '../../services/storageService';
 import { generateBatchEntries } from '../../services/geminiService';
-import { DictionaryEntry, Translation, DialectItem } from '../../types';
+import { DictionaryEntry, DialectScript, DialectItem } from '../../types';
 
 export default function AdminDictionaryPage() {
     const { user } = useAuth();
@@ -43,7 +43,44 @@ export default function AdminDictionaryPage() {
 
     // Inline Editing State
     const [editingEntryId, setEditingEntryId] = useState<number | null>(null);
-    const [editForm, setEditForm] = useState({ term: '', hebrew: '', latin: '', cyrillic: '', dialect: '' });
+    const [editForm, setEditForm] = useState({ hebrewScript: '', hebrewShort: '', latinScript: '', cyrillicScript: '', dialect: '' });
+
+    // Column Visibility
+    const ALL_COLUMNS = [
+        { key: 'source', label: 'מקור', default: true },
+        { key: 'sourceName', label: 'שם מקור', default: false },
+        { key: 'hebrewScript', label: 'תעתיק עברי', default: true },
+        { key: 'latinScript', label: 'תעתיק לטיני', default: true },
+        { key: 'cyrillicScript', label: 'תעתיק קירילי', default: true },
+        { key: 'pronunciationGuide', label: 'הגייה', default: false },
+        { key: 'dialect', label: 'ניב', default: false },
+        { key: 'hebrewShort', label: 'משמעות עברית', default: true },
+        { key: 'hebrewLong', label: 'הגדרה עברית', default: false },
+        { key: 'russianShort', label: 'משמעות רוסית', default: true },
+        { key: 'russianLong', label: 'הגדרה רוסית', default: false },
+        { key: 'englishShort', label: 'משמעות אנגלית', default: false },
+        { key: 'englishLong', label: 'הגדרה אנגלית', default: false },
+        { key: 'partOfSpeech', label: 'חלק דיבר', default: true },
+    ] as const;
+
+    const [visibleColumns, setVisibleColumns] = useState<Set<string>>(() => {
+        const saved = typeof window !== 'undefined' ? localStorage.getItem('admin-dict-columns') : null;
+        if (saved) return new Set(JSON.parse(saved));
+        return new Set(ALL_COLUMNS.filter(c => c.default).map(c => c.key));
+    });
+    const [showColumnPicker, setShowColumnPicker] = useState(false);
+
+    const toggleColumn = (key: string) => {
+        setVisibleColumns(prev => {
+            const next = new Set(prev);
+            if (next.has(key)) next.delete(key); else next.add(key);
+            localStorage.setItem('admin-dict-columns', JSON.stringify([...next]));
+            return next;
+        });
+    };
+
+    const isColVisible = (key: string) => visibleColumns.has(key);
+    const visibleCount = visibleColumns.size + (isAdmin ? 1 : 0); // +1 for actions column
 
     const loadEntries = async (page = 1, search = '') => {
         setEntriesLoading(true);
@@ -116,19 +153,19 @@ export default function AdminDictionaryPage() {
         if (!user) return;
         let savedCount = 0;
         gridData.forEach(row => {
-            const [term, hebrew, latin, dialect, definition, cyrillic] = row;
-            if (term.trim() && hebrew.trim()) {
-                const translation: Translation = {
+            const [hebrewScript, hebrewShort, latinScript, dialect, definition, cyrillicScript] = row;
+            if (hebrewScript.trim() && hebrewShort.trim()) {
+                const dialectScript: DialectScript = {
                     dialect: dialect.trim() || 'General',
-                    hebrew: hebrew.trim(),
-                    latin: latin.trim() || term.trim(),
-                    cyrillic: cyrillic.trim() || ''
+                    hebrewScript: hebrewShort.trim(),
+                    latinScript: latinScript.trim() || hebrewScript.trim(),
+                    cyrillicScript: cyrillicScript.trim() || ''
                 };
                 const entry: DictionaryEntry = {
-                    term: term.trim(),
+                    hebrewScript: hebrewScript.trim(),
                     detectedLanguage: 'Hebrew',
-                    translations: [translation],
-                    definitions: definition.trim() ? [definition.trim()] : [],
+                    dialectScripts: [dialectScript],
+                    hebrewLong: definition.trim() ? definition.trim() : null,
                     examples: [],
                     isCustom: true,
                     source: 'מאגר',
@@ -170,10 +207,10 @@ export default function AdminDictionaryPage() {
         } else { alert('שגיאה בשמירה.'); }
     };
 
-    const handleDelete = (term: string) => {
+    const handleDelete = (hebrewScript: string) => {
         if (!user) return;
-        if (confirm(`האם למחוק את הערך "${term}"?`)) {
-            deleteCustomEntry(term, user);
+        if (confirm(`האם למחוק את הערך "${hebrewScript}"?`)) {
+            deleteCustomEntry(hebrewScript, user);
             loadEntries(currentPage, searchFilter);
         }
     };
@@ -183,39 +220,39 @@ export default function AdminDictionaryPage() {
         if (!entryId) { alert('לא ניתן לערוך ערך זה - חסר מזהה'); return; }
         setEditingEntryId(entryId);
         setEditForm({
-            term: entry.term || '', hebrew: entry.translations[0]?.hebrew || '',
-            latin: entry.translations[0]?.latin || '', cyrillic: entry.translations[0]?.cyrillic || '',
-            dialect: entry.translations[0]?.dialect || ''
+            hebrewScript: entry.hebrewScript || '', hebrewShort: entry.dialectScripts[0]?.hebrewScript || '',
+            latinScript: entry.dialectScripts[0]?.latinScript || '', cyrillicScript: entry.dialectScripts[0]?.cyrillicScript || '',
+            dialect: entry.dialectScripts[0]?.dialect || ''
         });
     };
 
     const handleCancelEdit = () => {
         setEditingEntryId(null);
-        setEditForm({ term: '', hebrew: '', latin: '', cyrillic: '', dialect: '' });
+        setEditForm({ hebrewScript: '', hebrewShort: '', latinScript: '', cyrillicScript: '', dialect: '' });
     };
 
     const handleSaveEdit = async () => {
         if (!editingEntryId) return;
         try {
             const entry = entries.find(e => (e as any).id === editingEntryId);
-            const translationId = (entry?.translations[0] as any)?.id;
-            if (editForm.term !== (entry?.term || '')) {
+            const dialectScriptId = (entry?.dialectScripts[0] as any)?.id;
+            if (editForm.hebrewScript !== (entry?.hebrewScript || '')) {
                 await fetch(`/api/dictionary/entries/${editingEntryId}/update-term`, {
                     method: 'PUT', headers: { 'Content-Type': 'application/json' },
-                    credentials: 'include', body: JSON.stringify({ term: editForm.term })
+                    credentials: 'include', body: JSON.stringify({ hebrewScript: editForm.hebrewScript })
                 });
             }
-            if (translationId) {
-                await fetch(`/api/dictionary/translations/${translationId}`, {
+            if (dialectScriptId) {
+                await fetch(`/api/dictionary/dialect-scripts/${dialectScriptId}`, {
                     method: 'PUT', headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
-                    body: JSON.stringify({ hebrew: editForm.hebrew, latin: editForm.latin, cyrillic: editForm.cyrillic })
+                    body: JSON.stringify({ hebrewScript: editForm.hebrewShort, latinScript: editForm.latinScript, cyrillicScript: editForm.cyrillicScript })
                 });
             } else {
                 await fetch(`/api/dictionary/entries/${editingEntryId}/suggest`, {
                     method: 'POST', headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
-                    body: JSON.stringify({ dialect: editForm.dialect, hebrew: editForm.hebrew, latin: editForm.latin, cyrillic: editForm.cyrillic, reason: 'עריכה ידנית' })
+                    body: JSON.stringify({ dialect: editForm.dialect, hebrewScript: editForm.hebrewShort, latinScript: editForm.latinScript, cyrillicScript: editForm.cyrillicScript, reason: 'עריכה ידנית' })
                 });
             }
             handleCancelEdit();
@@ -275,7 +312,7 @@ export default function AdminDictionaryPage() {
                 {viewMode === 'table' && (
                     <div className="relative flex-1 min-w-[200px]">
                         <Search className="absolute right-3 top-3 text-slate-400" size={20} />
-                        <input type="text" placeholder="חיפוש במאגר..." value={searchFilter} onChange={(e) => setSearchFilter(e.target.value)} className="w-full p-3 pr-10 rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white" />
+                        <input type="text" placeholder="חיפוש במאגר..." value={searchFilter} onChange={(e) => setSearchFilter(e.target.value)} className="w-full p-3 ps-10 rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white" />
                     </div>
                 )}
                 {isAdmin && (
@@ -306,68 +343,140 @@ export default function AdminDictionaryPage() {
             {/* View Mode: Table */}
             {viewMode === 'table' && (
                 <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-lg shadow border border-white/10 overflow-hidden">
-                    <div className="overflow-x-auto max-h-[calc(100vh-280px)] overflow-y-auto">
-                        <table className="w-full text-sm text-right">
+                    {/* Column Picker */}
+                    <div className="relative">
+                        <button
+                            onClick={() => setShowColumnPicker(!showColumnPicker)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 m-2 text-xs rounded-lg bg-white/10 text-slate-300 hover:bg-white/20 transition-colors"
+                        >
+                            <SlidersHorizontal size={14} /> עמודות ({visibleColumns.size})
+                        </button>
+                        {showColumnPicker && (
+                            <div className="absolute top-10 right-2 z-30 bg-slate-800 border border-white/10 rounded-lg shadow-xl p-3 grid grid-cols-2 gap-2 min-w-[320px]">
+                                {ALL_COLUMNS.map(col => (
+                                    <label key={col.key} className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer hover:text-white">
+                                        <input
+                                            type="checkbox"
+                                            checked={visibleColumns.has(col.key)}
+                                            onChange={() => toggleColumn(col.key)}
+                                            className="rounded border-slate-600"
+                                        />
+                                        {col.label}
+                                    </label>
+                                ))}
+                                <div className="col-span-2 flex gap-2 mt-2 pt-2 border-t border-white/10">
+                                    <button onClick={() => { const all = new Set(ALL_COLUMNS.map(c => c.key)); setVisibleColumns(all); localStorage.setItem('admin-dict-columns', JSON.stringify([...all])); }} className="text-[10px] text-indigo-400 hover:text-indigo-300">הצג הכל</button>
+                                    <button onClick={() => { const def = new Set(ALL_COLUMNS.filter(c => c.default).map(c => c.key)); setVisibleColumns(def); localStorage.setItem('admin-dict-columns', JSON.stringify([...def])); }} className="text-[10px] text-slate-400 hover:text-slate-300">ברירת מחדל</button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="overflow-x-auto max-h-[calc(100vh-320px)] overflow-y-auto">
+                        <table className="w-full text-sm text-start">
                             <thead className="bg-slate-800 text-slate-300 font-medium sticky top-0 z-10">
                                 <tr>
-                                    <th className="p-4">מקור</th>
-                                    <th className="p-4">שם מקור / תורם</th>
-                                    <th className="p-4">מונח (Term)</th>
-                                    <th className="p-4">ניב</th>
-                                    <th className="p-4">תרגום (עברית)</th>
-                                    <th className="p-4">לטינית</th>
-                                    <th className="p-4">קירילית</th>
-                                    {isAdmin && <th className="p-4">פעולות</th>}
+                                    {isColVisible('source') && <th className="p-3 whitespace-nowrap">מקור</th>}
+                                    {isColVisible('sourceName') && <th className="p-3 whitespace-nowrap">שם מקור</th>}
+                                    {isColVisible('hebrewScript') && <th className="p-3 whitespace-nowrap">תעתיק עברי</th>}
+                                    {isColVisible('latinScript') && <th className="p-3 whitespace-nowrap">תעתיק לטיני</th>}
+                                    {isColVisible('cyrillicScript') && <th className="p-3 whitespace-nowrap">תעתיק קירילי</th>}
+                                    {isColVisible('pronunciationGuide') && <th className="p-3 whitespace-nowrap">הגייה</th>}
+                                    {isColVisible('dialect') && <th className="p-3 whitespace-nowrap">ניב</th>}
+                                    {isColVisible('hebrewShort') && <th className="p-3 whitespace-nowrap">משמעות עברית</th>}
+                                    {isColVisible('hebrewLong') && <th className="p-3 whitespace-nowrap max-w-[200px]">הגדרה עברית</th>}
+                                    {isColVisible('russianShort') && <th className="p-3 whitespace-nowrap">משמעות רוסית</th>}
+                                    {isColVisible('russianLong') && <th className="p-3 whitespace-nowrap max-w-[200px]">הגדרה רוסית</th>}
+                                    {isColVisible('englishShort') && <th className="p-3 whitespace-nowrap">משמעות אנגלית</th>}
+                                    {isColVisible('englishLong') && <th className="p-3 whitespace-nowrap max-w-[200px]">הגדרה אנגלית</th>}
+                                    {isColVisible('partOfSpeech') && <th className="p-3 whitespace-nowrap">חלק דיבר</th>}
+                                    {isAdmin && <th className="p-3 whitespace-nowrap">פעולות</th>}
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                            <tbody className="divide-y divide-slate-700">
                                 {entries.map((entry, idx) => {
                                     const entryId = (entry as any).id;
                                     const isEditing = editingEntryId === entryId;
+                                    const ds = entry.dialectScripts?.[0];
                                     return (
                                         <tr key={idx} className={`text-slate-200 ${isEditing ? 'bg-amber-900/30' : 'hover:bg-white/5'}`}>
-                                            <td className="p-4">
-                                                <span className={`text-[11px] px-2 py-0.5 rounded-full border ${entry.source === 'AI' ? 'bg-purple-50 text-purple-600 border-purple-200' : entry.source === 'קהילה' ? 'bg-blue-50 text-blue-600 border-blue-200' : 'bg-emerald-900/30 text-emerald-400 border-emerald-700'}`}>{entry.source || 'מאגר'}</span>
-                                            </td>
-                                            <td className="p-4 text-xs text-slate-400">{(entry as any).sourceName || (entry as any).contributorName || '-'}</td>
-                                            <td className="p-4 font-bold">
-                                                {isEditing ? (
-                                                    <input type="text" value={editForm.term} onChange={(e) => setEditForm({ ...editForm, term: e.target.value })} className="w-full p-1 border rounded dark:bg-slate-800 dark:border-slate-600" placeholder="מונח..." dir="auto" />
-                                                ) : (entry.term || <span className="text-amber-500 text-sm">חסר term</span>)}
-                                            </td>
-                                            <td className="p-4">
-                                                {isEditing ? (
-                                                    <select value={editForm.dialect} onChange={(e) => setEditForm({ ...editForm, dialect: e.target.value })} className="w-full p-1 border rounded text-xs dark:bg-slate-800 dark:border-slate-600">
-                                                        {dialects.map(d => (<option key={d.id} value={d.name}>{d.description || d.name}</option>))}
-                                                    </select>
-                                                ) : (<span className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-300 px-2 py-1 rounded text-xs">{entry.translations[0]?.dialect || '-'}</span>)}
-                                            </td>
-                                            <td className="p-4">
-                                                {isEditing ? (
-                                                    <input type="text" value={editForm.hebrew} onChange={(e) => setEditForm({ ...editForm, hebrew: e.target.value })} className="w-full p-1 border rounded dark:bg-slate-800 dark:border-slate-600" placeholder="תרגום עברי..." dir="rtl" />
-                                                ) : (<span className="text-lg">{entry.translations[0]?.hebrew || <span className="text-amber-500 text-sm">מחכה לתרגום</span>}</span>)}
-                                            </td>
-                                            <td className="p-4">
-                                                {isEditing ? (
-                                                    <input type="text" value={editForm.latin} onChange={(e) => setEditForm({ ...editForm, latin: e.target.value })} className="w-full p-1 border rounded dark:bg-slate-800 dark:border-slate-600" placeholder="Latin..." dir="ltr" />
-                                                ) : (<span className="text-xs text-slate-400">{entry.translations[0]?.latin || '-'}</span>)}
-                                            </td>
-                                            <td className="p-4">
-                                                {isEditing ? (
-                                                    <input type="text" value={editForm.cyrillic} onChange={(e) => setEditForm({ ...editForm, cyrillic: e.target.value })} className="w-full p-1 border rounded dark:bg-slate-800 dark:border-slate-600" placeholder="Кириллица..." dir="ltr" />
-                                                ) : (<span className="text-xs text-slate-400">{entry.translations[0]?.cyrillic || '-'}</span>)}
-                                            </td>
+                                            {isColVisible('source') && (
+                                                <td className="p-3">
+                                                    <span className={`text-[11px] px-2 py-0.5 rounded-full border whitespace-nowrap ${entry.source === 'AI' ? 'bg-purple-900/30 text-purple-400 border-purple-700' : entry.source === 'קהילה' ? 'bg-blue-900/30 text-blue-400 border-blue-700' : 'bg-emerald-900/30 text-emerald-400 border-emerald-700'}`}>{entry.source || 'מאגר'}</span>
+                                                </td>
+                                            )}
+                                            {isColVisible('sourceName') && (
+                                                <td className="p-3 text-xs text-slate-400 max-w-[120px] truncate">{(entry as any).sourceName || (entry as any).contributorName || '-'}</td>
+                                            )}
+                                            {isColVisible('hebrewScript') && (
+                                                <td className="p-3 font-bold">
+                                                    {isEditing ? (
+                                                        <input type="text" value={editForm.hebrewScript} onChange={(e) => setEditForm({ ...editForm, hebrewScript: e.target.value })} className="w-full p-1 border rounded dark:bg-slate-800 dark:border-slate-600 text-sm" dir="auto" />
+                                                    ) : (entry.hebrewScript || <span className="text-amber-500 text-xs">—</span>)}
+                                                </td>
+                                            )}
+                                            {isColVisible('latinScript') && (
+                                                <td className="p-3">
+                                                    {isEditing ? (
+                                                        <input type="text" value={editForm.latinScript} onChange={(e) => setEditForm({ ...editForm, latinScript: e.target.value })} className="w-full p-1 border rounded dark:bg-slate-800 dark:border-slate-600 text-xs" dir="ltr" />
+                                                    ) : (<span className="text-xs text-slate-400 font-mono" dir="ltr">{ds?.latinScript || '-'}</span>)}
+                                                </td>
+                                            )}
+                                            {isColVisible('cyrillicScript') && (
+                                                <td className="p-3">
+                                                    {isEditing ? (
+                                                        <input type="text" value={editForm.cyrillicScript} onChange={(e) => setEditForm({ ...editForm, cyrillicScript: e.target.value })} className="w-full p-1 border rounded dark:bg-slate-800 dark:border-slate-600 text-xs" dir="ltr" />
+                                                    ) : (<span className="text-xs text-slate-400" dir="ltr">{ds?.cyrillicScript || '-'}</span>)}
+                                                </td>
+                                            )}
+                                            {isColVisible('pronunciationGuide') && (
+                                                <td className="p-3 text-xs text-slate-400 font-mono" dir="ltr">{ds?.pronunciationGuide || '-'}</td>
+                                            )}
+                                            {isColVisible('dialect') && (
+                                                <td className="p-3">
+                                                    {isEditing ? (
+                                                        <select value={editForm.dialect} onChange={(e) => setEditForm({ ...editForm, dialect: e.target.value })} className="w-full p-1 border rounded text-xs dark:bg-slate-800 dark:border-slate-600">
+                                                            {dialects.map(d => (<option key={d.id} value={d.name}>{d.description || d.name}</option>))}
+                                                        </select>
+                                                    ) : (<span className="bg-indigo-900/30 text-indigo-300 px-2 py-0.5 rounded text-[11px]">{ds?.dialect || '-'}</span>)}
+                                                </td>
+                                            )}
+                                            {isColVisible('hebrewShort') && (
+                                                <td className="p-3">
+                                                    {isEditing ? (
+                                                        <input type="text" value={editForm.hebrewShort} onChange={(e) => setEditForm({ ...editForm, hebrewShort: e.target.value })} className="w-full p-1 border rounded dark:bg-slate-800 dark:border-slate-600 text-sm" dir="rtl" />
+                                                    ) : (<span className="text-sm">{entry.hebrewShort || <span className="text-slate-500 text-xs">—</span>}</span>)}
+                                                </td>
+                                            )}
+                                            {isColVisible('hebrewLong') && (
+                                                <td className="p-3 max-w-[200px]"><span className="text-xs text-slate-400 line-clamp-2">{entry.hebrewLong || '-'}</span></td>
+                                            )}
+                                            {isColVisible('russianShort') && (
+                                                <td className="p-3"><span className="text-xs text-slate-300" dir="ltr">{entry.russianShort || '-'}</span></td>
+                                            )}
+                                            {isColVisible('russianLong') && (
+                                                <td className="p-3 max-w-[200px]"><span className="text-xs text-slate-400 line-clamp-2" dir="ltr">{entry.russianLong || '-'}</span></td>
+                                            )}
+                                            {isColVisible('englishShort') && (
+                                                <td className="p-3"><span className="text-xs text-slate-300" dir="ltr">{entry.englishShort || '-'}</span></td>
+                                            )}
+                                            {isColVisible('englishLong') && (
+                                                <td className="p-3 max-w-[200px]"><span className="text-xs text-slate-400 line-clamp-2" dir="ltr">{entry.englishLong || '-'}</span></td>
+                                            )}
+                                            {isColVisible('partOfSpeech') && (
+                                                <td className="p-3"><span className="text-xs text-indigo-300">{entry.partOfSpeech || '-'}</span></td>
+                                            )}
                                             {isAdmin && (
-                                                <td className="p-4">
+                                                <td className="p-3">
                                                     {isEditing ? (
                                                         <div className="flex gap-1">
-                                                            <button onClick={handleSaveEdit} className="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded transition-colors" title="שמור"><Save size={16} /></button>
-                                                            <button onClick={handleCancelEdit} className="p-2 text-slate-400 hover:bg-white/10 rounded transition-colors" title="בטל"><X size={16} /></button>
+                                                            <button onClick={handleSaveEdit} className="p-1.5 text-green-500 hover:bg-green-900/20 rounded transition-colors" title="שמור"><Save size={14} /></button>
+                                                            <button onClick={handleCancelEdit} className="p-1.5 text-slate-400 hover:bg-white/10 rounded transition-colors" title="בטל"><X size={14} /></button>
                                                         </div>
                                                     ) : (
                                                         <div className="flex gap-1">
-                                                            <button onClick={() => handleStartEdit(entry)} className="p-2 text-indigo-400 hover:bg-indigo-900/20 rounded transition-colors" title="ערוך"><Save size={16} /></button>
-                                                            <button onClick={() => handleDelete(entry.term)} className="p-2 text-red-500 hover:bg-red-900/20 rounded transition-colors" title="מחק"><Trash2 size={16} /></button>
+                                                            <button onClick={() => handleStartEdit(entry)} className="p-1.5 text-indigo-400 hover:bg-indigo-900/20 rounded transition-colors" title="ערוך"><Save size={14} /></button>
+                                                            <button onClick={() => handleDelete(entry.hebrewScript)} className="p-1.5 text-red-500 hover:bg-red-900/20 rounded transition-colors" title="מחק"><Trash2 size={14} /></button>
                                                         </div>
                                                     )}
                                                 </td>
@@ -376,10 +485,10 @@ export default function AdminDictionaryPage() {
                                     );
                                 })}
                                 {entries.length === 0 && !entriesLoading && (
-                                    <tr><td colSpan={8} className="p-12 text-center text-slate-400">לא נמצאו תוצאות</td></tr>
+                                    <tr><td colSpan={visibleCount} className="p-12 text-center text-slate-400">לא נמצאו תוצאות</td></tr>
                                 )}
                                 {entriesLoading && (
-                                    <tr><td colSpan={8} className="p-12 text-center"><Loader2 size={24} className="animate-spin mx-auto text-indigo-500" /></td></tr>
+                                    <tr><td colSpan={visibleCount} className="p-12 text-center"><Loader2 size={24} className="animate-spin mx-auto text-indigo-500" /></td></tr>
                                 )}
                             </tbody>
                         </table>
@@ -408,7 +517,7 @@ export default function AdminDictionaryPage() {
                         </label>
                     </div>
                     <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
-                        <table className="w-full text-sm text-right">
+                        <table className="w-full text-sm text-start">
                             <thead className="bg-slate-800 text-slate-300 font-medium sticky top-0 z-10">
                                 <tr>
                                     <th className="p-2">מונח</th>
@@ -441,7 +550,7 @@ export default function AdminDictionaryPage() {
                         </div>
                         <button onClick={handleClearGrid} className="px-3 py-1 bg-red-600/20 text-red-400 rounded text-xs hover:bg-red-600/30">נקה טבלה</button>
                         <button onClick={bulkNoTranslation ? handleSaveBulkUntranslated : handleSaveGrid} className="px-4 py-2 bg-green-600 text-white rounded-lg font-medium hover:bg-green-700">
-                            <Save size={16} className="inline ml-1" /> שמור הכל
+                            <Save size={16} className="inline me-1" /> שמור הכל
                         </button>
                     </div>
                 </div>

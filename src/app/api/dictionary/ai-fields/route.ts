@@ -15,15 +15,16 @@ export async function GET(request: NextRequest) {
     const total = countRows[0]?.total || 0;
 
     const [entries] = await pool.query(
-      `SELECT de.id, de.term, de.pronunciation_guide,
+      `SELECT de.id, de.hebrew_script,
               GROUP_CONCAT(DISTINCT fs.field_name ORDER BY fs.field_name SEPARATOR ', ') as ai_fields,
-              t.hebrew, t.latin, t.cyrillic
+              t.hebrew_script as t_hebrew_script, t.latin_script as t_latin_script, t.cyrillic_script as t_cyrillic_script,
+              t.pronunciation_guide as t_pronunciation_guide
        FROM field_sources fs
        JOIN dictionary_entries de ON fs.entry_id = de.id
-       LEFT JOIN translations t ON de.id = t.entry_id
+       LEFT JOIN dialect_scripts t ON de.id = t.entry_id
        WHERE fs.source_type = 'ai'
        GROUP BY de.id
-       ORDER BY de.term
+       ORDER BY de.hebrew_script
        LIMIT ? OFFSET ?`,
       [limit, offset]
     ) as any[];

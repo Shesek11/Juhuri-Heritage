@@ -4,9 +4,9 @@ import pool from '@/src/lib/db';
 export async function GET() {
   try {
     const [entries] = await pool.query(
-      `SELECT de.id, de.term, de.detected_language
+      `SELECT de.id, de.hebrew_script, de.detected_language
        FROM dictionary_entries de
-       LEFT JOIN translations t ON de.id = t.entry_id
+       LEFT JOIN dialect_scripts t ON de.id = t.entry_id
        WHERE de.status = 'active' AND t.id IS NULL
        LIMIT 5`
     ) as any[];

@@ -72,7 +72,7 @@ const NikudPalette: React.FC<NikudPaletteProps> = ({ inputRef, value, onChange, 
         type="button"
         onClick={suggestNikud}
         disabled={aiLoading || !value.trim()}
-        className="flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium bg-amber-500/15 text-amber-400 hover:bg-amber-500/25 disabled:opacity-40 transition-colors mr-auto"
+        className="flex items-center gap-1 px-2 py-1 rounded text-[11px] font-medium bg-amber-500/15 text-amber-400 hover:bg-amber-500/25 disabled:opacity-40 transition-colors ms-auto"
         title="AI יציע ניקוד לפי התעתיק הלטיני"
       >
         {aiLoading ? <Loader2 size={10} className="animate-spin" /> : <Sparkles size={10} />}

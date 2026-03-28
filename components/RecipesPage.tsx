@@ -159,7 +159,7 @@ export const RecipesPage: React.FC = () => {
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
                                 placeholder={t('searchPlaceholder')}
-                                className="w-full pr-10 pl-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-200 focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:border-transparent"
+                                className="w-full ps-10 pe-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-200 focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:border-transparent"
                             />
                         </div>
                     </form>
@@ -229,7 +229,7 @@ export const RecipesPage: React.FC = () => {
             {loading ? (
                 <div className="flex items-center justify-center py-16">
                     <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
-                    <span className="mr-3 text-slate-400">{t('loading')}</span>
+                    <span className="ms-3 text-slate-400">{t('loading')}</span>
                 </div>
             ) : error ? (
                 <div className="text-center py-16">

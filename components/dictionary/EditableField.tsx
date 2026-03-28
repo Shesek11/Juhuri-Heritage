@@ -241,7 +241,7 @@ const EditableField: React.FC<EditableFieldProps> = ({
             {pendingSuggestion.suggestedValue}
           </span>
           {!isOwnSuggestion && entryId && (
-            <div className="flex items-center gap-1 mr-auto">
+            <div className="flex items-center gap-1 ms-auto">
               <button
                 onClick={handleUpvote}
                 disabled={upvoted || upvoting}

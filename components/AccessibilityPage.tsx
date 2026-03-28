@@ -33,7 +33,7 @@ const AccessibilityPage: React.FC = () => {
 
         <section className="mb-8">
           <h2 className="text-xl font-bold mb-3 text-slate-100">פעולות שבוצעו להנגשה</h2>
-          <ul className="list-disc list-inside text-slate-600 dark:text-slate-300 space-y-2 pr-4">
+          <ul className="list-disc list-inside text-slate-600 dark:text-slate-300 space-y-2 ps-4">
             <li><strong>ניווט מקלדת:</strong> ניתן לנווט באתר באמצעות מקלדת בלבד.</li>
             <li><strong>תאימות לקוראי מסך:</strong> האתר מותאם לעבודה עם קוראי מסך פופולריים.</li>
             <li><strong>טקסט חלופי לתמונות:</strong> לכל התמונות יש טקסט חלופי (alt text).</li>

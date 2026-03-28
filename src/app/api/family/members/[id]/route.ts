@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/src/lib/db';
 import { requireAuth } from '@/src/lib/auth';
+import { logEvent } from '@/src/lib/logEvent';
 
 // GET /api/family/members/:id
 export async function GET(
@@ -141,6 +142,8 @@ export async function PUT(
       biography, photo_url, is_alive ? 1 : 0, id
     ]);
 
+    await logEvent('FAMILY_MEMBER_UPDATED', `${first_name} ${last_name || ''} עודכן`, user, { member_id: id, first_name, last_name }, request);
+
     return NextResponse.json({ success: true });
   } catch (error) {
     if (error instanceof Response) return error;
@@ -166,7 +169,9 @@ export async function DELETE(
       return NextResponse.json({ error: 'אין הרשאה למחוק בן משפחה זה' }, { status: 403 });
     }
 
+    const [[member]]: any = await pool.query('SELECT first_name, last_name FROM family_members WHERE id = ?', [id]);
     await pool.query('DELETE FROM family_members WHERE id = ?', [id]);
+    await logEvent('FAMILY_MEMBER_DELETED', `${member?.first_name || ''} ${member?.last_name || ''} נמחק`, user, { member_id: id }, request);
     return NextResponse.json({ success: true });
   } catch (error) {
     if (error instanceof Response) return error;

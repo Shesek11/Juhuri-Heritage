@@ -7,7 +7,7 @@
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { forceSimulation, forceLink, forceManyBody, forceX, forceY, forceCollide } from 'd3-force';
 import type { Simulation, SimulationNodeDatum, ForceLink, ForceY } from 'd3-force';
-import { zoom, zoomIdentity } from 'd3-zoom';
+import { zoom, zoomIdentity, zoomTransform } from 'd3-zoom';
 import type { ZoomBehavior } from 'd3-zoom';
 import { select } from 'd3-selection';
 import { drag } from 'd3-drag';
@@ -17,6 +17,7 @@ import { SEOHead } from '../seo/SEOHead';
 import 'd3-transition';
 import { familyService, FamilyMember } from '../../services/familyService';
 import { EditMemberModal } from './EditMemberModal';
+import { useAuth } from '../../contexts/AuthContext';
 import { Loader2, ZoomIn, ZoomOut, Maximize2, UserPlus, Link2, X, Search, Network, Info, Eye, Sliders, User } from 'lucide-react';
 
 interface GraphNode extends SimulationNodeDatum {
@@ -27,6 +28,8 @@ interface GraphNode extends SimulationNodeDatum {
     birthYear?: number;
     birthPlace?: string;
     currentResidence?: string;
+    maidenName?: string;
+    previousName?: string;
     isAlive?: boolean;
     family?: string;
     generation?: number;  // 0 = oldest ancestor, higher = younger generation
@@ -44,6 +47,9 @@ type ConnectionMode = 'none' | 'connecting' | 'selecting-type';
 type RelationshipType = 'parent-child' | 'spouse' | 'sibling';
 
 export const CommunityGraph: React.FC = () => {
+    const { user } = useAuth();
+    const currentUserId = user?.id;
+    const isAdmin = user?.role === 'admin';
     const svgRef = useRef<SVGSVGElement>(null);
     const containerRef = useRef<HTMLDivElement>(null);
 
@@ -60,7 +66,7 @@ export const CommunityGraph: React.FC = () => {
         spouseStrength: 1.00,
         charge: -650,
         parentChildDistance: 50,
-        spouseDistance: 70,
+        spouseDistance: 30,
         collisionRadius: 50,
         yForceStrength: 1.00
     });
@@ -68,6 +74,11 @@ export const CommunityGraph: React.FC = () => {
     // Edit modal state
     const [selectedMember, setSelectedMember] = useState<FamilyMember | null>(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    // Pending relationship: when adding a relative from the edit modal
+    const [pendingRelation, setPendingRelation] = useState<{
+        fromMemberId: number;
+        type: 'parent' | 'child' | 'spouse';
+    } | null>(null);
 
     // Connection mode state
     const [connectionMode, setConnectionMode] = useState<ConnectionMode>('none');
@@ -79,8 +90,9 @@ export const CommunityGraph: React.FC = () => {
         visible: boolean;
         x: number;
         y: number;
+        flipped: boolean; // true = show below circle
         member: FamilyMember | null;
-    }>({ visible: false, x: 0, y: 0, member: null });
+    }>({ visible: false, x: 0, y: 0, flipped: false, member: null });
 
     // Search state
     const [searchQuery, setSearchQuery] = useState('');
@@ -122,6 +134,8 @@ export const CommunityGraph: React.FC = () => {
                 birthYear: m.birth_date ? new Date(m.birth_date).getFullYear() : undefined,
                 birthPlace: m.birth_city || m.birth_place,
                 currentResidence: m.residence_city || m.current_residence,
+                maidenName: m.maiden_name,
+                previousName: m.previous_name,
                 isAlive: m.is_alive,
                 family: m.last_name || 'Unknown'
             }));
@@ -270,6 +284,23 @@ export const CommunityGraph: React.FC = () => {
                 });
             }
 
+            // Propagate generation to spouses (spouse inherits partner's generation)
+            graphEdges.filter(e => e.type === 'spouse').forEach(e => {
+                const id1 = typeof e.source === 'number' ? e.source : e.source.id;
+                const id2 = typeof e.target === 'number' ? e.target : e.target.id;
+                const gen1 = generationMap.get(id1);
+                const gen2 = generationMap.get(id2);
+                if (gen1 !== undefined && gen2 === undefined) generationMap.set(id2, gen1);
+                else if (gen2 !== undefined && gen1 === undefined) generationMap.set(id1, gen2);
+                else if (gen1 !== undefined && gen2 !== undefined) {
+                    // Both have generations — use the one with parents (more reliable)
+                    const hasParents1 = childToParents.has(id1);
+                    const hasParents2 = childToParents.has(id2);
+                    if (hasParents1 && !hasParents2) generationMap.set(id2, gen1);
+                    else if (hasParents2 && !hasParents1) generationMap.set(id1, gen2);
+                }
+            });
+
             // Assign generation to nodes
             graphNodes.forEach(n => {
                 n.generation = generationMap.get(n.id) ?? 0;
@@ -407,13 +438,23 @@ export const CommunityGraph: React.FC = () => {
         // Create main group for zoom/pan
         const g = svg.append('g').attr('class', 'graph-container');
 
+        // Year labels group — stays fixed on X, Y updates per-label on zoom
+        const yearLabelsGroup = svg.append('g').attr('class', 'year-labels');
+        const yearMarkerData: { year: number; yPos: number }[] = [];
+
         // Setup zoom with error handling
         try {
             const zoomBehavior = zoom<SVGSVGElement, unknown>()
                 .scaleExtent([0.1, 4])
                 .on('zoom', (event) => {
                     g.attr('transform', event.transform);
-                    stopPulsing(); // Stop pulsing on zoom/pan
+                    // Update year labels: transform each label's Y using zoom, keep X fixed
+                    yearLabelsGroup.selectAll<SVGGElement, { year: number; yPos: number }>('.year-label')
+                        .attr('transform', d => {
+                            const screenY = event.transform.applyY(d.yPos);
+                            return `translate(8, ${screenY})`;
+                        });
+                    stopPulsing();
                 });
 
             svg.call(zoomBehavior);
@@ -422,273 +463,249 @@ export const CommunityGraph: React.FC = () => {
             console.error('[CommunityGraph] Error initializing zoom:', error);
         }
 
-        // Clear all fixed positions
-        nodes.forEach(n => {
-            n.fx = null;
-            n.fy = null;
-        });
-
-        const years = nodes.map(n => n.birthYear).filter(y => y) as number[];
-        const minYear = years.length > 0 ? Math.min(...years) : 1940;
-        const maxYear = years.length > 0 ? Math.max(...years) : 2025;
-        const yearSpan = Math.max(maxYear - minYear, 50);
+        // ===== HIERARCHICAL LAYOUT WITH TIMELINE Y-AXIS =====
+        const NODE_SPACING = 100; // Horizontal gap between nodes
+        const COUPLE_GAP = 60; // Gap between spouses
         const padding = 80;
         const leftPadding = 60;
 
-        const yearToY = (year: number) => {
-            const normalized = (year - minYear) / yearSpan;
-            return padding + normalized * (height - 2 * padding);
-        };
+        // Y-axis: birth year → screen Y (shared timeline for all families)
+        const years = nodes.filter(n => !n.isJunction && n.birthYear).map(n => n.birthYear!) ;
+        const minYear = years.length > 0 ? Math.min(...years) : 1940;
+        const maxYear = years.length > 0 ? Math.max(...years) : 2025;
+        const yearSpan = Math.max(maxYear - minYear, 30);
+        const yearToY = (year: number) => padding + ((year - minYear) / yearSpan) * (height - 2 * padding);
 
-        // Draw 25-year markers on the left side
+        // Draw year markers: lines in graph group, labels fixed on right
         const startYear = Math.floor(minYear / 25) * 25;
         const endYear = Math.ceil(maxYear / 25) * 25;
+        const yearData: { year: number; yPos: number }[] = [];
         for (let year = startYear; year <= endYear; year += 25) {
             const yPos = yearToY(year);
-
-            // Horizontal line across width
+            yearData.push({ year, yPos });
+            // Horizontal line (moves with graph)
             g.append('line')
-                .attr('x1', leftPadding)
-                .attr('y1', yPos)
-                .attr('x2', width)
-                .attr('y2', yPos)
-                .attr('stroke', 'rgba(255,255,255,0.1)')
+                .attr('x1', -5000).attr('y1', yPos).attr('x2', 5000).attr('y2', yPos)
+                .attr('stroke', 'rgba(255,255,255,0.06)')
                 .attr('stroke-width', 1)
                 .attr('pointer-events', 'none');
+        }
+        // Year labels — data-bound so zoom handler can update positions
+        const labels = yearLabelsGroup.selectAll('.year-label')
+            .data(yearData)
+            .enter()
+            .append('g')
+            .attr('class', 'year-label')
+            .attr('transform', d => `translate(8, ${d.yPos})`);
+        labels.append('rect')
+            .attr('x', 0).attr('y', -10).attr('width', 42).attr('height', 18)
+            .attr('fill', 'rgba(15, 23, 42, 0.9)').attr('rx', 4).attr('pointer-events', 'none');
+        labels.append('text')
+            .attr('x', 21).attr('y', 4)
+            .attr('font-size', '12px').attr('font-weight', '600')
+            .attr('fill', 'rgba(255,255,255,0.4)').attr('text-anchor', 'middle')
+            .attr('pointer-events', 'none')
+            .text(d => d.year.toString());
 
-            // Year label - positioned better with background
-            const labelGroup = g.append('g');
+        // Real nodes (skip junctions)
+        const realNodes = nodes.filter(n => !n.isJunction);
 
-            labelGroup.append('rect')
-                .attr('x', 5)
-                .attr('y', yPos - 12)
-                .attr('width', 45)
-                .attr('height', 20)
-                .attr('fill', 'rgba(15, 23, 42, 0.8)')
-                .attr('rx', 4)
-                .attr('pointer-events', 'none');
+        // Build lookup maps
+        const spouseMap = new Map<number, number>();
+        const childrenOfCouple = new Map<string, number[]>();
+        const parentsOf = new Map<number, number[]>();
 
-            labelGroup.append('text')
-                .attr('x', 27)
-                .attr('y', yPos + 4)
-                .attr('font-size', '13px')
-                .attr('font-weight', '600')
-                .attr('fill', 'rgba(255,255,255,0.7)')
-                .attr('text-anchor', 'middle')
-                .attr('pointer-events', 'none')
-                .text(year.toString());
+        edges.forEach(e => {
+            const sId = typeof e.source === 'number' ? e.source : e.source.id;
+            const tId = typeof e.target === 'number' ? e.target : e.target.id;
+            if (e.type === 'spouse') {
+                spouseMap.set(sId, tId);
+                spouseMap.set(tId, sId);
+            }
+            if (e.type === 'parent-child') {
+                if (!parentsOf.has(tId)) parentsOf.set(tId, []);
+                parentsOf.get(tId)!.push(sId);
+            }
+        });
+
+        parentsOf.forEach((parents, childId) => {
+            const key = [...parents].sort((a, b) => a - b).join(',');
+            if (!childrenOfCouple.has(key)) childrenOfCouple.set(key, []);
+            childrenOfCouple.get(key)!.push(childId);
+        });
+
+        // Group real nodes by generation for X layout
+        const genGroups = new Map<number, GraphNode[]>();
+        realNodes.forEach(n => {
+            const gen = n.generation ?? 0;
+            if (!genGroups.has(gen)) genGroups.set(gen, []);
+            genGroups.get(gen)!.push(n);
+        });
+        const sortedGens = [...genGroups.keys()].sort((a, b) => a - b);
+
+        // X POSITIONING: deterministic, generation by generation
+        // Y POSITIONING: birth year on shared timeline
+
+        // Helper: get average X of a node's parents
+        function getParentCenterX(n: GraphNode): number | null {
+            const parents = parentsOf.get(n.id);
+            if (!parents || parents.length === 0) return null;
+            const parentNodes = parents.map(pid => nodes.find(nd => nd.id === pid)).filter(Boolean) as GraphNode[];
+            if (parentNodes.length === 0 || parentNodes.some(p => p.x == null)) return null;
+            return parentNodes.reduce((sum, p) => sum + (p.x || 0), 0) / parentNodes.length;
         }
 
-        // Detect connected components (family groups) using Union-Find
-        const parent = new Map<number, number>();
-        const visibleNodeIds = nodes.filter(n => !n.isJunction).map(n => n.id);
+        // Process top-down: assign X per generation, Y by birth year
+        sortedGens.forEach(gen => {
+            const genNodes = genGroups.get(gen)!;
 
-        // Initialize: each node is its own parent
-        visibleNodeIds.forEach(id => parent.set(id, id));
+            // Build units: [couple] or [single]
+            type Unit = { nodes: GraphNode[]; width: number };
+            const units: Unit[] = [];
+            const inUnit = new Set<number>();
 
-        // Find function with path compression
-        const find = (id: number): number => {
-            if (parent.get(id) !== id) {
-                parent.set(id, find(parent.get(id)!));
-            }
-            return parent.get(id)!;
-        };
-
-        // Union function
-        const union = (id1: number, id2: number) => {
-            const root1 = find(id1);
-            const root2 = find(id2);
-            if (root1 !== root2) {
-                parent.set(root2, root1);
-            }
-        };
-
-        // Connect nodes through edges (including through junctions)
-        edges.forEach(edge => {
-            const sourceId = typeof edge.source === 'number' ? edge.source : edge.source.id;
-            const targetId = typeof edge.target === 'number' ? edge.target : edge.target.id;
-
-            const sourceNode = nodes.find(n => n.id === sourceId);
-            const targetNode = nodes.find(n => n.id === targetId);
-
-            // Skip if either is a junction - we'll connect through junctions
-            if (!sourceNode?.isJunction && !targetNode?.isJunction) {
-                union(sourceId, targetId);
-            } else if (sourceNode?.isJunction && !targetNode?.isJunction) {
-                // Find all real nodes connected to this junction and union them with target
-                edges.forEach(e2 => {
-                    const e2SourceId = typeof e2.source === 'number' ? e2.source : e2.source.id;
-                    const e2TargetId = typeof e2.target === 'number' ? e2.target : e2.target.id;
-
-                    if (e2SourceId === sourceId || e2TargetId === sourceId) {
-                        const otherId = e2SourceId === sourceId ? e2TargetId : e2SourceId;
-                        const otherNode = nodes.find(n => n.id === otherId);
-                        if (otherNode && !otherNode.isJunction && otherId !== targetId) {
-                            union(otherId, targetId);
-                        }
-                    }
-                });
-            } else if (!sourceNode?.isJunction && targetNode?.isJunction) {
-                // Find all real nodes connected to this junction and union them with source
-                edges.forEach(e2 => {
-                    const e2SourceId = typeof e2.source === 'number' ? e2.source : e2.source.id;
-                    const e2TargetId = typeof e2.target === 'number' ? e2.target : e2.target.id;
-
-                    if (e2SourceId === targetId || e2TargetId === targetId) {
-                        const otherId = e2SourceId === targetId ? e2TargetId : e2SourceId;
-                        const otherNode = nodes.find(n => n.id === otherId);
-                        if (otherNode && !otherNode.isJunction && otherId !== sourceId) {
-                            union(otherId, sourceId);
-                        }
-                    }
-                });
-            }
-        });
-
-        // Group nodes by component
-        const componentGroups = new Map<number, GraphNode[]>();
-        nodes.forEach(n => {
-            if (n.isJunction) return; // Skip junctions for positioning
-
-            const root = find(n.id);
-            if (!componentGroups.has(root)) {
-                componentGroups.set(root, []);
-            }
-            componentGroups.get(root)!.push(n);
-        });
-
-        const numComponents = componentGroups.size;
-
-        // Initialize node positions - separate components horizontally
-        let componentIndex = 0;
-        componentGroups.forEach((componentNodes, root) => {
-            const componentWidth = width / numComponents;
-            const baseX = componentIndex * componentWidth + componentWidth / 2;
-
-            componentNodes.forEach((n, i) => {
-                if (!n.x || !n.y) {
-                    // Position nodes in this component in a vertical stack based on birth year
-                    const yPos = n.birthYear ? yearToY(n.birthYear) : height / 2;
-
-                    // Add some horizontal spread within the component
-                    const spread = Math.min(componentWidth * 0.8, 400);
-                    const offset = (i % 5 - 2) * (spread / 5); // Spread across 5 columns
-
-                    n.x = baseX + offset;
-                    n.y = yPos;
+            // Couples first
+            genNodes.forEach(n => {
+                if (inUnit.has(n.id)) return;
+                const spouseId = spouseMap.get(n.id);
+                const spouse = spouseId ? genNodes.find(s => s.id === spouseId) : null;
+                if (spouse && !inUnit.has(spouse.id)) {
+                    // Put the person with parents (blood member) first, spouse second (outside)
+                    const nHasParents = parentsOf.has(n.id);
+                    const spouseHasParents = parentsOf.has(spouse.id);
+                    const pair = nHasParents && !spouseHasParents ? [n, spouse] :
+                                 spouseHasParents && !nHasParents ? [spouse, n] :
+                                 [n, spouse].sort((a, b) => (a.birthYear ?? 0) - (b.birthYear ?? 0));
+                    units.push({ nodes: pair, width: COUPLE_GAP });
+                    inUnit.add(n.id);
+                    inUnit.add(spouse.id);
                 }
             });
 
-            componentIndex++;
-        });
+            // Then singles
+            genNodes.filter(n => !inUnit.has(n.id))
+                .sort((a, b) => (a.birthYear ?? 0) - (b.birthYear ?? 0))
+                .forEach(n => units.push({ nodes: [n], width: 0 }));
 
-        // Position junction nodes at average of their connected nodes
-        nodes.forEach(n => {
-            if (n.isJunction && (!n.x || !n.y)) {
-                const connectedNodes = edges
-                    .filter(e => {
-                        const sourceId = typeof e.source === 'number' ? e.source : e.source.id;
-                        const targetId = typeof e.target === 'number' ? e.target : e.target.id;
-                        return sourceId === n.id || targetId === n.id;
-                    })
-                    .map(e => {
-                        const sourceId = typeof e.source === 'number' ? e.source : e.source.id;
-                        const targetId = typeof e.target === 'number' ? e.target : e.target.id;
-                        return nodes.find(node => node.id === (sourceId === n.id ? targetId : sourceId));
-                    })
-                    .filter(node => node && !node.isJunction) as GraphNode[];
+            // Sort units: children under their parents
+            units.sort((a, b) => {
+                const aParentX = getParentCenterX(a.nodes[0]);
+                const bParentX = getParentCenterX(b.nodes[0]);
+                if (aParentX !== null && bParentX !== null) return aParentX - bParentX;
+                if (aParentX !== null) return -1;
+                if (bParentX !== null) return 1;
+                return (a.nodes[0].birthYear ?? 0) - (b.nodes[0].birthYear ?? 0);
+            });
 
-                if (connectedNodes.length > 0) {
-                    n.x = connectedNodes.reduce((sum, node) => sum + (node.x || 0), 0) / connectedNodes.length;
-                    n.y = connectedNodes.reduce((sum, node) => sum + (node.y || 0), 0) / connectedNodes.length;
+            // Layout X centered, Y by birth year
+            const totalWidth = units.reduce((sum, u) => sum + u.width + NODE_SPACING, -NODE_SPACING);
+            let x = width / 2 - totalWidth / 2;
+
+            units.forEach(unit => {
+                if (unit.nodes.length === 2) {
+                    // Couple: each at their own birth year Y, side by side X
+                    unit.nodes[0].x = x;
+                    unit.nodes[0].y = yearToY(unit.nodes[0].birthYear ?? ((minYear + maxYear) / 2));
+                    unit.nodes[1].x = x + COUPLE_GAP;
+                    unit.nodes[1].y = yearToY(unit.nodes[1].birthYear ?? ((minYear + maxYear) / 2));
+                    x += COUPLE_GAP + NODE_SPACING;
                 } else {
-                    // Fallback if no connected nodes found
-                    n.x = width / 2;
-                    n.y = height / 2;
+                    unit.nodes[0].x = x;
+                    unit.nodes[0].y = yearToY(unit.nodes[0].birthYear ?? ((minYear + maxYear) / 2));
+                    x += NODE_SPACING;
                 }
-            }
-        });
-
-        // Create a map of node to component for inter-component repulsion
-        const nodeToComponent = new Map<number, number>();
-        componentGroups.forEach((componentNodes, root) => {
-            componentNodes.forEach(n => {
-                nodeToComponent.set(n.id, root);
             });
         });
 
-        // Create force simulation with birth-year based Y positioning
-        const simulation = forceSimulation<GraphNode>(nodes)
-            .force('link', forceLink<GraphNode, GraphEdge>(edges)
-                .id(d => d.id)
-                .distance(d => {
-                    if (d.type === 'spouse') return forceParams.spouseDistance;
-                    if (d.type === 'parent-child') return forceParams.parentChildDistance;
-                    return 100;
-                })
-                .strength(d => {
-                    if (d.type === 'spouse') return forceParams.spouseStrength;
-                    if (d.type === 'parent-child') return forceParams.parentChildStrength;
-                    return 0.5;
-                })
-            )
-            .force('charge', forceManyBody().strength(forceParams.charge))
-            .force('x', forceX(width / 2).strength(0.05))
-            .force('y', forceY<GraphNode>(d => yearToY(d.birthYear ?? ((minYear + maxYear) / 2))).strength(forceParams.yForceStrength))
-            .force('collision', forceCollide().radius(forceParams.collisionRadius))
-            .force('componentSeparation', (alpha) => {
-                // Custom force to separate different family components
-                const strength = 300 * alpha; // Stronger at the beginning
+        // Second pass: re-center children under their parents
+        sortedGens.forEach(gen => {
+            if (gen === sortedGens[0]) return;
+            childrenOfCouple.forEach((childIds, parentKey) => {
+                const parentIds = parentKey.split(',').map(Number);
+                const pNodes = parentIds.map(pid => nodes.find(n => n.id === pid)).filter(Boolean) as GraphNode[];
+                if (pNodes.length === 0 || pNodes.some(p => p.x == null)) return;
+                const parentCenterX = pNodes.reduce((sum, p) => sum + (p.x || 0), 0) / pNodes.length;
 
-                nodes.forEach((nodeA, i) => {
-                    if (nodeA.isJunction) return;
+                const cNodes = childIds
+                    .map(cid => nodes.find(n => n.id === cid))
+                    .filter(n => n && n.generation === gen) as GraphNode[];
+                if (cNodes.length === 0) return;
 
-                    const componentA = nodeToComponent.get(nodeA.id);
-                    if (!componentA) return;
+                const childCenterX = cNodes.reduce((sum, c) => sum + (c.x || 0), 0) / cNodes.length;
+                const shift = parentCenterX - childCenterX;
 
-                    for (let j = i + 1; j < nodes.length; j++) {
-                        const nodeB = nodes[j];
-                        if (nodeB.isJunction) continue;
-
-                        const componentB = nodeToComponent.get(nodeB.id);
-                        if (!componentB) continue;
-
-                        // Only apply force if nodes are in different components
-                        if (componentA !== componentB) {
-                            const dx = (nodeB.x || 0) - (nodeA.x || 0);
-                            const dy = (nodeB.y || 0) - (nodeA.y || 0);
-                            const distance = Math.sqrt(dx * dx + dy * dy);
-
-                            if (distance > 0 && distance < 500) { // Only repel if too close
-                                const force = strength / (distance * distance);
-                                const fx = (dx / distance) * force;
-                                const fy = (dy / distance) * force;
-
-                                nodeA.vx = (nodeA.vx || 0) - fx;
-                                nodeA.vy = (nodeA.vy || 0) - fy;
-                                nodeB.vx = (nodeB.vx || 0) + fx;
-                                nodeB.vy = (nodeB.vy || 0) + fy;
-                            }
-                        }
+                // Shift children + their spouses
+                cNodes.forEach(c => {
+                    c.x = (c.x || 0) + shift;
+                    const sId = spouseMap.get(c.id);
+                    if (sId) {
+                        const spouse = nodes.find(n => n.id === sId);
+                        if (spouse && spouse.generation === gen) spouse.x = (spouse.x || 0) + shift;
                     }
+                });
+            });
+        });
+
+        // Position junction nodes
+        nodes.forEach(n => {
+            if (!n.isJunction) return;
+            const connectedReal = edges
+                .filter(e => {
+                    const sId = typeof e.source === 'number' ? e.source : e.source.id;
+                    const tId = typeof e.target === 'number' ? e.target : e.target.id;
+                    return sId === n.id || tId === n.id;
+                })
+                .map(e => {
+                    const sId = typeof e.source === 'number' ? e.source : e.source.id;
+                    const tId = typeof e.target === 'number' ? e.target : e.target.id;
+                    return nodes.find(nd => nd.id === (sId === n.id ? tId : sId));
+                })
+                .filter(nd => nd && !nd.isJunction) as GraphNode[];
+
+            if (connectedReal.length > 0) {
+                const parents = connectedReal.filter(r => (r.generation ?? 0) < (n.generation ?? 0));
+                const refNodes = parents.length > 0 ? parents : connectedReal;
+                n.x = refNodes.reduce((sum, r) => sum + (r.x || 0), 0) / refNodes.length;
+                n.y = (Math.min(...connectedReal.map(r => r.y || 0)) + Math.max(...connectedReal.map(r => r.y || 0))) / 2;
+            } else {
+                n.x = width / 2;
+                n.y = padding;
+            }
+        });
+
+        // Store target positions for snap-back
+        const targetPositions = new Map<number, { x: number; y: number }>();
+        nodes.forEach(n => {
+            targetPositions.set(n.id, { x: n.x || 0, y: n.y || 0 });
+        });
+
+        // Light simulation: only collision avoidance + snap-back to computed positions
+        const simulation = forceSimulation<GraphNode>(nodes)
+            .force('collision', forceCollide().radius(35))
+            .force('snapBack', () => {
+                nodes.forEach(n => {
+                    const target = targetPositions.get(n.id);
+                    if (!target) return;
+                    const strength = 0.1;
+                    n.vx = (n.vx || 0) + (target.x - (n.x || 0)) * strength;
+                    n.vy = (n.vy || 0) + (target.y - (n.y || 0)) * strength;
                 });
             })
-            .alpha(1.0)  // Start with high energy for better initial layout
-            .alphaDecay(0.008)  // Slower cooling = more time to settle
-            .velocityDecay(0.4); // More friction = smoother convergence
+            .alpha(0.3)
+            .alphaDecay(0.02)
+            .velocityDecay(0.6);
 
-        // Store simulation ref for real-time updates
         simulationRef.current = simulation;
 
         // Edge colors and styles - vibrant and clear
         const getEdgeColor = (d: GraphEdge) => {
             if (d.type === 'spouse') {
-                if (d.status === 'divorced') return '#ef4444'; // Vibrant red for divorced
-                if (d.status === 'widowed') return '#9ca3af'; // Gray for widowed
-                return '#f59e0b'; // Vibrant pink for married
+                if (d.status === 'divorced') return '#f87171'; // Red dashed
+                if (d.status === 'widowed') return '#94a3b8'; // Gray dotted
+                return '#f472b6'; // Pink for married
             }
-            if (d.type === 'parent-child') return '#6366f1'; // Vibrant blue
-            if (d.type === 'sibling') return '#14b8a6'; // Vibrant purple
+            if (d.type === 'parent-child') return '#38bdf8'; // Sky blue
+            if (d.type === 'sibling') return '#a78bfa'; // Purple
             return '#94a3b8';
         };
 
@@ -1079,20 +1096,25 @@ export const CommunityGraph: React.FC = () => {
                 .duration(200)
                 .attr('r', 30);
 
-            // Show tooltip
+            // Show tooltip using screen coordinates (fixed positioning)
             const member = allMembers.find(m => m.id === d.id);
-            if (member) {
-                const rect = (event.target as Element).getBoundingClientRect();
-                const containerRect = containerRef.current?.getBoundingClientRect();
-
-                if (containerRect) {
-                    setTooltip({
-                        visible: true,
-                        x: rect.left - containerRect.left + rect.width / 2,
-                        y: rect.top - containerRect.top, // No spacing - directly at circle top
-                        member: member
-                    });
-                }
+            if (member && svgRef.current) {
+                const svgEl = svgRef.current;
+                const t = zoomTransform(svgEl);
+                const svgRect = svgEl.getBoundingClientRect();
+                // Node coords in SVG space → screen space
+                const screenX = svgRect.left + t.applyX(d.x ?? 0);
+                const circleTop = svgRect.top + t.applyY(d.y ?? 0) - 30;
+                const circleBottom = svgRect.top + t.applyY(d.y ?? 0) + 30;
+                // If not enough room above (~220px for tooltip), flip below
+                const flipped = circleTop < 220;
+                setTooltip({
+                    visible: true,
+                    x: screenX,
+                    y: flipped ? circleBottom : circleTop,
+                    flipped,
+                    member: member
+                });
             }
 
             // Find and pulse first-degree relatives
@@ -1210,11 +1232,18 @@ export const CommunityGraph: React.FC = () => {
             setTooltip(prev => ({ ...prev, visible: false }));
         });
 
+        // Build node lookup for edge drawing (since we don't use forceLink)
+        const nodeById = new Map<number, GraphNode>();
+        nodes.forEach(n => nodeById.set(n.id, n));
+
         // Update positions function
         const updatePositions = () => {
             link.attr('d', d => {
-                const source = d.source as GraphNode;
-                const target = d.target as GraphNode;
+                const sourceId = typeof d.source === 'number' ? d.source : (d.source as GraphNode).id;
+                const targetId = typeof d.target === 'number' ? d.target : (d.target as GraphNode).id;
+                const source = nodeById.get(sourceId);
+                const target = nodeById.get(targetId);
+                if (!source || !target) return '';
                 const sx = source.x || 0;
                 const sy = source.y || 0;
                 const tx = target.x || 0;
@@ -1259,8 +1288,8 @@ export const CommunityGraph: React.FC = () => {
 
         // Drag functions
         function dragstarted(event: D3DragEvent<SVGGElement, GraphNode, unknown>, d: GraphNode) {
-            stopPulsing(); // Stop pulsing on drag
-            if (!event.active) simulation.alphaTarget(0.5).restart();
+            stopPulsing();
+            if (!event.active) simulation.alphaTarget(0.3).restart();
             d.fx = d.x;
             d.fy = d.y;
         }
@@ -1272,19 +1301,16 @@ export const CommunityGraph: React.FC = () => {
 
         function dragended(event: D3DragEvent<SVGGElement, GraphNode, unknown>, d: GraphNode) {
             if (!event.active) simulation.alphaTarget(0);
+            // Snap back to computed position
             d.fx = null;
             d.fy = null;
+            simulation.alpha(0.3).restart();
         }
 
-        // Initial zoom to fit - center on the graph
+        // Initial zoom to fit all nodes
         setTimeout(() => {
-            if (zoomRef.current) {
-                svg.transition().duration(750).call(
-                    zoomRef.current.transform as any,
-                    zoomIdentity.translate(0, 0).scale(1)
-                );
-            }
-        }, 800);
+            handleFitView();
+        }, 300);
 
         return () => {
             simulation.stop();
@@ -1353,14 +1379,34 @@ export const CommunityGraph: React.FC = () => {
     };
 
     const handleFitView = () => {
-        if (svgRef.current && zoomRef.current && containerRef.current) {
-            const width = containerRef.current.clientWidth;
-            const height = containerRef.current.clientHeight;
+        // Fit all nodes into view
+        if (!svgRef.current || !zoomRef.current || !containerRef.current) return;
+        const width = containerRef.current.clientWidth;
+        const height = containerRef.current.clientHeight;
+        if (nodes.length === 0) {
             select(svgRef.current).transition().call(
                 zoomRef.current.transform,
                 zoomIdentity.translate(width / 2, height / 2).scale(0.6)
             );
+            return;
         }
+        // Calculate bounding box of all nodes
+        let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+        nodes.forEach(n => {
+            if (n.x != null && n.y != null) {
+                minX = Math.min(minX, n.x); maxX = Math.max(maxX, n.x);
+                minY = Math.min(minY, n.y); maxY = Math.max(maxY, n.y);
+            }
+        });
+        const dx = maxX - minX + 100;
+        const dy = maxY - minY + 100;
+        const cx = (minX + maxX) / 2;
+        const cy = (minY + maxY) / 2;
+        const scale = Math.min(0.9, 0.85 / Math.max(dx / width, dy / height));
+        select(svgRef.current).transition().duration(500).call(
+            zoomRef.current.transform,
+            zoomIdentity.translate(width / 2 - cx * scale, height / 2 - cy * scale).scale(scale)
+        );
     };
 
     // Focus on a specific node with zoom and highlight
@@ -1525,14 +1571,17 @@ export const CommunityGraph: React.FC = () => {
                                     const q = query.toLowerCase();
                                     const results = nodes.filter(n =>
                                         n.name.toLowerCase().includes(q) ||
-                                        (n.nameRu && n.nameRu.toLowerCase().includes(q))
-                                    );
+                                        (n.nameRu && n.nameRu.toLowerCase().includes(q)) ||
+                                        (n.maidenName && n.maidenName.toLowerCase().includes(q)) ||
+                                        (n.previousName && n.previousName.toLowerCase().includes(q)) ||
+                                        (n.maidenName && `${n.name.split(' ')[0]} ${n.maidenName}`.toLowerCase().includes(q))
+                                    ).slice(0, 10);
                                     setSearchResults(results);
                                 } else {
                                     setSearchResults([]);
                                 }
                             }}
-                            className="pr-9 pl-3 py-1.5 bg-slate-700 border border-slate-600 rounded-lg text-white text-sm placeholder-slate-400 focus:outline-none focus-visible:border-amber-500 w-36 md:w-48 relative z-10"
+                            className="ps-9 pe-3 py-1.5 bg-slate-700 border border-slate-600 rounded-lg text-white text-sm placeholder-slate-400 focus:outline-none focus-visible:border-amber-500 w-36 md:w-48 relative z-10"
                         />
                         {searchResults.length > 0 && (
                             <div className="absolute top-full mt-1 right-0 w-72 md:w-80 bg-slate-800 border border-slate-600 rounded-lg shadow-2xl max-h-80 overflow-y-auto">
@@ -1544,18 +1593,18 @@ export const CommunityGraph: React.FC = () => {
                                             setSearchQuery('');
                                             setSearchResults([]);
                                         }}
-                                        className="w-full text-right px-4 py-2.5 hover:bg-slate-700 transition-colors text-sm border-b border-slate-700 last:border-b-0"
+                                        className="w-full text-start px-4 py-2.5 hover:bg-slate-700 transition-colors text-sm border-b border-slate-700 last:border-b-0"
                                     >
-                                        <div className="font-medium text-white mb-1">{result.name}</div>
+                                        <div className="font-medium text-white">
+                                            {result.name}
+                                            {result.maidenName && <span className="text-slate-400 text-xs font-normal"> ({result.maidenName})</span>}
+                                        </div>
                                         <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-slate-400">
                                             {result.birthYear && (
-                                                <span>📅 {result.birthYear}</span>
+                                                <span>📅 {result.birthYear}{result.currentResidence ? `, ${result.currentResidence}` : result.birthPlace ? `, ${result.birthPlace}` : ''}</span>
                                             )}
-                                            {result.birthPlace && (
-                                                <span>🏙️ {result.birthPlace}</span>
-                                            )}
-                                            {result.isAlive && result.currentResidence && (
-                                                <span>📍 {result.currentResidence}</span>
+                                            {!result.birthYear && (result.currentResidence || result.birthPlace) && (
+                                                <span>📍 {result.currentResidence || result.birthPlace}</span>
                                             )}
                                         </div>
                                     </button>
@@ -1625,7 +1674,7 @@ export const CommunityGraph: React.FC = () => {
                                         <div className="flex items-center gap-2 pb-2 border-b border-slate-700">
                                             <div className="w-4 h-4 rounded-full bg-indigo-500 border-2 border-indigo-600" />
                                             <span className="text-slate-300">גבר</span>
-                                            <div className="w-4 h-4 rounded-full bg-amber-500 border-2 border-amber-600 mr-auto" />
+                                            <div className="w-4 h-4 rounded-full bg-amber-500 border-2 border-amber-600 ms-auto" />
                                             <span className="text-slate-300">אישה</span>
                                         </div>
 
@@ -1653,12 +1702,6 @@ export const CommunityGraph: React.FC = () => {
                                                     <line x1="0" y1="6" x2="32" y2="6" stroke="#94a3b8" strokeWidth="2.5" strokeDasharray="2,4" />
                                                 </svg>
                                                 <span className="text-slate-300">אלמן/ה</span>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <svg width="32" height="12" className="flex-shrink-0">
-                                                    <line x1="0" y1="6" x2="32" y2="6" stroke="#a78bfa" strokeWidth="2" strokeDasharray="8,4" />
-                                                </svg>
-                                                <span className="text-slate-300">אחים</span>
                                             </div>
                                         </div>
                                     </div>
@@ -1702,7 +1745,7 @@ export const CommunityGraph: React.FC = () => {
                                     className="w-full flex items-center gap-3 p-4 bg-sky-600 hover:bg-sky-700 rounded-lg text-white transition-colors"
                                 >
                                     <div className="w-10 h-1 bg-sky-400" />
-                                    <div className="flex-1 text-right">
+                                    <div className="flex-1 text-start">
                                         <div className="font-bold">הורה-ילד</div>
                                         <div className="text-xs text-sky-200">{firstSelectedNode.name} הוא/היא הורה של {secondSelectedNode.name}</div>
                                     </div>
@@ -1713,7 +1756,7 @@ export const CommunityGraph: React.FC = () => {
                                     className="w-full flex items-center gap-3 p-4 bg-amber-600 hover:bg-amber-700 rounded-lg text-white transition-colors"
                                 >
                                     <div className="w-10 h-1 bg-amber-400" />
-                                    <div className="flex-1 text-right">
+                                    <div className="flex-1 text-start">
                                         <div className="font-bold">בני זוג (נשואים)</div>
                                         <div className="text-xs text-amber-200">{firstSelectedNode.name} ו-{secondSelectedNode.name} נשואים</div>
                                     </div>
@@ -1724,7 +1767,7 @@ export const CommunityGraph: React.FC = () => {
                                     className="w-full flex items-center gap-3 p-4 bg-teal-600 hover:bg-teal-700 rounded-lg text-white transition-colors"
                                 >
                                     <div className="w-10 h-1 bg-teal-400 border-dashed" />
-                                    <div className="flex-1 text-right">
+                                    <div className="flex-1 text-start">
                                         <div className="font-bold">אחים</div>
                                         <div className="text-xs text-teal-200">{firstSelectedNode.name} ו-{secondSelectedNode.name} הם אחים</div>
                                     </div>
@@ -1766,295 +1809,95 @@ export const CommunityGraph: React.FC = () => {
                     </button>
                 </div>
 
-                {/* Force Controls Panel */}
-                <div className="absolute top-3 left-3 flex flex-col gap-2">
-                    {/* Toggle button */}
-                    <button
-                        onClick={() => setShowControls(!showControls)}
-                        className="p-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-white transition-colors"
-                        title="הגדרות כוחות"
-                    >
-                        <Sliders size={20} />
-                    </button>
-
-                    {/* Controls panel */}
-                    {showControls && (
-                        <div className="bg-slate-800 border border-slate-600 rounded-lg p-4 shadow-2xl w-80 max-h-96 overflow-y-auto">
-                            <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
-                                <Sliders size={14} />
-                                כוחות המשיכה
-                            </h3>
-
-                            <div className="space-y-4 text-sm">
-                                {/* Parent-Child Strength */}
-                                <div>
-                                    <div className="flex justify-between items-center mb-1">
-                                        <label className="text-slate-300">חוזק הורה-ילד</label>
-                                        <span className="text-amber-400 font-mono">{forceParams.parentChildStrength.toFixed(2)}</span>
-                                    </div>
-                                    <input
-                                        type="range"
-                                        min="0"
-                                        max="1"
-                                        step="0.05"
-                                        value={forceParams.parentChildStrength}
-                                        onChange={(e) => setForceParams(prev => ({ ...prev, parentChildStrength: parseFloat(e.target.value) }))}
-                                        className="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-amber-500"
-                                    />
-                                    <div className="flex justify-between text-xs text-slate-400 mt-1">
-                                        <span>חלש</span>
-                                        <span>חזק</span>
-                                    </div>
-                                </div>
-
-                                {/* Parent-Child Distance */}
-                                <div>
-                                    <div className="flex justify-between items-center mb-1">
-                                        <label className="text-slate-300">מרחק הורה-ילד</label>
-                                        <span className="text-amber-400 font-mono">{forceParams.parentChildDistance}</span>
-                                    </div>
-                                    <input
-                                        type="range"
-                                        min="50"
-                                        max="200"
-                                        step="10"
-                                        value={forceParams.parentChildDistance}
-                                        onChange={(e) => setForceParams(prev => ({ ...prev, parentChildDistance: parseInt(e.target.value) }))}
-                                        className="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-amber-500"
-                                    />
-                                    <div className="flex justify-between text-xs text-slate-400 mt-1">
-                                        <span>קרוב</span>
-                                        <span>רחוק</span>
-                                    </div>
-                                </div>
-
-                                {/* Spouse Strength */}
-                                <div>
-                                    <div className="flex justify-between items-center mb-1">
-                                        <label className="text-slate-300">חוזק בני זוג</label>
-                                        <span className="text-amber-400 font-mono">{forceParams.spouseStrength.toFixed(2)}</span>
-                                    </div>
-                                    <input
-                                        type="range"
-                                        min="0"
-                                        max="1"
-                                        step="0.05"
-                                        value={forceParams.spouseStrength}
-                                        onChange={(e) => setForceParams(prev => ({ ...prev, spouseStrength: parseFloat(e.target.value) }))}
-                                        className="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-amber-500"
-                                    />
-                                    <div className="flex justify-between text-xs text-slate-400 mt-1">
-                                        <span>חלש</span>
-                                        <span>חזק</span>
-                                    </div>
-                                </div>
-
-                                {/* Spouse Distance */}
-                                <div>
-                                    <div className="flex justify-between items-center mb-1">
-                                        <label className="text-slate-300">מרחק בני זוג</label>
-                                        <span className="text-amber-400 font-mono">{forceParams.spouseDistance}</span>
-                                    </div>
-                                    <input
-                                        type="range"
-                                        min="40"
-                                        max="150"
-                                        step="10"
-                                        value={forceParams.spouseDistance}
-                                        onChange={(e) => setForceParams(prev => ({ ...prev, spouseDistance: parseInt(e.target.value) }))}
-                                        className="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-amber-500"
-                                    />
-                                    <div className="flex justify-between text-xs text-slate-400 mt-1">
-                                        <span>קרוב</span>
-                                        <span>רחוק</span>
-                                    </div>
-                                </div>
-
-                                {/* Charge (Repulsion) */}
-                                <div>
-                                    <div className="flex justify-between items-center mb-1">
-                                        <label className="text-slate-300">דחייה</label>
-                                        <span className="text-red-400 font-mono">{forceParams.charge}</span>
-                                    </div>
-                                    <input
-                                        type="range"
-                                        min="-1000"
-                                        max="-50"
-                                        step="50"
-                                        value={forceParams.charge}
-                                        onChange={(e) => setForceParams(prev => ({ ...prev, charge: parseInt(e.target.value) }))}
-                                        className="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-red-500"
-                                    />
-                                    <div className="flex justify-between text-xs text-slate-400 mt-1">
-                                        <span>חזק</span>
-                                        <span>חלש</span>
-                                    </div>
-                                </div>
-
-                                {/* Collision Radius */}
-                                <div>
-                                    <div className="flex justify-between items-center mb-1">
-                                        <label className="text-slate-300">רדיוס התנגשות</label>
-                                        <span className="text-indigo-400 font-mono">{forceParams.collisionRadius}</span>
-                                    </div>
-                                    <input
-                                        type="range"
-                                        min="20"
-                                        max="80"
-                                        step="5"
-                                        value={forceParams.collisionRadius}
-                                        onChange={(e) => setForceParams(prev => ({ ...prev, collisionRadius: parseInt(e.target.value) }))}
-                                        className="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-indigo-500"
-                                    />
-                                    <div className="flex justify-between text-xs text-slate-400 mt-1">
-                                        <span>קטן</span>
-                                        <span>גדול</span>
-                                    </div>
-                                </div>
-
-                                {/* Y-Force Strength */}
-                                <div>
-                                    <div className="flex justify-between items-center mb-1">
-                                        <label className="text-slate-300">יישור ציר זמן (Y)</label>
-                                        <span className="text-emerald-400 font-mono">{forceParams.yForceStrength.toFixed(2)}</span>
-                                    </div>
-                                    <input
-                                        type="range"
-                                        min="0"
-                                        max="1"
-                                        step="0.05"
-                                        value={forceParams.yForceStrength}
-                                        onChange={(e) => setForceParams(prev => ({ ...prev, yForceStrength: parseFloat(e.target.value) }))}
-                                        className="w-full h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer accent-emerald-500"
-                                    />
-                                    <div className="flex justify-between text-xs text-slate-400 mt-1">
-                                        <span>חופשי</span>
-                                        <span>קשיח</span>
-                                    </div>
-                                </div>
-
-                                {/* Reset button */}
-                                <button
-                                    onClick={() => setForceParams({
-                                        parentChildStrength: 1.00,
-                                        spouseStrength: 1.00,
-                                        charge: -650,
-                                        parentChildDistance: 50,
-                                        spouseDistance: 70,
-                                        collisionRadius: 20,
-                                        yForceStrength: 1.00
-                                    })}
-                                    className="w-full mt-2 px-3 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-white text-xs transition-colors"
-                                >
-                                    איפוס לברירת מחדל
-                                </button>
-                            </div>
-                        </div>
-                    )}
-                </div>
+                {/* (Force controls removed — layout is now deterministic) */}
             </div>
 
             {/* Tooltip */}
             {tooltip.visible && tooltip.member && (
                 <div
-                    className="absolute z-[200] pointer-events-none"
+                    className="fixed z-[200] pointer-events-none"
                     style={{
                         left: `${tooltip.x}px`,
                         top: `${tooltip.y}px`,
-                        transform: 'translate(-50%, -100px)'
+                        transform: tooltip.flipped ? 'translate(-50%, 0%)' : 'translate(-50%, -100%)'
                     }}
                 >
-                    <div className="bg-slate-800 border-2 border-slate-600 rounded-lg shadow-2xl p-4 min-w-[250px] max-w-[350px]" dir="rtl">
+                    <div className="bg-slate-800/95 backdrop-blur-sm border border-slate-600 rounded-lg shadow-2xl p-3 min-w-[220px] max-w-[300px]" dir="rtl">
                         {/* Header with photo */}
-                        <div className="flex items-center gap-3 mb-3 pb-3 border-b border-slate-600">
+                        <div className="flex items-center gap-2.5 mb-2 pb-2 border-b border-slate-700">
                             {tooltip.member.photo_url ? (
                                 <img
                                     src={tooltip.member.photo_url}
                                     alt={tooltip.member.first_name}
-                                    className="w-16 h-16 rounded-full object-cover border-2 border-slate-500"
+                                    className="w-12 h-12 rounded-full object-cover border border-slate-500"
                                 />
                             ) : (
-                                <div className="w-16 h-16 rounded-full bg-slate-700 flex items-center justify-center border-2 border-slate-500">
-                                    <User size={32} className="text-slate-400" />
+                                <div className="w-12 h-12 rounded-full bg-slate-700 flex items-center justify-center border border-slate-500">
+                                    <User size={24} className="text-slate-400" />
                                 </div>
                             )}
-                            <div className="flex-1">
-                                <h3 className="font-bold text-white text-lg">
+                            <div className="flex-1 min-w-0">
+                                <h3 className="font-bold text-white text-base leading-tight">
                                     {tooltip.member.title && `${tooltip.member.title} `}
                                     {tooltip.member.first_name} {tooltip.member.last_name}
                                 </h3>
+                                {tooltip.member.maiden_name && (
+                                    <p className="text-xs text-slate-400">({tooltip.member.maiden_name})</p>
+                                )}
                                 {tooltip.member.nickname && (
-                                    <p className="text-sm text-slate-400">"{tooltip.member.nickname}"</p>
+                                    <p className="text-xs text-slate-500">"{tooltip.member.nickname}"</p>
                                 )}
                             </div>
                         </div>
 
                         {/* Details */}
-                        <div className="space-y-2 text-sm">
+                        <div className="space-y-1.5 text-xs">
                             {/* Birth info */}
-                            {(tooltip.member.birth_date || tooltip.member.birth_place) && (
-                                <div className="flex items-start gap-2">
-                                    <span className="text-emerald-400">📅</span>
-                                    <div className="flex-1 text-slate-200">
-                                        <span className="font-medium">נולד:</span>{' '}
-                                        {tooltip.member.birth_date && new Date(tooltip.member.birth_date).toLocaleDateString('he-IL')}
-                                        {tooltip.member.birth_place && ` ב${tooltip.member.birth_place}`}
-                                    </div>
+                            {(tooltip.member.birth_date || tooltip.member.birth_city) && (
+                                <div className="flex items-center gap-1.5 text-slate-300">
+                                    <span>📅</span>
+                                    <span>נולד: {tooltip.member.birth_date && new Date(tooltip.member.birth_date).toLocaleDateString('he-IL')}
+                                    {tooltip.member.birth_city && `, ${tooltip.member.birth_city}`}</span>
                                 </div>
                             )}
 
-                            {/* Death info */}
-                            {!tooltip.member.is_alive && (
-                                <div className="flex items-start gap-2">
-                                    <span className="text-slate-400">🕊️</span>
-                                    <div className="flex-1 text-slate-200">
-                                        <span className="font-medium">נפטר:</span>{' '}
-                                        {tooltip.member.death_date && new Date(tooltip.member.death_date).toLocaleDateString('he-IL')}
-                                        {tooltip.member.death_place && ` ב${tooltip.member.death_place}`}
-                                    </div>
+                            {/* Death info - only if has date or place */}
+                            {!tooltip.member.is_alive && (tooltip.member.death_date || tooltip.member.death_city) && (
+                                <div className="flex items-center gap-1.5 text-slate-400">
+                                    <span>🕊️</span>
+                                    <span>נפטר: {tooltip.member.death_date && new Date(tooltip.member.death_date).toLocaleDateString('he-IL')}
+                                    {tooltip.member.death_city && `, ${tooltip.member.death_city}`}</span>
                                 </div>
                             )}
 
-                            {/* Current residence */}
-                            {tooltip.member.is_alive && tooltip.member.current_residence && (
-                                <div className="flex items-start gap-2">
-                                    <span className="text-indigo-400">📍</span>
-                                    <div className="flex-1 text-slate-200">
-                                        <span className="font-medium">מתגורר:</span> {tooltip.member.current_residence}
+                            {/* Residence or birth place */}
+                            {(() => {
+                                const residence = tooltip.member.residence_city || tooltip.member.current_residence;
+                                const birthPlace = tooltip.member.birth_city;
+                                const place = residence || birthPlace;
+                                if (!place) return null;
+                                return (
+                                    <div className="flex items-center gap-1.5 text-slate-300">
+                                        <span>📍</span>
+                                        <span>{residence ? 'מגורים' : 'מוצא'}: {place}{tooltip.member.residence_country ? `, ${tooltip.member.residence_country}` : tooltip.member.birth_country ? `, ${tooltip.member.birth_country}` : ''}</span>
                                     </div>
-                                </div>
-                            )}
-
-                            {/* Maiden name */}
-                            {tooltip.member.maiden_name && (
-                                <div className="flex items-start gap-2">
-                                    <span className="text-amber-400">💝</span>
-                                    <div className="flex-1 text-slate-200">
-                                        <span className="font-medium">שם נעורים:</span> {tooltip.member.maiden_name}
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* Biography snippet */}
-                            {tooltip.member.biography && (
-                                <div className="flex items-start gap-2 mt-3 pt-3 border-t border-slate-700">
-                                    <span className="text-amber-400">📖</span>
-                                    <div className="flex-1 text-slate-300 text-xs italic line-clamp-3">
-                                        {tooltip.member.biography}
-                                    </div>
-                                </div>
-                            )}
+                                );
+                            })()}
                         </div>
 
                         {/* Hint */}
-                        <div className="mt-3 pt-3 border-t border-slate-700 text-xs text-slate-400 text-center">
+                        <div className="mt-2 pt-2 border-t border-slate-700 text-[10px] text-slate-500 text-center">
                             לחץ לעריכה
                         </div>
                     </div>
 
-                    {/* Arrow pointing down */}
+                    {/* Arrow */}
                     <div
-                        className="absolute left-1/2 -bottom-2 w-0 h-0 border-l-8 border-r-8 border-t-8 border-transparent border-t-slate-600"
+                        className={`absolute left-1/2 w-0 h-0 border-e-8 border-s-8 border-transparent ${
+                            tooltip.flipped
+                                ? '-top-2 border-b-8 border-b-slate-600'
+                                : '-bottom-2 border-t-8 border-t-slate-600'
+                        }`}
                         style={{ transform: 'translateX(-50%)' }}
                     />
                 </div>
@@ -2064,14 +1907,53 @@ export const CommunityGraph: React.FC = () => {
             <EditMemberModal
                 isOpen={isEditModalOpen}
                 member={selectedMember}
+                currentUserId={currentUserId}
+                isAdmin={isAdmin}
                 onClose={() => {
                     setIsEditModalOpen(false);
                     setSelectedMember(null);
                 }}
-                onSuccess={() => {
+                onSuccess={async (newMemberId?: number) => {
+                    // If there's a pending relation and we just created a new member, link them
+                    if (pendingRelation && newMemberId) {
+                        try {
+                            const { fromMemberId, type } = pendingRelation;
+                            if (type === 'parent') {
+                                await familyService.addParentChild({
+                                    parent_id: newMemberId,
+                                    child_id: fromMemberId,
+                                    relationship_type: 'biological'
+                                });
+                            } else if (type === 'child') {
+                                await familyService.addParentChild({
+                                    parent_id: fromMemberId,
+                                    child_id: newMemberId,
+                                    relationship_type: 'biological'
+                                });
+                            } else if (type === 'spouse') {
+                                await familyService.addPartnership({
+                                    person1_id: fromMemberId,
+                                    person2_id: newMemberId,
+                                    status: 'married'
+                                });
+                            }
+                        } catch (err) {
+                            console.error('Failed to create relationship:', err);
+                        }
+                        setPendingRelation(null);
+                    }
                     setIsEditModalOpen(false);
                     setSelectedMember(null);
                     loadData();
+                }}
+                onGraphRefresh={() => loadData()}
+                onAddRelative={(type: 'parent' | 'child' | 'spouse') => {
+                    // Save current member + relation type, then open fresh modal
+                    if (selectedMember?.id) {
+                        setPendingRelation({ fromMemberId: selectedMember.id, type });
+                    }
+                    setSelectedMember(null);
+                    setTimeout(() => setIsEditModalOpen(true), 100);
                 }}
                 potentialRelations={allMembers}
             />

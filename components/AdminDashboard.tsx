@@ -42,7 +42,7 @@ import AdminDuplicatesPanel from './admin/AdminDuplicatesPanel';
 import { getCustomEntries, addCustomEntry, deleteCustomEntry, approveEntry, downloadTemplate, getDialects, addDialect, deleteDialect, getSystemLogs } from '../services/storageService';
 import { generateBatchEntries } from '../services/geminiService';
 import { getAllUsers, updateUserRole, deleteUser, updateUser } from '../services/authService';
-import { DictionaryEntry, Translation, DialectItem, User, UserRole, SystemEvent } from '../types';
+import { DictionaryEntry, DialectScript, DialectItem, User, UserRole, SystemEvent } from '../types';
 
 interface AdminDashboardProps {
     user: User; // Current logged in user
@@ -54,30 +54,30 @@ interface TranslationSuggestion {
     id: number;
     entry_id: number;
     dialect: string;
-    suggested_hebrew: string;
-    suggested_latin: string;
-    suggested_cyrillic: string;
-    suggested_russian: string | null;
+    suggested_hebrew_short: string;
+    suggested_latin_script: string;
+    suggested_cyrillic_script: string;
+    suggested_russian_short: string | null;
     user_id: string | null;
     user_name: string | null;
     status: string;
     created_at: string;
     audio_url: string | null;
     audio_duration: number | null;
-    translation_id: number | null; // If set, this is a correction
+    dialect_script_id: number | null; // If set, this is a correction
     field_name: string | null;     // If set, this is a per-field suggestion
     reason: string | null;
-    term: string;
+    hebrewScript: string;
     contributor_name: string | null;
 }
 
 // Field labels for admin display
 const ADMIN_FIELD_LABELS: Record<string, string> = {
-    hebrew: 'עברית',
-    latin: 'לטיני',
-    cyrillic: 'קירילי',
-    russian: 'רוסית',
-    definition: 'הגדרה',
+    hebrewShort: 'עברית',
+    latinScript: 'לטיני',
+    cyrillicScript: 'קירילי',
+    russianShort: 'רוסית',
+    hebrewLong: 'הגדרה',
     pronunciationGuide: 'הגייה',
     partOfSpeech: 'חלק דיבר',
     dialect: 'ניב',
@@ -179,12 +179,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
     // Inline Editing State
     const [editingEntryId, setEditingEntryId] = useState<number | null>(null);
     const [editForm, setEditForm] = useState<{
-        term: string;
-        hebrew: string;
-        latin: string;
-        cyrillic: string;
+        hebrewScript: string;
+        hebrewShort: string;
+        latinScript: string;
+        cyrillicScript: string;
         dialect: string;
-    }>({ term: '', hebrew: '', latin: '', cyrillic: '', dialect: '' });
+    }>({ hebrewScript: '', hebrewShort: '', latinScript: '', cyrillicScript: '', dialect: '' });
 
     useEffect(() => {
         if (isAuthorized) {
@@ -198,7 +198,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
             getAllUsers().then(users => setUsersList(users || []));
         }
         if (activeSection === 'gen_logs') {
-            getSystemLogs().then(logs => setLogs(logs || []));
+            getSystemLogs().then(result => setLogs(result.logs || []));
         }
         if (activeSection === 'dict_pending') {
             // Fetch translation suggestions
@@ -283,7 +283,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                     getSystemLogs()
                 ]);
                 setUsersList(usersData || []);
-                setLogs(logsData || []);
+                setLogs(logsData.logs || []);
             }
         } catch (err) {
             console.error('Error refreshing data:', err);
@@ -449,19 +449,19 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
     const handleSaveGrid = () => {
         let savedCount = 0;
         gridData.forEach(row => {
-            const [term, hebrew, latin, dialect, definition, cyrillic] = row;
-            if (term.trim() && hebrew.trim()) {
-                const translation: Translation = {
+            const [hebrewScript, hebrewShort, latinScript, dialect, definition, cyrillicScript] = row;
+            if (hebrewScript.trim() && hebrewShort.trim()) {
+                const dialectScript: DialectScript = {
                     dialect: dialect.trim() || 'General',
-                    hebrew: hebrew.trim(),
-                    latin: latin.trim() || term.trim(),
-                    cyrillic: cyrillic.trim() || ''
+                    hebrewScript: hebrewShort.trim(),
+                    latinScript: latinScript.trim() || hebrewScript.trim(),
+                    cyrillicScript: cyrillicScript.trim() || ''
                 };
                 const entry: DictionaryEntry = {
-                    term: term.trim(),
+                    hebrewScript: hebrewScript.trim(),
                     detectedLanguage: 'Hebrew',
-                    translations: [translation],
-                    definitions: definition.trim() ? [definition.trim()] : [],
+                    dialectScripts: [dialectScript],
+                    hebrewLong: definition.trim() ? definition.trim() : null,
                     examples: [],
                     isCustom: true,
                     source: 'מאגר',
@@ -539,60 +539,60 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
         }
         setEditingEntryId(entryId);
         setEditForm({
-            term: entry.term || '',
-            hebrew: entry.translations[0]?.hebrew || '',
-            latin: entry.translations[0]?.latin || '',
-            cyrillic: entry.translations[0]?.cyrillic || '',
-            dialect: entry.translations[0]?.dialect || ''
+            hebrewScript: entry.hebrewScript || '',
+            hebrewShort: entry.dialectScripts[0]?.hebrewScript || '',
+            latinScript: entry.dialectScripts[0]?.latinScript || '',
+            cyrillicScript: entry.dialectScripts[0]?.cyrillicScript || '',
+            dialect: entry.dialectScripts[0]?.dialect || ''
         });
     };
 
     const handleCancelEdit = () => {
         setEditingEntryId(null);
-        setEditForm({ term: '', hebrew: '', latin: '', cyrillic: '', dialect: '' });
+        setEditForm({ hebrewScript: '', hebrewShort: '', latinScript: '', cyrillicScript: '', dialect: '' });
     };
 
     const handleSaveEdit = async () => {
         if (!editingEntryId) return;
 
         try {
-            // Find the translation ID for this entry
+            // Find the dialect script ID for this entry
             const entry = entries.find(e => (e as any).id === editingEntryId);
-            const translationId = (entry?.translations[0] as any)?.id;
+            const dialectScriptId = (entry?.dialectScripts[0] as any)?.id;
 
-            // Update term if changed
-            if (editForm.term !== (entry?.term || '')) {
+            // Update hebrewScript if changed
+            if (editForm.hebrewScript !== (entry?.hebrewScript || '')) {
                 await fetch(`/api/dictionary/entries/${editingEntryId}/update-term`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
-                    body: JSON.stringify({ term: editForm.term })
+                    body: JSON.stringify({ hebrewScript: editForm.hebrewScript })
                 });
             }
 
-            if (translationId) {
-                // Update existing translation
-                await fetch(`/api/dictionary/translations/${translationId}`, {
+            if (dialectScriptId) {
+                // Update existing dialect script
+                await fetch(`/api/dictionary/dialect-scripts/${dialectScriptId}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
                     body: JSON.stringify({
-                        hebrew: editForm.hebrew,
-                        latin: editForm.latin,
-                        cyrillic: editForm.cyrillic
+                        hebrewScript: editForm.hebrewShort,
+                        latinScript: editForm.latinScript,
+                        cyrillicScript: editForm.cyrillicScript
                     })
                 });
             } else {
-                // Add new translation to entry without one
+                // Add new dialect script to entry without one
                 await fetch(`/api/dictionary/entries/${editingEntryId}/suggest`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     credentials: 'include',
                     body: JSON.stringify({
                         dialect: editForm.dialect,
-                        hebrew: editForm.hebrew,
-                        latin: editForm.latin,
-                        cyrillic: editForm.cyrillic,
+                        hebrewScript: editForm.hebrewShort,
+                        latinScript: editForm.latinScript,
+                        cyrillicScript: editForm.cyrillicScript,
                         reason: 'עריכה ידנית'
                     })
                 });
@@ -734,7 +734,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
             {/* Main Layout: Sidebar + Content */}
             <div className="flex flex-1 overflow-hidden">
                 {/* Sidebar */}
-                <aside className="w-64 bg-[#0d1424]/60 backdrop-blur-xl border-l border-white/10 overflow-y-auto shrink-0">
+                <aside className="w-64 bg-[#0d1424]/60 backdrop-blur-xl border-e border-white/10 overflow-y-auto shrink-0">
                     <nav className="p-4 space-y-2">
                         {menuItems.map(menu => {
                             // Hide non-admin sections for non-admins
@@ -763,7 +763,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
 
                                     {/* Sub-menu Items */}
                                     {isExpanded && menu.children && (
-                                        <div className="mr-4 mt-1 space-y-1">
+                                        <div className="ms-4 mt-1 space-y-1">
                                             {menu.children.map(child => {
                                                 const isActive = activeSection === child.id;
                                                 const isDisabled = child.id.includes('coming');
@@ -773,7 +773,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                                         key={child.id}
                                                         onClick={() => !isDisabled && setActiveSection(child.id)}
                                                         disabled={isDisabled}
-                                                        className={`w-full flex items-center justify-between p-2 pr-4 rounded-lg transition-colors text-sm ${
+                                                        className={`w-full flex items-center justify-between p-2 ps-4 rounded-lg transition-colors text-sm ${
                                                             isActive
                                                                 ? 'bg-amber-500 text-white font-medium'
                                                                 : isDisabled
@@ -815,7 +815,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                     {viewMode === 'table' && (
                                         <div className="relative flex-1 min-w-[200px]">
                                             <Search className="absolute right-3 top-3 text-slate-400" size={20} />
-                                            <input type="text" placeholder="חיפוש במאגר..." value={searchFilter} onChange={(e) => setSearchFilter(e.target.value)} className="w-full p-3 pr-10 rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white" />
+                                            <input type="text" placeholder="חיפוש במאגר..." value={searchFilter} onChange={(e) => setSearchFilter(e.target.value)} className="w-full p-3 ps-10 rounded-lg border border-slate-300 dark:border-slate-700 dark:bg-slate-800 dark:text-white" />
                                         </div>
                                     )}
                                     {isAdmin && (
@@ -844,7 +844,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                 {viewMode === 'table' && (
                                     <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-lg shadow border border-white/10 overflow-hidden">
                                         <div className="overflow-x-auto max-h-[calc(100vh-280px)] overflow-y-auto">
-                                            <table className="w-full text-sm text-right">
+                                            <table className="w-full text-sm text-start">
                                                 <thead className="bg-slate-800 text-slate-300 font-medium sticky top-0 z-10">
                                                     <tr>
                                                         <th className="p-4">מקור</th>
@@ -872,14 +872,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                                                     {isEditing ? (
                                                                         <input
                                                                             type="text"
-                                                                            value={editForm.term}
-                                                                            onChange={(e) => setEditForm({ ...editForm, term: e.target.value })}
+                                                                            value={editForm.hebrewScript}
+                                                                            onChange={(e) => setEditForm({ ...editForm, hebrewScript: e.target.value })}
                                                                             className="w-full p-1 border rounded dark:bg-slate-800 dark:border-slate-600"
                                                                             placeholder="מונח..."
                                                                             dir="auto"
                                                                         />
                                                                     ) : (
-                                                                        entry.term || <span className="text-amber-500 text-sm">חסר term</span>
+                                                                        entry.hebrewScript || <span className="text-amber-500 text-sm">חסר term</span>
                                                                     )}
                                                                 </td>
                                                                 <td className="p-4">
@@ -894,49 +894,49 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                                                             ))}
                                                                         </select>
                                                                     ) : (
-                                                                        <span className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-300 px-2 py-1 rounded text-xs">{entry.translations[0]?.dialect || '-'}</span>
+                                                                        <span className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-300 px-2 py-1 rounded text-xs">{entry.dialectScripts[0]?.dialect || '-'}</span>
                                                                     )}
                                                                 </td>
                                                                 <td className="p-4">
                                                                     {isEditing ? (
                                                                         <input
                                                                             type="text"
-                                                                            value={editForm.hebrew}
-                                                                            onChange={(e) => setEditForm({ ...editForm, hebrew: e.target.value })}
+                                                                            value={editForm.hebrewShort}
+                                                                            onChange={(e) => setEditForm({ ...editForm, hebrewShort: e.target.value })}
                                                                             className="w-full p-1 border rounded dark:bg-slate-800 dark:border-slate-600"
                                                                             placeholder="תרגום עברי..."
                                                                             dir="rtl"
                                                                         />
                                                                     ) : (
-                                                                        <span className="text-lg">{entry.translations[0]?.hebrew || <span className="text-amber-500 text-sm">מחכה לתרגום</span>}</span>
+                                                                        <span className="text-lg">{entry.dialectScripts[0]?.hebrewScript || <span className="text-amber-500 text-sm">מחכה לתרגום</span>}</span>
                                                                     )}
                                                                 </td>
                                                                 <td className="p-4">
                                                                     {isEditing ? (
                                                                         <input
                                                                             type="text"
-                                                                            value={editForm.latin}
-                                                                            onChange={(e) => setEditForm({ ...editForm, latin: e.target.value })}
+                                                                            value={editForm.latinScript}
+                                                                            onChange={(e) => setEditForm({ ...editForm, latinScript: e.target.value })}
                                                                             className="w-full p-1 border rounded dark:bg-slate-800 dark:border-slate-600"
                                                                             placeholder="Latin..."
                                                                             dir="ltr"
                                                                         />
                                                                     ) : (
-                                                                        <span className="text-xs text-slate-400">{entry.translations[0]?.latin || '-'}</span>
+                                                                        <span className="text-xs text-slate-400">{entry.dialectScripts[0]?.latinScript || '-'}</span>
                                                                     )}
                                                                 </td>
                                                                 <td className="p-4">
                                                                     {isEditing ? (
                                                                         <input
                                                                             type="text"
-                                                                            value={editForm.cyrillic}
-                                                                            onChange={(e) => setEditForm({ ...editForm, cyrillic: e.target.value })}
+                                                                            value={editForm.cyrillicScript}
+                                                                            onChange={(e) => setEditForm({ ...editForm, cyrillicScript: e.target.value })}
                                                                             className="w-full p-1 border rounded dark:bg-slate-800 dark:border-slate-600"
                                                                             placeholder="Кириллица..."
                                                                             dir="ltr"
                                                                         />
                                                                     ) : (
-                                                                        <span className="text-xs text-slate-400">{entry.translations[0]?.cyrillic || '-'}</span>
+                                                                        <span className="text-xs text-slate-400">{entry.dialectScripts[0]?.cyrillicScript || '-'}</span>
                                                                     )}
                                                                 </td>
                                                                 {isAdmin && (
@@ -949,7 +949,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                                                         ) : (
                                                                             <div className="flex gap-1">
                                                                                 <button onClick={() => handleStartEdit(entry)} className="p-2 text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors" title="ערוך"><Pencil size={16} /></button>
-                                                                                <button onClick={() => handleDelete(entry.term)} className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors" title="מחק"><Trash2 size={16} /></button>
+                                                                                <button onClick={() => handleDelete(entry.hebrewScript)} className="p-2 text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors" title="מחק"><Trash2 size={16} /></button>
                                                                             </div>
                                                                         )}
                                                                     </td>
@@ -957,7 +957,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                                             </tr>
                                                         );
                                                     })}
-                                                    {entriesLoading && (<tr><td colSpan={8} className="p-8 text-center text-slate-400"><Loader2 className="inline animate-spin ml-2" size={18} /> טוען...</td></tr>)}
+                                                    {entriesLoading && (<tr><td colSpan={8} className="p-8 text-center text-slate-400"><Loader2 className="inline animate-spin me-2" size={18} /> טוען...</td></tr>)}
                                                     {!entriesLoading && filteredActive.length === 0 && (<tr><td colSpan={8} className="p-8 text-center text-slate-400">אין נתונים להצגה</td></tr>)}
                                                 </tbody>
                                             </table>
@@ -1007,15 +1007,15 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                             <table className="w-full border-collapse text-sm">
                                                 <thead className="bg-slate-100 dark:bg-slate-900 sticky top-0 z-10 shadow-sm text-slate-600 dark:text-slate-300">
                                                     <tr>
-                                                        <th className="border-b border-r dark:border-slate-700 p-2 min-w-[50px] bg-slate-100 dark:bg-slate-900 w-10 text-center">#</th>
-                                                        <th className="border-b border-r dark:border-slate-700 p-2 min-w-[150px] text-right">מונח (Term) *</th>
+                                                        <th className="border-b border-s dark:border-slate-700 p-2 min-w-[50px] bg-slate-100 dark:bg-slate-900 w-10 text-center">#</th>
+                                                        <th className="border-b border-s dark:border-slate-700 p-2 min-w-[150px] text-start">מונח (Term) *</th>
                                                         {!bulkNoTranslation && (
                                                             <>
-                                                                <th className="border-b border-r dark:border-slate-700 p-2 min-w-[150px] text-right">תרגום עברי *</th>
-                                                                <th className="border-b border-r dark:border-slate-700 p-2 min-w-[150px] text-right">תעתיק לטיני</th>
-                                                                <th className="border-b border-r dark:border-slate-700 p-2 min-w-[120px] text-right">ניב</th>
-                                                                <th className="border-b border-r dark:border-slate-700 p-2 min-w-[200px] text-right">הגדרה</th>
-                                                                <th className="border-b dark:border-slate-700 p-2 min-w-[100px] text-right">קירילית</th>
+                                                                <th className="border-b border-s dark:border-slate-700 p-2 min-w-[150px] text-start">תרגום עברי *</th>
+                                                                <th className="border-b border-s dark:border-slate-700 p-2 min-w-[150px] text-start">תעתיק לטיני</th>
+                                                                <th className="border-b border-s dark:border-slate-700 p-2 min-w-[120px] text-start">ניב</th>
+                                                                <th className="border-b border-s dark:border-slate-700 p-2 min-w-[200px] text-start">הגדרה</th>
+                                                                <th className="border-b dark:border-slate-700 p-2 min-w-[100px] text-start">קירילית</th>
                                                             </>
                                                         )}
                                                     </tr>
@@ -1023,9 +1023,9 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                                 <tbody className="bg-[#0d1424]/60 backdrop-blur-xl">
                                                     {gridData.map((row, rIdx) => (
                                                         <tr key={rIdx} className="hover:bg-white/5">
-                                                            <td className="border-b border-r dark:border-slate-700 bg-white/5 text-center text-xs text-slate-400 select-none">{rIdx + 1}</td>
+                                                            <td className="border-b border-s dark:border-slate-700 bg-white/5 text-center text-xs text-slate-400 select-none">{rIdx + 1}</td>
                                                             {row.slice(0, bulkNoTranslation ? 1 : 6).map((cell, cIdx) => (
-                                                                <td key={cIdx} className="border-b border-r dark:border-slate-700 p-0 relative focus-within:ring-2 focus-within:ring-indigo-500 focus-within:z-10">
+                                                                <td key={cIdx} className="border-b border-s dark:border-slate-700 p-0 relative focus-within:ring-2 focus-within:ring-indigo-500 focus-within:z-10">
                                                                     <input type="text" value={cell} onChange={(e) => handleGridChange(rIdx, cIdx, e.target.value)} onPaste={(e) => handleGridPaste(e, rIdx, cIdx)} className="w-full h-full px-2 py-2 bg-transparent border-none outline-none text-slate-200" />
                                                                 </td>
                                                             ))}
@@ -1064,7 +1064,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                         רשומות חדשות ({pendingEntries.length})
                                     </h3>
                                     <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
-                                        <table className="w-full text-sm text-right">
+                                        <table className="w-full text-sm text-start">
                                             <thead className="bg-slate-800 text-slate-300 font-medium sticky top-0 z-10">
                                                 <tr>
                                                     <th className="p-4">מונח</th>
@@ -1077,14 +1077,14 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                             <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                                                 {pendingEntries.map((entry, idx) => (
                                                     <tr key={idx} className="hover:bg-white/5 text-slate-200">
-                                                        <td className="p-4 font-bold text-lg">{entry.term}</td>
-                                                        <td className="p-4">{entry.translations[0]?.hebrew}</td>
-                                                        <td className="p-4"><span className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-300 px-2 py-1 rounded text-xs">{entry.translations[0]?.dialect || '-'}</span></td>
+                                                        <td className="p-4 font-bold text-lg">{entry.hebrewScript}</td>
+                                                        <td className="p-4">{entry.dialectScripts[0]?.hebrewScript}</td>
+                                                        <td className="p-4"><span className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-300 px-2 py-1 rounded text-xs">{entry.dialectScripts[0]?.dialect || '-'}</span></td>
                                                         <td className="p-4 text-xs text-slate-400">{entry.contributorId ? 'משתמש רשום' : 'אורח'}</td>
                                                         <td className="p-4">
                                                             <div className="flex gap-2">
-                                                                <button onClick={() => handleApprove(entry.term)} className="p-2 bg-green-100 text-green-700 hover:bg-green-200 rounded transition-colors" title="אשר"><CheckCircle size={18} /></button>
-                                                                <button onClick={() => handleDelete(entry.term)} className="p-2 bg-red-100 text-red-700 hover:bg-red-200 rounded transition-colors" title="דחה"><XCircle size={18} /></button>
+                                                                <button onClick={() => handleApprove(entry.hebrewScript)} className="p-2 bg-green-100 text-green-700 hover:bg-green-200 rounded transition-colors" title="אשר"><CheckCircle size={18} /></button>
+                                                                <button onClick={() => handleDelete(entry.hebrewScript)} className="p-2 bg-red-100 text-red-700 hover:bg-red-200 rounded transition-colors" title="דחה"><XCircle size={18} /></button>
                                                             </div>
                                                         </td>
                                                     </tr>
@@ -1109,7 +1109,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                         הצעות תרגום ({suggestions.length})
                                     </h3>
                                     <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
-                                        <table className="w-full text-sm text-right">
+                                        <table className="w-full text-sm text-start">
                                             <thead className="bg-slate-800 text-slate-300 font-medium sticky top-0 z-10">
                                                 <tr>
                                                     <th className="p-4">מונח</th>
@@ -1123,24 +1123,24 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                             <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                                                 {suggestions.map((s) => (
                                                     <tr key={s.id} className="hover:bg-white/5 text-slate-200">
-                                                        <td className="p-4 font-bold text-lg">{s.term}</td>
+                                                        <td className="p-4 font-bold text-lg">{s.hebrewScript}</td>
                                                         <td className="p-4">
                                                             {s.field_name ? (
                                                                 <div className="flex flex-col gap-1">
                                                                     <span className="text-xs text-slate-400">שדה: <span className="font-bold text-indigo-600 dark:text-indigo-400">{ADMIN_FIELD_LABELS[s.field_name] || s.field_name}</span></span>
                                                                     <span className="font-medium">
-                                                                        {s.field_name === 'russian' ? s.suggested_russian :
-                                                                         s.field_name === 'latin' ? s.suggested_latin :
-                                                                         s.field_name === 'cyrillic' ? s.suggested_cyrillic :
-                                                                         s.suggested_hebrew}
+                                                                        {s.field_name === 'russianShort' ? s.suggested_russian_short :
+                                                                         s.field_name === 'latinScript' ? s.suggested_latin_script :
+                                                                         s.field_name === 'cyrillicScript' ? s.suggested_cyrillic_script :
+                                                                         s.suggested_hebrew_short}
                                                                     </span>
                                                                     {s.reason && <span className="text-xs text-slate-400 italic">{s.reason}</span>}
                                                                 </div>
                                                             ) : (
                                                                 <div className="flex flex-col gap-1">
-                                                                    <span className="font-medium">{s.suggested_hebrew}</span>
-                                                                    {s.suggested_latin && <span className="text-xs text-slate-400">{s.suggested_latin}</span>}
-                                                                    {s.suggested_russian && <span className="text-xs text-slate-400">{s.suggested_russian}</span>}
+                                                                    <span className="font-medium">{s.suggested_hebrew_short}</span>
+                                                                    {s.suggested_latin_script && <span className="text-xs text-slate-400">{s.suggested_latin_script}</span>}
+                                                                    {s.suggested_russian_short && <span className="text-xs text-slate-400">{s.suggested_russian_short}</span>}
                                                                 </div>
                                                             )}
                                                         </td>
@@ -1153,7 +1153,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                                                     <Pencil size={12} />
                                                                     תיקון שדה
                                                                 </span>
-                                                            ) : s.translation_id ? (
+                                                            ) : s.dialect_script_id ? (
                                                                 <span className="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-2 py-1 rounded text-xs flex items-center gap-1 w-fit">
                                                                     <Edit3 size={12} />
                                                                     תיקון
@@ -1243,7 +1243,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
 
                                 <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-lg shadow border border-white/10 overflow-hidden">
                                     <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
-                                        <table className="w-full text-sm text-right">
+                                        <table className="w-full text-sm text-start">
                                             <thead className="bg-slate-800 text-slate-300 font-medium sticky top-0 z-10">
                                                 <tr>
                                                     <th className="p-3 w-10">
@@ -1288,12 +1288,12 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
                                                                     else next.delete(entry.id);
                                                                     setSelectedAiEntries(next);
                                                                 }}
-                                                                title={`בחר ${entry.term}`}
+                                                                title={`בחר ${entry.hebrewScript}`}
                                                             />
                                                         </td>
-                                                        <td className="p-3 font-bold text-lg">{entry.term}</td>
-                                                        <td className="p-3">{entry.hebrew || '—'}</td>
-                                                        <td className="p-3 font-mono text-xs">{entry.latin || '—'}</td>
+                                                        <td className="p-3 font-bold text-lg">{entry.hebrewScript}</td>
+                                                        <td className="p-3">{entry.hebrewShort || '—'}</td>
+                                                        <td className="p-3 font-mono text-xs">{entry.latinScript || '—'}</td>
                                                         <td className="p-3">
                                                             <div className="flex flex-wrap gap-1">
                                                                 {entry.ai_fields?.split(', ').map((field: string) => (
@@ -1357,7 +1357,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
 
                                 <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-lg shadow border border-white/10 overflow-hidden">
                                     <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
-                                        <table className="w-full text-sm text-right">
+                                        <table className="w-full text-sm text-start">
                                             <thead className="bg-slate-800 text-slate-300 font-medium sticky top-0 z-10">
                                                 <tr>
                                                     <th className="p-4">מזהה / שם</th>
@@ -1417,7 +1417,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
 
                                 <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-lg shadow border border-white/10 overflow-hidden">
                                     <div className="overflow-x-auto max-h-[calc(100vh-250px)] overflow-y-auto">
-                                        <table className="w-full text-sm text-right">
+                                        <table className="w-full text-sm text-start">
                                             <thead className="bg-slate-800 text-slate-300 font-medium sticky top-0 z-10">
                                                 <tr>
                                                     <th className="p-4">שם משתמש</th>
@@ -1494,7 +1494,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ user, onClose }) => {
 
                                 <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-lg shadow border border-white/10 overflow-hidden">
                                     <div className="overflow-x-auto max-h-[calc(100vh-250px)] overflow-y-auto">
-                                        <table className="w-full text-sm text-right">
+                                        <table className="w-full text-sm text-start">
                                             <thead className="bg-slate-800 text-slate-300 font-medium sticky top-0 z-10">
                                                 <tr>
                                                     <th className="p-4">תאריך ושעה</th>

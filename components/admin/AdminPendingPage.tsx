@@ -10,26 +10,26 @@ interface TranslationSuggestion {
     id: number;
     entry_id: number;
     dialect: string;
-    suggested_hebrew: string;
-    suggested_latin: string;
-    suggested_cyrillic: string;
-    suggested_russian: string | null;
+    suggested_hebrew_short: string;
+    suggested_latin_script: string;
+    suggested_cyrillic_script: string;
+    suggested_russian_short: string | null;
     user_id: string | null;
     user_name: string | null;
     status: string;
     created_at: string;
     audio_url: string | null;
     audio_duration: number | null;
-    translation_id: number | null;
+    dialect_script_id: number | null;
     field_name: string | null;
     reason: string | null;
-    term: string;
+    hebrewScript: string;
     contributor_name: string | null;
 }
 
 const ADMIN_FIELD_LABELS: Record<string, string> = {
-    hebrew: 'עברית', latin: 'לטיני', cyrillic: 'קירילי', russian: 'רוסית',
-    definition: 'הגדרה', pronunciationGuide: 'הגייה', partOfSpeech: 'חלק דיבר', dialect: 'ניב',
+    hebrewShort: 'עברית', latinScript: 'לטיני', cyrillicScript: 'קירילי', russianShort: 'רוסית',
+    hebrewLong: 'הגדרה', pronunciationGuide: 'הגייה', partOfSpeech: 'חלק דיבר', dialect: 'ניב',
 };
 
 export default function AdminPendingPage() {
@@ -114,7 +114,7 @@ export default function AdminPendingPage() {
                     רשומות חדשות ({pendingEntries.length})
                 </h3>
                 <div className="overflow-x-auto max-h-[400px] overflow-y-auto">
-                    <table className="w-full text-sm text-right">
+                    <table className="w-full text-sm text-start">
                         <thead className="bg-slate-800 text-slate-300 font-medium sticky top-0 z-10">
                             <tr>
                                 <th className="p-4">מונח</th>
@@ -127,14 +127,14 @@ export default function AdminPendingPage() {
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                             {pendingEntries.map((entry, idx) => (
                                 <tr key={idx} className="hover:bg-white/5 text-slate-200">
-                                    <td className="p-4 font-bold text-lg">{entry.term}</td>
-                                    <td className="p-4">{entry.translations[0]?.hebrew}</td>
-                                    <td className="p-4"><span className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-300 px-2 py-1 rounded text-xs">{entry.translations[0]?.dialect || '-'}</span></td>
+                                    <td className="p-4 font-bold text-lg">{entry.hebrewScript}</td>
+                                    <td className="p-4">{entry.dialectScripts[0]?.hebrewScript}</td>
+                                    <td className="p-4"><span className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-300 px-2 py-1 rounded text-xs">{entry.dialectScripts[0]?.dialect || '-'}</span></td>
                                     <td className="p-4 text-xs text-slate-400">{entry.contributorId ? 'משתמש רשום' : 'אורח'}</td>
                                     <td className="p-4">
                                         <div className="flex gap-2">
-                                            <button onClick={() => handleApprove(entry.term)} className="p-2 bg-green-100 text-green-700 hover:bg-green-200 rounded transition-colors" title="אשר"><CheckCircle size={18} /></button>
-                                            <button onClick={() => handleDelete(entry.term)} className="p-2 bg-red-100 text-red-700 hover:bg-red-200 rounded transition-colors" title="דחה"><XCircle size={18} /></button>
+                                            <button onClick={() => handleApprove(entry.hebrewScript)} className="p-2 bg-green-100 text-green-700 hover:bg-green-200 rounded transition-colors" title="אשר"><CheckCircle size={18} /></button>
+                                            <button onClick={() => handleDelete(entry.hebrewScript)} className="p-2 bg-red-100 text-red-700 hover:bg-red-200 rounded transition-colors" title="דחה"><XCircle size={18} /></button>
                                         </div>
                                     </td>
                                 </tr>
@@ -159,7 +159,7 @@ export default function AdminPendingPage() {
                     הצעות תרגום ({suggestions.length})
                 </h3>
                 <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
-                    <table className="w-full text-sm text-right">
+                    <table className="w-full text-sm text-start">
                         <thead className="bg-slate-800 text-slate-300 font-medium sticky top-0 z-10">
                             <tr>
                                 <th className="p-4">מונח</th>
@@ -173,24 +173,24 @@ export default function AdminPendingPage() {
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                             {suggestions.map((s) => (
                                 <tr key={s.id} className="hover:bg-white/5 text-slate-200">
-                                    <td className="p-4 font-bold text-lg">{s.term}</td>
+                                    <td className="p-4 font-bold text-lg">{s.hebrewScript}</td>
                                     <td className="p-4">
                                         {s.field_name ? (
                                             <div className="flex flex-col gap-1">
                                                 <span className="text-xs text-slate-400">שדה: <span className="font-bold text-indigo-600 dark:text-indigo-400">{ADMIN_FIELD_LABELS[s.field_name] || s.field_name}</span></span>
                                                 <span className="font-medium">
-                                                    {s.field_name === 'russian' ? s.suggested_russian :
-                                                     s.field_name === 'latin' ? s.suggested_latin :
-                                                     s.field_name === 'cyrillic' ? s.suggested_cyrillic :
-                                                     s.suggested_hebrew}
+                                                    {s.field_name === 'russianShort' ? s.suggested_russian_short :
+                                                     s.field_name === 'latinScript' ? s.suggested_latin_script :
+                                                     s.field_name === 'cyrillicScript' ? s.suggested_cyrillic_script :
+                                                     s.suggested_hebrew_short}
                                                 </span>
                                                 {s.reason && <span className="text-xs text-slate-400 italic">{s.reason}</span>}
                                             </div>
                                         ) : (
                                             <div className="flex flex-col gap-1">
-                                                <span className="font-medium">{s.suggested_hebrew}</span>
-                                                {s.suggested_latin && <span className="text-xs text-slate-400">{s.suggested_latin}</span>}
-                                                {s.suggested_russian && <span className="text-xs text-slate-400">{s.suggested_russian}</span>}
+                                                <span className="font-medium">{s.suggested_hebrew_short}</span>
+                                                {s.suggested_latin_script && <span className="text-xs text-slate-400">{s.suggested_latin_script}</span>}
+                                                {s.suggested_russian_short && <span className="text-xs text-slate-400">{s.suggested_russian_short}</span>}
                                             </div>
                                         )}
                                     </td>
@@ -200,7 +200,7 @@ export default function AdminPendingPage() {
                                     <td className="p-4">
                                         {s.field_name ? (
                                             <span className="bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300 px-2 py-1 rounded text-xs flex items-center gap-1 w-fit"><Pencil size={12} />תיקון שדה</span>
-                                        ) : s.translation_id ? (
+                                        ) : s.dialect_script_id ? (
                                             <span className="bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 px-2 py-1 rounded text-xs flex items-center gap-1 w-fit"><Edit3 size={12} />תיקון</span>
                                         ) : (
                                             <span className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 px-2 py-1 rounded text-xs">חדש</span>

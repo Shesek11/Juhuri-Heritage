@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/src/lib/db';
 import { requireApprover } from '@/src/lib/auth';
+import { fireEventEmail } from '@/src/lib/email';
+import { logEvent } from '@/src/lib/logEvent';
 
 // PUT /api/dictionary/entries/:term/approve
 export async function PUT(
@@ -15,14 +17,13 @@ export async function PUT(
     await pool.query(
       `UPDATE dictionary_entries
        SET status = 'active', approved_by = ?, approved_at = NOW()
-       WHERE term = ?`,
+       WHERE hebrew_script = ?`,
       [user.id, decodedTerm]
     );
 
-    await pool.query(
-      `INSERT INTO system_logs (event_type, description, user_id, user_name, metadata) VALUES (?, ?, ?, ?, ?)`,
-      ['ENTRY_APPROVED', `אושרה מילה: ${decodedTerm}`, user.id, user.name, JSON.stringify({ term: decodedTerm })]
-    );
+    await logEvent('ENTRY_APPROVED', `אושרה מילה: ${decodedTerm}`, user, { term: decodedTerm }, request);
+
+    fireEventEmail('entry-approved', { variables: { term: decodedTerm } });
 
     return NextResponse.json({ success: true });
   } catch (error) {

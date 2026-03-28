@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/src/lib/db';
 import { getAuthUser } from '@/src/lib/auth';
 import { applyRateLimit } from '@/src/lib/rate-limit';
+import { logEvent } from '@/src/lib/logEvent';
+import { fireEventEmail } from '@/src/lib/email';
 
 const ADD_WORD_LIMIT = { windowMs: 15 * 60 * 1000, max: 5, message: 'יותר מדי בקשות, נסה שוב בעוד 15 דקות' };
 
@@ -26,7 +28,7 @@ export async function POST(request: NextRequest) {
 
     // Check if already exists
     const [existing] = await pool.query(
-      'SELECT id FROM dictionary_entries WHERE term = ? LIMIT 1',
+      'SELECT id FROM dictionary_entries WHERE hebrew_script = ? LIMIT 1',
       [cleanTerm]
     ) as any[];
 
@@ -38,7 +40,7 @@ export async function POST(request: NextRequest) {
       alreadyExists = true;
     } else {
       const [result] = await pool.query(
-        `INSERT INTO dictionary_entries (term, detected_language, source, status, needs_translation, contributor_id)
+        `INSERT INTO dictionary_entries (hebrew_script, detected_language, source, status, needs_translation, contributor_id)
          VALUES (?, 'Hebrew', 'קהילה', 'active', TRUE, ?)`,
         [cleanTerm, user?.id || null]
       ) as any[];
@@ -55,6 +57,11 @@ export async function POST(request: NextRequest) {
         );
         watching = true;
       } catch { /* ignore duplicate */ }
+    }
+
+    if (!alreadyExists) {
+      await logEvent('WORD_SUBMITTED', `מילה חדשה הוגשה: ${cleanTerm}`, user, { entryId, term: cleanTerm }, request);
+      fireEventEmail('word-submitted', { variables: { term: cleanTerm, userName: user?.name || 'אורח' } });
     }
 
     return NextResponse.json({

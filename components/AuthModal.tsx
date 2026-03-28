@@ -374,7 +374,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess, reaso
                                             value={name}
                                             onChange={(e) => setName(e.target.value)}
                                             placeholder={t('fullNamePlaceholder')}
-                                            className="w-full pr-10 pl-4 py-2.5 border border-white/10 rounded-lg bg-white/5 backdrop-blur-sm text-amber-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+                                            className="w-full ps-10 pe-4 py-2.5 border border-white/10 rounded-lg bg-white/5 backdrop-blur-sm text-amber-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
                                             required
                                         />
                                     </div>
@@ -392,7 +392,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess, reaso
                                         value={email}
                                         onChange={(e) => setEmail(e.target.value)}
                                         placeholder="your@email.com"
-                                        className="w-full pr-10 pl-4 py-2.5 border border-white/10 rounded-lg bg-white/5 backdrop-blur-sm text-amber-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+                                        className="w-full ps-10 pe-4 py-2.5 border border-white/10 rounded-lg bg-white/5 backdrop-blur-sm text-amber-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
                                         required
                                         dir="ltr"
                                         autoComplete="email"
@@ -411,7 +411,7 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, onSuccess, reaso
                                         value={password}
                                         onChange={(e) => setPassword(e.target.value)}
                                         placeholder="********"
-                                        className="w-full pr-10 pl-4 py-2.5 border border-white/10 rounded-lg bg-white/5 backdrop-blur-sm text-amber-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
+                                        className="w-full ps-10 pe-4 py-2.5 border border-white/10 rounded-lg bg-white/5 backdrop-blur-sm text-amber-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none"
                                         required
                                         minLength={6}
                                         dir="ltr"

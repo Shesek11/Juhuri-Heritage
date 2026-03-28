@@ -80,9 +80,11 @@ const NotificationBell: React.FC = () => {
   return (
     <div className="relative" ref={ref}>
       <button
+        type="button"
         onClick={openDropdown}
-        className="relative p-2 rounded-full hover:bg-white/10 transition-colors text-slate-400 hover:text-white"
+        className="relative p-2 rounded-full hover:bg-white/10 transition-colors text-slate-300 hover:text-white"
         title="התראות"
+        aria-label="התראות"
       >
         <Bell size={20} />
         {unreadCount > 0 && (
@@ -121,7 +123,7 @@ const NotificationBell: React.FC = () => {
                     if (n.link) window.location.href = n.link;
                     setIsOpen(false);
                   }}
-                  className={`w-full text-right px-4 py-3 border-b border-slate-700/50 hover:bg-slate-700/30 transition-colors ${
+                  className={`w-full text-start px-4 py-3 border-b border-slate-700/50 hover:bg-slate-700/30 transition-colors ${
                     !n.is_read ? 'bg-indigo-500/5' : ''
                   }`}
                 >

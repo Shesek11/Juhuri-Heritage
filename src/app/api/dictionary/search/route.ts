@@ -12,22 +12,22 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'מונח החיפוש ארוך מדי' }, { status: 400 });
     }
 
-    // Search in active entries: by term (Juhuri) OR by hebrew translation (FULLTEXT) OR russian
+    // Search in active entries: by hebrew_script (Juhuri) OR by hebrew translation (FULLTEXT) OR russian
     const [entries] = await pool.query(
       `SELECT de.*, u.name as contributor_name, a.name as approver_name
        FROM dictionary_entries de
        LEFT JOIN users u ON de.contributor_id = u.id
        LEFT JOIN users a ON de.approved_by = a.id
-       LEFT JOIN translations t ON de.id = t.entry_id
+       LEFT JOIN dialect_scripts t ON de.id = t.entry_id
        WHERE de.status = 'active'
-         AND (de.term LIKE ? OR MATCH(t.hebrew) AGAINST(? IN BOOLEAN MODE) OR t.hebrew LIKE ? OR de.russian LIKE ?)
+         AND (de.hebrew_script LIKE ? OR MATCH(t.hebrew_script) AGAINST(? IN BOOLEAN MODE) OR t.hebrew_script LIKE ? OR de.russian_short LIKE ?)
        GROUP BY de.id
        ORDER BY
           CASE
-            WHEN de.term = ? THEN 0
-            WHEN t.hebrew = ? THEN 1
-            WHEN de.term LIKE ? THEN 2
-            WHEN t.hebrew LIKE ? THEN 3
+            WHEN de.hebrew_script = ? THEN 0
+            WHEN t.hebrew_script = ? THEN 1
+            WHEN de.hebrew_script LIKE ? THEN 2
+            WHEN t.hebrew_script LIKE ? THEN 3
             ELSE 4
           END,
           de.created_at DESC
@@ -44,21 +44,16 @@ export async function GET(request: NextRequest) {
 
     // Fetch all related data in parallel
     const [
-      [translations],
-      [definitions],
+      [dialectScripts],
       [examples],
       [fieldSourceRows],
       [pendingSuggestionRows]
     ] = await Promise.all([
       pool.query(
         `SELECT t.*, COALESCE(d.name, '') as dialect
-         FROM translations t
+         FROM dialect_scripts t
          LEFT JOIN dialects d ON t.dialect_id = d.id
          WHERE t.entry_id = ?`,
-        [entry.id]
-      ),
-      pool.query(
-        'SELECT definition FROM definitions WHERE entry_id = ?',
         [entry.id]
       ),
       pool.query(
@@ -70,8 +65,8 @@ export async function GET(request: NextRequest) {
         [entry.id]
       ),
       pool.query(
-        `SELECT id, field_name, suggested_hebrew, suggested_latin,
-                suggested_cyrillic, suggested_russian, reason,
+        `SELECT id, field_name, suggested_hebrew_short, suggested_latin_script,
+                suggested_cyrillic_script, suggested_russian_short, reason,
                 user_id, created_at
          FROM translation_suggestions
          WHERE entry_id = ? AND status = 'pending'`,
@@ -86,8 +81,8 @@ export async function GET(request: NextRequest) {
 
     const pendingSuggestions = pendingSuggestionRows.map((s: any) => ({
       id: s.id,
-      fieldName: s.field_name || (s.suggested_hebrew ? 'hebrew' : s.suggested_latin ? 'latin' : s.suggested_cyrillic ? 'cyrillic' : s.suggested_russian ? 'russian' : 'hebrew'),
-      suggestedValue: s.suggested_hebrew || s.suggested_latin || s.suggested_cyrillic || s.suggested_russian || '',
+      fieldName: s.field_name || (s.suggested_hebrew_short ? 'hebrew' : s.suggested_latin_script ? 'latin' : s.suggested_cyrillic_script ? 'cyrillic' : s.suggested_russian_short ? 'russian' : 'hebrew'),
+      suggestedValue: s.suggested_hebrew_short || s.suggested_latin_script || s.suggested_cyrillic_script || s.suggested_russian_short || '',
       userId: s.user_id ? String(s.user_id) : undefined,
       createdAt: s.created_at,
       reason: s.reason,
@@ -95,22 +90,26 @@ export async function GET(request: NextRequest) {
 
     const result = {
       id: String(entry.id),
-      term: entry.term,
+      hebrewScript: entry.hebrew_script,
       detectedLanguage: entry.detected_language,
-      translations: translations.map((t: any) => ({
+      dialectScripts: dialectScripts.map((t: any) => ({
         id: t.id,
         dialect: t.dialect,
-        hebrew: t.hebrew,
-        latin: t.latin,
-        cyrillic: t.cyrillic,
+        hebrewScript: t.hebrew_script,
+        latinScript: t.latin_script,
+        cyrillicScript: t.cyrillic_script,
+        pronunciationGuide: t.pronunciation_guide,
         upvotes: t.upvotes || 0,
         downvotes: t.downvotes || 0,
       })),
-      definitions: definitions.map((d: any) => d.definition),
+      hebrewLong: entry.hebrew_long,
+      hebrewShort: entry.hebrew_short,
       examples,
-      pronunciationGuide: entry.pronunciation_guide,
       partOfSpeech: entry.part_of_speech,
-      russian: entry.russian,
+      russianShort: entry.russian_short,
+      russianLong: entry.russian_long,
+      englishShort: entry.english_short,
+      englishLong: entry.english_long,
       isCustom: true,
       source: entry.source,
       sourceName: entry.source_name || '',
@@ -129,39 +128,35 @@ export async function GET(request: NextRequest) {
 
       const [allTrans] = await pool.query(
         `SELECT t.*, COALESCE(d.name, '') as dialect
-         FROM translations t LEFT JOIN dialects d ON t.dialect_id = d.id
+         FROM dialect_scripts t LEFT JOIN dialects d ON t.dialect_id = d.id
          WHERE t.entry_id IN (${placeholders})`, additionalIds
-      ) as any[];
-      const [allDefs] = await pool.query(
-        `SELECT entry_id, definition FROM definitions WHERE entry_id IN (${placeholders})`, additionalIds
       ) as any[];
 
       const transMap: Record<number, any[]> = {};
-      const defsMap: Record<number, string[]> = {};
       for (const t of allTrans) {
         (transMap[t.entry_id] ||= []).push(t);
-      }
-      for (const d of allDefs) {
-        (defsMap[d.entry_id] ||= []).push(d.definition);
       }
 
       for (const e of additionalEntries) {
         const trans = transMap[e.id] || [];
-        const defs = defsMap[e.id] || [];
         allResults.push({
           id: String(e.id),
-          term: e.term,
+          hebrewScript: e.hebrew_script,
           detectedLanguage: e.detected_language,
-          translations: trans.map((t: any) => ({
-            id: t.id, dialect: t.dialect, hebrew: t.hebrew,
-            latin: t.latin, cyrillic: t.cyrillic,
+          dialectScripts: trans.map((t: any) => ({
+            id: t.id, dialect: t.dialect, hebrewScript: t.hebrew_script,
+            latinScript: t.latin_script, cyrillicScript: t.cyrillic_script,
+            pronunciationGuide: t.pronunciation_guide,
             upvotes: t.upvotes || 0, downvotes: t.downvotes || 0,
           })),
-          definitions: defs,
+          hebrewLong: e.hebrew_long,
+          hebrewShort: e.hebrew_short,
           examples: [],
-          pronunciationGuide: e.pronunciation_guide,
           partOfSpeech: e.part_of_speech,
-          russian: e.russian,
+          russianShort: e.russian_short,
+          russianLong: e.russian_long,
+          englishShort: e.english_short,
+          englishLong: e.english_long,
           isCustom: true,
           source: e.source,
           sourceName: e.source_name || '',
@@ -171,18 +166,19 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Mark duplicates: if multiple results share the same hebrew translation
-    // (the most common case for user-visible duplicates)
+    // Mark duplicates: if multiple results share the same normalized hebrew translation
+    const normHeb = (s: string) => s.replace(/[?!,.:;"'`\-]/g, '').trim().toLowerCase();
     const hebrewCount: Record<string, number> = {};
     for (const r of allResults) {
-      const heb = r.translations?.[0]?.hebrew;
+      const heb = r.dialectScripts?.[0]?.hebrewScript;
       if (heb && heb.length > 1) {
-        hebrewCount[heb] = (hebrewCount[heb] || 0) + 1;
+        const key = normHeb(heb);
+        hebrewCount[key] = (hebrewCount[key] || 0) + 1;
       }
     }
     for (const r of allResults) {
-      const heb = r.translations?.[0]?.hebrew;
-      r.hasDuplicates = !!(heb && hebrewCount[heb] > 1);
+      const heb = r.dialectScripts?.[0]?.hebrewScript;
+      r.hasDuplicates = !!(heb && hebrewCount[normHeb(heb)] > 1);
     }
 
     return NextResponse.json({ found: true, entry: result, results: allResults });

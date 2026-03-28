@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/src/lib/db';
 import { requireAuth } from '@/src/lib/auth';
+import { logEvent } from '@/src/lib/logEvent';
 
 // GET /api/family/members
 export async function GET(request: NextRequest) {
@@ -65,6 +66,8 @@ export async function POST(request: NextRequest) {
       residence_city_ru || null, residence_country_ru || null,
       biography, photo_url, is_alive ? 1 : 0
     ]) as any[];
+
+    await logEvent('FAMILY_MEMBER_ADDED', `${first_name} ${last_name || ''} נוסף לעץ`, user, { member_id: result.insertId, first_name, last_name }, request);
 
     return NextResponse.json({ success: true, id: result.insertId }, { status: 201 });
   } catch (error) {

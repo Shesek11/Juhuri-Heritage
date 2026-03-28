@@ -122,7 +122,7 @@ export const VendorDetailsModal: React.FC<VendorDetailsModalProps> = ({ vendor: 
             <div className="bg-[#0d1424]/60 backdrop-blur-xl w-full max-w-5xl h-[90vh] rounded-2xl shadow-2xl flex overflow-hidden lg:flex-row flex-col" onClick={e => e.stopPropagation()}>
 
                 {/* Left Side: Cover & Info */}
-                <div className="w-full lg:w-1/3 bg-slate-50 dark:bg-slate-950 flex flex-col border-l border-slate-200 dark:border-slate-800">
+                <div className="w-full lg:w-1/3 bg-slate-50 dark:bg-slate-950 flex flex-col border-e border-slate-200 dark:border-slate-800">
                     <div className="h-48 lg:h-64 relative">
                         {vendor.logo_url || vendor.about_image_url ? (
                             <img

@@ -121,7 +121,7 @@ export const VendorMap: React.FC<VendorMapProps> = ({ vendors, userLocation, onV
                         }
                     >
                         <Popup>
-                            <div className="text-right" dir="rtl">
+                            <div className="text-start" dir="rtl">
                                 <h3 className="font-bold text-lg">{vendor.name}</h3>
                                 <div className={`text-xs font-bold mb-2 ${status.isOpen ? 'text-green-600' : 'text-red-600'}`}>
                                     {status.message}

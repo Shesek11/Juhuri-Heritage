@@ -345,7 +345,7 @@ const TutorMode: React.FC = () => {
               >
                 <div>
                   <span className="font-bold">{opt.label}</span>
-                  <span className="text-xs text-slate-400 mr-2"> — {opt.desc}</span>
+                  <span className="text-xs text-slate-400 ms-2"> — {opt.desc}</span>
                 </div>
                 <span className="text-lg font-bold">{opt.xp} XP</span>
               </button>
@@ -417,13 +417,13 @@ const TutorMode: React.FC = () => {
           <div className="hidden md:flex items-center gap-3 text-slate-400">
             <div className="text-center">
               <span className="text-lg font-bold text-slate-200">{progress.totalWordsLearned}</span>
-              <span className="text-xs mr-1.5">מילים נלמדו</span>
+              <span className="text-xs ms-1.5">מילים נלמדו</span>
             </div>
           </div>
 
           {/* Right: Level + Actions */}
           <div className="flex items-center gap-3 sm:gap-4">
-            <div className="text-right">
+            <div className="text-start">
               <h3 className="font-bold text-sm sm:text-base text-slate-100 leading-tight">רמה {user?.level || 1}</h3>
               <p className="text-xs text-slate-400">{user?.xp || 0} XP</p>
             </div>
@@ -490,7 +490,7 @@ const SetupForm: React.FC<{ onStart: (d: Dialect, l: ProficiencyLevel) => void }
         <label className="block text-sm font-medium text-slate-300 mb-2">בחר ניב ללימוד</label>
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
           {dialects.map(d => (
-            <button type="button" key={d.id} onClick={() => setDialect(d.name)} className={`p-3.5 lg:p-4 rounded-xl border text-sm lg:text-base font-medium transition-all text-right ${dialect === d.name ? 'border-amber-500/50 bg-amber-500/10 text-amber-500' : 'border-white/10 hover:border-amber-500/30 text-slate-300'}`}>
+            <button type="button" key={d.id} onClick={() => setDialect(d.name)} className={`p-3.5 lg:p-4 rounded-xl border text-sm lg:text-base font-medium transition-all text-start ${dialect === d.name ? 'border-amber-500/50 bg-amber-500/10 text-amber-500' : 'border-white/10 hover:border-amber-500/30 text-slate-300'}`}>
               {d.description}
             </button>
           ))}

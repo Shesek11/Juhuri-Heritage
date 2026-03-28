@@ -10,22 +10,22 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ suggestions: [] });
     }
 
-    // Fuzzy match: LIKE on term and hebrew translations
+    // Fuzzy match: LIKE on hebrew_script and hebrew_script translations
     const [rows] = await pool.query(
-      `SELECT de.id, de.term, t.hebrew, de.part_of_speech,
+      `SELECT de.id, de.hebrew_script, t.hebrew_script as t_hebrew_script, de.part_of_speech,
               CASE
-                WHEN de.term = ? THEN 100
-                WHEN t.hebrew = ? THEN 90
-                WHEN de.term LIKE ? THEN 70
-                WHEN t.hebrew LIKE ? THEN 60
-                WHEN de.term LIKE ? THEN 40
-                WHEN t.hebrew LIKE ? THEN 30
+                WHEN de.hebrew_script = ? THEN 100
+                WHEN t.hebrew_script = ? THEN 90
+                WHEN de.hebrew_script LIKE ? THEN 70
+                WHEN t.hebrew_script LIKE ? THEN 60
+                WHEN de.hebrew_script LIKE ? THEN 40
+                WHEN t.hebrew_script LIKE ? THEN 30
                 ELSE 10
               END as score
        FROM dictionary_entries de
-       LEFT JOIN translations t ON de.id = t.entry_id
+       LEFT JOIN dialect_scripts t ON de.id = t.entry_id
        WHERE de.status = 'active'
-         AND (de.term LIKE ? OR t.hebrew LIKE ? OR de.russian LIKE ?)
+         AND (de.hebrew_script LIKE ? OR t.hebrew_script LIKE ? OR de.russian_short LIKE ?)
        GROUP BY de.id
        ORDER BY score DESC
        LIMIT ?`,
@@ -34,8 +34,8 @@ export async function GET(request: NextRequest) {
 
     const suggestions = rows.map((r: any) => ({
       id: r.id,
-      term: r.term,
-      hebrew: r.hebrew || '',
+      hebrewScript: r.hebrew_script,
+      tHebrewScript: r.t_hebrew_script || '',
       partOfSpeech: r.part_of_speech || '',
       score: r.score,
     }));

@@ -309,7 +309,7 @@ const TranslationModal: React.FC<TranslationModalProps> = ({ entryId, term, onCl
                                         </button>
                                         <button type="button" onClick={togglePlayback} title={t('play')}
                                             className="w-12 h-12 rounded-full bg-indigo-500 hover:bg-indigo-600 flex items-center justify-center transition-colors text-white shadow-lg">
-                                            {isPlaying ? <Pause size={20} /> : <Play size={20} className="mr-[-2px]" />}
+                                            {isPlaying ? <Pause size={20} /> : <Play size={20} className="ms-[-2px]" />}
                                         </button>
                                         <span className="text-sm text-green-400 font-medium">{t('recorded')}</span>
                                     </>

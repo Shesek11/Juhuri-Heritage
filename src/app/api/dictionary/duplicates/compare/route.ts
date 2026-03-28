@@ -15,8 +15,7 @@ export async function GET(request: NextRequest) {
 
     const [
       [entries],
-      [translations],
-      [definitions],
+      [dialectScripts],
       [examples],
       [likesData],
       [commentsData],
@@ -30,10 +29,9 @@ export async function GET(request: NextRequest) {
       ),
       pool.query(
         `SELECT t.*, COALESCE(d.name, '') as dialect
-         FROM translations t LEFT JOIN dialects d ON t.dialect_id = d.id
+         FROM dialect_scripts t LEFT JOIN dialects d ON t.dialect_id = d.id
          WHERE t.entry_id IN (${placeholders})`, ids
       ),
-      pool.query(`SELECT * FROM definitions WHERE entry_id IN (${placeholders})`, ids),
       pool.query(`SELECT * FROM examples WHERE entry_id IN (${placeholders})`, ids),
       pool.query(
         `SELECT entry_id, COUNT(*) as count FROM entry_likes WHERE entry_id IN (${placeholders}) GROUP BY entry_id`, ids
@@ -52,24 +50,27 @@ export async function GET(request: NextRequest) {
 
     const result = entries.map((e: any) => ({
       id: String(e.id),
-      term: e.term,
-      termNormalized: e.term_normalized,
+      hebrewScript: e.hebrew_script,
+      hebrewScriptNormalized: e.hebrew_script_normalized,
       detectedLanguage: e.detected_language,
-      pronunciationGuide: e.pronunciation_guide,
       partOfSpeech: e.part_of_speech,
-      russian: e.russian,
-      english: e.english,
+      russianShort: e.russian_short,
+      russianLong: e.russian_long,
+      englishShort: e.english_short,
+      englishLong: e.english_long,
+      hebrewShort: e.hebrew_short,
+      hebrewLong: e.hebrew_long,
       source: e.source,
       sourceName: e.source_name,
       status: e.status,
       contributorName: e.contributor_name,
       createdAt: e.created_at,
-      translations: translations.filter((t: any) => t.entry_id === e.id).map((t: any) => ({
+      dialectScripts: dialectScripts.filter((t: any) => t.entry_id === e.id).map((t: any) => ({
         id: t.id, dialect: t.dialect, dialectId: t.dialect_id,
-        hebrew: t.hebrew, latin: t.latin, cyrillic: t.cyrillic,
+        hebrewScript: t.hebrew_script, latinScript: t.latin_script, cyrillicScript: t.cyrillic_script,
+        pronunciationGuide: t.pronunciation_guide,
         upvotes: t.upvotes || 0, downvotes: t.downvotes || 0,
       })),
-      definitions: definitions.filter((d: any) => d.entry_id === e.id).map((d: any) => d.definition),
       examples: examples.filter((ex: any) => ex.entry_id === e.id).map((ex: any) => ({
         origin: ex.origin, translated: ex.translated, transliteration: ex.transliteration,
       })),

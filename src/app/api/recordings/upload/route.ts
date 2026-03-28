@@ -3,6 +3,7 @@ import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
 import pool from '@/src/lib/db';
 import { requireAuth } from '@/src/lib/auth';
+import { logEvent } from '@/src/lib/logEvent';
 
 const UPLOADS_DIR = path.join(process.cwd(), 'public/uploads/recordings');
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -72,6 +73,8 @@ export async function POST(request: NextRequest) {
       status,
       duration || null,
     ]);
+
+    await logEvent('RECORDING_UPLOADED', `Recording uploaded for entry ${entryId}`, user, { recordingId: result.insertId, entryId, fileUrl }, request);
 
     return NextResponse.json(
       {

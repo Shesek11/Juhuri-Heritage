@@ -95,7 +95,7 @@ export default function LearningPath({ unitMastery, completedUnits, onUnitClick,
               <div className="w-12 h-12 rounded-full bg-blue-500/15 flex items-center justify-center group-hover:scale-110 transition-transform">
                 <GraduationCap size={24} className="text-blue-400" />
               </div>
-              <div className="text-right">
+              <div className="text-start">
                 <p className="font-bold text-blue-300 text-sm sm:text-base">חזרה על מילים</p>
                 <p className="text-xs sm:text-sm text-blue-400/60">{wordsDueForReview} מילים ממתינות לחזרה</p>
               </div>

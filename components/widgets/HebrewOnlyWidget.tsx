@@ -76,7 +76,7 @@ const HebrewOnlyWidget: React.FC<HebrewOnlyWidgetProps> = ({ onAddTranslation, o
                             <button
                                 key={entry.id}
                                 onClick={() => handleAddClick(entry)}
-                                className="w-full text-right flex items-center justify-between p-3 rounded-xl hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-all group border border-transparent hover:border-amber-200 dark:hover:border-amber-800"
+                                className="w-full text-start flex items-center justify-between p-3 rounded-xl hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-all group border border-transparent hover:border-amber-200 dark:hover:border-amber-800"
                             >
                                 <div>
                                     <div className="font-bold text-slate-200 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">

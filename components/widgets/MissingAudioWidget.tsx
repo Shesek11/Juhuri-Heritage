@@ -75,7 +75,7 @@ const MissingAudioWidget: React.FC<MissingAudioWidgetProps> = ({ onAddAudio, onO
                             <button
                                 key={entry.id}
                                 onClick={() => handleAddClick(entry)}
-                                className="w-full text-right flex items-center justify-between p-3 rounded-xl hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all group border border-transparent hover:border-purple-200 dark:hover:border-purple-800"
+                                className="w-full text-start flex items-center justify-between p-3 rounded-xl hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-all group border border-transparent hover:border-purple-200 dark:hover:border-purple-800"
                             >
                                 <div>
                                     <div className="font-bold text-slate-200 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">

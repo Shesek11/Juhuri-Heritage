@@ -31,7 +31,7 @@ export default function MultipleChoice({ exercise, onAnswer, feedback, selectedO
 
       <div className="w-full space-y-3 max-w-md">
         {exercise.options?.map((opt, idx) => {
-          let cls = 'w-full p-4 rounded-xl border-2 text-lg font-medium transition-all text-right';
+          let cls = 'w-full p-4 rounded-xl border-2 text-lg font-medium transition-all text-start';
           if (feedback && opt === exercise.correctAnswer) {
             cls += ' border-green-500 bg-green-900/20 text-green-300';
           } else if (feedback && opt === selectedOption && opt !== exercise.correctAnswer) {

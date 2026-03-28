@@ -219,7 +219,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user, onUp
                                 <div className="text-xs text-slate-400">{t('contributions')}</div>
                             </div>
                         </div>
-                        <div className="text-right text-xs text-slate-400">
+                        <div className="text-start text-xs text-slate-400">
                             {t('joinedAt')}{new Date(user.joinedAt).toLocaleDateString('he-IL')}
                         </div>
                     </div>
@@ -248,7 +248,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user, onUp
                                         type="text"
                                         value={name}
                                         onChange={(e) => setName(e.target.value)}
-                                        className="w-full pr-10 pl-4 py-2.5 rounded-lg border border-white/10 bg-[#0d1424]/60 backdrop-blur-xl text-white focus:ring-2 focus:ring-indigo-500 outline-none"
+                                        className="w-full ps-10 pe-4 py-2.5 rounded-lg border border-white/10 bg-[#0d1424]/60 backdrop-blur-xl text-white focus:ring-2 focus:ring-indigo-500 outline-none"
                                     />
                                 </div>
                             </div>
@@ -263,7 +263,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user, onUp
                                             placeholder={t('newPassword')}
                                             value={password}
                                             onChange={(e) => setPassword(e.target.value)}
-                                            className="w-full pr-10 pl-4 py-2.5 rounded-lg border border-white/10 bg-[#0d1424]/60 backdrop-blur-xl text-white focus:ring-2 focus:ring-indigo-500 outline-none placeholder:text-slate-400"
+                                            className="w-full ps-10 pe-4 py-2.5 rounded-lg border border-white/10 bg-[#0d1424]/60 backdrop-blur-xl text-white focus:ring-2 focus:ring-indigo-500 outline-none placeholder:text-slate-400"
                                         />
                                     </div>
                                     <div className="relative">
@@ -273,7 +273,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user, onUp
                                             placeholder={t('confirmPassword')}
                                             value={confirmPassword}
                                             onChange={(e) => setConfirmPassword(e.target.value)}
-                                            className="w-full pr-10 pl-4 py-2.5 rounded-lg border border-white/10 bg-[#0d1424]/60 backdrop-blur-xl text-white focus:ring-2 focus:ring-indigo-500 outline-none placeholder:text-slate-400"
+                                            className="w-full ps-10 pe-4 py-2.5 rounded-lg border border-white/10 bg-[#0d1424]/60 backdrop-blur-xl text-white focus:ring-2 focus:ring-indigo-500 outline-none placeholder:text-slate-400"
                                         />
                                     </div>
                                 </div>

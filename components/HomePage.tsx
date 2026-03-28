@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import HeroSection from './home/HeroSection';
 import FeaturesSection from './home/FeaturesSection';
 import CTASection from './home/CTASection';
+import { useAppContext } from './shell/AppContext';
 
 interface HomePageProps {
   featureFlags: Record<string, string>;
@@ -13,6 +14,7 @@ interface HomePageProps {
 }
 
 const HomePage: React.FC<HomePageProps> = ({ featureFlags, onOpenAuthModal, isAdmin }) => {
+  const { orderedFeatures } = useAppContext();
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
   const [scrollY, setScrollY] = useState(0);
@@ -49,7 +51,7 @@ const HomePage: React.FC<HomePageProps> = ({ featureFlags, onOpenAuthModal, isAd
         setSearchTerm={setSearchTerm}
         handleSearch={handleSearch}
       />
-      <FeaturesSection featureFlags={featureFlags} isAdmin={isAdmin} />
+      <FeaturesSection featureFlags={featureFlags} orderedFeatures={orderedFeatures} isAdmin={isAdmin} />
       <CTASection onOpenAuthModal={onOpenAuthModal} />
     </div>
   );

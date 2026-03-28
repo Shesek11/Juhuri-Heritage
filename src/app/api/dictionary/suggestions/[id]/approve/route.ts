@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/src/lib/db';
 import { requireApprover } from '@/src/lib/auth';
+import { fireEventEmail } from '@/src/lib/email';
+import { logEvent } from '@/src/lib/logEvent';
 
 export async function PUT(
   request: NextRequest,
@@ -26,30 +28,26 @@ export async function PUT(
       const entryId = suggestion.entry_id;
 
       let suggestedValue = '';
-      if (fieldName === 'hebrew') suggestedValue = suggestion.suggested_hebrew;
-      else if (fieldName === 'latin') suggestedValue = suggestion.suggested_latin;
-      else if (fieldName === 'cyrillic') suggestedValue = suggestion.suggested_cyrillic;
-      else if (fieldName === 'russian') suggestedValue = suggestion.suggested_russian;
-      else if (fieldName === 'definition') suggestedValue = suggestion.suggested_hebrew;
-      else if (fieldName === 'pronunciationGuide') suggestedValue = suggestion.suggested_hebrew;
-      else if (fieldName === 'partOfSpeech') suggestedValue = suggestion.suggested_hebrew;
+      if (fieldName === 'hebrew') suggestedValue = suggestion.suggested_hebrew_short;
+      else if (fieldName === 'latin') suggestedValue = suggestion.suggested_latin_script;
+      else if (fieldName === 'cyrillic') suggestedValue = suggestion.suggested_cyrillic_script;
+      else if (fieldName === 'russian') suggestedValue = suggestion.suggested_russian_short;
+      else if (fieldName === 'definition') suggestedValue = suggestion.suggested_hebrew_short;
+      else if (fieldName === 'pronunciationGuide') suggestedValue = suggestion.suggested_hebrew_short;
+      else if (fieldName === 'partOfSpeech') suggestedValue = suggestion.suggested_hebrew_short;
 
       if (['hebrew', 'latin', 'cyrillic'].includes(fieldName)) {
+        const colMap: Record<string, string> = { hebrew: 'hebrew_script', latin: 'latin_script', cyrillic: 'cyrillic_script' };
         await connection.query(
-          `UPDATE translations SET ${fieldName} = ? WHERE entry_id = ? LIMIT 1`,
+          `UPDATE dialect_scripts SET ${colMap[fieldName]} = ? WHERE entry_id = ? LIMIT 1`,
           [suggestedValue, entryId]
         );
       } else if (fieldName === 'russian') {
-        await connection.query('UPDATE dictionary_entries SET russian = ? WHERE id = ?', [suggestedValue, entryId]);
+        await connection.query('UPDATE dictionary_entries SET russian_short = ? WHERE id = ?', [suggestedValue, entryId]);
       } else if (fieldName === 'definition') {
-        const [existingDefs] = await connection.query('SELECT id FROM definitions WHERE entry_id = ? LIMIT 1', [entryId]);
-        if (existingDefs.length > 0) {
-          await connection.query('UPDATE definitions SET definition = ? WHERE id = ?', [suggestedValue, existingDefs[0].id]);
-        } else {
-          await connection.query('INSERT INTO definitions (entry_id, definition) VALUES (?, ?)', [entryId, suggestedValue]);
-        }
+        await connection.query('UPDATE dictionary_entries SET hebrew_long = ? WHERE id = ?', [suggestedValue, entryId]);
       } else if (fieldName === 'pronunciationGuide') {
-        await connection.query('UPDATE dictionary_entries SET pronunciation_guide = ? WHERE id = ?', [suggestedValue, entryId]);
+        await connection.query('UPDATE dialect_scripts SET pronunciation_guide = ? WHERE entry_id = ? LIMIT 1', [suggestedValue, entryId]);
       } else if (fieldName === 'partOfSpeech') {
         await connection.query('UPDATE dictionary_entries SET part_of_speech = ? WHERE id = ?', [suggestedValue, entryId]);
       }
@@ -66,13 +64,13 @@ export async function PUT(
 
       if (suggestion.translation_id) {
         await connection.query(
-          `UPDATE translations SET hebrew = ?, latin = ?, cyrillic = ? WHERE id = ?`,
-          [suggestion.suggested_hebrew, suggestion.suggested_latin, suggestion.suggested_cyrillic, suggestion.translation_id]
+          `UPDATE dialect_scripts SET hebrew_script = ?, latin_script = ?, cyrillic_script = ? WHERE id = ?`,
+          [suggestion.suggested_hebrew_short, suggestion.suggested_latin_script, suggestion.suggested_cyrillic_script, suggestion.translation_id]
         );
       } else {
         await connection.query(
-          `INSERT INTO translations (entry_id, dialect_id, hebrew, latin, cyrillic) VALUES (?, ?, ?, ?, ?)`,
-          [suggestion.entry_id, dialectId, suggestion.suggested_hebrew, suggestion.suggested_latin, suggestion.suggested_cyrillic]
+          `INSERT INTO dialect_scripts (entry_id, dialect_id, hebrew_script, latin_script, cyrillic_script) VALUES (?, ?, ?, ?, ?)`,
+          [suggestion.entry_id, dialectId, suggestion.suggested_hebrew_short, suggestion.suggested_latin_script, suggestion.suggested_cyrillic_script]
         );
       }
     }
@@ -94,8 +92,8 @@ export async function PUT(
         [entryId]
       );
       if (watchers.length > 0) {
-        const [entryRows] = await connection.query('SELECT term FROM dictionary_entries WHERE id = ?', [entryId]);
-        const entryTerm = entryRows[0]?.term || '';
+        const [entryRows] = await connection.query('SELECT hebrew_script FROM dictionary_entries WHERE id = ?', [entryId]);
+        const entryTerm = entryRows[0]?.hebrew_script || '';
         for (const w of watchers) {
           await connection.query(
             `INSERT INTO notifications (user_id, type, title, message, link)
@@ -124,6 +122,21 @@ export async function PUT(
 
     await connection.commit();
     connection.release();
+
+    // Email the contributor that their suggestion was approved
+    if (suggestion.user_id) {
+      const [contributors] = await pool.query('SELECT email, name FROM users WHERE id = ?', [suggestion.user_id]) as any[];
+      const [entries] = await pool.query('SELECT hebrew_script FROM dictionary_entries WHERE id = ?', [suggestion.entry_id]) as any[];
+      if (contributors[0]?.email) {
+        fireEventEmail('suggestion-approved', {
+          to: contributors[0].email,
+          variables: { userName: contributors[0].name || '', term: entries[0]?.hebrew_script || '' },
+        });
+      }
+    }
+
+    await logEvent('DICTIONARY_SUGGESTION_APPROVED', `Suggestion ${id} approved`, user, { suggestionId: id, entryId: suggestion.entry_id }, request);
+
     return NextResponse.json({ success: true });
   } catch (error) {
     await connection.rollback();

@@ -24,21 +24,17 @@ export async function POST(
     if (entryRows.length === 0) return NextResponse.json({ error: 'ערך לא נמצא' }, { status: 404 });
 
     if (['hebrew', 'latin', 'cyrillic'].includes(fieldName)) {
+      const colMap: Record<string, string> = { hebrew: 'hebrew_script', latin: 'latin_script', cyrillic: 'cyrillic_script' };
       await pool.query(
-        `UPDATE translations SET ${fieldName} = ? WHERE entry_id = ? LIMIT 1`,
+        `UPDATE dialect_scripts SET ${colMap[fieldName]} = ? WHERE entry_id = ? LIMIT 1`,
         [value.trim(), id]
       );
     } else if (fieldName === 'russian') {
-      await pool.query('UPDATE dictionary_entries SET russian = ? WHERE id = ?', [value.trim(), id]);
+      await pool.query('UPDATE dictionary_entries SET russian_short = ? WHERE id = ?', [value.trim(), id]);
     } else if (fieldName === 'definition') {
-      const [existingDefs] = await pool.query('SELECT id FROM definitions WHERE entry_id = ? LIMIT 1', [id]) as any[];
-      if (existingDefs.length > 0) {
-        await pool.query('UPDATE definitions SET definition = ? WHERE id = ?', [value.trim(), existingDefs[0].id]);
-      } else {
-        await pool.query('INSERT INTO definitions (entry_id, definition) VALUES (?, ?)', [id, value.trim()]);
-      }
+      await pool.query('UPDATE dictionary_entries SET hebrew_long = ? WHERE id = ?', [value.trim(), id]);
     } else if (fieldName === 'pronunciationGuide') {
-      await pool.query('UPDATE dictionary_entries SET pronunciation_guide = ? WHERE id = ?', [value.trim(), id]);
+      await pool.query('UPDATE dialect_scripts SET pronunciation_guide = ? WHERE entry_id = ? LIMIT 1', [value.trim(), id]);
     }
 
     await pool.query(

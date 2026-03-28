@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/src/lib/db';
 import { getAuthUser } from '@/src/lib/auth';
 import { applyRateLimit, RATE_LIMITS } from '@/src/lib/rate-limit';
+import { logEvent } from '@/src/lib/logEvent';
+import { fireEventEmail } from '@/src/lib/email';
 
 // POST /api/comments - Add a new comment
 // Auth users: status = 'approved', Guests: status = 'pending', requires name
@@ -45,6 +47,12 @@ export async function POST(request: NextRequest) {
       INSERT INTO comments (entry_id, user_id, guest_name, content, status)
       VALUES (?, ?, ?, ?, ?)
     `, [entryId, userId, guestName || null, content, status]);
+
+    await logEvent('COMMENT_ADDED', `Comment added on entry ${entryId}`, user, { commentId: result.insertId, entryId, status }, request);
+
+    if (isGuest) {
+      fireEventEmail('comment-submitted', { variables: { guestName: guestName || 'אורח', entryId: String(entryId), commentId: String(result.insertId) } });
+    }
 
     return NextResponse.json(
       {

@@ -170,7 +170,7 @@ export default function AdminTranslationsPage() {
         <div className="flex items-center gap-2 px-4 py-2 bg-red-500/10 border border-red-500/20 rounded-lg text-red-300 text-sm">
           <AlertCircle size={14} />
           {error}
-          <button type="button" onClick={() => setError('')} className="mr-auto text-red-400 hover:text-red-300">
+          <button type="button" onClick={() => setError('')} className="ms-auto text-red-400 hover:text-red-300">
             <X size={14} />
           </button>
         </div>
@@ -185,7 +185,7 @@ export default function AdminTranslationsPage() {
             placeholder="Search key, Hebrew, English, Russian..."
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="w-full bg-slate-800 border border-slate-700 rounded-lg pr-10 pl-4 py-2 text-sm text-white placeholder-slate-500 focus:border-amber-500 focus:outline-none"
+            className="w-full bg-slate-800 border border-slate-700 rounded-lg ps-10 pe-4 py-2 text-sm text-white placeholder-slate-500 focus:border-amber-500 focus:outline-none"
           />
         </div>
 
@@ -224,14 +224,14 @@ export default function AdminTranslationsPage() {
         <table className="w-full text-sm">
           <thead>
             <tr className="bg-slate-800/80">
-              <th className="text-right px-4 py-3 text-slate-300 font-medium w-[22%] border-b border-slate-700">Key</th>
-              <th className="text-right px-4 py-3 text-slate-300 font-medium w-[26%] border-b border-slate-700">
+              <th className="text-start px-4 py-3 text-slate-300 font-medium w-[22%] border-b border-slate-700">Key</th>
+              <th className="text-start px-4 py-3 text-slate-300 font-medium w-[26%] border-b border-slate-700">
                 <span className="inline-flex items-center gap-1">🇮🇱 עברית</span>
               </th>
-              <th className="text-right px-4 py-3 text-slate-300 font-medium w-[26%] border-b border-slate-700">
+              <th className="text-start px-4 py-3 text-slate-300 font-medium w-[26%] border-b border-slate-700">
                 <span className="inline-flex items-center gap-1">🇺🇸 English</span>
               </th>
-              <th className="text-right px-4 py-3 text-slate-300 font-medium w-[26%] border-b border-slate-700">
+              <th className="text-start px-4 py-3 text-slate-300 font-medium w-[26%] border-b border-slate-700">
                 <span className="inline-flex items-center gap-1">🇷🇺 Русский</span>
               </th>
             </tr>

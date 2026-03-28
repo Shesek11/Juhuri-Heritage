@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { DictionaryEntry, Translation, Example, PendingSuggestion } from '../../types';
+import { DictionaryEntry, DialectScript, Example, PendingSuggestion } from '../../types';
 import { generateSpeech } from '../../services/geminiService';
 import { playBase64Audio } from '../../utils/audioUtils';
 import { useAuth } from '../../contexts/AuthContext';
@@ -12,19 +12,20 @@ import CommunityActions from './CommunityActions';
 
 export interface EnrichmentData {
   hebrewTransliteration?: string;
-  hebrew?: string;
-  latin?: string;
-  cyrillic?: string;
-  russian?: string;
+  hebrewShort?: string;
+  hebrewScript?: string;
+  latinScript?: string;
+  cyrillicScript?: string;
+  russianShort?: string;
   pronunciationGuide?: string;
-  definition?: string;
+  hebrewLong?: string;
   partOfSpeech?: string;
 }
 
 interface ResultCardProps {
   entry: DictionaryEntry;
   onOpenAuthModal: (reason?: string) => void;
-  onSuggestCorrection?: (translation: Translation, entryId: string, term: string) => void;
+  onSuggestCorrection?: (translation: DialectScript, entryId: string, hebrewScript: string) => void;
   enrichmentData?: EnrichmentData | null;
   enrichmentLoading?: boolean;
 }
@@ -45,7 +46,7 @@ const ResultCard: React.FC<ResultCardProps> = ({
   const [translationVotes, setTranslationVotes] = useState<Record<number, { upvotes: number; downvotes: number; userVote: 'up' | 'down' | null }>>(
     () => {
       const initialVotes: Record<number, { upvotes: number; downvotes: number; userVote: 'up' | 'down' | null }> = {};
-      entry.translations.forEach(t => {
+      entry.dialectScripts.forEach(t => {
         if (t.id) {
           initialVotes[t.id] = { upvotes: t.upvotes || 0, downvotes: t.downvotes || 0, userVote: t.userVote || null };
         }
@@ -124,15 +125,15 @@ const ResultCard: React.FC<ResultCardProps> = ({
           onCloseEdit={() => setEditingField(null)}
           pendingSuggestions={pendingSuggestions}
           enrichmentLoading={enrichmentLoading}
-          enrichedDefinition={enrichmentData?.definition}
-          enrichedRussian={enrichmentData?.russian}
+          enrichedDefinition={enrichmentData?.hebrewLong}
+          enrichedRussian={enrichmentData?.russianShort}
         />
 
         {/* Translations */}
         <div>
           <h3 className="text-sm uppercase tracking-wider text-slate-400 dark:text-slate-400 font-bold mb-3">תרגומים</h3>
           <div className="grid gap-4">
-            {entry.translations.map((t, idx) => (
+            {entry.dialectScripts.map((t, idx) => (
               <TranslationCard
                 key={t.id || idx}
                 translation={t}
@@ -148,7 +149,7 @@ const ResultCard: React.FC<ResultCardProps> = ({
                 onSuggestCorrection={onSuggestCorrection}
                 pendingSuggestions={pendingSuggestions}
                 enrichmentLoading={enrichmentLoading}
-                enrichmentData={enrichmentData ? { hebrew: enrichmentData.hebrew, latin: enrichmentData.latin, cyrillic: enrichmentData.cyrillic } : null}
+                enrichmentData={enrichmentData ? { hebrewScript: enrichmentData.hebrewScript, latinScript: enrichmentData.latinScript, cyrillicScript: enrichmentData.cyrillicScript } : null}
               />
             ))}
           </div>

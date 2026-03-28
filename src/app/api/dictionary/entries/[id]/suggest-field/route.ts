@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/src/lib/db';
 import { getAuthUser } from '@/src/lib/auth';
+import { logEvent } from '@/src/lib/logEvent';
+import { fireEventEmail } from '@/src/lib/email';
 
 export async function POST(
   request: NextRequest,
@@ -21,9 +23,9 @@ export async function POST(
     }
 
     const [entryRows] = await pool.query(
-      `SELECT de.term, COALESCE(d.name, 'General') as dialect_name
+      `SELECT de.hebrew_script, COALESCE(d.name, 'General') as dialect_name
        FROM dictionary_entries de
-       LEFT JOIN translations t ON de.id = t.entry_id
+       LEFT JOIN dialect_scripts t ON de.id = t.entry_id
        LEFT JOIN dialects d ON t.dialect_id = d.id
        WHERE de.id = ?
        LIMIT 1`,
@@ -35,7 +37,7 @@ export async function POST(
 
     await pool.query(
       `INSERT INTO translation_suggestions
-       (entry_id, user_id, user_name, dialect, field_name, suggested_hebrew, suggested_latin, suggested_cyrillic, suggested_russian, reason, status)
+       (entry_id, user_id, user_name, dialect, field_name, suggested_hebrew_short, suggested_latin_script, suggested_cyrillic_script, suggested_russian_short, reason, status)
        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending')`,
       [
         id,
@@ -54,6 +56,9 @@ export async function POST(
     if (user?.id) {
       await pool.query('UPDATE users SET xp = xp + 15 WHERE id = ?', [user.id]);
     }
+
+    await logEvent('FIELD_SUGGESTION', `הצעת שדה ${fieldName} לערך ${id}`, user, { entryId: id, fieldName, suggestedValue, term: entryRows[0].hebrew_script }, request);
+    fireEventEmail('field-suggested', { variables: { userName: user?.name || 'אורח', term: entryRows[0].hebrew_script, fieldName, suggestedValue } });
 
     return NextResponse.json({ success: true, message: 'ההצעה נשלחה לאישור. תודה!' });
   } catch (error) {

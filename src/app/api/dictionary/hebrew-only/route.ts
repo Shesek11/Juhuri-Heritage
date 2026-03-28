@@ -7,18 +7,18 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(request.nextUrl.searchParams.get('offset') || '0') || 0;
     const search = request.nextUrl.searchParams.get('search')?.trim();
 
-    const searchCondition = search ? 'AND (de.term LIKE ? OR t.hebrew LIKE ? OR t.latin LIKE ?)' : '';
+    const searchCondition = search ? 'AND (de.hebrew_script LIKE ? OR t.hebrew_script LIKE ? OR t.latin_script LIKE ?)' : '';
     const searchParams = search ? [`%${search}%`, `%${search}%`, `%${search}%`] : [];
 
     // "הוסף ג'והורי" = entries that have latin or cyrillic but NO Hebrew term.
     // These need someone to add the Hebrew transliteration.
     const [entries] = await pool.query(`
-      SELECT de.id, de.term, de.detected_language, t.hebrew, t.latin, t.cyrillic
+      SELECT de.id, de.hebrew_script, de.detected_language, t.hebrew_script as t_hebrew_script, t.latin_script, t.cyrillic_script
       FROM dictionary_entries de
-      JOIN translations t ON de.id = t.entry_id
+      JOIN dialect_scripts t ON de.id = t.entry_id
       WHERE de.status = 'active'
-      AND (de.term = '' OR de.term IS NULL OR de.term NOT REGEXP '^[א-ת]')
-      AND (t.latin IS NOT NULL AND t.latin != '' OR t.cyrillic IS NOT NULL AND t.cyrillic != '')
+      AND (de.hebrew_script = '' OR de.hebrew_script IS NULL OR de.hebrew_script NOT REGEXP '^[א-ת]')
+      AND (t.latin_script IS NOT NULL AND t.latin_script != '' OR t.cyrillic_script IS NOT NULL AND t.cyrillic_script != '')
       ${searchCondition}
       GROUP BY de.id
       ORDER BY de.created_at DESC
@@ -27,10 +27,10 @@ export async function GET(request: NextRequest) {
 
     const [[{ total }]] = await pool.query(`
       SELECT COUNT(DISTINCT de.id) as total FROM dictionary_entries de
-      JOIN translations t ON de.id = t.entry_id
+      JOIN dialect_scripts t ON de.id = t.entry_id
       WHERE de.status = 'active'
-      AND (de.term = '' OR de.term IS NULL OR de.term NOT REGEXP '^[א-ת]')
-      AND (t.latin IS NOT NULL AND t.latin != '' OR t.cyrillic IS NOT NULL AND t.cyrillic != '')
+      AND (de.hebrew_script = '' OR de.hebrew_script IS NULL OR de.hebrew_script NOT REGEXP '^[א-ת]')
+      AND (t.latin_script IS NOT NULL AND t.latin_script != '' OR t.cyrillic_script IS NOT NULL AND t.cyrillic_script != '')
       ${searchCondition}
     `, searchParams) as any[];
 

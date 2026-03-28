@@ -22,14 +22,14 @@ export async function POST(
       if (existingVote) {
         await pool.query('DELETE FROM translation_votes WHERE id = ?', [existingVote.id]);
         const countField = existingVote.vote_type === 'up' ? 'upvotes' : 'downvotes';
-        await pool.query(`UPDATE translations SET ${countField} = GREATEST(${countField} - 1, 0) WHERE id = ?`, [id]);
+        await pool.query(`UPDATE dialect_scripts SET ${countField} = GREATEST(${countField} - 1, 0) WHERE id = ?`, [id]);
       }
     } else if (existingVote) {
       if (existingVote.vote_type !== voteType) {
         await pool.query('UPDATE translation_votes SET vote_type = ? WHERE id = ?', [voteType, existingVote.id]);
         const oldField = existingVote.vote_type === 'up' ? 'upvotes' : 'downvotes';
         const newField = voteType === 'up' ? 'upvotes' : 'downvotes';
-        await pool.query(`UPDATE translations SET ${oldField} = GREATEST(${oldField} - 1, 0), ${newField} = ${newField} + 1 WHERE id = ?`, [id]);
+        await pool.query(`UPDATE dialect_scripts SET ${oldField} = GREATEST(${oldField} - 1, 0), ${newField} = ${newField} + 1 WHERE id = ?`, [id]);
       }
     } else {
       await pool.query(
@@ -37,7 +37,7 @@ export async function POST(
         [id, user.id, voteType]
       );
       const countField = voteType === 'up' ? 'upvotes' : 'downvotes';
-      await pool.query(`UPDATE translations SET ${countField} = ${countField} + 1 WHERE id = ?`, [id]);
+      await pool.query(`UPDATE dialect_scripts SET ${countField} = ${countField} + 1 WHERE id = ?`, [id]);
     }
 
     if (!existingVote && voteType) {

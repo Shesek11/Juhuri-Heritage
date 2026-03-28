@@ -6,10 +6,10 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(request.nextUrl.searchParams.get('limit') || '10') || 10;
 
     const [entries] = await pool.query(
-      `SELECT de.id, de.term, de.detected_language, de.created_at,
-              t.hebrew, t.latin
+      `SELECT de.id, de.hebrew_script, de.detected_language, de.created_at,
+              t.hebrew_script as t_hebrew_script, t.latin_script
        FROM dictionary_entries de
-       LEFT JOIN translations t ON de.id = t.entry_id
+       LEFT JOIN dialect_scripts t ON de.id = t.entry_id
        WHERE de.status = 'active'
        GROUP BY de.id
        ORDER BY de.created_at DESC

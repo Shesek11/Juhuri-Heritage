@@ -21,17 +21,17 @@ export async function GET() {
     ] = await Promise.all([
       pool.query(`
         SELECT COUNT(DISTINCT de.id) as count FROM dictionary_entries de
-        JOIN translations t ON de.id = t.entry_id
+        JOIN dialect_scripts t ON de.id = t.entry_id
         WHERE de.status = 'active'
-        AND t.hebrew IS NOT NULL AND t.hebrew != ''
-        AND (t.latin IS NULL OR t.latin = '')
+        AND t.hebrew_script IS NOT NULL AND t.hebrew_script != ''
+        AND (t.latin_script IS NULL OR t.latin_script = '')
       `),
       pool.query(`
         SELECT COUNT(DISTINCT de.id) as count FROM dictionary_entries de
-        JOIN translations t ON de.id = t.entry_id
+        JOIN dialect_scripts t ON de.id = t.entry_id
         WHERE de.status = 'active'
         AND de.detected_language = 'Juhuri'
-        AND (t.hebrew IS NULL OR t.hebrew = '')
+        AND (t.hebrew_script IS NULL OR t.hebrew_script = '')
       `),
       pool.query('SELECT COUNT(*) as dialectCount FROM dialects'),
       pool.query(`SELECT COUNT(*) as count FROM dictionary_entries WHERE status = 'active'`),
@@ -45,7 +45,7 @@ export async function GET() {
       SELECT COUNT(*) as count FROM (
           SELECT de.id, COUNT(DISTINCT t.dialect_id) as dialect_count
           FROM dictionary_entries de
-          JOIN translations t ON de.id = t.entry_id
+          JOIN dialect_scripts t ON de.id = t.entry_id
           WHERE de.status = 'active'
           GROUP BY de.id
           HAVING dialect_count < ?
@@ -54,8 +54,9 @@ export async function GET() {
 
     const [[missingAudio]] = await pool.query(`
       SELECT COUNT(DISTINCT de.id) as count FROM dictionary_entries de
+      LEFT JOIN dialect_scripts t ON de.id = t.entry_id
       WHERE de.status = 'active'
-      AND (de.pronunciation_guide IS NOT NULL AND de.pronunciation_guide != '')
+      AND (t.pronunciation_guide IS NOT NULL AND t.pronunciation_guide != '')
     `) as any[];
 
     let pendingCount = 0;

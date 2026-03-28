@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/src/lib/db';
 import { requireApprover } from '@/src/lib/auth';
+import { logEvent } from '@/src/lib/logEvent';
+import { fireEventEmail } from '@/src/lib/email';
 
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await requireApprover(request);
+    const user = await requireApprover(request);
     const { id } = await params;
 
     await pool.query('UPDATE community_examples SET status = ? WHERE id = ?', ['approved', id]);
@@ -33,6 +35,16 @@ export async function PUT(
 
       if (ex.user_id) {
         await pool.query('UPDATE users SET xp = xp + 30 WHERE id = ?', [ex.user_id]);
+      }
+    }
+
+    await logEvent('EXAMPLE_APPROVED', `פתגם ${id} אושר`, user, { exampleId: id, entryId: examples[0]?.entry_id }, request);
+
+    // Notify the example author
+    if (examples[0]?.user_id) {
+      const [authorRows] = await pool.query('SELECT email, name FROM users WHERE id = ?', [examples[0].user_id]) as any[];
+      if (authorRows.length && authorRows[0].email) {
+        fireEventEmail('example-approved', { to: authorRows[0].email, variables: { userName: authorRows[0].name || '' } });
       }
     }
 

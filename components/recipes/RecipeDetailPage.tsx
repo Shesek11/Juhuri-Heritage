@@ -178,7 +178,7 @@ export const RecipeDetailPage: React.FC<RecipeDetailPageProps> = ({ recipeId, on
         return (
             <div className="flex items-center justify-center min-h-screen">
                 <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
-                <span className="mr-3 text-slate-400">טוען מתכון...</span>
+                <span className="ms-3 text-slate-400">טוען מתכון...</span>
             </div>
         );
     }
@@ -325,7 +325,7 @@ export const RecipeDetailPage: React.FC<RecipeDetailPageProps> = ({ recipeId, on
                                     </p>
                                 )}
                                 {recipe.story && (
-                                    <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg border-r-4 border-amber-500">
+                                    <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg border-s-4 border-amber-500">
                                         <div className="flex items-center gap-2 mb-2">
                                             <BookOpen className="w-5 h-5 text-amber-600 dark:text-amber-400" />
                                             <h3 className="font-bold text-amber-800 dark:text-amber-300">

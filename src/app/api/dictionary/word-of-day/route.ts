@@ -6,10 +6,10 @@ export async function GET() {
     // Only pick entries with a non-empty Hebrew term AND Hebrew translation
     const [[{ total }]] = await pool.query(
       `SELECT COUNT(*) as total FROM dictionary_entries de
-       JOIN translations t ON de.id = t.entry_id
+       JOIN dialect_scripts t ON de.id = t.entry_id
        WHERE de.status = 'active'
-       AND de.term REGEXP '^[א-ת]'
-       AND t.hebrew IS NOT NULL AND TRIM(t.hebrew) != ''`
+       AND de.hebrew_script REGEXP '^[א-ת]'
+       AND t.hebrew_script IS NOT NULL AND TRIM(t.hebrew_script) != ''`
     ) as any[];
 
     if (total === 0) {
@@ -22,12 +22,13 @@ export async function GET() {
     const offset = (dayOfYear + now.getFullYear()) % total;
 
     const [entries] = await pool.query(
-      `SELECT de.id, de.term, de.detected_language, de.pronunciation_guide,
-              t.hebrew, t.latin, t.cyrillic, COALESCE(d.name, '') as dialect
+      `SELECT de.id, de.hebrew_script, de.detected_language,
+              t.hebrew_script as t_hebrew_script, t.latin_script, t.cyrillic_script,
+              t.pronunciation_guide, COALESCE(d.name, '') as dialect
        FROM dictionary_entries de
-       JOIN translations t ON de.id = t.entry_id
+       JOIN dialect_scripts t ON de.id = t.entry_id
        LEFT JOIN dialects d ON t.dialect_id = d.id
-       WHERE de.status = 'active' AND de.term REGEXP '^[א-ת]' AND t.hebrew IS NOT NULL AND t.hebrew != ''
+       WHERE de.status = 'active' AND de.hebrew_script REGEXP '^[א-ת]' AND t.hebrew_script IS NOT NULL AND t.hebrew_script != ''
        ORDER BY de.id
        LIMIT 1 OFFSET ?`,
       [offset]
@@ -41,14 +42,14 @@ export async function GET() {
     return NextResponse.json({
       word: {
         id: entry.id,
-        term: entry.term,
+        hebrewScript: entry.hebrew_script,
         detectedLanguage: entry.detected_language,
-        pronunciationGuide: entry.pronunciation_guide,
-        translations: [{
+        dialectScripts: [{
           dialect: entry.dialect,
-          hebrew: entry.hebrew,
-          latin: entry.latin,
-          cyrillic: entry.cyrillic,
+          hebrewScript: entry.t_hebrew_script,
+          latinScript: entry.latin_script,
+          cyrillicScript: entry.cyrillic_script,
+          pronunciationGuide: entry.pronunciation_guide,
         }]
       }
     });

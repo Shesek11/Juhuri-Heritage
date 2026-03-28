@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/src/lib/db';
 import { generateToken } from '@/src/lib/auth';
+import { fireEventEmail } from '@/src/lib/email';
 
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 const GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET;
@@ -77,6 +78,9 @@ export async function GET(request: NextRequest) {
       // Fetch the new user
       const [newUsers] = await pool.query('SELECT * FROM users WHERE id = ?', [result.insertId]) as any[];
       user = newUsers[0];
+
+      // Send welcome email
+      fireEventEmail('welcome', { to: email, variables: { userName: name } });
     }
 
     // Generate JWT

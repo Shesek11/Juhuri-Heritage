@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { DictionaryEntry, Comment, Translation } from '../types';
+import { DictionaryEntry, Comment, DialectScript } from '../types';
 import { Volume2, Copy, Check, CheckCircle, Settings2, Heart, MessageCircle, Send, Loader2, ThumbsUp, ThumbsDown, Edit3, Bot, Users, Pencil, X as XIcon, Plus, Info } from 'lucide-react';
 import { generateSpeech } from '../services/geminiService';
 import { playBase64Audio } from '../utils/audioUtils';
@@ -12,14 +12,14 @@ const FieldSourceBadge: React.FC<{ source?: string }> = ({ source }) => {
   if (!source || source === 'import' || source === 'manual') return null;
   if (source === 'ai') {
     return (
-      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[11px] font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 mr-1" title="תוכן שנוצר על ידי AI">
+      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[11px] font-medium bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 ms-1" title="תוכן שנוצר על ידי AI">
         <Bot size={10} /> AI
       </span>
     );
   }
   if (source === 'community') {
     return (
-      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[11px] font-medium bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 mr-1" title="תרומה קהילתית">
+      <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[11px] font-medium bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 ms-1" title="תרומה קהילתית">
         <Users size={10} /> קהילה
       </span>
     );
@@ -192,7 +192,7 @@ const ConfirmAiButton: React.FC<{
       });
       setConfirmed(true);
     } catch (err) {
-      console.error('Confirm AI failed:', err);
+      if (process.env.NODE_ENV === 'development') console.error('Confirm AI failed:', err);
     } finally {
       setConfirming(false);
     }
@@ -215,7 +215,7 @@ const ConfirmAiButton: React.FC<{
 interface ResultCardProps {
   entry: DictionaryEntry;
   onOpenAuthModal: (reason?: string) => void;
-  onSuggestCorrection?: (translation: Translation, entryId: string, term: string) => void;
+  onSuggestCorrection?: (dialectScript: DialectScript, entryId: string, hebrewScript: string) => void;
 }
 
 const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal, onSuggestCorrection }) => {
@@ -251,7 +251,7 @@ const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal, onSugge
   const [translationVotes, setTranslationVotes] = useState<Record<number, { upvotes: number; downvotes: number; userVote: 'up' | 'down' | null }>>(
     () => {
       const initialVotes: Record<number, { upvotes: number; downvotes: number; userVote: 'up' | 'down' | null }> = {};
-      entry.translations.forEach(t => {
+      entry.dialectScripts.forEach(t => {
         if (t.id) {
           initialVotes[t.id] = {
             upvotes: t.upvotes || 0,
@@ -272,7 +272,7 @@ const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal, onSugge
       const audioData = await generateSpeech(text, voice);
       await playBase64Audio(audioData);
     } catch (error) {
-      console.warn("Gemini TTS failed, falling back to browser TTS", error);
+      if (process.env.NODE_ENV === 'development') console.warn("Gemini TTS failed, falling back to browser TTS", error);
       try {
         const utterance = new SpeechSynthesisUtterance(text);
         const hasHebrew = /[\u0590-\u05FF]/.test(text);
@@ -282,7 +282,7 @@ const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal, onSugge
         window.speechSynthesis.speak(utterance);
         return;
       } catch (browserError) {
-        console.error("Browser TTS failed", browserError);
+        if (process.env.NODE_ENV === 'development') console.error("Browser TTS failed", browserError);
         alert("לא ניתן להשמיע את הטקסט.");
       }
     }
@@ -290,7 +290,7 @@ const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal, onSugge
   };
 
   const copyToClipboard = () => {
-    const allText = `${entry.term}\n${entry.translations.map(t => `${t.hebrew} | ${t.latin} | ${t.cyrillic}`).join('\n')}`;
+    const allText = `${entry.hebrewScript}\n${entry.dialectScripts.map(t => `${t.hebrewScript} | ${t.latinScript} | ${t.cyrillicScript}`).join('\n')}`;
     navigator.clipboard.writeText(allText);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -307,7 +307,7 @@ const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal, onSugge
     try {
       await apiService.post(`/dictionary/entries/${entry.id}/like`);
     } catch (err) {
-      console.error("Like failed", err);
+      if (process.env.NODE_ENV === 'development') console.error("Like failed", err);
       // Revert
       setIsLiked(!isLiked);
       setLikesCount(prev => isLiked ? prev - 1 : prev + 1);
@@ -322,7 +322,7 @@ const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal, onSugge
         setComments(res.comments || []);
         setCommentsLoaded(true);
       } catch (err) {
-        console.error("Failed to load comments", err);
+        if (process.env.NODE_ENV === 'development') console.error("Failed to load comments", err);
       }
     }
   };
@@ -352,7 +352,7 @@ const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal, onSugge
         setComments(commentsRes.comments || []);
       }
     } catch (err) {
-      console.error("Post comment failed", err);
+      if (process.env.NODE_ENV === 'development') console.error("Post comment failed", err);
       setSubmitMessage('שגיאה בשליחת התגובה');
     } finally {
       setIsSubmitting(false);
@@ -390,7 +390,7 @@ const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal, onSugge
     try {
       await apiService.post(`/dictionary/translations/${translationId}/vote`, { voteType: newUserVote });
     } catch (err) {
-      console.error('Vote failed', err);
+      if (process.env.NODE_ENV === 'development') console.error('Vote failed', err);
       // Revert on error
       setTranslationVotes(prev => ({
         ...prev,
@@ -471,9 +471,9 @@ const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal, onSugge
                 </span>
               )}
             </div>
-            <h2 className="text-4xl font-bold tracking-tight">{entry.term}</h2>
-            {entry.pronunciationGuide && (
-              <p className="text-indigo-100 font-mono text-sm opacity-90 dir-ltr text-right">{entry.pronunciationGuide}</p>
+            <h2 className="text-4xl font-bold tracking-tight">{entry.hebrewScript}</h2>
+            {entry.dialectScripts?.[0]?.pronunciationGuide && (
+              <p className="text-indigo-100 font-mono text-sm opacity-90 dir-ltr text-start">{entry.dialectScripts?.[0]?.pronunciationGuide}</p>
             )}
           </div>
 
@@ -486,12 +486,12 @@ const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal, onSugge
                   <Settings2 size={20} />
                 </button>
                 <div className="absolute top-full left-0 mt-2 w-32 bg-[#0d1424]/60 backdrop-blur-xl rounded-lg shadow-xl p-1 hidden group-hover:block z-20 text-slate-200 text-sm">
-                  <button onClick={() => setVoice('Zephyr')} className={`w-full text-right px-3 py-2 rounded-md hover:bg-white/10 ${voice === 'Zephyr' ? 'font-bold text-indigo-600' : ''}`}>קול אישה</button>
-                  <button onClick={() => setVoice('Fenrir')} className={`w-full text-right px-3 py-2 rounded-md hover:bg-white/10 ${voice === 'Fenrir' ? 'font-bold text-indigo-600' : ''}`}>קול גבר</button>
+                  <button onClick={() => setVoice('Zephyr')} className={`w-full text-start px-3 py-2 rounded-md hover:bg-white/10 ${voice === 'Zephyr' ? 'font-bold text-indigo-600' : ''}`}>קול אישה</button>
+                  <button onClick={() => setVoice('Fenrir')} className={`w-full text-start px-3 py-2 rounded-md hover:bg-white/10 ${voice === 'Fenrir' ? 'font-bold text-indigo-600' : ''}`}>קול גבר</button>
                 </div>
               </div>
 
-              <button onClick={() => handlePlay(entry.translations?.[0]?.cyrillic || entry.translations?.[0]?.latin || entry.term, 'main')} className={`p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors ${isPlaying === 'main' ? 'animate-pulse' : ''}`} title="השמע מקור">
+              <button onClick={() => handlePlay(entry.dialectScripts?.[0]?.cyrillicScript || entry.dialectScripts?.[0]?.latinScript || entry.hebrewScript, 'main')} className={`p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors ${isPlaying === 'main' ? 'animate-pulse' : ''}`} title="השמע מקור">
                 <Volume2 size={20} />
               </button>
               <button onClick={copyToClipboard} className="p-2 rounded-full bg-white/20 hover:bg-white/30 transition-colors" title="העתק">
@@ -504,18 +504,18 @@ const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal, onSugge
 
       <div className="p-6 space-y-6">
         {/* Definitions */}
-        {entry.definitions.length > 0 && (
+        {!!entry.hebrewLong && (
           <div className="text-slate-700 dark:text-slate-200 text-lg leading-relaxed border-b border-white/10 pb-4 font-medium group">
             <div className="flex items-start gap-1">
               <div className="flex-1">
-                <FieldSourceBadge source={entry.fieldSources?.definition} />
-                {entry.definitions.join('; ')}
+                <FieldSourceBadge source={entry.fieldSources?.hebrewShortLong} />
+                {entry.hebrewLong || ''}
               </div>
-              <ConfirmAiButton entryId={entry.id} fieldName="definition" value={entry.definitions.join('; ')} source={entry.fieldSources?.definition} />
+              <ConfirmAiButton entryId={entry.id} fieldName="hebrewLong" value={entry.hebrewLong || ''} source={entry.fieldSources?.hebrewShortLong} />
               <FieldEditButton
                 entryId={entry.id}
-                fieldName="definition"
-                currentValue={entry.definitions.join('; ')}
+                fieldName="hebrewLong"
+                currentValue={entry.hebrewLong || ''}
                 editingField={editingField}
                 onStartEdit={setEditingField}
                 onCloseEdit={() => setEditingField(null)}
@@ -524,8 +524,8 @@ const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal, onSugge
             {editingField === 'definition' && entry.id && (
               <FieldEditForm
                 entryId={entry.id}
-                fieldName="definition"
-                currentValue={entry.definitions.join('; ')}
+                fieldName="hebrewLong"
+                currentValue={entry.hebrewLong || ''}
                 onClose={() => setEditingField(null)}
                 onSuccess={() => { }}
               />
@@ -534,17 +534,17 @@ const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal, onSugge
         )}
 
         {/* Russian translation */}
-        {entry.russian && (
+        {entry.russianShort && (
           <div className="border-b border-white/10 pb-3 group">
             <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
               <span className="text-xs font-bold text-slate-400 dark:text-slate-400 uppercase tracking-wider">רוסית</span>
-              <FieldSourceBadge source={entry.fieldSources?.russian} />
-              <span className="font-serif text-lg flex-1" dir="ltr">{entry.russian}</span>
-              <ConfirmAiButton entryId={entry.id} fieldName="russian" value={entry.russian} source={entry.fieldSources?.russian} />
+              <FieldSourceBadge source={entry.fieldSources?.russianShort} />
+              <span className="font-serif text-lg flex-1" dir="ltr">{entry.russianShort}</span>
+              <ConfirmAiButton entryId={entry.id} fieldName="russianShort" value={entry.russianShort} source={entry.fieldSources?.russianShort} />
               <FieldEditButton
                 entryId={entry.id}
-                fieldName="russian"
-                currentValue={entry.russian}
+                fieldName="russianShort"
+                currentValue={entry.russianShort}
                 editingField={editingField}
                 onStartEdit={setEditingField}
                 onCloseEdit={() => setEditingField(null)}
@@ -553,8 +553,8 @@ const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal, onSugge
             {editingField === 'russian' && entry.id && (
               <FieldEditForm
                 entryId={entry.id}
-                fieldName="russian"
-                currentValue={entry.russian}
+                fieldName="russianShort"
+                currentValue={entry.russianShort}
                 onClose={() => setEditingField(null)}
                 onSuccess={() => { }}
               />
@@ -566,14 +566,14 @@ const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal, onSugge
         <div>
           <h3 className="text-sm uppercase tracking-wider text-slate-400 dark:text-slate-400 font-bold mb-3">תרגומים</h3>
           <div className="grid gap-4">
-            {entry.translations.map((t, idx) => {
+            {entry.dialectScripts.map((t, idx) => {
               const voteData = t.id ? translationVotes[t.id] : null;
               return (
                 <div key={t.id || idx} className="relative p-4 rounded-xl bg-white/5 hover:bg-white/10 transition-colors group border border-white/10">
                   <div className="flex gap-3">
                     {/* Play button - inline, not absolute */}
                     <button
-                      onClick={() => handlePlay(t.cyrillic || t.latin || t.hebrew, `trans-${idx}`)}
+                      onClick={() => handlePlay(t.cyrillicScript || t.latinScript || t.hebrewScript, `trans-${idx}`)}
                       className={`p-2 rounded-full text-slate-400 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 opacity-0 group-hover:opacity-100 transition-all self-start mt-1 shrink-0 ${isPlaying === `trans-${idx}` ? 'text-indigo-600 !opacity-100 animate-pulse' : ''}`}
                     >
                       <Volume2 size={20} />
@@ -581,34 +581,34 @@ const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal, onSugge
 
                   <div className="flex flex-col gap-1 flex-1 min-w-0">
                     <div className="text-2xl font-bold text-slate-100 font-rubik flex items-center gap-1">
-                      <FieldSourceBadge source={entry.fieldSources?.hebrew} />
-                      <span className="flex-1">{t.hebrew}</span>
-                      <ConfirmAiButton entryId={entry.id} fieldName="hebrew" value={t.hebrew} source={entry.fieldSources?.hebrew} />
+                      <FieldSourceBadge source={entry.fieldSources?.hebrewShort} />
+                      <span className="flex-1">{t.hebrewScript}</span>
+                      <ConfirmAiButton entryId={entry.id} fieldName="hebrewShort" value={t.hebrewScript} source={entry.fieldSources?.hebrewShort} />
                       <FieldEditButton
                         entryId={entry.id}
-                        fieldName="hebrew"
-                        currentValue={t.hebrew}
+                        fieldName="hebrewShort"
+                        currentValue={t.hebrewScript}
                         editingField={editingField}
                         onStartEdit={setEditingField}
                         onCloseEdit={() => setEditingField(null)}
                       />
                     </div>
                     {editingField === 'hebrew' && entry.id && (
-                      <FieldEditForm entryId={entry.id} fieldName="hebrew" currentValue={t.hebrew} onClose={() => setEditingField(null)} onSuccess={() => { }} />
+                      <FieldEditForm entryId={entry.id} fieldName="hebrewShort" currentValue={t.hebrewScript} onClose={() => setEditingField(null)} onSuccess={() => { }} />
                     )}
                     <div className="flex items-center gap-2 text-sm">
                       {t.dialect && t.dialect !== 'לא ידוע' && (
                         <span className="text-indigo-600 dark:text-indigo-400 font-bold bg-indigo-50 dark:bg-indigo-900/30 px-1.5 py-0.5 rounded text-xs">{t.dialect}</span>
                       )}
-                      {t.latin && (
+                      {t.latinScript && (
                         <span className="text-slate-600 dark:text-slate-300 font-mono tracking-wide flex items-center gap-1">
-                          <FieldSourceBadge source={entry.fieldSources?.latin} />
-                          {t.latin}
-                          <ConfirmAiButton entryId={entry.id} fieldName="latin" value={t.latin} source={entry.fieldSources?.latin} />
+                          <FieldSourceBadge source={entry.fieldSources?.latinScript} />
+                          {t.latinScript}
+                          <ConfirmAiButton entryId={entry.id} fieldName="latinScript" value={t.latinScript} source={entry.fieldSources?.latinScript} />
                           <FieldEditButton
                             entryId={entry.id}
-                            fieldName="latin"
-                            currentValue={t.latin}
+                            fieldName="latinScript"
+                            currentValue={t.latinScript}
                             editingField={editingField}
                             onStartEdit={setEditingField}
                             onCloseEdit={() => setEditingField(null)}
@@ -617,17 +617,17 @@ const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal, onSugge
                       )}
                     </div>
                     {editingField === 'latin' && entry.id && (
-                      <FieldEditForm entryId={entry.id} fieldName="latin" currentValue={t.latin} onClose={() => setEditingField(null)} onSuccess={() => { }} />
+                      <FieldEditForm entryId={entry.id} fieldName="latinScript" currentValue={t.latinScript} onClose={() => setEditingField(null)} onSuccess={() => { }} />
                     )}
-                    {t.cyrillic && (
+                    {t.cyrillicScript && (
                       <div className="text-lg text-slate-400 dark:text-slate-400 font-serif flex items-center gap-1">
-                        <FieldSourceBadge source={entry.fieldSources?.cyrillic} />
-                        {t.cyrillic}
-                        <ConfirmAiButton entryId={entry.id} fieldName="cyrillic" value={t.cyrillic} source={entry.fieldSources?.cyrillic} />
+                        <FieldSourceBadge source={entry.fieldSources?.cyrillicScript} />
+                        {t.cyrillicScript}
+                        <ConfirmAiButton entryId={entry.id} fieldName="cyrillicScript" value={t.cyrillicScript} source={entry.fieldSources?.cyrillicScript} />
                         <FieldEditButton
                           entryId={entry.id}
-                          fieldName="cyrillic"
-                          currentValue={t.cyrillic}
+                          fieldName="cyrillicScript"
+                          currentValue={t.cyrillicScript}
                           editingField={editingField}
                           onStartEdit={setEditingField}
                           onCloseEdit={() => setEditingField(null)}
@@ -635,7 +635,7 @@ const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal, onSugge
                       </div>
                     )}
                     {editingField === 'cyrillic' && entry.id && (
-                      <FieldEditForm entryId={entry.id} fieldName="cyrillic" currentValue={t.cyrillic} onClose={() => setEditingField(null)} onSuccess={() => { }} />
+                      <FieldEditForm entryId={entry.id} fieldName="cyrillicScript" currentValue={t.cyrillicScript} onClose={() => setEditingField(null)} onSuccess={() => { }} />
                     )}
 
                     {/* Voting and Correction Row */}
@@ -671,7 +671,7 @@ const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal, onSugge
                       {/* Suggest Correction Button */}
                       {entry.id && (
                         <button
-                          onClick={() => onSuggestCorrection?.(t, entry.id!, entry.term)}
+                          onClick={() => onSuggestCorrection?.(t, entry.id!, entry.hebrewScript)}
                           className="flex items-center gap-1 px-2 py-1 rounded-md text-xs text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-all"
                           title="הצע תיקון"
                         >
@@ -722,14 +722,14 @@ const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal, onSugge
             {/* AI-generated examples */}
             <div className="space-y-3">
               {entry.examples.map((ex, idx) => (
-                <div key={idx} className="border-r-4 border-indigo-200 dark:border-indigo-900 pr-4 py-2 bg-white/5 rounded-r-lg">
+                <div key={idx} className="border-s-4 border-indigo-200 dark:border-indigo-900 ps-4 py-2 bg-white/5 rounded-s-lg">
                   <div className="flex justify-between items-start mb-1">
                     <p className="text-lg font-medium text-slate-200">{ex.origin}</p>
                     <button onClick={() => handlePlay(ex.origin, `ex-orig-${idx}`)} className={`text-slate-300 hover:text-indigo-500 transition-colors ${isPlaying === `ex-orig-${idx}` ? 'text-indigo-500 animate-pulse' : ''}`}>
                       <Volume2 size={16} />
                     </button>
                   </div>
-                  {ex.transliteration && <p className="text-sm text-slate-400 font-mono mb-1 dir-ltr text-right">{ex.transliteration}</p>}
+                  {ex.transliteration && <p className="text-sm text-slate-400 font-mono mb-1 dir-ltr text-start">{ex.transliteration}</p>}
                   <p className="text-slate-600 dark:text-slate-400">{ex.translated}</p>
                 </div>
               ))}
@@ -743,14 +743,14 @@ const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal, onSugge
                 </p>
                 <div className="space-y-3">
                   {communityExamples.map((ex) => (
-                    <div key={ex.id} className="border-r-4 border-indigo-200 dark:border-indigo-900 pr-4 py-2 bg-indigo-50/50 dark:bg-indigo-900/20 rounded-r-lg">
+                    <div key={ex.id} className="border-s-4 border-indigo-200 dark:border-indigo-900 ps-4 py-2 bg-indigo-50/50 dark:bg-indigo-900/20 rounded-s-lg">
                       <div className="flex justify-between items-start mb-1">
                         <p className="text-lg font-medium text-slate-200">{ex.origin}</p>
                         <button onClick={() => handlePlay(ex.origin, `comm-${ex.id}`)} className={`text-slate-300 hover:text-indigo-500 transition-colors ${isPlaying === `comm-${ex.id}` ? 'text-indigo-500 animate-pulse' : ''}`}>
                           <Volume2 size={16} />
                         </button>
                       </div>
-                      {ex.transliteration && <p className="text-sm text-slate-400 font-mono mb-1 dir-ltr text-right">{ex.transliteration}</p>}
+                      {ex.transliteration && <p className="text-sm text-slate-400 font-mono mb-1 dir-ltr text-start">{ex.transliteration}</p>}
                       {ex.translated && <p className="text-slate-600 dark:text-slate-400">{ex.translated}</p>}
                       <p className="text-[11px] text-slate-400 mt-1">תרומה: {ex.user_name}</p>
                     </div>

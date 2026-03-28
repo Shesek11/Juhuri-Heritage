@@ -7,11 +7,11 @@ export async function GET(request: NextRequest) {
     await requireApprover(request);
     const limit = parseInt(request.nextUrl.searchParams.get('limit') || '50') || 50;
     const [suggestions] = await pool.query(
-      `SELECT ts.id, ts.entry_id, ts.dialect, ts.suggested_hebrew, ts.suggested_latin,
-              ts.suggested_cyrillic, ts.user_id, ts.status, ts.created_at,
+      `SELECT ts.id, ts.entry_id, ts.dialect, ts.suggested_hebrew_short, ts.suggested_latin_script,
+              ts.suggested_cyrillic_script, ts.user_id, ts.status, ts.created_at,
               ts.audio_url, ts.audio_duration, ts.translation_id,
-              ts.field_name, ts.suggested_russian, ts.reason, ts.user_name,
-              de.term,
+              ts.field_name, ts.suggested_russian_short, ts.reason, ts.user_name,
+              de.hebrew_script,
               u.name as contributor_name
        FROM translation_suggestions ts
        JOIN dictionary_entries de ON ts.entry_id = de.id

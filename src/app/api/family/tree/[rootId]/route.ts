@@ -7,8 +7,7 @@ export async function GET(
 ) {
   try {
     const [allMembers] = await pool.query(`
-      SELECT id, user_id, first_name, last_name, maiden_name,
-             gender, photo_url, birth_date, is_alive
+      SELECT *
       FROM family_members
       LIMIT 1000
     `) as any[];

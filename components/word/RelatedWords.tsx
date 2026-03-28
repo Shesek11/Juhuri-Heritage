@@ -38,7 +38,7 @@ const RelatedWords: React.FC<RelatedWordsProps> = ({ relatedWords }) => {
               <span className="text-xs text-slate-300">
                 {word.hebrewShort}
                 {word.partOfSpeech && (
-                  <span className="text-slate-600 mr-1">
+                  <span className="text-slate-600 ms-1">
                     ({partOfSpeechHebrew(word.partOfSpeech)})
                   </span>
                 )}

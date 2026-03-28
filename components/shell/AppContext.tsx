@@ -2,12 +2,12 @@
 
 import { createContext, useContext } from 'react';
 import { DialectItem } from '../../types';
-import { FeatureFlagsMap } from '../../services/featureFlagService';
+import { FeatureFlagsMap, FeatureFlag } from '../../services/featureFlagService';
 
 export interface TranslationModalEntry {
   id: number;
   term: string;
-  existingTranslation?: { id?: number; dialect: string; hebrew: string; latin: string; cyrillic: string };
+  existingTranslation?: { id?: number; dialect: string; hebrewScript: string; latinScript: string; cyrillicScript: string };
 }
 
 export interface WordListModalState {
@@ -28,8 +28,12 @@ export interface AppContextType {
   // Data
   dialects: DialectItem[];
   featureFlags: FeatureFlagsMap;
+  orderedFeatures: FeatureFlag[];
   featureFlagsLoaded: boolean;
   isAdmin: boolean;
+
+  // Branding
+  siteLogo: string | null;
 }
 
 export const AppContext = createContext<AppContextType | undefined>(undefined);

@@ -77,7 +77,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-function buildJsonLd(locale: string, siteName: string) {
+function buildJsonLd(locale: string, siteName: string, siteLogo?: string | null) {
+  const logoUrl = siteLogo ? `${SITE_URL}${siteLogo}` : `${SITE_URL}/images/logo.png`;
   return {
     '@context': 'https://schema.org',
     '@graph': [
@@ -103,7 +104,7 @@ function buildJsonLd(locale: string, siteName: string) {
         url: SITE_URL,
         logo: {
           '@type': 'ImageObject',
-          url: `${SITE_URL}/images/logo.png`,
+          url: logoUrl,
         },
       },
     ],
@@ -115,9 +116,10 @@ export default async function LocaleLayout({ children, params }: Props) {
   setRequestLocale(locale);
 
   const t = await getTranslations({ locale, namespace: 'metadata' });
+  const settings = await getSeoSettings();
   const dir = locale === 'he' ? 'rtl' : 'ltr';
   // JSON-LD is built from trusted server-side data only (no user input)
-  const jsonLdString = JSON.stringify(buildJsonLd(locale, t('siteName')));
+  const jsonLdString = JSON.stringify(buildJsonLd(locale, t('siteName'), settings.siteLogo));
 
   return (
     <NextIntlClientProvider locale={locale}>

@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
     await requireApprover(request);
 
     const [examples] = await pool.query(
-      `SELECT ce.*, de.term
+      `SELECT ce.*, de.hebrew_script
        FROM community_examples ce
        LEFT JOIN dictionary_entries de ON ce.entry_id = de.id
        WHERE ce.status = 'pending'

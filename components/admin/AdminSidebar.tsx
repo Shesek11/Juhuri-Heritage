@@ -153,7 +153,7 @@ export default function AdminSidebar({ userRole }: AdminSidebarProps) {
     );
 
     return (
-        <aside className="w-64 bg-[#0d1424]/60 backdrop-blur-xl border-l border-white/10 overflow-y-auto shrink-0">
+        <aside className="w-64 bg-[#0d1424]/60 backdrop-blur-xl border-e border-white/10 overflow-y-auto shrink-0">
             <nav className="py-4">
                 {visibleSections.map((section) => {
                     const isExpanded = expanded[section.id] ?? false;
@@ -185,14 +185,14 @@ export default function AdminSidebar({ userRole }: AdminSidebarProps) {
 
                             {/* Section items */}
                             {isExpanded && (
-                                <div className="mr-4 border-r border-white/5">
+                                <div className="ms-4 border-s border-white/5">
                                     {section.items.map((item) => {
                                         const isActive = pathname === item.href;
                                         return (
                                             <Link
                                                 key={item.href}
                                                 href={item.href}
-                                                className={`flex items-center justify-between pr-6 pl-4 py-2 text-sm transition-colors rounded-l-lg mx-2 mb-0.5 ${
+                                                className={`flex items-center justify-between ps-6 pe-4 py-2 text-sm transition-colors rounded-e-lg mx-2 mb-0.5 ${
                                                     isActive
                                                         ? 'bg-amber-500 text-white font-medium'
                                                         : 'text-slate-400 hover:bg-white/10'

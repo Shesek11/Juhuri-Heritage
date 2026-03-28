@@ -71,7 +71,7 @@ export const ORGANIZATION_JSONLD = {
   'name': 'Juhuri Heritage',
   'alternateName': 'מורשת ג\'והורי',
   'url': SITE_URL,
-  'logo': `${SITE_URL}/images/og-default.png`,
+  'logo': `${SITE_URL}/images/logo-transparent.png`,
   'description': 'שימור שפת ג\'והורי, מתכונים ומורשת תרבותית של יהודי ההרים',
 };
 

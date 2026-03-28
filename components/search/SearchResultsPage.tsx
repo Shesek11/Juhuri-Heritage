@@ -136,7 +136,7 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
             value={query}
             onChange={e => setQuery(e.target.value)}
             placeholder={t('placeholder')}
-            className="w-full px-5 py-4 pr-14 text-lg rounded-2xl bg-[#0d1424]/60 backdrop-blur-xl border border-white/10 text-white placeholder-slate-500 focus-visible:ring-2 focus-visible:ring-amber-500/50 focus-visible:border-amber-500/50 outline-none transition-all font-rubik"
+            className="w-full px-5 py-4 ps-14 text-lg rounded-2xl bg-[#0d1424]/60 backdrop-blur-xl border border-white/10 text-white placeholder-slate-500 focus-visible:ring-2 focus-visible:ring-amber-500/50 focus-visible:border-amber-500/50 outline-none transition-all font-rubik"
             dir="auto"
           />
           <button
@@ -355,7 +355,7 @@ const SuggestMergeModal: React.FC<SuggestMergeModalProps> = ({ sourceEntry, cand
                 key={c.id}
                 type="button"
                 onClick={() => toggleId(c.id || '')}
-                className={`w-full text-right px-3 py-2.5 rounded-lg border transition-all text-sm flex items-center gap-2 ${
+                className={`w-full text-start px-3 py-2.5 rounded-lg border transition-all text-sm flex items-center gap-2 ${
                   isSelected
                     ? 'bg-amber-500/15 border-amber-500/30 text-white'
                     : 'bg-slate-800/50 border-slate-700 text-slate-300 hover:border-slate-600'
@@ -365,8 +365,8 @@ const SuggestMergeModal: React.FC<SuggestMergeModalProps> = ({ sourceEntry, cand
                   isSelected ? 'bg-amber-500 border-amber-400 text-white' : 'border-slate-600'
                 }`}>{isSelected && '✓'}</div>
                 <span className="font-medium">{c.hebrewScript}</span>
-                {c.hebrewShort && <span className="text-slate-400 mr-1">{c.hebrewShort}</span>}
-                {t?.latinScript && <span className="text-slate-500 text-xs mr-1">{t.latinScript}</span>}
+                {c.hebrewShort && <span className="text-slate-400 ms-1">{c.hebrewShort}</span>}
+                {t?.latinScript && <span className="text-slate-500 text-xs ms-1">{t.latinScript}</span>}
               </button>
             );
           })}

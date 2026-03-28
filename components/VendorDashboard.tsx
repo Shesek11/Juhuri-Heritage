@@ -559,7 +559,7 @@ export const VendorDashboard: React.FC = () => {
                                                         </p>
                                                     )}
                                                 </div>
-                                                <div className="text-left">
+                                                <div className="text-end">
                                                     <p className="font-bold text-orange-600 dark:text-orange-400">
                                                         ₪{order.total_price}
                                                     </p>
@@ -706,7 +706,7 @@ export const VendorDashboard: React.FC = () => {
                                                                 {day.orders_count > 0 && `${day.orders_count} הזמנות`}
                                                             </div>
                                                         </div>
-                                                        <span className="text-sm font-bold text-green-600 dark:text-green-400 w-20 text-left shrink-0">
+                                                        <span className="text-sm font-bold text-green-600 dark:text-green-400 w-20 text-end shrink-0">
                                                             ₪{day.daily_revenue?.toFixed(0) || 0}
                                                         </span>
                                                     </div>

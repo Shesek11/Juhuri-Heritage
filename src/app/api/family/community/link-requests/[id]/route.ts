@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/src/lib/db';
 import { requireAuth } from '@/src/lib/auth';
+import { fireEventEmail } from '@/src/lib/email';
+import { logEvent } from '@/src/lib/logEvent';
 
 export async function PUT(
   request: NextRequest,
@@ -66,6 +68,16 @@ export async function PUT(
       SET status = ?, reviewed_by = ?, reviewed_at = NOW()
       WHERE id = ?
     `, [status, user.id, id]);
+
+    const eventType = status === 'approved' ? 'FAMILY_LINK_APPROVED' : 'FAMILY_LINK_REJECTED';
+    await logEvent(eventType, `בקשת קישור ${id} ${status === 'approved' ? 'אושרה' : 'נדחתה'}`, user, { requestId: id, status, relationshipType: linkRequest.relationship_type }, request);
+
+    // Notify the requester about approval/rejection
+    const [requesterRows] = await pool.query('SELECT email, name FROM users WHERE id = ?', [linkRequest.requester_id]) as [any[], any];
+    if (requesterRows.length && requesterRows[0].email) {
+      const slug = status === 'approved' ? 'family-link-approved' : 'family-link-rejected';
+      fireEventEmail(slug, { to: requesterRows[0].email, variables: { userName: requesterRows[0].name || '' } });
+    }
 
     return NextResponse.json({ success: true, status });
   } catch (error) {

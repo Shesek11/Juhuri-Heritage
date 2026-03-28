@@ -23,23 +23,23 @@ interface PendingRecording {
 interface PendingSuggestion {
     id: number;
     entry_id: number;
-    term: string;
+    hebrewScript: string;
     field_name: string;
-    suggested_hebrew: string;
-    suggested_latin: string;
-    suggested_cyrillic: string;
-    suggested_russian: string;
+    suggested_hebrew_short: string;
+    suggested_latin_script: string;
+    suggested_cyrillic_script: string;
+    suggested_russian_short: string;
     reason: string;
     user_name: string;
     created_at: string;
 }
 
 const FIELD_LABELS: Record<string, string> = {
-    hebrew: 'תרגום עברי',
-    latin: 'תעתיק לטיני',
-    cyrillic: 'כתב קירילי',
-    russian: 'רוסית',
-    definition: 'הגדרה',
+    hebrewShort: 'תרגום עברי',
+    latinScript: 'תעתיק לטיני',
+    cyrillicScript: 'כתב קירילי',
+    russianShort: 'רוסית',
+    hebrewLong: 'הגדרה',
     pronunciationGuide: 'מדריך הגייה',
     partOfSpeech: 'חלק דיבר',
 };
@@ -118,11 +118,11 @@ const MobileAdminPanel: React.FC<MobileAdminPanelProps> = ({ onClose }) => {
     };
 
     const getSuggestionValue = (s: PendingSuggestion): string => {
-        if (s.field_name === 'hebrew') return s.suggested_hebrew;
-        if (s.field_name === 'latin') return s.suggested_latin;
-        if (s.field_name === 'cyrillic') return s.suggested_cyrillic;
-        if (s.field_name === 'russian') return s.suggested_russian;
-        return s.suggested_hebrew || s.suggested_latin || '';
+        if (s.field_name === 'hebrewShort') return s.suggested_hebrew_short;
+        if (s.field_name === 'latinScript') return s.suggested_latin_script;
+        if (s.field_name === 'cyrillicScript') return s.suggested_cyrillic_script;
+        if (s.field_name === 'russianShort') return s.suggested_russian_short;
+        return s.suggested_hebrew_short || s.suggested_latin_script || '';
     };
 
     const togglePlayRecording = (recording: PendingRecording) => {
@@ -225,7 +225,7 @@ const MobileAdminPanel: React.FC<MobileAdminPanelProps> = ({ onClose }) => {
                                         <span className="text-amber-400 font-medium">
                                             {comment.guest_name || 'אורח'}
                                         </span>
-                                        <span className="text-slate-400 text-xs mr-2">
+                                        <span className="text-slate-400 text-xs ms-2">
                                             {formatDate(comment.created_at)}
                                         </span>
                                     </div>
@@ -324,12 +324,12 @@ const MobileAdminPanel: React.FC<MobileAdminPanelProps> = ({ onClose }) => {
                                         <span className="text-amber-400 font-medium">
                                             {suggestion.user_name || 'אורח'}
                                         </span>
-                                        <span className="text-slate-400 text-xs mr-2">
+                                        <span className="text-slate-400 text-xs ms-2">
                                             {formatDate(suggestion.created_at)}
                                         </span>
                                     </div>
                                     <span className="text-xs bg-slate-700 text-slate-300 px-2 py-1 rounded">
-                                        {suggestion.term}
+                                        {suggestion.hebrewScript}
                                     </span>
                                 </div>
                                 <div className="space-y-1">

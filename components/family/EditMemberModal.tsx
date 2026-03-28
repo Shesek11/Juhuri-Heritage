@@ -41,7 +41,7 @@ const HebrewDateInput: React.FC<{
                 onBlur={() => setEditing(false)}
                 onChange={e => handleTextChange(e.target.value)}
                 placeholder="DD/MM/YYYY"
-                className="w-full p-2.5 rounded-lg border border-white/10 bg-white/5 text-slate-200 placeholder:text-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none text-sm text-right pl-10"
+                className="w-full p-2.5 rounded-lg border border-white/10 bg-white/5 text-slate-200 placeholder:text-slate-500 focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none text-sm text-start pe-10"
             />
             <button
                 type="button"
@@ -974,7 +974,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                                                     }}
                                                     className="flex-1 bg-green-600 text-white px-3 py-1 rounded text-xs hover:bg-green-700"
                                                 >
-                                                    <Check size={12} className="inline mr-1" /> {t('modal.save')}
+                                                    <Check size={12} className="inline ms-1" /> {t('modal.save')}
                                                 </button>
                                                 <button onClick={() => handleRemoveRelationship('spouse', p.id)} className="text-red-500 hover:bg-red-50 px-3 py-1 rounded text-xs">{t('modal.delete')}</button>
                                             </div>
@@ -1038,7 +1038,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                                     {/* Success feedback */}
                                     {connectSuccess && (
                                         <div className="bg-green-900/40 border border-green-500/30 text-green-300 text-sm p-2 rounded-lg text-center">
-                                            <Check size={14} className="inline mr-1" /> {connectSuccess}
+                                            <Check size={14} className="inline ms-1" /> {connectSuccess}
                                         </div>
                                     )}
 
@@ -1062,7 +1062,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                                                             setSelectedConnectId(m.id);
                                                             setConnectSearch(`${m.first_name} ${m.last_name}`);
                                                         }}
-                                                        className="w-full text-right px-3 py-2 text-sm text-slate-200 hover:bg-indigo-600/30 border-b border-white/5 last:border-0"
+                                                        className="w-full text-start px-3 py-2 text-sm text-slate-200 hover:bg-indigo-600/30 border-b border-white/5 last:border-0"
                                                     >
                                                         {m.first_name} {m.last_name}
                                                         {m.maiden_name && <span className="text-slate-500 text-xs"> ({m.maiden_name})</span>}
@@ -1190,7 +1190,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                             </button>
                         )}
 
-                        <div className="flex gap-3 mr-auto">
+                        <div className="flex gap-3 ms-auto">
                             <button onClick={onClose} className="px-4 py-2 text-slate-400 hover:bg-white/10 rounded-lg">{t('modal.close')}</button>
                             {activeTab === 'details' && canEdit && (
                                 <button

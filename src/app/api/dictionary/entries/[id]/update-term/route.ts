@@ -13,7 +13,7 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
     }
 
     await pool.query(
-      'UPDATE dictionary_entries SET term = ? WHERE id = ?',
+      'UPDATE dictionary_entries SET hebrew_script = ? WHERE id = ?',
       [term.trim(), id]
     );
 

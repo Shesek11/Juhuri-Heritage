@@ -2,8 +2,8 @@ import React, { useRef } from 'react';
 import NikudPalette from './NikudPalette';
 import TranslitGuideButton from './TranslitGuideButton';
 
-const isHebrewField = (f: string) => ['hebrewTransliteration', 'hebrew', 'term'].includes(f);
-const isLatinField = (f: string) => f === 'latin';
+const isHebrewField = (f: string) => ['hebrewTransliteration', 'hebrewShort', 'hebrewScript', 'hebrewLong', 'hebrew', 'term'].includes(f);
+const isLatinField = (f: string) => f === 'latin' || f === 'latinScript';
 
 interface DictionaryInputProps {
   fieldName: string;

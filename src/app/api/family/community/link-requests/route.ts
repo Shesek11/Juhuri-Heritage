@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/src/lib/db';
 import { requireAuth } from '@/src/lib/auth';
+import { fireEventEmail } from '@/src/lib/email';
 
 // GET /api/family/community/link-requests
 export async function GET(request: NextRequest) {
@@ -62,6 +63,8 @@ export async function POST(request: NextRequest) {
       (requester_id, source_member_id, target_member_id, relationship_type, message)
       VALUES (?, ?, ?, ?, ?)
     `, [user.id, source_member_id, target_member_id, relationship_type, message || null]) as any[];
+
+    fireEventEmail('family-link-request', { variables: { userName: user.name, relationshipType: relationship_type } });
 
     return NextResponse.json({ success: true, id: result.insertId }, { status: 201 });
   } catch (error) {

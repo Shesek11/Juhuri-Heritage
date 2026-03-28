@@ -209,7 +209,7 @@ export default function ContributionsDashboard() {
                   <p className="text-[11px] text-slate-600 mt-2">
                     {new Date(item.createdAt).toLocaleDateString('he-IL')}
                     {item.reviewedAt && (
-                      <span className="mr-2">
+                      <span className="ms-2">
                         · נבדק {new Date(item.reviewedAt).toLocaleDateString('he-IL')}
                       </span>
                     )}

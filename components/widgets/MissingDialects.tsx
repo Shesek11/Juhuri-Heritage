@@ -91,7 +91,7 @@ const MissingDialects: React.FC<MissingDialectsProps> = ({ onAddDialect, onOpenA
                         <button
                             key={entry.id}
                             onClick={() => handleAddClick(entry)}
-                            className="w-full text-right flex items-center justify-between p-3 rounded-xl hover:bg-white/5 transition-all group/item border border-transparent hover:border-white/10"
+                            className="w-full text-start flex items-center justify-between p-3 rounded-xl hover:bg-white/5 transition-all group/item border border-transparent hover:border-white/10"
                         >
                             <div>
                                 <div className="font-bold text-slate-300 group-hover/item:text-amber-400 transition-colors">

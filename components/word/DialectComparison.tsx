@@ -57,10 +57,10 @@ const DialectComparison: React.FC<DialectComparisonProps> = ({
             <table className="w-full text-sm min-w-[340px]">
               <thead>
                 <tr className="border-b border-white/10">
-                  <th className="text-right py-2 px-3 text-xs text-slate-300 font-bold uppercase tracking-wider">{t('dialectCol')}</th>
-                  <th className="text-right py-2 px-3 text-xs text-slate-300 font-bold uppercase tracking-wider">{t('latinCol')}</th>
-                  <th className="text-right py-2 px-3 text-xs text-slate-300 font-bold uppercase tracking-wider">{t('cyrillicCol')}</th>
-                  <th className="text-right py-2 px-3 text-xs text-slate-300 font-bold uppercase tracking-wider">{t('votesCol')}</th>
+                  <th className="text-start py-2 px-3 text-xs text-slate-300 font-bold uppercase tracking-wider">{t('dialectCol')}</th>
+                  <th className="text-start py-2 px-3 text-xs text-slate-300 font-bold uppercase tracking-wider">{t('latinCol')}</th>
+                  <th className="text-start py-2 px-3 text-xs text-slate-300 font-bold uppercase tracking-wider">{t('cyrillicCol')}</th>
+                  <th className="text-start py-2 px-3 text-xs text-slate-300 font-bold uppercase tracking-wider">{t('votesCol')}</th>
                   <th className="py-2 px-2"><span className="sr-only">{t('actionsCol')}</span></th>
                 </tr>
               </thead>

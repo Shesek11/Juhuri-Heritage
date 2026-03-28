@@ -4,36 +4,37 @@ import apiService from '../../services/apiService';
 
 interface DuplicateEntry {
   id: string;
-  term: string;
+  hebrewScript: string;
   termNormalized?: string;
   partOfSpeech?: string;
   sourceName?: string;
   source?: string;
   createdAt: string;
-  translations: { hebrew?: string; latin?: string; cyrillic?: string; dialect?: string }[];
+  dialectScripts: { hebrewScript?: string; latinScript?: string; cyrillicScript?: string; dialect?: string }[];
 }
 
 interface DuplicateGroup {
   matchType: string;
   matchKey: string;
+  similarity?: 'identical' | 'near_identical' | 'similar';
+  hint?: string;
   entries: DuplicateEntry[];
 }
 
 interface CompareEntry {
   id: string;
-  term: string;
+  hebrewScript: string;
   termNormalized?: string;
   detectedLanguage?: string;
-  pronunciationGuide?: string;
   partOfSpeech?: string;
-  russian?: string;
-  english?: string;
+  russianShort?: string;
+  englishShort?: string;
   source?: string;
   sourceName?: string;
   contributorName?: string;
   createdAt: string;
-  translations: { id: number; dialect: string; dialectId?: number; hebrew?: string; latin?: string; cyrillic?: string; upvotes: number; downvotes: number }[];
-  definitions: string[];
+  dialectScripts: { id: number; dialect: string; dialectId?: number; hebrewScript?: string; latinScript?: string; cyrillicScript?: string; pronunciationGuide?: string; upvotes: number; downvotes: number }[];
+  hebrewLong?: string | null;
   examples: { origin: string; translated: string; transliteration?: string }[];
   likesCount: number;
   commentsCount: number;
@@ -46,10 +47,10 @@ interface MergeSuggestion {
   entry_id_b: number;
   term_a: string;
   term_b: string;
-  hebrew_a?: string;
-  hebrew_b?: string;
-  latin_a?: string;
-  latin_b?: string;
+  hebrew_script_a?: string;
+  hebrew_script_b?: string;
+  latin_script_a?: string;
+  latin_script_b?: string;
   reason?: string;
   user_name?: string;
   created_at: string;
@@ -61,9 +62,11 @@ const AdminDuplicatesPanel: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('groups');
   const [groups, setGroups] = useState<DuplicateGroup[]>([]);
   const [total, setTotal] = useState(0);
+  const [counts, setCounts] = useState<{ identical: number; near_identical: number; similar: number }>({ identical: 0, near_identical: 0, similar: 0 });
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [searchInput, setSearchInput] = useState('');
+  const [similarityFilter, setSimilarityFilter] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [expandedGroups, setExpandedGroups] = useState<Set<number>>(new Set());
@@ -88,16 +91,17 @@ const AdminDuplicatesPanel: React.FC = () => {
     setLoading(true);
     setError('');
     try {
-      const res = await apiService.get<{ groups: DuplicateGroup[]; total: number }>(
-        `/dictionary/duplicates?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}`
+      const res = await apiService.get<{ groups: DuplicateGroup[]; total: number; counts?: { identical: number; near_identical: number; similar: number } }>(
+        `/dictionary/duplicates?page=${page}&limit=${limit}&search=${encodeURIComponent(search)}${similarityFilter ? `&similarity=${similarityFilter}` : ''}`
       );
       setGroups(res.groups);
       setTotal(res.total);
+      if (res.counts) setCounts(res.counts);
     } catch {
       setError('שגיאה בטעינת כפילויות');
     }
     setLoading(false);
-  }, [page, search]);
+  }, [page, search, similarityFilter]);
 
   const fetchSuggestions = useCallback(async () => {
     setSuggestionsLoading(true);
@@ -137,8 +141,8 @@ const AdminDuplicatesPanel: React.FC = () => {
         setKeepEntryId(res.entries[0].id);
         const a = res.entries[0];
         const defaults: Record<string, string> = {};
-        for (const field of ['term', 'pronunciation_guide', 'part_of_speech', 'russian', 'english']) {
-          const key = field === 'pronunciation_guide' ? 'pronunciationGuide' : field === 'part_of_speech' ? 'partOfSpeech' : field;
+        for (const field of ['hebrew_script', 'part_of_speech', 'russian_short', 'english_short']) {
+          const key = field === 'hebrew_script' ? 'hebrewScript' : field === 'part_of_speech' ? 'partOfSpeech' : field === 'russian_short' ? 'russianShort' : field === 'english_short' ? 'englishShort' : field;
           defaults[field] = (a as any)[key] || '';
         }
         setSelectedFields(defaults);
@@ -198,7 +202,7 @@ const AdminDuplicatesPanel: React.FC = () => {
             value={searchInput}
             onChange={e => setSearchInput(e.target.value)}
             placeholder="חפש ערכים כפולים..."
-            className="w-full pr-10 pl-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm placeholder-slate-500 focus:border-amber-500/50 focus:outline-none"
+            className="w-full ps-10 pe-4 py-2 bg-slate-800 border border-slate-700 rounded-lg text-white text-sm placeholder-slate-500 focus:border-amber-500/50 focus:outline-none"
             dir="rtl"
           />
         </div>
@@ -215,7 +219,22 @@ const AdminDuplicatesPanel: React.FC = () => {
         </div>
       ) : (
         <>
-          <div className="text-sm text-slate-400 mb-3">{total} קבוצות כפולות</div>
+          {/* Similarity filter tabs */}
+          <div className="flex gap-2 mb-4 flex-wrap" dir="rtl">
+            {[
+              { key: '', label: 'הכל', count: counts.identical + counts.near_identical + counts.similar, color: 'bg-indigo-600' },
+              { key: 'identical', label: 'זהים לחלוטין', count: counts.identical, color: 'bg-emerald-600' },
+              { key: 'near_identical', label: 'כמעט זהים', count: counts.near_identical, color: 'bg-amber-600' },
+              { key: 'similar', label: 'דומים', count: counts.similar, color: 'bg-rose-600' },
+            ].map(f => (
+              <button key={f.key} type="button" onClick={() => { setSimilarityFilter(f.key); setPage(1); }}
+                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${similarityFilter === f.key ? `${f.color} text-white` : 'bg-slate-800 text-slate-400 hover:text-white'}`}>
+                {f.label} ({f.count})
+              </button>
+            ))}
+          </div>
+
+          <div className="text-sm text-slate-400 mb-3">{total} קבוצות{similarityFilter ? ' (מסוננות)' : ''}</div>
           <div className="space-y-3">
             {groups.map((group, gi) => {
               const groupIds = group.entries.map(e => e.id);
@@ -228,13 +247,24 @@ const AdminDuplicatesPanel: React.FC = () => {
               });
 
               const matchLabels: Record<string, { label: string; color: string }> = {
+                hebrew_script: { label: 'מונח זהה', color: 'text-amber-400 bg-amber-500/10 border-amber-500/20' },
                 term: { label: 'מונח זהה', color: 'text-amber-400 bg-amber-500/10 border-amber-500/20' },
                 latin: { label: 'לטינית זהה', color: 'text-blue-400 bg-blue-500/10 border-blue-500/20' },
+                latin_script: { label: 'לטינית זהה', color: 'text-blue-400 bg-blue-500/10 border-blue-500/20' },
                 hebrew: { label: 'עברית זהה', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
+                hebrew_short: { label: 'עברית זהה', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
                 russian: { label: 'רוסית זהה', color: 'text-rose-400 bg-rose-500/10 border-rose-500/20' },
+                russian_short: { label: 'רוסית זהה', color: 'text-rose-400 bg-rose-500/10 border-rose-500/20' },
                 cyrillic: { label: 'קירילית זהה', color: 'text-purple-400 bg-purple-500/10 border-purple-500/20' },
+                cyrillic_script: { label: 'קירילית זהה', color: 'text-purple-400 bg-purple-500/10 border-purple-500/20' },
               };
               const ml = matchLabels[group.matchType] || matchLabels.term;
+              const simLabels: Record<string, { label: string; color: string }> = {
+                identical: { label: 'זהה', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
+                near_identical: { label: 'כמעט זהה', color: 'text-amber-400 bg-amber-500/10 border-amber-500/20' },
+                similar: { label: 'דומה', color: 'text-slate-400 bg-slate-500/10 border-slate-500/20' },
+              };
+              const sim = simLabels[group.similarity || 'similar'];
 
               return (
                 <div key={gi} className="bg-slate-800/60 border border-slate-700 rounded-xl overflow-hidden" dir="rtl">
@@ -245,11 +275,15 @@ const AdminDuplicatesPanel: React.FC = () => {
                   >
                     <div className="flex items-center gap-2">
                       <ChevronRight className={`w-4 h-4 text-slate-400 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+                      <span className={`text-xs px-2 py-0.5 rounded-full border ${sim.color}`}>
+                        {sim.label}
+                      </span>
                       <span className={`text-xs px-2 py-0.5 rounded-full border ${ml.color}`}>
                         {ml.label}
                       </span>
                       <span className="text-white font-medium">{group.matchKey}</span>
                       <span className="text-slate-500 text-xs">({group.entries.length} ערכים)</span>
+                      {group.hint && <span className="text-slate-500 text-xs">— {group.hint}</span>}
                     </div>
                     <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
                       {selectedInGroup.length >= 2 && (
@@ -282,7 +316,7 @@ const AdminDuplicatesPanel: React.FC = () => {
                   {isExpanded && (
                   <div className="grid gap-2 px-4 pb-4">
                     {group.entries.map(entry => {
-                      const t = entry.translations?.[0];
+                      const t = entry.dialectScripts?.[0];
                       const isSelected = selectedIds.includes(entry.id);
 
                       return (
@@ -307,10 +341,10 @@ const AdminDuplicatesPanel: React.FC = () => {
                             }`}>
                               {isSelected && <Check className="w-3 h-3" />}
                             </div>
-                            <span className="text-white font-medium">{entry.term || <span className="text-slate-600 italic">ללא מונח</span>}</span>
-                            {t?.hebrew && <span className="text-slate-400">{t.hebrew}</span>}
-                            {t?.latin && <span className="text-slate-500 text-xs">{t.latin}</span>}
-                            {(entry as any).russian && <span className="text-slate-500 text-xs">({(entry as any).russian})</span>}
+                            <span className="text-white font-medium">{entry.hebrewScript || <span className="text-slate-600 italic">ללא מונח</span>}</span>
+                            {t?.hebrewScript && <span className="text-slate-400">{t.hebrewScript}</span>}
+                            {t?.latinScript && <span className="text-slate-500 text-xs">{t.latinScript}</span>}
+                            {(entry as any).russianShort && <span className="text-slate-500 text-xs">({(entry as any).russianShort})</span>}
                           </div>
                           <div className="flex items-center gap-2 text-xs text-slate-500">
                             {entry.sourceName && <span>{entry.sourceName}</span>}
@@ -359,11 +393,10 @@ const AdminDuplicatesPanel: React.FC = () => {
     const deleteEntries = compareEntries.filter(e => e.id !== keepEntryId);
 
     const fields: { key: string; apiKey: string; label: string }[] = [
-      { key: 'term', apiKey: 'term', label: 'מונח' },
-      { key: 'pronunciationGuide', apiKey: 'pronunciation_guide', label: 'מדריך הגייה' },
+      { key: 'hebrewScript', apiKey: 'hebrew_script', label: 'מונח' },
       { key: 'partOfSpeech', apiKey: 'part_of_speech', label: 'חלק דיבר' },
-      { key: 'russian', apiKey: 'russian', label: 'רוסית' },
-      { key: 'english', apiKey: 'english', label: 'אנגלית' },
+      { key: 'russianShort', apiKey: 'russian_short', label: 'רוסית' },
+      { key: 'englishShort', apiKey: 'english_short', label: 'אנגלית' },
     ];
 
     // Collect all unique values per field across all entries
@@ -385,7 +418,7 @@ const AdminDuplicatesPanel: React.FC = () => {
           <div className="grid gap-2">
             {compareEntries.map(e => {
               const isKeep = e.id === keepEntryId;
-              const t = e.translations[0];
+              const t = e.dialectScripts[0];
               return (
                 <div
                   key={e.id}
@@ -402,9 +435,9 @@ const AdminDuplicatesPanel: React.FC = () => {
                     }`}>
                       {isKeep && <Check className="w-3 h-3 text-white" />}
                     </div>
-                    <span className="text-white font-medium">{e.term}</span>
-                    {t?.hebrew && <span className="text-slate-400">{t.hebrew}</span>}
-                    {t?.latin && <span className="text-slate-500 text-xs">{t.latin}</span>}
+                    <span className="text-white font-medium">{e.hebrewScript}</span>
+                    {t?.hebrewScript && <span className="text-slate-400">{t.hebrewScript}</span>}
+                    {t?.latinScript && <span className="text-slate-500 text-xs">{t.latinScript}</span>}
                   </div>
                   <div className="flex items-center gap-3 text-xs text-slate-500">
                     {e.sourceName && <span>{e.sourceName}</span>}
@@ -444,7 +477,7 @@ const AdminDuplicatesPanel: React.FC = () => {
                         key={vi}
                         type="button"
                         onClick={() => selectField(apiKey, val)}
-                        className={`text-right px-3 py-1.5 rounded-lg text-sm transition-all ${
+                        className={`text-start px-3 py-1.5 rounded-lg text-sm transition-all ${
                           selected === val
                             ? 'bg-emerald-500/20 border border-emerald-500/30 text-white'
                             : 'bg-slate-800/50 border border-slate-700/50 text-slate-300 hover:border-slate-600'
@@ -462,16 +495,16 @@ const AdminDuplicatesPanel: React.FC = () => {
 
         {/* Translations - all kept */}
         <div className="mb-6">
-          <h4 className="text-white font-medium mb-2">תרגומים (כולם נשמרים — {compareEntries.reduce((sum, e) => sum + e.translations.length, 0)} סה״כ)</h4>
+          <h4 className="text-white font-medium mb-2">תרגומים (כולם נשמרים — {compareEntries.reduce((sum, e) => sum + e.dialectScripts.length, 0)} סה״כ)</h4>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 max-h-60 overflow-y-auto">
             {compareEntries.map(e =>
-              e.translations.map((t, i) => (
+              e.dialectScripts.map((t, i) => (
                 <div key={`${e.id}-${i}`} className="bg-slate-800/60 rounded-lg px-3 py-2 text-sm">
                   <div className="flex items-center gap-2 mb-0.5">
                     <span className="text-xs text-slate-500">#{e.id}</span>
                     <span className={`text-xs ${e.id === keepEntryId ? 'text-emerald-400' : 'text-blue-400'}`}>{t.dialect || 'כללי'}</span>
                   </div>
-                  <div className="text-white">{[t.hebrew, t.latin, t.cyrillic].filter(Boolean).join(' / ') || '-'}</div>
+                  <div className="text-white">{[t.hebrewScript, t.latinScript, t.cyrillicScript].filter(Boolean).join(' / ') || '-'}</div>
                 </div>
               ))
             )}
@@ -499,7 +532,7 @@ const AdminDuplicatesPanel: React.FC = () => {
                 <h3 className="text-lg font-bold text-white">אישור מיזוג</h3>
               </div>
               <p className="text-slate-300 text-sm mb-2">
-                <strong className="text-red-400">{deleteEntries.length} ערכים</strong> יימחקו וימוזגו לערך <strong className="text-emerald-400">"{keepEntry.term}"</strong> (#{keepEntry.id}).
+                <strong className="text-red-400">{deleteEntries.length} ערכים</strong> יימחקו וימוזגו לערך <strong className="text-emerald-400">"{keepEntry.hebrewScript}"</strong> (#{keepEntry.id}).
               </p>
               <p className="text-slate-400 text-xs mb-4">כל התרגומים, ההגדרות, הדוגמאות, הלייקים והתגובות שלהם יישמרו.</p>
               <div className="flex gap-3">
@@ -561,11 +594,11 @@ const AdminDuplicatesPanel: React.FC = () => {
                 </div>
               </div>
               <div className="flex items-center gap-4 text-xs text-slate-500">
-                {s.hebrew_a && <span>{s.hebrew_a}</span>}
-                {s.latin_a && <span>{s.latin_a}</span>}
+                {s.hebrew_script_a && <span>{s.hebrew_script_a}</span>}
+                {s.latin_script_a && <span>{s.latin_script_a}</span>}
                 <span>·</span>
-                {s.hebrew_b && <span>{s.hebrew_b}</span>}
-                {s.latin_b && <span>{s.latin_b}</span>}
+                {s.hebrew_script_b && <span>{s.hebrew_script_b}</span>}
+                {s.latin_script_b && <span>{s.latin_script_b}</span>}
               </div>
               {s.reason && <p className="text-slate-400 text-sm mt-2">{s.reason}</p>}
               <div className="text-xs text-slate-600 mt-1">
@@ -586,7 +619,7 @@ const AdminDuplicatesPanel: React.FC = () => {
         <div className="flex items-center gap-2 bg-red-500/10 border border-red-500/20 rounded-lg p-3 mb-4 text-red-400 text-sm" dir="rtl">
           <AlertTriangle className="w-4 h-4 shrink-0" />
           {error}
-          <button title="סגור" onClick={() => setError('')} className="mr-auto"><X className="w-4 h-4" /></button>
+          <button title="סגור" onClick={() => setError('')} className="ms-auto"><X className="w-4 h-4" /></button>
         </div>
       )}
 

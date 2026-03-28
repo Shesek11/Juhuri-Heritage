@@ -264,7 +264,7 @@ const AdminGSCPanel: React.FC = () => {
                                 <table className="w-full text-sm">
                                     <thead className="text-xs text-slate-400 border-b border-slate-700/30">
                                         <tr>
-                                            <th className="text-right px-4 py-2 font-medium">שאילתה</th>
+                                            <th className="text-start px-4 py-2 font-medium">שאילתה</th>
                                             <th className="text-center px-2 py-2 font-medium">קליקים</th>
                                             <th className="text-center px-2 py-2 font-medium">חשיפות</th>
                                             <th className="text-center px-2 py-2 font-medium">מיקום</th>
@@ -296,7 +296,7 @@ const AdminGSCPanel: React.FC = () => {
                                 <table className="w-full text-sm">
                                     <thead className="text-xs text-slate-400 border-b border-slate-700/30">
                                         <tr>
-                                            <th className="text-right px-4 py-2 font-medium">דף</th>
+                                            <th className="text-start px-4 py-2 font-medium">דף</th>
                                             <th className="text-center px-2 py-2 font-medium">קליקים</th>
                                             <th className="text-center px-2 py-2 font-medium">חשיפות</th>
                                             <th className="text-center px-2 py-2 font-medium">CTR</th>

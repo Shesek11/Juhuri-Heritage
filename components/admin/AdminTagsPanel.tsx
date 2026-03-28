@@ -179,7 +179,7 @@ export const AdminTagsPanel: React.FC = () => {
         return (
             <div className="flex items-center justify-center py-16">
                 <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
-                <span className="mr-3 text-slate-400">טוען תגיות...</span>
+                <span className="ms-3 text-slate-400">טוען תגיות...</span>
             </div>
         );
     }
@@ -364,12 +364,12 @@ export const AdminTagsPanel: React.FC = () => {
                     <table className="w-full">
                         <thead className="bg-white/5">
                             <tr>
-                                <th className="px-4 py-3 text-right text-sm font-semibold">אייקון</th>
-                                <th className="px-4 py-3 text-right text-sm font-semibold">שם עברית</th>
-                                <th className="px-4 py-3 text-right text-sm font-semibold">שם אנגלית</th>
-                                <th className="px-4 py-3 text-right text-sm font-semibold">קטגוריה</th>
-                                <th className="px-4 py-3 text-right text-sm font-semibold">צבע</th>
-                                <th className="px-4 py-3 text-right text-sm font-semibold">פעולות</th>
+                                <th className="px-4 py-3 text-start text-sm font-semibold">אייקון</th>
+                                <th className="px-4 py-3 text-start text-sm font-semibold">שם עברית</th>
+                                <th className="px-4 py-3 text-start text-sm font-semibold">שם אנגלית</th>
+                                <th className="px-4 py-3 text-start text-sm font-semibold">קטגוריה</th>
+                                <th className="px-4 py-3 text-start text-sm font-semibold">צבע</th>
+                                <th className="px-4 py-3 text-start text-sm font-semibold">פעולות</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-200 dark:divide-slate-700">

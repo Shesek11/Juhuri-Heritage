@@ -184,7 +184,7 @@ const SearchResultCard: React.FC<SearchResultCardProps> = ({ entry, isBestMatch,
 
         <button
           onClick={(e) => { e.stopPropagation(); onNavigate(); }}
-          className="mr-auto inline-flex items-center gap-1.5 px-3 py-1.5 text-indigo-300 hover:bg-indigo-500/10 rounded-lg text-sm transition-colors border border-transparent"
+          className="ms-auto inline-flex items-center gap-1.5 px-3 py-1.5 text-indigo-300 hover:bg-indigo-500/10 rounded-lg text-sm transition-colors border border-transparent"
         >
           <span>{t('details')}</span>
           <ArrowLeft className="w-3.5 h-3.5" />

@@ -1,16 +1,16 @@
 import React from 'react';
 import { Volume2, ThumbsUp, ThumbsDown, Edit3 } from 'lucide-react';
-import { Translation, DictionaryEntry, PendingSuggestion } from '../../types';
+import { DialectScript, DictionaryEntry, PendingSuggestion } from '../../types';
 import EditableField from './EditableField';
 
 interface EnrichmentData {
-  hebrew?: string;
-  latin?: string;
-  cyrillic?: string;
+  hebrewScript?: string;
+  latinScript?: string;
+  cyrillicScript?: string;
 }
 
 interface TranslationCardProps {
-  translation: Translation;
+  translation: DialectScript;
   index: number;
   entry: DictionaryEntry;
   voteData: { upvotes: number; downvotes: number; userVote: 'up' | 'down' | null } | null;
@@ -20,7 +20,7 @@ interface TranslationCardProps {
   onVote: (translationId: number, voteType: 'up' | 'down') => void;
   onStartEdit: (fieldName: string) => void;
   onCloseEdit: () => void;
-  onSuggestCorrection?: (translation: Translation, entryId: string, term: string) => void;
+  onSuggestCorrection?: (translation: DialectScript, entryId: string, hebrewScript: string) => void;
   pendingSuggestions?: PendingSuggestion[];
   enrichmentLoading?: boolean;
   enrichmentData?: EnrichmentData | null;
@@ -42,34 +42,34 @@ const TranslationCard: React.FC<TranslationCardProps> = ({
   enrichmentLoading = false,
   enrichmentData,
 }) => {
-  const latinSuggestion = pendingSuggestions.find(s => s.fieldName === 'latin');
-  const cyrillicSuggestion = pendingSuggestions.find(s => s.fieldName === 'cyrillic');
-  const hebrewSuggestion = pendingSuggestions.find(s => s.fieldName === 'hebrew');
+  const latinSuggestion = pendingSuggestions.find(s => s.fieldName === 'latinScript');
+  const cyrillicSuggestion = pendingSuggestions.find(s => s.fieldName === 'cyrillicScript');
+  const hebrewSuggestion = pendingSuggestions.find(s => s.fieldName === 'hebrewShort');
 
   return (
     <div className="relative p-4 rounded-xl bg-white/5 hover:bg-white/10 transition-colors group border border-white/10">
       <div className="flex gap-3">
         {/* Play button */}
         <button
-          onClick={() => onPlay(t.cyrillic || t.latin || t.hebrew, `trans-${idx}`)}
-          className={`p-2 rounded-full text-slate-400 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all self-start mt-1 shrink-0 ${isPlaying === `trans-${idx}` ? 'text-indigo-600 !opacity-100 animate-pulse' : ''}`}
+          onClick={() => onPlay(t.cyrillicScript || t.latinScript || t.hebrewScript, `trans-${idx}`)}
+          className={`p-2 rounded-full text-slate-300 hover:text-indigo-600 dark:text-slate-300 dark:hover:text-indigo-400 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-all self-start mt-1 shrink-0 ${isPlaying === `trans-${idx}` ? 'text-indigo-600 !opacity-100 animate-pulse' : ''}`}
         >
           <Volume2 size={20} />
         </button>
 
         <div className="flex flex-col gap-1 flex-1 min-w-0">
-          {/* Hebrew */}
+          {/* Hebrew Script */}
           <EditableField
             entryId={entry.id}
-            fieldName="hebrew"
-            dbValue={t.hebrew}
-            aiValue={enrichmentData?.hebrew}
-            isEnriching={enrichmentLoading && !t.hebrew}
+            fieldName="hebrewShort"
+            dbValue={t.hebrewScript}
+            aiValue={enrichmentData?.hebrewScript}
+            isEnriching={enrichmentLoading && !t.hebrewScript}
             pendingSuggestion={hebrewSuggestion}
-            fieldSource={entry.fieldSources?.hebrew}
+            fieldSource={entry.fieldSources?.hebrewShort}
             valueClassName="text-2xl font-bold text-slate-100 font-rubik"
-            isEditing={editingField === 'hebrew'}
-            onStartEdit={() => onStartEdit('hebrew')}
+            isEditing={editingField === 'hebrewShort'}
+            onStartEdit={() => onStartEdit('hebrewShort')}
             onCloseEdit={onCloseEdit}
           />
 
@@ -80,16 +80,16 @@ const TranslationCard: React.FC<TranslationCardProps> = ({
             )}
             <EditableField
               entryId={entry.id}
-              fieldName="latin"
-              dbValue={t.latin}
-              aiValue={enrichmentData?.latin}
-              isEnriching={enrichmentLoading && !t.latin}
+              fieldName="latinScript"
+              dbValue={t.latinScript}
+              aiValue={enrichmentData?.latinScript}
+              isEnriching={enrichmentLoading && !t.latinScript}
               pendingSuggestion={latinSuggestion}
-              fieldSource={entry.fieldSources?.latin}
+              fieldSource={entry.fieldSources?.latinScript}
               compact
               valueClassName="text-slate-300 font-mono tracking-wide"
-              isEditing={editingField === 'latin'}
-              onStartEdit={() => onStartEdit('latin')}
+              isEditing={editingField === 'latinScript'}
+              onStartEdit={() => onStartEdit('latinScript')}
               onCloseEdit={onCloseEdit}
             />
           </div>
@@ -97,16 +97,16 @@ const TranslationCard: React.FC<TranslationCardProps> = ({
           {/* Cyrillic */}
           <EditableField
             entryId={entry.id}
-            fieldName="cyrillic"
-            dbValue={t.cyrillic}
-            aiValue={enrichmentData?.cyrillic}
-            isEnriching={enrichmentLoading && !t.cyrillic}
+            fieldName="cyrillicScript"
+            dbValue={t.cyrillicScript}
+            aiValue={enrichmentData?.cyrillicScript}
+            isEnriching={enrichmentLoading && !t.cyrillicScript}
             pendingSuggestion={cyrillicSuggestion}
-            fieldSource={entry.fieldSources?.cyrillic}
+            fieldSource={entry.fieldSources?.cyrillicScript}
             compact
-            valueClassName="text-lg text-slate-400 font-serif"
-            isEditing={editingField === 'cyrillic'}
-            onStartEdit={() => onStartEdit('cyrillic')}
+            valueClassName="text-lg text-slate-300 font-serif"
+            isEditing={editingField === 'cyrillicScript'}
+            onStartEdit={() => onStartEdit('cyrillicScript')}
             onCloseEdit={onCloseEdit}
           />
 
@@ -118,7 +118,7 @@ const TranslationCard: React.FC<TranslationCardProps> = ({
                   onClick={() => onVote(t.id!, 'up')}
                   className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs transition-all ${voteData?.userVote === 'up'
                     ? 'bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400'
-                    : 'text-slate-400 hover:bg-white/10'
+                    : 'text-slate-300 hover:bg-white/10'
                     }`}
                   title="הצבע לטובה"
                 >
@@ -129,7 +129,7 @@ const TranslationCard: React.FC<TranslationCardProps> = ({
                   onClick={() => onVote(t.id!, 'down')}
                   className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs transition-all ${voteData?.userVote === 'down'
                     ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
-                    : 'text-slate-400 hover:bg-white/10'
+                    : 'text-slate-300 hover:bg-white/10'
                     }`}
                   title="הצבע נגד"
                 >
@@ -140,7 +140,7 @@ const TranslationCard: React.FC<TranslationCardProps> = ({
             )}
             {entry.id && (
               <button
-                onClick={() => onSuggestCorrection?.(t, entry.id!, entry.term)}
+                onClick={() => onSuggestCorrection?.(t, entry.id!, entry.hebrewScript)}
                 className="flex items-center gap-1 px-2 py-1 rounded-md text-xs text-amber-600 dark:text-amber-400 hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-all"
                 title="הצע תיקון"
               >

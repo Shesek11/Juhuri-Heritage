@@ -79,7 +79,7 @@ export const CategorizedTagFilter: React.FC<CategorizedTagFilterProps> = ({
                 <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300">
                     סינון לפי תגיות
                     {selectedCount > 0 && (
-                        <span className="mr-2 text-amber-600 dark:text-amber-400 font-normal">
+                        <span className="ms-2 text-amber-600 dark:text-amber-400 font-normal">
                             ({selectedCount})
                         </span>
                     )}
@@ -109,7 +109,7 @@ export const CategorizedTagFilter: React.FC<CategorizedTagFilterProps> = ({
                             {/* Category header - clickable */}
                             <button
                                 onClick={() => toggleCategory(category)}
-                                className="flex items-center justify-between w-full text-right hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded p-1.5 transition-colors"
+                                className="flex items-center justify-between w-full text-start hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded p-1.5 transition-colors"
                             >
                                 <div className="flex items-center gap-2">
                                     <span className="text-base">{config.icon}</span>
@@ -131,7 +131,7 @@ export const CategorizedTagFilter: React.FC<CategorizedTagFilterProps> = ({
 
                             {/* Category tags - collapsible */}
                             {isExpanded && (
-                                <div className="flex flex-wrap gap-1.5 mt-2 pr-6">
+                                <div className="flex flex-wrap gap-1.5 mt-2 ps-6">
                                     {categoryTags.map(tag => {
                                         const isSelected = selectedTags.includes(tag.id);
                                         return (

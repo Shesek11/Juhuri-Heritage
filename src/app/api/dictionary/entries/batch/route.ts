@@ -18,13 +18,12 @@ export async function POST(request: NextRequest) {
 
       const [result] = await pool.query(
         `INSERT INTO dictionary_entries
-         (term, detected_language, pronunciation_guide, source, status, contributor_id, approved_by, approved_at)
-         VALUES (?, ?, ?, ?, 'active', ?, ?, NOW())
-         ON DUPLICATE KEY UPDATE term = term`,
+         (hebrew_script, detected_language, source, status, contributor_id, approved_by, approved_at)
+         VALUES (?, ?, ?, 'active', ?, ?, NOW())
+         ON DUPLICATE KEY UPDATE hebrew_script = hebrew_script`,
         [
           entry.term,
           entry.detectedLanguage || 'Hebrew',
-          entry.pronunciationGuide || null,
           entry.source || 'מאגר',
           user.id,
           user.id
@@ -33,7 +32,7 @@ export async function POST(request: NextRequest) {
 
       let entryId = result.insertId;
       if (!entryId) {
-        const [existing] = await pool.query('SELECT id FROM dictionary_entries WHERE term = ?', [entry.term]) as any[];
+        const [existing] = await pool.query('SELECT id FROM dictionary_entries WHERE hebrew_script = ?', [entry.term]) as any[];
         if (existing.length === 0) continue;
         entryId = existing[0].id;
       }
@@ -44,15 +43,9 @@ export async function POST(request: NextRequest) {
           const dialectId = dialects[0]?.id || 6;
 
           await pool.query(
-            `INSERT INTO translations (entry_id, dialect_id, hebrew, latin, cyrillic) VALUES (?, ?, ?, ?, ?)`,
+            `INSERT INTO dialect_scripts (entry_id, dialect_id, hebrew_script, latin_script, cyrillic_script) VALUES (?, ?, ?, ?, ?)`,
             [entryId, dialectId, t.hebrew || '', t.latin || '', t.cyrillic || '']
           );
-        }
-      }
-
-      if (entry.definitions) {
-        for (const def of entry.definitions) {
-          await pool.query('INSERT INTO definitions (entry_id, definition) VALUES (?, ?)', [entryId, def]);
         }
       }
 

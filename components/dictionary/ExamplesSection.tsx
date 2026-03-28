@@ -105,14 +105,14 @@ const ExamplesSection: React.FC<ExamplesSectionProps> = ({
       {displayExamples.length > 0 && (
         <div className={`space-y-3 ${isEnrichedExamples ? 'animate-in fade-in duration-500' : ''}`}>
           {displayExamples.map((ex, idx) => (
-            <div key={idx} className="border-r-4 border-indigo-200 dark:border-indigo-900 pr-4 py-2 bg-white/5 rounded-r-lg">
+            <div key={idx} className="border-s-4 border-indigo-200 dark:border-indigo-900 ps-4 py-2 bg-white/5 rounded-s-lg">
               <div className="flex justify-between items-start mb-1">
                 <p className="text-lg font-medium text-slate-200">{ex.origin}</p>
                 <button onClick={() => onPlay(ex.origin, `ex-orig-${idx}`)} className={`text-slate-300 hover:text-indigo-500 transition-colors ${isPlaying === `ex-orig-${idx}` ? 'text-indigo-500 animate-pulse' : ''}`}>
                   <Volume2 size={16} />
                 </button>
               </div>
-              {ex.transliteration && <p className="text-sm text-slate-400 font-mono mb-1 dir-ltr text-right">{ex.transliteration}</p>}
+              {ex.transliteration && <p className="text-sm text-slate-400 font-mono mb-1 dir-ltr text-start">{ex.transliteration}</p>}
               <p className="text-slate-600 dark:text-slate-400">{ex.translated}</p>
             </div>
           ))}
@@ -127,14 +127,14 @@ const ExamplesSection: React.FC<ExamplesSectionProps> = ({
           </p>
           <div className="space-y-3">
             {communityExamples.map((ex) => (
-              <div key={ex.id} className="border-r-4 border-indigo-200 dark:border-indigo-900 pr-4 py-2 bg-indigo-50/50 dark:bg-indigo-900/20 rounded-r-lg">
+              <div key={ex.id} className="border-s-4 border-indigo-200 dark:border-indigo-900 ps-4 py-2 bg-indigo-50/50 dark:bg-indigo-900/20 rounded-s-lg">
                 <div className="flex justify-between items-start mb-1">
                   <p className="text-lg font-medium text-slate-200">{ex.origin}</p>
                   <button onClick={() => onPlay(ex.origin, `comm-${ex.id}`)} className={`text-slate-300 hover:text-indigo-500 transition-colors ${isPlaying === `comm-${ex.id}` ? 'text-indigo-500 animate-pulse' : ''}`}>
                     <Volume2 size={16} />
                   </button>
                 </div>
-                {ex.transliteration && <p className="text-sm text-slate-400 font-mono mb-1 dir-ltr text-right">{ex.transliteration}</p>}
+                {ex.transliteration && <p className="text-sm text-slate-400 font-mono mb-1 dir-ltr text-start">{ex.transliteration}</p>}
                 {ex.translated && <p className="text-slate-600 dark:text-slate-400">{ex.translated}</p>}
                 <p className="text-[11px] text-slate-400 mt-1">תרומה: {ex.user_name}</p>
               </div>

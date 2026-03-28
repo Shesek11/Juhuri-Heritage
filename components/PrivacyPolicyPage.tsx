@@ -30,7 +30,7 @@ const PrivacyPolicyPage: React.FC = () => {
         <section className="mb-8">
           <h2 className="text-xl font-bold mb-3 text-slate-100">2. שימוש במידע</h2>
           <p className="mb-3 text-slate-600 dark:text-slate-300 leading-relaxed">המידע הנאסף משמש למטרות הבאות:</p>
-          <ul className="list-disc list-inside text-slate-600 dark:text-slate-300 space-y-1 pr-4">
+          <ul className="list-disc list-inside text-slate-600 dark:text-slate-300 space-y-1 ps-4">
             <li>מתן ותחזוקת השירותים שלנו.</li>
             <li>שיפור ותאום אישי של חווית המשתמש.</li>
             <li>תקשורת איתכם, כולל מענה לשאלות ומתן עדכונים.</li>

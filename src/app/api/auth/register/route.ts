@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import pool from '@/src/lib/db';
 import { generateToken } from '@/src/lib/auth';
 import { applyRateLimit, RATE_LIMITS } from '@/src/lib/rate-limit';
+import { fireEventEmail } from '@/src/lib/email';
 
 export async function POST(request: NextRequest) {
   try {
@@ -54,6 +55,9 @@ export async function POST(request: NextRequest) {
       `INSERT INTO system_logs (event_type, description, user_id, user_name) VALUES (?, ?, ?, ?)`,
       ['USER_REGISTER', `משתמש חדש נרשם: ${name.trim()}`, userId, name.trim()]
     );
+
+    // Send welcome email
+    fireEventEmail('welcome', { to: normalizedEmail, variables: { userName: name.trim() } });
 
     // Get full user data
     const [users] = await pool.query(

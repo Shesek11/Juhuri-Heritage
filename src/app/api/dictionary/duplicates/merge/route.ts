@@ -33,20 +33,19 @@ export async function POST(request: NextRequest) {
     }
 
     // 1. Snapshot
-    const [deleteTranslations] = await conn.query(
-      `SELECT t.*, COALESCE(d.name, '') as dialect_name FROM translations t LEFT JOIN dialects d ON t.dialect_id = d.id WHERE t.entry_id = ?`, [deleteId]
+    const [deleteDialectScripts] = await conn.query(
+      `SELECT t.*, COALESCE(d.name, '') as dialect_name FROM dialect_scripts t LEFT JOIN dialects d ON t.dialect_id = d.id WHERE t.entry_id = ?`, [deleteId]
     ) as any[];
-    const [deleteDefinitions] = await conn.query('SELECT * FROM definitions WHERE entry_id = ?', [deleteId]) as any[];
     const [deleteExamples] = await conn.query('SELECT * FROM examples WHERE entry_id = ?', [deleteId]) as any[];
 
     await conn.query(
-      'INSERT INTO merge_log (kept_entry_id, deleted_entry_id, deleted_term, merge_details, merged_by) VALUES (?, ?, ?, ?, ?)',
-      [keepId, deleteId, deleteEntry.term, JSON.stringify({ entry: deleteEntry, translations: deleteTranslations, definitions: deleteDefinitions, examples: deleteExamples }), user.id]
+      'INSERT INTO merge_log (kept_entry_id, deleted_entry_id, deleted_hebrew_script, merge_details, merged_by) VALUES (?, ?, ?, ?, ?)',
+      [keepId, deleteId, deleteEntry.hebrew_script, JSON.stringify({ entry: deleteEntry, dialectScripts: deleteDialectScripts, examples: deleteExamples }), user.id]
     );
 
-    // 2. Apply field overrides
+    // 2. Apply field overrides + merge source_name
     if (fieldOverrides && typeof fieldOverrides === 'object') {
-      const allowedFields = ['term', 'pronunciation_guide', 'part_of_speech', 'russian', 'english', 'detected_language'];
+      const allowedFields = ['hebrew_script', 'part_of_speech', 'russian_short', 'english_short', 'detected_language', 'hebrew_short', 'hebrew_long', 'russian_long', 'english_long', 'source_name'];
       const updates: string[] = [];
       const values: any[] = [];
       for (const [field, value] of Object.entries(fieldOverrides)) {
@@ -55,33 +54,38 @@ export async function POST(request: NextRequest) {
           values.push(value);
         }
       }
+
+      // Auto-merge source_name if not explicitly overridden
+      if (!fieldOverrides.source_name && keepEntry.source_name && deleteEntry.source_name) {
+        const keepSources = keepEntry.source_name.split(' ; ').map((s: string) => s.trim());
+        const deleteSources = deleteEntry.source_name.split(' ; ').map((s: string) => s.trim());
+        const allSources = [...new Set([...keepSources, ...deleteSources])];
+        if (allSources.length > keepSources.length) {
+          updates.push('source_name = ?');
+          values.push(allSources.join(' ; '));
+        }
+      } else if (!fieldOverrides.source_name && !keepEntry.source_name && deleteEntry.source_name) {
+        updates.push('source_name = ?');
+        values.push(deleteEntry.source_name);
+      }
+
       if (updates.length > 0) {
-        if (fieldOverrides.term) {
-          updates.push('term_normalized = ?');
-          values.push(normalizeTerm(fieldOverrides.term as string));
+        if (fieldOverrides.hebrew_script) {
+          updates.push('hebrew_script_normalized = ?');
+          values.push(normalizeTerm(fieldOverrides.hebrew_script as string));
         }
         values.push(keepId);
         await conn.query(`UPDATE dictionary_entries SET ${updates.join(', ')} WHERE id = ?`, values);
       }
     }
 
-    // 3. Move translations
-    await conn.query('UPDATE translations SET entry_id = ? WHERE entry_id = ?', [keepId, deleteId]);
+    // 3. Move dialect_scripts
+    await conn.query('UPDATE dialect_scripts SET entry_id = ? WHERE entry_id = ?', [keepId, deleteId]);
 
-    // 4. Move unique definitions
-    const [keepDefs] = await conn.query('SELECT definition FROM definitions WHERE entry_id = ?', [keepId]) as any[];
-    const keepDefSet = new Set(keepDefs.map((d: any) => d.definition));
-    for (const d of deleteDefinitions) {
-      if (!keepDefSet.has(d.definition)) {
-        await conn.query('INSERT INTO definitions (entry_id, definition) VALUES (?, ?)', [keepId, d.definition]);
-      }
-    }
-    await conn.query('DELETE FROM definitions WHERE entry_id = ?', [deleteId]);
-
-    // 5. Move examples
+    // 4. Move examples
     await conn.query('UPDATE examples SET entry_id = ? WHERE entry_id = ?', [keepId, deleteId]);
 
-    // 6. Re-point FKs
+    // 5. Re-point FKs
     await conn.query('UPDATE translation_suggestions SET entry_id = ? WHERE entry_id = ?', [keepId, deleteId]);
     await conn.query('UPDATE comments SET entry_id = ? WHERE entry_id = ?', [keepId, deleteId]);
     await conn.query('UPDATE community_examples SET entry_id = ? WHERE entry_id = ?', [keepId, deleteId]);
@@ -89,7 +93,14 @@ export async function POST(request: NextRequest) {
     await conn.query(`INSERT IGNORE INTO entry_likes (entry_id, user_id, created_at) SELECT ?, user_id, created_at FROM entry_likes WHERE entry_id = ?`, [keepId, deleteId]);
     await conn.query('DELETE FROM entry_likes WHERE entry_id = ?', [deleteId]);
 
-    await conn.query(`INSERT INTO word_views (entry_id, view_date, view_count) SELECT ?, view_date, view_count FROM word_views WHERE entry_id = ? ON DUPLICATE KEY UPDATE view_count = word_views.view_count + VALUES(view_count)`, [keepId, deleteId]);
+    // Move word_views: aggregate into kept entry, then delete old
+    const [deleteViews] = await conn.query('SELECT view_date, view_count FROM word_views WHERE entry_id = ?', [deleteId]) as any[];
+    for (const v of deleteViews) {
+      await conn.query(
+        'INSERT INTO word_views (entry_id, view_date, view_count) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE view_count = view_count + ?',
+        [keepId, v.view_date, v.view_count, v.view_count]
+      );
+    }
     await conn.query('DELETE FROM word_views WHERE entry_id = ?', [deleteId]);
 
     await conn.query(`INSERT IGNORE INTO related_words (entry_id, related_entry_id, relation_type) SELECT ?, related_entry_id, relation_type FROM related_words WHERE entry_id = ? AND related_entry_id != ?`, [keepId, deleteId, keepId]);
@@ -108,18 +119,18 @@ export async function POST(request: NextRequest) {
     await conn.query(`INSERT IGNORE INTO field_sources (entry_id, field_name, source_type, confidence) SELECT ?, field_name, source_type, confidence FROM field_sources WHERE entry_id = ?`, [keepId, deleteId]);
     await conn.query('DELETE FROM field_sources WHERE entry_id = ?', [deleteId]);
 
-    // 7. Delete doomed entry
+    // 6. Delete doomed entry
     await conn.query('DELETE FROM dictionary_entries WHERE id = ?', [deleteId]);
 
-    // 8. Update term_normalized if not done via overrides
-    if (!fieldOverrides?.term) {
-      await conn.query('UPDATE dictionary_entries SET term_normalized = ? WHERE id = ?', [normalizeTerm(keepEntry.term), keepId]);
+    // 7. Update hebrew_script_normalized if not done via overrides
+    if (!fieldOverrides?.hebrew_script) {
+      await conn.query('UPDATE dictionary_entries SET hebrew_script_normalized = ? WHERE id = ?', [normalizeTerm(keepEntry.hebrew_script), keepId]);
     }
 
-    // 9. Log
+    // 8. Log
     await conn.query(
       `INSERT INTO system_logs (event_type, description, user_id, user_name, metadata) VALUES ('ENTRY_MERGED', ?, ?, ?, ?)`,
-      [`מוזגו ערכים: "${keepEntry.term}" (${keepId}) ← "${deleteEntry.term}" (${deleteId})`, user.id, user.name, JSON.stringify({ keepId, deleteId, deletedTerm: deleteEntry.term })]
+      [`מוזגו ערכים: "${keepEntry.hebrew_script}" (${keepId}) ← "${deleteEntry.hebrew_script}" (${deleteId})`, user.id, user.name, JSON.stringify({ keepId, deleteId, deletedTerm: deleteEntry.hebrew_script })]
     );
 
     // Resolve pending merge suggestions

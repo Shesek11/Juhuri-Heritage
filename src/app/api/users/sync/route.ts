@@ -20,12 +20,12 @@ export async function POST(request: NextRequest) {
     // Upsert user: Insert if new, update name/email/last_login if exists
     // Note: We do NOT update 'role' here to prevent resetting admins to users
     await pool.query(`
-      INSERT INTO users (id, email, name, role, joined_at, last_login, contributions_count, xp, level, current_streak)
+      INSERT INTO users (id, email, name, role, joined_at, last_login_date, contributions_count, xp, level, current_streak)
       VALUES (?, ?, ?, 'user', NOW(), NOW(), 0, 0, 1, 0)
       ON DUPLICATE KEY UPDATE
       name = VALUES(name),
       email = VALUES(email),
-      last_login = NOW()
+      last_login_date = NOW()
     `, [id, email, name || email.split('@')[0]]);
 
     // Fetch the full user object (including role, xp, etc.) to return to client

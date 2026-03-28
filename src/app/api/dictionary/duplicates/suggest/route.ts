@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/src/lib/db';
 import { requireAuth } from '@/src/lib/auth';
+import { logEvent } from '@/src/lib/logEvent';
+import { fireEventEmail } from '@/src/lib/email';
 
 export async function POST(request: NextRequest) {
   try {
@@ -22,6 +24,9 @@ export async function POST(request: NextRequest) {
        ON DUPLICATE KEY UPDATE reason = COALESCE(VALUES(reason), reason)`,
       [idA, idB, reason || null, user.id, user.name]
     );
+
+    await logEvent('MERGE_SUGGESTED', `הצעת מיזוג: ${idA} ↔ ${idB}`, user, { entryIdA: idA, entryIdB: idB, reason }, request);
+    fireEventEmail('merge-suggested', { variables: { userName: user.name, entryIdA: String(idA), entryIdB: String(idB), reason: reason || '' } });
 
     return NextResponse.json({ success: true });
   } catch (err: any) {

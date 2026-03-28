@@ -149,7 +149,7 @@ const LessonEngine: React.FC<LessonEngineProps> = ({ exercises, unitTitle, onCom
               />
             </div>
           </div>
-          <span className="text-sm text-slate-400 font-bold min-w-[44px] text-left tabular-nums">
+          <span className="text-sm text-slate-400 font-bold min-w-[44px] text-end tabular-nums">
             {currentIndex + 1}/{exercises.length}
           </span>
         </div>

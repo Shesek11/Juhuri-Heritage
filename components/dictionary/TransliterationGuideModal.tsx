@@ -57,9 +57,9 @@ const TransliterationGuideModal: React.FC<TransliterationGuideModalProps> = ({ o
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-white/10">
-                <th className="text-right py-2 px-2 text-xs text-slate-400 font-bold">סימן</th>
-                <th className="text-right py-2 px-2 text-xs text-slate-400 font-bold">צליל</th>
-                <th className="text-right py-2 px-2 text-xs text-slate-400 font-bold">דוגמאות</th>
+                <th className="text-start py-2 px-2 text-xs text-slate-400 font-bold">סימן</th>
+                <th className="text-start py-2 px-2 text-xs text-slate-400 font-bold">צליל</th>
+                <th className="text-start py-2 px-2 text-xs text-slate-400 font-bold">דוגמאות</th>
               </tr>
             </thead>
             <tbody>

@@ -147,7 +147,7 @@ export const CookingMode: React.FC<CookingModeProps> = ({ recipe, servings, onCl
                             </div>
                         )}
 
-                        <div className="hidden md:block text-right">
+                        <div className="hidden md:block text-start">
                             <div className="flex items-center gap-2 text-sm text-slate-400">
                                 <Users className="w-4 h-4" />
                                 <span>{servings} מנות</span>
@@ -171,7 +171,7 @@ export const CookingMode: React.FC<CookingModeProps> = ({ recipe, servings, onCl
             <div className="flex-1 overflow-y-auto">
                 <div className="flex flex-col lg:flex-row h-full">
                     {/* Left Sidebar - Ingredients (Hidden on mobile, collapsible) */}
-                    <div className="hidden lg:block lg:w-80 bg-slate-800 border-r border-slate-700 p-6 overflow-y-auto">
+                    <div className="hidden lg:block lg:w-80 bg-slate-800 border-s border-slate-700 p-6 overflow-y-auto">
                         <h2 className="text-lg font-bold mb-4 flex items-center gap-2">
                             <ChefHat className="w-5 h-5 text-amber-500" />
                             מרכיבים
@@ -288,14 +288,14 @@ export const CookingMode: React.FC<CookingModeProps> = ({ recipe, servings, onCl
                     </div>
 
                     {/* Right Sidebar - Step List (Hidden on mobile) */}
-                    <div className="hidden lg:block lg:w-80 bg-slate-800 border-l border-slate-700 p-6 overflow-y-auto">
+                    <div className="hidden lg:block lg:w-80 bg-slate-800 border-e border-slate-700 p-6 overflow-y-auto">
                         <h2 className="text-lg font-bold mb-4">כל השלבים</h2>
                         <div className="space-y-3">
                             {recipe.instructions.map((instruction, index) => (
                                 <button
                                     key={index}
                                     onClick={() => setCurrentStep(index)}
-                                    className={`w-full text-right p-3 rounded-lg transition-all ${
+                                    className={`w-full text-start p-3 rounded-lg transition-all ${
                                         index === currentStep
                                             ? 'bg-amber-600'
                                             : completedSteps.has(index)

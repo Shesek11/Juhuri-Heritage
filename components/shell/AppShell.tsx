@@ -211,6 +211,9 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   const [orderedFeatures, setOrderedFeatures] = useState<FeatureFlag[]>([]);
   const [featureFlagsLoaded, setFeatureFlagsLoaded] = useState(false);
 
+  // Branding
+  const [siteLogo, setSiteLogo] = useState<string | null>(null);
+
   // Icon map for dynamic features
   const iconMap: Record<string, React.ReactNode> = {
     BookOpen: <BookOpen size={16} />,
@@ -253,6 +256,15 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
       } catch (err) {
         if (process.env.NODE_ENV === 'development') console.error('Failed to load dialects:', err);
       }
+
+      // Branding
+      try {
+        const res = await fetch('/api/branding');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.siteLogo) setSiteLogo(data.siteLogo);
+        }
+      } catch {}
 
       // Feature Flags
       try {
@@ -314,6 +326,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     orderedFeatures,
     featureFlagsLoaded,
     isAdmin,
+    siteLogo,
   };
 
   const isHomePage = pathWithoutLocale === '/';
@@ -352,8 +365,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center justify-between">
 
             {/* Right: Logo */}
-            <Link href="/" className={`flex items-center gap-3 transition-all duration-300 border ${!isScrolled ? 'bg-[#0d1424]/60 backdrop-blur-md rounded-full pr-1 pl-4 py-1 border-white/5' : 'border-transparent'}`}>
-              <img src="/images/logo-transparent.png" alt={t('logo')} className="w-9 h-9" />
+            <Link href="/" className={`flex items-center gap-3 transition-all duration-300 border ${!isScrolled ? 'bg-[#0d1424]/60 backdrop-blur-md rounded-full ps-1 pe-4 py-1 border-white/5' : 'border-transparent'}`}>
+              <img src={siteLogo || '/images/logo-transparent.png'} alt={t('logo')} className="w-9 h-9 object-contain" />
               <span className="text-lg font-bold text-white hidden lg:block">{t('logo')}</span>
             </Link>
 
@@ -389,7 +402,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                   aria-label={user ? t('userMenu') : t('login')}
                   aria-expanded={isMenuOpen ? "true" : "false"}
                   aria-haspopup="true"
-                  className="flex items-center gap-2 pr-2 pl-1 py-1 rounded-full hover:bg-white/10 transition-all"
+                  className="flex items-center gap-2 ps-2 pe-1 py-1 rounded-full hover:bg-white/10 transition-all"
                 >
                   {user ? (
                     <>
@@ -441,7 +454,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                       {user && (
                         <button
                           onClick={() => { setIsMenuOpen(false); setIsProfileModalOpen(true); }}
-                          className="w-full text-right px-3 py-2 text-sm text-slate-200 hover:bg-slate-700/50 flex items-center gap-2"
+                          className="w-full text-start px-3 py-2 text-sm text-slate-200 hover:bg-slate-700/50 flex items-center gap-2"
                         >
                           <Settings size={14} className="text-slate-300" />
                           {t('profileSettings')}
@@ -453,7 +466,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                         <Link
                           href="/admin"
                           onClick={() => setIsMenuOpen(false)}
-                          className="w-full text-right px-3 py-2 text-sm text-purple-300 hover:bg-purple-500/10 flex items-center gap-2"
+                          className="w-full text-start px-3 py-2 text-sm text-purple-300 hover:bg-purple-500/10 flex items-center gap-2"
                         >
                           <LayoutDashboard size={14} />
                           {t('adminPanel')}
@@ -463,7 +476,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                       {/* Mobile Theme */}
                       <button
                         onClick={toggleTheme}
-                        className="w-full sm:hidden text-right px-3 py-2 text-sm text-slate-200 hover:bg-slate-700/50 flex items-center gap-2"
+                        className="w-full sm:hidden text-start px-3 py-2 text-sm text-slate-200 hover:bg-slate-700/50 flex items-center gap-2"
                       >
                         {theme === 'light' ? <Moon size={14} /> : <Sun size={14} className="text-amber-400" />}
                         {theme === 'light' ? t('darkMode') : t('lightMode')}
@@ -474,7 +487,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                           <div className="h-px bg-slate-700 my-1" />
                           <button
                             onClick={() => { logout(); setIsMenuOpen(false); }}
-                            className="w-full text-right px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 flex items-center gap-2"
+                            className="w-full text-start px-3 py-2 text-sm text-red-400 hover:bg-red-500/10 flex items-center gap-2"
                           >
                             <LogOut size={14} />
                             {t('logout')}
