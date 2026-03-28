@@ -48,8 +48,9 @@ interface NavTabProps {
 const NavTab: React.FC<NavTabProps & { comingSoonLabel?: string }> = ({ href, icon, label, comingSoon, isActive, comingSoonLabel }) => (
   <Link
     href={href}
-    className={`relative flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
-      comingSoon ? 'opacity-50 hover:opacity-80' : ''
+    title={comingSoon ? comingSoonLabel : undefined}
+    className={`relative flex items-center gap-1.5 px-4 py-2.5 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
+      comingSoon ? 'opacity-40 hover:opacity-70' : ''
     } ${isActive
       ? 'bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-white border border-amber-500/30 shadow-inner'
       : 'text-slate-300 hover:text-white hover:bg-white/5'
@@ -58,9 +59,7 @@ const NavTab: React.FC<NavTabProps & { comingSoonLabel?: string }> = ({ href, ic
     {icon}
     <span>{label}</span>
     {comingSoon && (
-      <span className="absolute -top-2.5 inset-x-0 mx-auto w-fit px-1 py-px text-[7px] bg-blue-500/90 text-white rounded font-bold leading-tight tracking-wide uppercase">
-        {comingSoonLabel}
-      </span>
+      <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
     )}
   </Link>
 );
@@ -373,8 +372,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             </Link>
 
             {/* Desktop nav — single row */}
-            <nav className="hidden md:flex items-center flex-1 min-w-0 justify-center overflow-hidden" aria-label={t('mainNav')}>
-              <div className="flex items-center p-1 rounded-full gap-0.5 bg-white/5 backdrop-blur-sm border border-white/5 overflow-x-auto scrollbar-hide">
+            <nav className="hidden md:flex items-center flex-1 min-w-0 justify-center" aria-label={t('mainNav')}>
+              <div className="flex items-center p-1 rounded-full gap-0.5 bg-white/5 backdrop-blur-sm border border-white/5">
                 <NavTab href="/" icon={<Home size={16} />} label={t('home')} isActive={isActive('/')} />
                 {orderedFeatures.filter(f => f.show_in_nav !== false).map(f => (
                   <NavTab

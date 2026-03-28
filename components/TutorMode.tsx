@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import { TutorConfig, ChatMessage, Dialect, ProficiencyLevel, DialectItem, LessonUnit, Exercise, TutorWord, UnitMasteryInfo, TutorProgress } from '../types';
 import { getTutorResponse, generateSpeech } from '../services/geminiService';
 import { getDialects } from '../services/storageService';
@@ -16,6 +17,8 @@ import { Send, Volume2, Sparkles, GraduationCap, Settings2, MessageCircle, Play,
 import { SEOHead } from './seo/SEOHead';
 
 const TutorMode: React.FC = () => {
+  const t = useTranslations('tutor');
+  const tc = useTranslations('common');
   const [config, setConfig] = useState<TutorConfig | null>(null);
   const [mode, setMode] = useState<'map' | 'chat' | 'lesson' | 'celebration' | 'review' | 'weekly' | 'goal'>('map');
   const [activeUnit, setActiveUnit] = useState<LessonUnit | null>(null);
@@ -78,7 +81,7 @@ const TutorMode: React.FC = () => {
       }));
 
       if (words.length < 3) {
-        alert('אין מספיק מילים ביחידה זו. נדרשות לפחות 3 מילים.');
+        alert(t('notEnoughWords'));
         setLoadingLesson(false);
         return;
       }
@@ -104,7 +107,7 @@ const TutorMode: React.FC = () => {
       setMode('lesson');
     } catch (e) {
       console.error('Failed to load lesson:', e);
-      alert('שגיאה בטעינת השיעור');
+      alert(t('lessonLoadError'));
     } finally {
       setLoadingLesson(false);
     }
@@ -126,7 +129,7 @@ const TutorMode: React.FC = () => {
       let milestone = null;
       for (const m of milestones) {
         if (progress.totalWordsLearned < m && totalAfter >= m) {
-          milestone = { count: m, label: `${m} מילים!` };
+          milestone = { count: m, label: t('wordsCount', { count: m }) };
           break;
         }
       }
@@ -157,7 +160,7 @@ const TutorMode: React.FC = () => {
       }));
 
       if (words.length === 0) {
-        alert('אין מילים לחזרה כרגע! חזור מאוחר יותר.');
+        alert(t('noReviewWords'));
         setLoadingLesson(false);
         return;
       }
@@ -165,7 +168,7 @@ const TutorMode: React.FC = () => {
       const reviewTypes = EXERCISES_BY_MASTERY[2];
       const generatedExercises = generateLesson(words, reviewTypes, Math.min(words.length * 2, 12));
       setExercises(generatedExercises);
-      setActiveUnit({ id: 'review', title: 'חזרה על מילים', description: '', icon: 'RotateCcw', order: 0, sectionId: '' });
+      setActiveUnit({ id: 'review', title: t('reviewUnit'), description: '', icon: 'RotateCcw', order: 0, sectionId: '' });
       setMode('lesson');
     } catch (e) {
       console.error('Failed to load review:', e);
@@ -202,7 +205,7 @@ const TutorMode: React.FC = () => {
       const aiMsg: ChatMessage = { id: (Date.now() + 1).toString(), role: 'model', content: response.content, audioText: response.audioText, timestamp: Date.now() };
       setMessages(prev => [...prev, aiMsg]);
     } catch {
-      const errorMsg: ChatMessage = { id: (Date.now() + 1).toString(), role: 'model', content: 'אוי, נראה שיש בעיה בתקשורת כרגע.', timestamp: Date.now() };
+      const errorMsg: ChatMessage = { id: (Date.now() + 1).toString(), role: 'model', content: t('connectionError'), timestamp: Date.now() };
       setMessages(prev => [...prev, errorMsg]);
     } finally {
       setChatLoading(false);
@@ -227,8 +230,8 @@ const TutorMode: React.FC = () => {
     return (
       <div className="min-h-[60vh] flex items-center justify-center px-4 py-10 font-rubik">
         <SEOHead
-          title="מורה פרטי - לימוד ג'והורי"
-          description="למד ג'והורי עם מורה פרטי אינטראקטיבי. 15 יחידות לימוד, 12 סוגי תרגילים, מערכת חזרה חכמה."
+          title={t('seoTitle')}
+          description={t('seoDescription')}
           canonicalPath="/tutor"
         />
         <div className="w-full max-w-md lg:max-w-2xl bg-[#0d1424]/70 backdrop-blur-xl rounded-2xl shadow-2xl p-8 sm:p-10 lg:p-14 border border-white/10">
@@ -236,11 +239,11 @@ const TutorMode: React.FC = () => {
             <div className="inline-block p-5 bg-amber-500/10 border border-amber-500/20 rounded-2xl mb-5 text-amber-500">
               <GraduationCap size={48} />
             </div>
-            <h2 className="text-2xl sm:text-3xl font-bold text-slate-100 mb-2">שיעור פרטי בג'והורי</h2>
-            <p className="text-sm text-slate-400">15 יחידות לימוד · 12 סוגי תרגילים · חזרה חכמה</p>
+            <h2 className="text-2xl sm:text-3xl font-bold text-slate-100 mb-2">{t('setupTitle')}</h2>
+            <p className="text-sm text-slate-400">{t('setupSubtitle')}</p>
             {!user && (
               <div className="mt-4 p-3 bg-amber-500/10 border border-amber-500/20 text-amber-400 text-sm rounded-lg inline-block">
-                מומלץ להתחבר כדי לשמור את ההתקדמות שלך!
+                {t('loginRecommendation')}
               </div>
             )}
           </div>
@@ -255,8 +258,8 @@ const TutorMode: React.FC = () => {
     return (
       <div className="min-h-[60vh] flex flex-col items-center justify-center text-center p-8 font-rubik">
         <Sparkles className="text-amber-500 animate-pulse mb-4" size={56} />
-        <h3 className="text-xl font-bold text-slate-100 mb-2">מכין את השיעור...</h3>
-        <p className="text-sm text-slate-400">טוען מילים ותרגילים</p>
+        <h3 className="text-xl font-bold text-slate-100 mb-2">{t('loadingLesson')}</h3>
+        <p className="text-sm text-slate-400">{t('loadingLessonDesc')}</p>
       </div>
     );
   }
@@ -323,15 +326,15 @@ const TutorMode: React.FC = () => {
         <div className="w-full max-w-sm bg-[#0d1424]/70 backdrop-blur-xl rounded-2xl shadow-2xl p-8 border border-white/10">
           <div className="text-center mb-6">
             <Target size={40} className="text-amber-500 mx-auto mb-3" />
-            <h3 className="text-xl font-bold text-slate-100">בחר יעד יומי</h3>
-            <p className="text-sm text-slate-400 mt-1">כמה XP ביום?</p>
+            <h3 className="text-xl font-bold text-slate-100">{t('dailyGoal')}</h3>
+            <p className="text-sm text-slate-400 mt-1">{t('dailyGoalDesc')}</p>
           </div>
           <div className="space-y-3">
             {[
-              { xp: 5, label: 'קליל', desc: '~2 דקות ביום' },
-              { xp: 10, label: 'רגיל', desc: '~5 דקות ביום' },
-              { xp: 15, label: 'רציני', desc: '~8 דקות ביום' },
-              { xp: 20, label: 'אינטנסיבי', desc: '~10 דקות ביום' },
+              { xp: 5, label: t('goalLight'), desc: t('goal5') },
+              { xp: 10, label: t('goalRegular'), desc: t('goal10') },
+              { xp: 15, label: t('goalSerious'), desc: t('goal15') },
+              { xp: 20, label: t('goalIntensive'), desc: t('goal20') },
             ].map(opt => (
               <button
                 type="button"
@@ -351,7 +354,7 @@ const TutorMode: React.FC = () => {
               </button>
             ))}
           </div>
-          <button type="button" onClick={() => setMode('map')} className="w-full mt-5 py-2.5 text-sm text-slate-400 hover:text-slate-300 transition-colors">ביטול</button>
+          <button type="button" onClick={() => setMode('map')} className="w-full mt-5 py-2.5 text-sm text-slate-400 hover:text-slate-300 transition-colors">{tc('cancel')}</button>
         </div>
       </div>
     );
@@ -364,21 +367,21 @@ const TutorMode: React.FC = () => {
         <div className="bg-[#0d1424]/70 backdrop-blur-xl rounded-t-2xl border border-white/10 border-b-0 px-5 py-4 flex justify-between items-center">
           <div className="flex items-center gap-3 text-amber-500">
             <MessageCircle size={22} />
-            <h3 className="font-bold text-base">שיחה חופשית עם סבא מרדכי</h3>
+            <h3 className="font-bold text-base">{t('chatWithGrandpa')}</h3>
           </div>
           <button type="button" onClick={() => setMode('map')} className="p-2 text-slate-400 hover:text-white rounded-lg hover:bg-white/10 transition-colors">
             <X size={20} />
           </button>
         </div>
         <div className="flex-1 overflow-y-auto bg-[#0d1424]/40 border-x border-white/10 p-5 space-y-4 scroll-smooth">
-          {messages.length === 0 && <p className="text-center text-slate-400 mt-16 text-sm">התחל שיחה... נסה להגיד &quot;שלום&quot;</p>}
+          {messages.length === 0 && <p className="text-center text-slate-400 mt-16 text-sm">{t('chatPlaceholder')}</p>}
           {messages.map(msg => (
             <div key={msg.id} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div className={`max-w-[80%] sm:max-w-[65%] rounded-2xl px-5 py-3.5 shadow-sm text-sm sm:text-base ${msg.role === 'user' ? 'bg-gradient-to-br from-amber-400 to-orange-500 text-[#050B14] font-medium rounded-br-none' : 'bg-white/10 backdrop-blur-md text-white border border-white/10 rounded-bl-none'}`}>
                 {msg.content}
                 {msg.audioText && (
                   <button type="button" onClick={() => handlePlayAudio(msg.audioText!, msg.id)} className={`mt-2.5 flex items-center gap-2 text-xs font-bold px-3 py-1.5 rounded-full bg-amber-500/10 text-amber-500 border border-amber-500/20 ${isPlaying === msg.id ? 'animate-pulse' : ''}`}>
-                    <Volume2 size={14} /> השמע
+                    <Volume2 size={14} /> {t('playAudio')}
                   </button>
                 )}
               </div>
@@ -386,8 +389,8 @@ const TutorMode: React.FC = () => {
           ))}
         </div>
         <form onSubmit={handleSendMessage} className="bg-[#0d1424]/70 backdrop-blur-xl rounded-b-2xl border border-white/10 border-t-0 p-4 flex gap-3">
-          <input type="text" value={input} onChange={e => setInput(e.target.value)} placeholder="כתוב הודעה..." className="flex-1 px-5 py-3 bg-white/5 border border-white/10 rounded-xl outline-none text-white text-sm sm:text-base focus-visible:border-amber-500/30 transition-colors" disabled={chatLoading} />
-          <button type="submit" disabled={chatLoading || !input.trim()} className="px-5 py-3 bg-gradient-to-br from-amber-400 to-orange-600 text-[#050B14] rounded-xl hover:shadow-[0_0_15px_rgba(245,158,11,0.4)] disabled:opacity-50 transition-all font-bold" title="שלח" aria-label="שלח הודעה"><Send size={20} /></button>
+          <input type="text" value={input} onChange={e => setInput(e.target.value)} placeholder={t('messageInput')} className="flex-1 px-5 py-3 bg-white/5 border border-white/10 rounded-xl outline-none text-white text-sm sm:text-base focus-visible:border-amber-500/30 transition-colors" disabled={chatLoading} />
+          <button type="submit" disabled={chatLoading || !input.trim()} className="px-5 py-3 bg-gradient-to-br from-amber-400 to-orange-600 text-[#050B14] rounded-xl hover:shadow-[0_0_15px_rgba(245,158,11,0.4)] disabled:opacity-50 transition-all font-bold" title={t('send')} aria-label={t('sendMessage')}><Send size={20} /></button>
         </form>
       </div>
     );
@@ -417,25 +420,25 @@ const TutorMode: React.FC = () => {
           <div className="hidden md:flex items-center gap-3 text-slate-400">
             <div className="text-center">
               <span className="text-lg font-bold text-slate-200">{progress.totalWordsLearned}</span>
-              <span className="text-xs ms-1.5">מילים נלמדו</span>
+              <span className="text-xs ms-1.5">{t('wordsLearned')}</span>
             </div>
           </div>
 
           {/* Right: Level + Actions */}
           <div className="flex items-center gap-3 sm:gap-4">
             <div className="text-start">
-              <h3 className="font-bold text-sm sm:text-base text-slate-100 leading-tight">רמה {user?.level || 1}</h3>
+              <h3 className="font-bold text-sm sm:text-base text-slate-100 leading-tight">{t('level')} {user?.level || 1}</h3>
               <p className="text-xs text-slate-400">{user?.xp || 0} XP</p>
             </div>
             <div className="h-6 w-px bg-white/10" />
             <div className="flex gap-1">
-              <button type="button" onClick={() => setMode('goal')} className="p-2 text-slate-400 hover:text-amber-400 transition-colors rounded-lg hover:bg-white/5" title="יעד יומי">
+              <button type="button" onClick={() => setMode('goal')} className="p-2 text-slate-400 hover:text-amber-400 transition-colors rounded-lg hover:bg-white/5" title={t('dailyGoal')}>
                 <Target size={18} />
               </button>
-              <button type="button" onClick={() => setMode('weekly')} className="p-2 text-slate-400 hover:text-amber-400 transition-colors rounded-lg hover:bg-white/5" title="סיכום שבועי">
+              <button type="button" onClick={() => setMode('weekly')} className="p-2 text-slate-400 hover:text-amber-400 transition-colors rounded-lg hover:bg-white/5" title={t('weeklySummary')}>
                 <BarChart3 size={18} />
               </button>
-              <button type="button" onClick={() => setConfig(null)} className="p-2 text-slate-400 hover:text-white transition-colors rounded-lg hover:bg-white/5" title="הגדרות">
+              <button type="button" onClick={() => setConfig(null)} className="p-2 text-slate-400 hover:text-white transition-colors rounded-lg hover:bg-white/5" title={tc('settings')}>
                 <Settings2 size={18} />
               </button>
             </div>
@@ -461,7 +464,7 @@ const TutorMode: React.FC = () => {
             className="flex items-center gap-2.5 bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20 text-amber-500 px-6 py-3 rounded-xl font-bold text-sm sm:text-base hover:bg-amber-500/20 hover:border-amber-500/30 transition-all"
           >
             <MessageCircle size={20} />
-            צ'אט עם סבא מרדכי
+            {t('chatGrandpa')}
           </button>
         </div>
       </div>
@@ -471,6 +474,7 @@ const TutorMode: React.FC = () => {
 
 // --- Setup Form ---
 const SetupForm: React.FC<{ onStart: (d: Dialect, l: ProficiencyLevel) => void }> = ({ onStart }) => {
+  const t = useTranslations('tutor');
   const [dialect, setDialect] = useState<string>('');
   const [level, setLevel] = useState<ProficiencyLevel>('Beginner');
   const [dialects, setDialects] = useState<DialectItem[]>([]);
@@ -487,7 +491,7 @@ const SetupForm: React.FC<{ onStart: (d: Dialect, l: ProficiencyLevel) => void }
   return (
     <div className="space-y-6">
       <div>
-        <label className="block text-sm font-medium text-slate-300 mb-2">בחר ניב ללימוד</label>
+        <label className="block text-sm font-medium text-slate-300 mb-2">{t('chooseDialect')}</label>
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
           {dialects.map(d => (
             <button type="button" key={d.id} onClick={() => setDialect(d.name)} className={`p-3.5 lg:p-4 rounded-xl border text-sm lg:text-base font-medium transition-all text-start ${dialect === d.name ? 'border-amber-500/50 bg-amber-500/10 text-amber-500' : 'border-white/10 hover:border-amber-500/30 text-slate-300'}`}>
@@ -497,9 +501,9 @@ const SetupForm: React.FC<{ onStart: (d: Dialect, l: ProficiencyLevel) => void }
         </div>
       </div>
       <div>
-        <label className="block text-sm font-medium text-slate-300 mb-2">רמת ידע נוכחית</label>
+        <label className="block text-sm font-medium text-slate-300 mb-2">{t('currentLevel')}</label>
         <div className="flex gap-3">
-          {[{ val: 'Beginner', label: 'מתחיל' }, { val: 'Intermediate', label: 'בינוני' }, { val: 'Advanced', label: 'מתקדם' }].map(opt => (
+          {[{ val: 'Beginner', label: t('beginner') }, { val: 'Intermediate', label: t('intermediate') }, { val: 'Advanced', label: t('advanced') }].map(opt => (
             <button type="button" key={opt.val} onClick={() => setLevel(opt.val as ProficiencyLevel)} className={`flex-1 p-3.5 rounded-xl border text-sm font-medium transition-all ${level === opt.val ? 'border-amber-500/50 bg-amber-500/10 text-amber-500' : 'border-white/10 hover:border-amber-500/30 text-slate-300'}`}>
               {opt.label}
             </button>
@@ -508,7 +512,7 @@ const SetupForm: React.FC<{ onStart: (d: Dialect, l: ProficiencyLevel) => void }
       </div>
       <button type="button" onClick={() => onStart(dialect, level)} className="w-full py-4 bg-gradient-to-r from-amber-400 via-amber-500 to-orange-600 text-[#050B14] font-bold text-lg rounded-xl shadow-[0_0_30px_rgba(245,158,11,0.3)] hover:shadow-[0_0_40px_rgba(245,158,11,0.5)] transition-all flex items-center justify-center gap-2">
         <Play size={24} />
-        התחל מסע
+        {t('startLesson')}
       </button>
     </div>
   );

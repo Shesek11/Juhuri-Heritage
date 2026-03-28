@@ -13,6 +13,7 @@ import { select } from 'd3-selection';
 import { drag } from 'd3-drag';
 import type { D3DragEvent } from 'd3-drag';
 import { easeQuadOut, easeCubicInOut } from 'd3-ease';
+import { useTranslations } from 'next-intl';
 import { SEOHead } from '../seo/SEOHead';
 import 'd3-transition';
 import { familyService, FamilyMember } from '../../services/familyService';
@@ -47,6 +48,8 @@ type ConnectionMode = 'none' | 'connecting' | 'selecting-type';
 type RelationshipType = 'parent-child' | 'spouse' | 'sibling';
 
 export const CommunityGraph: React.FC = () => {
+    const t = useTranslations('family');
+    const tc = useTranslations('common');
     const { user } = useAuth();
     const currentUserId = user?.id;
     const isAdmin = user?.role === 'admin';
@@ -1361,7 +1364,7 @@ export const CommunityGraph: React.FC = () => {
             cancelConnection();
         } catch (error) {
             console.error('Failed to create connection:', error);
-            alert('שגיאה ביצירת קשר');
+            alert(t('connectionError'));
         }
     };
 
@@ -1543,16 +1546,16 @@ export const CommunityGraph: React.FC = () => {
     return (
         <div className="relative w-full h-[calc(100vh-180px)] flex flex-col bg-[#0d1424] overflow-hidden">
             <SEOHead
-                title="שורשים - רשת קהילתית"
-                description="חקרו את עץ המשפחה והרשת הקהילתית של יהודי ההרים. גלו קשרים משפחתיים ושורשים."
+                title={t('pageTitle')}
+                description={t('pageDescription')}
                 canonicalPath="/family"
             />
             {/* Header */}
             <div className="bg-slate-800/80 backdrop-blur px-3 py-2 md:px-4 md:py-3 flex flex-wrap items-center justify-between gap-2 border-b border-slate-700 relative z-[100]">
                 <div className="flex items-center gap-2 md:gap-3">
-                    <h1 className="text-base md:text-xl font-bold text-white whitespace-nowrap">🌐 רשת קהילתית</h1>
+                    <h1 className="text-base md:text-xl font-bold text-white whitespace-nowrap">{t('communityNetwork')}</h1>
                     <span className="text-xs md:text-sm text-slate-400 whitespace-nowrap">
-                        {nodes.length} בני משפחה • {edges.length} קשרים
+                        {nodes.length} {t('members')} • {edges.length} {t('connections')}
                     </span>
                 </div>
 
@@ -1562,7 +1565,7 @@ export const CommunityGraph: React.FC = () => {
                         <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
                         <input
                             type="text"
-                            placeholder="חפש שם / Поиск..."
+                            placeholder={t('searchPlaceholder')}
                             value={searchQuery}
                             onChange={(e) => {
                                 const query = e.target.value;
@@ -1624,7 +1627,7 @@ export const CommunityGraph: React.FC = () => {
                         className="flex items-center gap-1.5 md:gap-2 px-2.5 md:px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 rounded-lg text-white text-xs md:text-sm font-medium transition-colors"
                     >
                         <UserPlus size={14} />
-                        <span className="hidden sm:inline">הוסף אדם</span>
+                        <span className="hidden sm:inline">{t('addPerson')}</span>
                     </button>
 
                     {/* Connection Mode Button */}
@@ -1634,7 +1637,7 @@ export const CommunityGraph: React.FC = () => {
                             className="flex items-center gap-1.5 md:gap-2 px-2.5 md:px-3 py-1.5 bg-amber-600 hover:bg-amber-700 rounded-lg text-white text-xs md:text-sm font-medium transition-colors"
                         >
                             <Link2 size={14} />
-                            <span className="hidden sm:inline">חבר אנשים</span>
+                            <span className="hidden sm:inline">{t('connectPeople')}</span>
                         </button>
                     ) : (
                         <button
@@ -1642,7 +1645,7 @@ export const CommunityGraph: React.FC = () => {
                             className="flex items-center gap-1.5 md:gap-2 px-2.5 md:px-3 py-1.5 bg-red-600 hover:bg-red-700 rounded-lg text-white text-xs md:text-sm font-medium transition-colors"
                         >
                             <X size={14} />
-                            <span className="hidden sm:inline">ביטול</span>
+                            <span className="hidden sm:inline">{tc('cancel')}</span>
                         </button>
                     )}
 
@@ -1653,7 +1656,7 @@ export const CommunityGraph: React.FC = () => {
                             className="flex items-center gap-1.5 md:gap-2 px-2.5 md:px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-slate-300 text-xs md:text-sm transition-colors"
                         >
                             <Info size={14} />
-                            <span className="hidden sm:inline">מקרא</span>
+                            <span className="hidden sm:inline">{t('legend')}</span>
                         </button>
 
                         {showLegend && (
@@ -1668,14 +1671,14 @@ export const CommunityGraph: React.FC = () => {
                                 <div className="absolute left-0 top-full mt-2 bg-slate-800 border border-slate-600 rounded-lg shadow-2xl p-4 z-[9999] w-64 md:w-80">
                                     <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
                                         <Info size={14} />
-                                        מקרא סימנים
+                                        {t('legendTitle')}
                                     </h3>
                                     <div className="space-y-2 text-sm">
                                         <div className="flex items-center gap-2 pb-2 border-b border-slate-700">
                                             <div className="w-4 h-4 rounded-full bg-indigo-500 border-2 border-indigo-600" />
-                                            <span className="text-slate-300">גבר</span>
+                                            <span className="text-slate-300">{t('male')}</span>
                                             <div className="w-4 h-4 rounded-full bg-amber-500 border-2 border-amber-600 ms-auto" />
-                                            <span className="text-slate-300">אישה</span>
+                                            <span className="text-slate-300">{t('female')}</span>
                                         </div>
 
                                         <div className="space-y-1.5">
@@ -1683,25 +1686,25 @@ export const CommunityGraph: React.FC = () => {
                                                 <svg width="32" height="12" className="flex-shrink-0">
                                                     <line x1="0" y1="6" x2="32" y2="6" stroke="#38bdf8" strokeWidth="2.5" />
                                                 </svg>
-                                                <span className="text-slate-300">הורה-ילד</span>
+                                                <span className="text-slate-300">{t('parentChild')}</span>
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <svg width="32" height="12" className="flex-shrink-0">
                                                     <line x1="0" y1="6" x2="32" y2="6" stroke="#f472b6" strokeWidth="3" />
                                                 </svg>
-                                                <span className="text-slate-300">נשואים</span>
+                                                <span className="text-slate-300">{t('married')}</span>
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <svg width="32" height="12" className="flex-shrink-0">
                                                     <line x1="0" y1="6" x2="32" y2="6" stroke="#f87171" strokeWidth="3" strokeDasharray="5,5" />
                                                 </svg>
-                                                <span className="text-slate-300">גרושים</span>
+                                                <span className="text-slate-300">{t('divorced')}</span>
                                             </div>
                                             <div className="flex items-center gap-2">
                                                 <svg width="32" height="12" className="flex-shrink-0">
                                                     <line x1="0" y1="6" x2="32" y2="6" stroke="#94a3b8" strokeWidth="2.5" strokeDasharray="2,4" />
                                                 </svg>
-                                                <span className="text-slate-300">אלמן/ה</span>
+                                                <span className="text-slate-300">{t('widowed')}</span>
                                             </div>
                                         </div>
                                     </div>
@@ -1716,8 +1719,8 @@ export const CommunityGraph: React.FC = () => {
             {connectionMode === 'connecting' && (
                 <div className="bg-amber-600 text-white px-4 py-2 text-center text-sm">
                     {firstSelectedNode
-                        ? `נבחר: ${firstSelectedNode.name} - כעת בחר את האדם השני לחיבור`
-                        : 'לחץ על אדם ראשון לחיבור'}
+                        ? t('selectedPerson', { name: firstSelectedNode.name })
+                        : t('selectFirstPerson')}
                 </div>
             )}
 
@@ -1734,9 +1737,9 @@ export const CommunityGraph: React.FC = () => {
                 {connectionMode === 'selecting-type' && firstSelectedNode && secondSelectedNode && (
                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center backdrop-blur-sm z-50" onClick={cancelConnection}>
                         <div className="bg-slate-800 rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl border border-slate-700" onClick={e => e.stopPropagation()}>
-                            <h3 className="text-xl font-bold text-white mb-4 text-center">בחר סוג קשר</h3>
+                            <h3 className="text-xl font-bold text-white mb-4 text-center">{t('chooseRelationType')}</h3>
                             <p className="text-sm text-slate-300 mb-6 text-center">
-                                בין <span className="font-bold text-amber-400">{firstSelectedNode.name}</span> ל-<span className="font-bold text-amber-400">{secondSelectedNode.name}</span>
+                                {t('betweenPersons', { person1: firstSelectedNode.name, person2: secondSelectedNode.name })}
                             </p>
 
                             <div className="space-y-3">
@@ -1746,8 +1749,8 @@ export const CommunityGraph: React.FC = () => {
                                 >
                                     <div className="w-10 h-1 bg-sky-400" />
                                     <div className="flex-1 text-start">
-                                        <div className="font-bold">הורה-ילד</div>
-                                        <div className="text-xs text-sky-200">{firstSelectedNode.name} הוא/היא הורה של {secondSelectedNode.name}</div>
+                                        <div className="font-bold">{t('parentChild')}</div>
+                                        <div className="text-xs text-sky-200">{t('parentChildDesc', { parent: firstSelectedNode.name, child: secondSelectedNode.name })}</div>
                                     </div>
                                 </button>
 
@@ -1757,8 +1760,8 @@ export const CommunityGraph: React.FC = () => {
                                 >
                                     <div className="w-10 h-1 bg-amber-400" />
                                     <div className="flex-1 text-start">
-                                        <div className="font-bold">בני זוג (נשואים)</div>
-                                        <div className="text-xs text-amber-200">{firstSelectedNode.name} ו-{secondSelectedNode.name} נשואים</div>
+                                        <div className="font-bold">{t('spouseMarried')}</div>
+                                        <div className="text-xs text-amber-200">{t('spouseDesc', { person1: firstSelectedNode.name, person2: secondSelectedNode.name })}</div>
                                     </div>
                                 </button>
 
@@ -1768,8 +1771,8 @@ export const CommunityGraph: React.FC = () => {
                                 >
                                     <div className="w-10 h-1 bg-teal-400 border-dashed" />
                                     <div className="flex-1 text-start">
-                                        <div className="font-bold">אחים</div>
-                                        <div className="text-xs text-teal-200">{firstSelectedNode.name} ו-{secondSelectedNode.name} הם אחים</div>
+                                        <div className="font-bold">{t('siblings')}</div>
+                                        <div className="text-xs text-teal-200">{t('siblingsDesc', { person1: firstSelectedNode.name, person2: secondSelectedNode.name })}</div>
                                     </div>
                                 </button>
                             </div>
@@ -1778,7 +1781,7 @@ export const CommunityGraph: React.FC = () => {
                                 onClick={cancelConnection}
                                 className="w-full mt-4 px-4 py-2 text-slate-400 hover:bg-slate-700 rounded-lg transition-colors"
                             >
-                                ביטול
+                                {tc('cancel')}
                             </button>
                         </div>
                     </div>
@@ -1789,21 +1792,21 @@ export const CommunityGraph: React.FC = () => {
                     <button
                         onClick={handleZoomIn}
                         className="p-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-white transition-colors"
-                        title="הגדל"
+                        title={t('zoomIn')}
                     >
                         <ZoomIn size={20} />
                     </button>
                     <button
                         onClick={handleZoomOut}
                         className="p-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-white transition-colors"
-                        title="הקטן"
+                        title={t('zoomOut')}
                     >
                         <ZoomOut size={20} />
                     </button>
                     <button
                         onClick={handleFitView}
                         className="p-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-white transition-colors"
-                        title="התאם לתצוגה"
+                        title={t('fitView')}
                     >
                         <Maximize2 size={20} />
                     </button>
@@ -1856,7 +1859,7 @@ export const CommunityGraph: React.FC = () => {
                             {(tooltip.member.birth_date || tooltip.member.birth_city) && (
                                 <div className="flex items-center gap-1.5 text-slate-300">
                                     <span>📅</span>
-                                    <span>נולד: {tooltip.member.birth_date && new Date(tooltip.member.birth_date).toLocaleDateString('he-IL')}
+                                    <span>{t('born')}: {tooltip.member.birth_date && new Date(tooltip.member.birth_date).toLocaleDateString('he-IL')}
                                     {tooltip.member.birth_city && `, ${tooltip.member.birth_city}`}</span>
                                 </div>
                             )}
@@ -1865,7 +1868,7 @@ export const CommunityGraph: React.FC = () => {
                             {!tooltip.member.is_alive && (tooltip.member.death_date || tooltip.member.death_city) && (
                                 <div className="flex items-center gap-1.5 text-slate-400">
                                     <span>🕊️</span>
-                                    <span>נפטר: {tooltip.member.death_date && new Date(tooltip.member.death_date).toLocaleDateString('he-IL')}
+                                    <span>{t('died')}: {tooltip.member.death_date && new Date(tooltip.member.death_date).toLocaleDateString('he-IL')}
                                     {tooltip.member.death_city && `, ${tooltip.member.death_city}`}</span>
                                 </div>
                             )}
@@ -1879,7 +1882,7 @@ export const CommunityGraph: React.FC = () => {
                                 return (
                                     <div className="flex items-center gap-1.5 text-slate-300">
                                         <span>📍</span>
-                                        <span>{residence ? 'מגורים' : 'מוצא'}: {place}{tooltip.member.residence_country ? `, ${tooltip.member.residence_country}` : tooltip.member.birth_country ? `, ${tooltip.member.birth_country}` : ''}</span>
+                                        <span>{residence ? t('residence') : t('origin')}: {place}{tooltip.member.residence_country ? `, ${tooltip.member.residence_country}` : tooltip.member.birth_country ? `, ${tooltip.member.birth_country}` : ''}</span>
                                     </div>
                                 );
                             })()}
@@ -1887,7 +1890,7 @@ export const CommunityGraph: React.FC = () => {
 
                         {/* Hint */}
                         <div className="mt-2 pt-2 border-t border-slate-700 text-[10px] text-slate-500 text-center">
-                            לחץ לעריכה
+                            {t('clickToEdit')}
                         </div>
                     </div>
 
