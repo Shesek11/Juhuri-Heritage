@@ -48,21 +48,22 @@ interface NavTabProps {
 const NavTab: React.FC<NavTabProps & { comingSoonLabel?: string }> = ({ href, icon, label, comingSoon, isActive, comingSoonLabel }) => (
   <Link
     href={href}
-    className={`group/tab relative flex items-center gap-1 px-2.5 py-2 rounded-full text-[13px] font-medium transition-all min-w-0 ${
-      comingSoon ? 'opacity-60 hover:opacity-100' : ''
+    className={`group/tab relative flex items-center gap-1.5 rounded-full font-medium transition-all ${
+      comingSoon ? 'px-2.5 py-2 text-[13px] opacity-60 hover:opacity-100' : 'px-3 py-2 text-sm'
     } ${isActive
       ? 'bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-white border border-amber-500/30 shadow-inner'
       : 'text-slate-300 hover:text-white hover:bg-white/5'
       }`}
+    title={comingSoon ? label : undefined}
   >
     <span className="shrink-0">{icon}</span>
-    <span className="truncate">{label}</span>
+    {!comingSoon && <span className="whitespace-nowrap">{label}</span>}
     {comingSoon && (
       <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse shrink-0 group-hover/tab:opacity-0 transition-opacity" />
     )}
     {comingSoon && (
-      <span className="absolute inset-0 flex items-center justify-center rounded-full bg-blue-600/90 backdrop-blur-sm text-[11px] text-white font-bold opacity-0 group-hover/tab:opacity-100 transition-opacity duration-200 pointer-events-none">
-        {comingSoonLabel}
+      <span className="absolute inset-0 flex items-center justify-center rounded-full bg-blue-600/90 backdrop-blur-sm text-[11px] text-white font-bold opacity-0 group-hover/tab:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap">
+        {label}
       </span>
     )}
   </Link>
@@ -377,7 +378,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
             {/* Desktop nav — single row */}
             <nav className="hidden md:flex items-center flex-1 min-w-0 justify-center" aria-label={t('mainNav')}>
-              <div className="flex items-center p-1 rounded-full gap-0.5 bg-white/5 backdrop-blur-sm border border-white/5 min-w-0">
+              <div className="flex items-center p-1 rounded-full gap-0.5 bg-white/5 backdrop-blur-sm border border-white/5">
                 <NavTab href="/" icon={<Home size={16} />} label={t('home')} isActive={isActive('/')} />
                 {orderedFeatures.filter(f => f.show_in_nav !== false).map(f => (
                   <NavTab
