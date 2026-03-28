@@ -48,7 +48,7 @@ interface NavTabProps {
 const NavTab: React.FC<NavTabProps & { comingSoonLabel?: string }> = ({ href, icon, label, comingSoon, isActive, comingSoonLabel }) => (
   <Link
     href={href}
-    className={`flex items-center gap-2 px-5 py-2.5 rounded-full text-sm font-medium transition-all whitespace-nowrap ${isActive
+    className={`flex items-center gap-1.5 px-3 py-2 rounded-full text-[13px] font-medium transition-all whitespace-nowrap ${isActive
       ? 'bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-white border border-amber-500/30 shadow-inner'
       : 'text-slate-300 hover:text-white hover:bg-white/5'
       }`}
@@ -56,7 +56,7 @@ const NavTab: React.FC<NavTabProps & { comingSoonLabel?: string }> = ({ href, ic
     {icon}
     <span>{label}</span>
     {comingSoon && (
-      <span className="px-1.5 py-0.5 text-xs bg-blue-500 text-white rounded-full font-bold">
+      <span className="px-1 py-0.5 text-[10px] bg-blue-500 text-white rounded-full font-bold leading-none">
         {comingSoonLabel}
       </span>
     )}
@@ -354,12 +354,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             {/* Right: Logo */}
             <Link href="/" className={`flex items-center gap-3 transition-all duration-300 border ${!isScrolled ? 'bg-[#0d1424]/60 backdrop-blur-md rounded-full pr-1 pl-4 py-1 border-white/5' : 'border-transparent'}`}>
               <img src="/images/logo-transparent.png" alt={t('logo')} className="w-9 h-9" />
-              <span className="text-lg font-bold text-white hidden sm:block">{t('logo')}</span>
+              <span className="text-lg font-bold text-white hidden lg:block">{t('logo')}</span>
             </Link>
 
             {/* Center: Navigation Tabs (Desktop) */}
-            <nav className="hidden md:flex items-center" aria-label={t('mainNav')}>
-              <div className={`flex items-center p-1 rounded-full gap-1 transition-all duration-300 border ${!isScrolled ? 'bg-[#0d1424]/60 backdrop-blur-md border-white/5 shadow-lg' : 'bg-white/5 border-transparent backdrop-blur-sm'}`}>
+            <nav className="hidden md:flex items-center min-w-0 flex-1 mx-4 justify-center" aria-label={t('mainNav')}>
+              <div className={`flex items-center p-1 rounded-full gap-0.5 transition-all duration-300 border overflow-x-auto scrollbar-hide ${!isScrolled ? 'bg-[#0d1424]/60 backdrop-blur-md border-white/5 shadow-lg' : 'bg-white/5 border-transparent backdrop-blur-sm'}`}>
                 <NavTab href="/" icon={<Home size={16} />} label={t('home')} isActive={isActive('/')} />
                 {orderedFeatures.filter(f => f.show_in_nav !== false).map(f => (
                   <NavTab

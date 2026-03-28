@@ -26,11 +26,12 @@ function FlagIcon({ code }: { code: string }) {
     case 'en':
       return (
         <svg viewBox="0 0 24 16" className="w-5 h-3.5 rounded-[2px] shadow-sm">
-          <rect width="24" height="16" fill="#012169" />
-          <path d="M0,0 L24,16 M24,0 L0,16" stroke="white" strokeWidth="2.5" />
-          <path d="M0,0 L24,16 M24,0 L0,16" stroke="#C8102E" strokeWidth="1.2" />
-          <path d="M12,0 V16 M0,8 H24" stroke="white" strokeWidth="4" />
-          <path d="M12,0 V16 M0,8 H24" stroke="#C8102E" strokeWidth="2.2" />
+          <rect width="24" height="16" fill="#B22234" />
+          {[0,2,4,6,8,10,12].map(i => <rect key={i} y={i * 1.23} width="24" height="1.23" fill={i % 2 === 0 ? '#B22234' : 'white'} />)}
+          <rect width="9.6" height="8.6" fill="#3C3B6E" />
+          {[1,2.5,4,5.5,7].map((y,i) => <circle key={i} cx={i % 2 === 0 ? 2 : 3.2} cy={y} r="0.5" fill="white" />)}
+          {[1,2.5,4,5.5,7].map((y,i) => <circle key={`b${i}`} cx={i % 2 === 0 ? 5 : 6.2} cy={y} r="0.5" fill="white" />)}
+          {[1,2.5,4,5.5].map((y,i) => <circle key={`c${i}`} cx={8} cy={y} r="0.5" fill="white" />)}
         </svg>
       );
     case 'ru':
