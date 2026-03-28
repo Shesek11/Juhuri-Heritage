@@ -1,16 +1,19 @@
 import React, { useState } from 'react';
 import FocusTrap from 'focus-trap-react';
 import { MessageSquarePlus, Send, Loader2, X, CheckCircle } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import apiService from '../services/apiService';
 
-const CATEGORIES = [
-  { value: 'suggestion', label: 'הצעה לשיפור' },
-  { value: 'bug', label: 'באג / תקלה' },
-  { value: 'content', label: 'תיקון תוכן' },
-  { value: 'other', label: 'אחר' },
-] as const;
-
 const FeedbackButton: React.FC = () => {
+  const t = useTranslations('feedback');
+
+  const CATEGORIES = [
+    { value: 'suggestion', label: t('suggestion') },
+    { value: 'bug', label: t('bug') },
+    { value: 'content', label: t('contentFix') },
+    { value: 'other', label: t('other') },
+  ];
+
   const [isOpen, setIsOpen] = useState(false);
   const [category, setCategory] = useState('suggestion');
   const [message, setMessage] = useState('');
@@ -38,7 +41,7 @@ const FeedbackButton: React.FC = () => {
         setCategory('suggestion');
       }, 2000);
     } catch {
-      alert('שגיאה בשליחה, נסו שוב');
+      alert(t('sendError'));
     } finally {
       setSubmitting(false);
     }
@@ -51,7 +54,8 @@ const FeedbackButton: React.FC = () => {
         type="button"
         onClick={() => setIsOpen(true)}
         className="fixed bottom-6 right-6 z-40 p-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-full shadow-lg hover:shadow-xl transition-all hover:scale-105"
-        title="שלח הצעה או דיווח"
+        title={t('buttonTitle')}
+        aria-label={t('buttonTitle')}
       >
         <MessageSquarePlus size={22} />
       </button>
@@ -70,13 +74,13 @@ const FeedbackButton: React.FC = () => {
             {sent ? (
               <div className="p-8 text-center space-y-3">
                 <CheckCircle className="mx-auto text-green-500" size={48} />
-                <p className="text-lg font-bold text-slate-200">תודה רבה!</p>
-                <p className="text-sm text-slate-400 dark:text-slate-400">ההודעה נשלחה בהצלחה</p>
+                <p className="text-lg font-bold text-slate-200">{t('thankYou')}</p>
+                <p className="text-sm text-slate-400 dark:text-slate-400">{t('sent')}</p>
               </div>
             ) : (
               <form onSubmit={handleSubmit}>
                 <div className="flex items-center justify-between p-4 border-b border-white/10">
-                  <h3 id="feedback-modal-title" className="font-bold text-slate-200">יש לכם הצעה? דיווח? שלחו לנו!</h3>
+                  <h3 id="feedback-modal-title" className="font-bold text-slate-200">{t('heading')}</h3>
                   <button type="button" onClick={() => setIsOpen(false)} className="text-slate-400 hover:text-slate-600">
                     <X size={20} />
                   </button>
@@ -105,7 +109,7 @@ const FeedbackButton: React.FC = () => {
                   <textarea
                     value={message}
                     onChange={e => setMessage(e.target.value)}
-                    placeholder="ספרו לנו מה אפשר לשפר, לתקן או להוסיף..."
+                    placeholder={t('placeholder')}
                     required
                     rows={4}
                     className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-600 bg-[#0d1424]/60 backdrop-blur-xl focus:ring-2 focus:ring-indigo-500 outline-none resize-none"
@@ -118,7 +122,7 @@ const FeedbackButton: React.FC = () => {
                     type="text"
                     value={userName}
                     onChange={e => setUserName(e.target.value)}
-                    placeholder="השם שלכם (אופציונלי)"
+                    placeholder={t('namePlaceholder')}
                     className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-600 bg-[#0d1424]/60 backdrop-blur-xl focus:ring-2 focus:ring-indigo-500 outline-none"
                     dir="auto"
                   />
@@ -131,7 +135,7 @@ const FeedbackButton: React.FC = () => {
                     className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                   >
                     {submitting ? <Loader2 size={18} className="animate-spin" /> : <Send size={18} />}
-                    שלח
+                    {t('send')}
                   </button>
                 </div>
               </form>

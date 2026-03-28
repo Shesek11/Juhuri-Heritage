@@ -1,22 +1,23 @@
 import React, { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { ThumbsUp, ThumbsDown, Plus, Edit3, Volume2 } from 'lucide-react';
-import { Translation, DictionaryEntry, PendingSuggestion } from '../../types';
+import { DialectScript, DictionaryEntry, PendingSuggestion } from '../../types';
 import EditableField from '../dictionary/EditableField';
 
 interface EnrichmentData {
-  hebrew?: string;
-  latin?: string;
-  cyrillic?: string;
+  hebrewScript?: string;
+  latinScript?: string;
+  cyrillicScript?: string;
 }
 
 interface DialectComparisonProps {
-  translations: Translation[];
+  translations: DialectScript[];
   entry: DictionaryEntry;
   enrichmentData?: EnrichmentData | null;
   enrichmentLoading?: boolean;
   pendingSuggestions?: PendingSuggestion[];
   onVote: (translationId: number, voteType: 'up' | 'down') => void;
-  onSuggestCorrection?: (translation: Translation, entryId: string, term: string) => void;
+  onSuggestCorrection?: (translation: DialectScript, entryId: string, hebrewScript: string) => void;
   onPlay: (text: string, id: string) => void;
   isPlaying: string | null;
   translationVotes: Record<number, { upvotes: number; downvotes: number; userVote: 'up' | 'down' | null }>;
@@ -34,10 +35,11 @@ const DialectComparison: React.FC<DialectComparisonProps> = ({
   isPlaying,
   translationVotes,
 }) => {
+  const t = useTranslations('word');
   const [editingField, setEditingField] = useState<string | null>(null);
 
-  const latinSuggestion = pendingSuggestions.find(s => s.fieldName === 'latin');
-  const cyrillicSuggestion = pendingSuggestions.find(s => s.fieldName === 'cyrillic');
+  const latinSuggestion = pendingSuggestions.find(s => s.fieldName === 'latinScript');
+  const cyrillicSuggestion = pendingSuggestions.find(s => s.fieldName === 'cyrillicScript');
 
   // Primary translation (first one) for the large Hebrew/Russian display
   const primary = translations[0];
@@ -47,30 +49,30 @@ const DialectComparison: React.FC<DialectComparisonProps> = ({
       {/* Dialects table */}
       {translations.length > 0 && (
         <div>
-          <h3 className="text-sm uppercase tracking-wider text-slate-300 dark:text-slate-300 font-bold mb-3">
-            ניבים
-          </h3>
+          <h2 className="text-sm uppercase tracking-wider text-slate-300 dark:text-slate-300 font-bold mb-3">
+            {t('dialects')}
+          </h2>
 
           <div className="overflow-x-auto">
             <table className="w-full text-sm min-w-[340px]">
               <thead>
                 <tr className="border-b border-white/10">
-                  <th className="text-right py-2 px-3 text-xs text-slate-300 font-bold uppercase tracking-wider">ניב</th>
-                  <th className="text-right py-2 px-3 text-xs text-slate-300 font-bold uppercase tracking-wider">תעתיק לטיני</th>
-                  <th className="text-right py-2 px-3 text-xs text-slate-300 font-bold uppercase tracking-wider">תעתיק קירילי</th>
-                  <th className="text-right py-2 px-3 text-xs text-slate-300 font-bold uppercase tracking-wider">הצבעות</th>
-                  <th className="py-2 px-2"><span className="sr-only">פעולות</span></th>
+                  <th className="text-right py-2 px-3 text-xs text-slate-300 font-bold uppercase tracking-wider">{t('dialectCol')}</th>
+                  <th className="text-right py-2 px-3 text-xs text-slate-300 font-bold uppercase tracking-wider">{t('latinCol')}</th>
+                  <th className="text-right py-2 px-3 text-xs text-slate-300 font-bold uppercase tracking-wider">{t('cyrillicCol')}</th>
+                  <th className="text-right py-2 px-3 text-xs text-slate-300 font-bold uppercase tracking-wider">{t('votesCol')}</th>
+                  <th className="py-2 px-2"><span className="sr-only">{t('actionsCol')}</span></th>
                 </tr>
               </thead>
               <tbody>
-                {translations.map((t, idx) => {
-                  const voteData = t.id ? translationVotes[t.id] : null;
+                {translations.map((tr, idx) => {
+                  const voteData = tr.id ? translationVotes[tr.id] : null;
                   return (
-                    <tr key={t.id || idx} className="border-b border-white/5 hover:bg-white/5 transition-colors group/row">
+                    <tr key={tr.id || idx} className="border-b border-white/5 hover:bg-white/5 transition-colors group/row">
                       {/* Dialect name */}
                       <td className="py-3 px-3">
                         <span className="text-indigo-400 font-bold text-xs bg-indigo-900/30 px-1.5 py-0.5 rounded">
-                          {t.dialect && t.dialect !== 'לא ידוע' && t.dialect !== 'General' ? t.dialect : '-'}
+                          {tr.dialect && tr.dialect !== 'לא ידוע' && tr.dialect !== 'General' ? tr.dialect : '-'}
                         </span>
                       </td>
 
@@ -78,12 +80,12 @@ const DialectComparison: React.FC<DialectComparisonProps> = ({
                       <td className="py-3 px-3">
                         <EditableField
                           entryId={entry.id}
-                          fieldName="latin"
-                          dbValue={t.latin || undefined}
-                          aiValue={!t.latin ? enrichmentData?.latin : undefined}
-                          isEnriching={enrichmentLoading && !t.latin}
+                          fieldName="latinScript"
+                          dbValue={tr.latinScript || undefined}
+                          aiValue={!tr.latinScript ? enrichmentData?.latinScript : undefined}
+                          isEnriching={enrichmentLoading && !tr.latinScript}
                           pendingSuggestion={latinSuggestion}
-                          fieldSource={entry.fieldSources?.latin}
+                          fieldSource={entry.fieldSources?.latinScript}
                           compact
                           valueClassName="font-mono text-slate-300"
                           isEditing={editingField === `latin-${idx}`}
@@ -96,12 +98,12 @@ const DialectComparison: React.FC<DialectComparisonProps> = ({
                       <td className="py-3 px-3">
                         <EditableField
                           entryId={entry.id}
-                          fieldName="cyrillic"
-                          dbValue={t.cyrillic || undefined}
-                          aiValue={!t.cyrillic ? enrichmentData?.cyrillic : undefined}
-                          isEnriching={enrichmentLoading && !t.cyrillic}
+                          fieldName="cyrillicScript"
+                          dbValue={tr.cyrillicScript || undefined}
+                          aiValue={!tr.cyrillicScript ? enrichmentData?.cyrillicScript : undefined}
+                          isEnriching={enrichmentLoading && !tr.cyrillicScript}
                           pendingSuggestion={cyrillicSuggestion}
-                          fieldSource={entry.fieldSources?.cyrillic}
+                          fieldSource={entry.fieldSources?.cyrillicScript}
                           compact
                           valueClassName="font-serif text-slate-300"
                           isEditing={editingField === `cyrillic-${idx}`}
@@ -112,30 +114,30 @@ const DialectComparison: React.FC<DialectComparisonProps> = ({
 
                       {/* Votes */}
                       <td className="py-3 px-3">
-                        {t.id && (
+                        {tr.id && (
                           <div className="flex items-center gap-1">
                             <button
                               type="button"
-                              onClick={() => onVote(t.id!, 'up')}
+                              onClick={() => onVote(tr.id!, 'up')}
                               className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs transition-all ${
                                 voteData?.userVote === 'up'
                                   ? 'bg-green-900/30 text-green-400'
                                   : 'text-slate-300 hover:bg-white/10'
                               }`}
-                              title="הצבע לטובה"
+                              title={t('upvote')}
                             >
                               <ThumbsUp size={12} />
                               <span className="font-bold">{voteData?.upvotes || 0}</span>
                             </button>
                             <button
                               type="button"
-                              onClick={() => onVote(t.id!, 'down')}
+                              onClick={() => onVote(tr.id!, 'down')}
                               className={`flex items-center gap-1 px-2 py-1 rounded-md text-xs transition-all ${
                                 voteData?.userVote === 'down'
                                   ? 'bg-red-900/30 text-red-400'
                                   : 'text-slate-300 hover:bg-white/10'
                               }`}
-                              title="הצבע נגד"
+                              title={t('downvote')}
                             >
                               <ThumbsDown size={12} />
                               <span className="font-bold">{voteData?.downvotes || 0}</span>
@@ -149,18 +151,18 @@ const DialectComparison: React.FC<DialectComparisonProps> = ({
                         <div className="flex items-center gap-1">
                           <button
                             type="button"
-                            onClick={() => onPlay(t.cyrillic || t.latin || t.hebrew, `dialect-${idx}`)}
+                            onClick={() => onPlay(tr.cyrillicScript || tr.latinScript || tr.hebrewScript, `dialect-${idx}`)}
                             className={`p-1.5 rounded-full text-slate-300 hover:text-indigo-400 transition-colors ${isPlaying === `dialect-${idx}` ? 'text-indigo-400 animate-pulse' : ''}`}
-                            title="השמע"
+                            title={t('play')}
                           >
                             <Volume2 size={14} />
                           </button>
                           {entry.id && (
                             <button
                               type="button"
-                              onClick={() => onSuggestCorrection?.(t, entry.id!, entry.term)}
+                              onClick={() => onSuggestCorrection?.(tr, entry.id!, entry.hebrewScript)}
                               className="p-1.5 rounded-full text-slate-300 hover:text-amber-400 transition-colors"
-                              title="הצע תיקון"
+                              title={t('suggestFix')}
                             >
                               <Edit3 size={14} />
                             </button>
@@ -181,16 +183,16 @@ const DialectComparison: React.FC<DialectComparisonProps> = ({
               className="flex items-center gap-1 px-3 py-1.5 text-xs text-indigo-400 border border-dashed border-indigo-500/30 rounded-lg hover:border-indigo-400 hover:bg-indigo-500/10 transition-all"
             >
               <Plus size={14} />
-              הוסף ניב
+              {t('addDialect')}
             </button>
             {entry.id && (
               <button
                 type="button"
-                onClick={() => onSuggestCorrection?.(primary, entry.id!, entry.term)}
+                onClick={() => onSuggestCorrection?.(primary, entry.id!, entry.hebrewScript)}
                 className="flex items-center gap-1 px-3 py-1.5 text-xs text-amber-400 border border-dashed border-amber-500/30 rounded-lg hover:border-amber-400 hover:bg-amber-500/10 transition-all"
               >
                 <Edit3 size={14} />
-                הצע תיקון
+                {t('suggestFix')}
               </button>
             )}
           </div>

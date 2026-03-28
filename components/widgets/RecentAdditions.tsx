@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Clock, ArrowLeft } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { DictionaryEntry } from '../../types';
 import apiService from '../../services/apiService';
 
@@ -8,6 +9,7 @@ interface RecentAdditionsProps {
 }
 
 const RecentAdditions: React.FC<RecentAdditionsProps> = ({ onSelectWord }) => {
+    const t = useTranslations('widgets');
     const [terms, setTerms] = useState<DictionaryEntry[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -17,7 +19,7 @@ const RecentAdditions: React.FC<RecentAdditionsProps> = ({ onSelectWord }) => {
                 const res = await apiService.get<{ entries: DictionaryEntry[] }>('/dictionary/recent?limit=20');
                 if (res.entries) setTerms(res.entries);
             } catch (err) {
-                console.error("Failed to fetch recent entries", err);
+                if (process.env.NODE_ENV === 'development') console.error("Failed to fetch recent entries", err);
             } finally {
                 setLoading(false);
             }
@@ -33,8 +35,8 @@ const RecentAdditions: React.FC<RecentAdditionsProps> = ({ onSelectWord }) => {
                     <Clock size={20} />
                 </div>
                 <div>
-                    <h3 className="font-bold text-sm text-white">נוספו לאחרונה</h3>
-                    <span className="text-xs text-slate-400">20 מילים אחרונות</span>
+                    <h3 className="font-bold text-sm text-white">{t('recentAdditions')}</h3>
+                    <span className="text-xs text-slate-300">{t('recentSubtitle')}</span>
                 </div>
             </div>
 
@@ -50,21 +52,21 @@ const RecentAdditions: React.FC<RecentAdditionsProps> = ({ onSelectWord }) => {
                             <button
                                 type="button"
                                 key={idx}
-                                onClick={() => onSelectWord(term.term || '', (term as any).id)}
+                                onClick={() => onSelectWord(term.hebrewScript || '', (term as any).id)}
                                 className="w-full text-right flex items-center justify-between px-3 py-2 rounded-lg hover:bg-white/[0.03] transition-all group/item cursor-pointer"
                             >
                                 <div className="min-w-0">
                                     <div className="font-semibold text-[0.8rem] text-slate-200 group-hover/item:text-amber-400 transition-colors truncate">
-                                        {term.term || (term as any).hebrew || (term as any).latin || '—'}
+                                        {term.hebrewScript || (term as any).hebrewShort || (term as any).latinScript || '—'}
                                     </div>
-                                    {term.term && (term as any).hebrew && (
-                                        <div className="text-xs text-slate-400 truncate">
-                                            {(term as any).hebrew}
+                                    {term.hebrewScript && (term as any).hebrewShort && (
+                                        <div className="text-xs text-slate-300 truncate">
+                                            {(term as any).hebrewShort}
                                         </div>
                                     )}
-                                    {!term.term && (term as any).latin && (
-                                        <div className="text-xs text-slate-400 truncate font-mono" dir="ltr">
-                                            {(term as any).latin}
+                                    {!term.hebrewScript && (term as any).latinScript && (
+                                        <div className="text-xs text-slate-300 truncate font-mono" dir="ltr">
+                                            {(term as any).latinScript}
                                         </div>
                                     )}
                                 </div>

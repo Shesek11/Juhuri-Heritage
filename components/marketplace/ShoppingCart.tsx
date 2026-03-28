@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { CartItem, marketplaceService } from '../../services/marketplaceService';
 import { ShoppingCart as CartIcon, X, Plus, Minus, Trash2, Loader2, CheckCircle } from 'lucide-react';
 
@@ -8,6 +9,7 @@ interface ShoppingCartProps {
 }
 
 export const ShoppingCart: React.FC<ShoppingCartProps> = ({ isOpen, onClose }) => {
+    const t = useTranslations('marketplace');
     const [cart, setCart] = useState<CartItem[]>([]);
     const [loading, setLoading] = useState(false);
     const [updating, setUpdating] = useState<number | null>(null);
@@ -56,7 +58,7 @@ export const ShoppingCart: React.FC<ShoppingCartProps> = ({ isOpen, onClose }) =
     };
 
     const clearCart = async () => {
-        if (!confirm('האם אתה בטוח שברצונך לרוקן את הסל?')) return;
+        if (!confirm(t('confirmEmptyCart'))) return;
         setLoading(true);
         try {
             await marketplaceService.clearCart();
@@ -102,7 +104,7 @@ export const ShoppingCart: React.FC<ShoppingCartProps> = ({ isOpen, onClose }) =
                             <CartIcon className="text-orange-600 dark:text-orange-400" size={20} />
                         </div>
                         <h2 className="text-xl font-bold text-slate-100">
-                            סל קניות ({cart.length})
+                            {t('cartTitle', { count: cart.length })}
                         </h2>
                     </div>
                     <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
@@ -119,8 +121,8 @@ export const ShoppingCart: React.FC<ShoppingCartProps> = ({ isOpen, onClose }) =
                     ) : cart.length === 0 ? (
                         <div className="flex flex-col items-center justify-center h-full text-slate-400">
                             <CartIcon size={64} className="mb-4 opacity-50" />
-                            <p className="text-lg font-medium">הסל ריק</p>
-                            <p className="text-sm">הוסף מנות כדי להתחיל</p>
+                            <p className="text-lg font-medium">{t('emptyCart')}</p>
+                            <p className="text-sm">{t('addItemsToStart')}</p>
                         </div>
                     ) : (
                         <div className="space-y-6">

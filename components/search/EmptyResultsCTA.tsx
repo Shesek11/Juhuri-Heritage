@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { SearchX, Plus, Users, Check, Loader2, Bell } from 'lucide-react';
 import { FuzzySuggestion } from '../../types';
 import FuzzyMatchBanner from './FuzzyMatchBanner';
@@ -21,6 +22,7 @@ const EmptyResultsCTA: React.FC<EmptyResultsCTAProps> = ({
   onSelectSuggestion,
   onOpenAuthModal,
 }) => {
+  const t = useTranslations('search');
   const { isAuthenticated } = useAuth();
   const [requesting, setRequesting] = useState(false);
   const [requested, setRequested] = useState(false);
@@ -43,14 +45,14 @@ const EmptyResultsCTA: React.FC<EmptyResultsCTAProps> = ({
       setIsGuest(!!res.isGuest);
 
       if (res.watching) {
-        setRequestMessage('המילה נוספה — נשלח התראה כשיתווסף תרגום');
+        setRequestMessage(t('wordAdded'));
       } else if (res.alreadyExists) {
-        setRequestMessage('המילה כבר במאגר — תרגום יתווסף בקרוב');
+        setRequestMessage(t('wordExists'));
       } else {
-        setRequestMessage('המילה נוספה! הקהילה תוכל להציע תרגום');
+        setRequestMessage(t('wordAddedCommunity'));
       }
     } catch {
-      setRequestMessage('שגיאה בשליחה, נסה שוב');
+      setRequestMessage(t('submitError'));
     } finally {
       setRequesting(false);
     }
@@ -63,10 +65,10 @@ const EmptyResultsCTA: React.FC<EmptyResultsCTAProps> = ({
           <SearchX className="w-7 h-7 text-slate-400" />
         </div>
         <h2 className="text-xl font-bold text-white">
-          &lrm;"{query}" לא נמצאה במילון
+          {t('emptyTitle', { query })}
         </h2>
         <p className="text-slate-400 text-sm max-w-md">
-          המילה עדיין לא קיימת במאגר שלנו. אפשר להוסיף אותה עם תרגום, או לבקש מהקהילה לתרגם.
+          {t('emptyDescription')}
         </p>
       </div>
 
@@ -85,7 +87,7 @@ const EmptyResultsCTA: React.FC<EmptyResultsCTAProps> = ({
           className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium"
         >
           <Plus className="w-4 h-4" />
-          <span>הוסף מילה עם תרגום</span>
+          <span>{t('addWithTranslation')}</span>
         </button>
 
         <button
@@ -99,11 +101,11 @@ const EmptyResultsCTA: React.FC<EmptyResultsCTAProps> = ({
           } disabled:cursor-not-allowed`}
         >
           {requesting ? (
-            <><Loader2 className="w-4 h-4 animate-spin" /><span>שולח...</span></>
+            <><Loader2 className="w-4 h-4 animate-spin" /><span>{t('submitting')}</span></>
           ) : requested ? (
             <><Check className="w-4 h-4" /><span>{requestMessage}</span></>
           ) : (
-            <><Users className="w-4 h-4" /><span>בקש תרגום מהקהילה</span></>
+            <><Users className="w-4 h-4" /><span>{t('requestTranslation')}</span></>
           )}
         </button>
       </div>
@@ -112,11 +114,11 @@ const EmptyResultsCTA: React.FC<EmptyResultsCTAProps> = ({
       {requested && isGuest && onOpenAuthModal && (
         <button
           type="button"
-          onClick={() => onOpenAuthModal('הרשמה לקבלת התראה כשהמילה תתורגם')}
+          onClick={() => onOpenAuthModal(t('requestNotification'))}
           className="inline-flex items-center gap-2 px-4 py-2 text-indigo-300 hover:text-indigo-200 text-sm transition-colors"
         >
           <Bell className="w-4 h-4" />
-          <span>הרשמה לקבלת עדכון כשהמילה תתורגם</span>
+          <span>{t('requestNotification')}</span>
         </button>
       )}
     </div>

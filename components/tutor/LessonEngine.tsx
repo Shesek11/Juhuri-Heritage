@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import { Exercise } from '../../types';
 import { generateSpeech } from '../../services/geminiService';
 import { playBase64Audio } from '../../utils/audioUtils';
@@ -23,6 +24,7 @@ interface LessonEngineProps {
 }
 
 const LessonEngine: React.FC<LessonEngineProps> = ({ exercises, unitTitle, onComplete, onBack, onSrsUpdate }) => {
+  const t = useTranslations('tutor');
   const [currentIndex, setCurrentIndex] = useState(0);
   const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(null);
   const [selectedOption, setSelectedOption] = useState<string | null>(null);
@@ -170,7 +172,7 @@ const LessonEngine: React.FC<LessonEngineProps> = ({ exercises, unitTitle, onCom
               </div>
               <div>
                 <p className={`font-bold text-lg ${feedback === 'correct' ? 'text-green-200' : 'text-red-200'}`}>
-                  {feedback === 'correct' ? 'מצוין!' : 'לא נורא...'}
+                  {feedback === 'correct' ? t('excellent') : t('notBad')}
                 </p>
                 {feedback === 'incorrect' && currentExercise.correctAnswer && currentExercise.type !== 'matching_pairs' && currentExercise.type !== 'speed_match' && (
                   <p className="text-sm text-red-300/80">התשובה: {currentExercise.correctAnswer}</p>
@@ -187,7 +189,7 @@ const LessonEngine: React.FC<LessonEngineProps> = ({ exercises, unitTitle, onCom
                 feedback === 'correct' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'
               }`}
             >
-              המשך
+              {t('continue')}
             </button>
           </div>
         </div>

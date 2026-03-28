@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslations } from 'next-intl';
 import { Vendor } from '../../services/marketplaceService';
 import { MapPin, Phone, Star, Clock, CheckCircle } from 'lucide-react';
 import { getVendorStatus } from '../../utils/marketplaceHelpers';
@@ -9,6 +10,7 @@ interface VendorCardProps {
 }
 
 export const VendorCard: React.FC<VendorCardProps> = ({ vendor, onClick }) => {
+    const t = useTranslations('marketplace');
     const status = getVendorStatus(vendor);
     const isOpen = status.isOpen;
 
@@ -37,18 +39,18 @@ export const VendorCard: React.FC<VendorCardProps> = ({ vendor, onClick }) => {
                         }`}
                         title={status.message}
                     >
-                        {isOpen ? 'פעיל' : 'לא פעיל'}
+                        {isOpen ? t('active') : t('inactive')}
                     </span>
                     {!!vendor.is_verified && (
                         <span className="px-2 py-1 rounded-lg text-xs font-bold bg-blue-500 text-white backdrop-blur-sm shadow-sm flex items-center gap-1">
                             <CheckCircle size={12} />
-                            מאומת
+                            {t('verified')}
                         </span>
                     )}
                     {vendor.distance_km !== undefined && (
                         <span className="px-2 py-1 rounded-lg text-xs font-bold bg-black/60 text-white backdrop-blur-sm shadow-sm flex items-center gap-1">
                             <MapPin size={12} />
-                            {vendor.distance_km.toFixed(1)} ק"מ
+                            {vendor.distance_km.toFixed(1)} {t('km')}
                         </span>
                     )}
                 </div>
@@ -73,7 +75,7 @@ export const VendorCard: React.FC<VendorCardProps> = ({ vendor, onClick }) => {
                 </div>
 
                 <p className="text-sm text-slate-600 dark:text-slate-300 line-clamp-2 mb-3 h-10">
-                    {vendor.about_text || 'אוכל עדתי מסורתי'}
+                    {vendor.about_text || t('defaultDesc')}
                 </p>
 
                 <div className="flex items-center justify-between pt-3 border-t border-white/10">
@@ -88,12 +90,12 @@ export const VendorCard: React.FC<VendorCardProps> = ({ vendor, onClick }) => {
                                 <span className="text-xs text-slate-400 dark:text-slate-400">{vendor.owner_name}</span>
                             </>
                         ) : (
-                            <span className="text-xs text-slate-400 dark:text-slate-400">דיווח קהילתי</span>
+                            <span className="text-xs text-slate-400 dark:text-slate-400">{t('communityReports')}</span>
                         )}
                     </div>
                     {vendor.review_count !== undefined && vendor.review_count > 0 && (
                         <span className="text-xs text-slate-400 flex items-center gap-1">
-                            {vendor.review_count} ביקורות
+                            {vendor.review_count} {t('reviews')}
                         </span>
                     )}
                 </div>

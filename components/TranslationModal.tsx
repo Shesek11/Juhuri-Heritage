@@ -1,15 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import FocusTrap from 'focus-trap-react';
 import { X, Loader2, Send, Mic, Square, Play, Pause, RotateCcw } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import apiService from '../services/apiService';
 import DictionaryInput from './dictionary/inputs/DictionaryInput';
 
 interface ExistingTranslation {
     id?: number;
     dialect: string;
-    hebrew: string;
-    latin: string;
-    cyrillic: string;
+    hebrewScript: string;
+    latinScript: string;
+    cyrillicScript: string;
 }
 
 interface TranslationModalProps {
@@ -21,15 +22,17 @@ interface TranslationModalProps {
 }
 
 const TranslationModal: React.FC<TranslationModalProps> = ({ entryId, term, onClose, onSuccess, existingTranslation }) => {
+    const t = useTranslations('translationModal');
+    const tc = useTranslations('common');
     const [loading, setLoading] = useState(true);
     const [dialects, setDialects] = useState<{ id: number; name: string; description?: string }[]>([]);
 
     // All editable fields
     const [termField, setTermField] = useState(term || '');
     const [selectedDialect, setSelectedDialect] = useState(existingTranslation?.dialect || 'General');
-    const [hebrew, setHebrew] = useState(existingTranslation?.hebrew || '');
-    const [latin, setLatin] = useState(existingTranslation?.latin || '');
-    const [cyrillic, setCyrillic] = useState(existingTranslation?.cyrillic || '');
+    const [hebrew, setHebrew] = useState(existingTranslation?.hebrewScript || '');
+    const [latin, setLatin] = useState(existingTranslation?.latinScript || '');
+    const [cyrillic, setCyrillic] = useState(existingTranslation?.cyrillicScript || '');
     const [reason, setReason] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState('');
@@ -54,22 +57,22 @@ const TranslationModal: React.FC<TranslationModalProps> = ({ entryId, term, onCl
                     apiService.get<{ dialects: { id: number; name: string; description?: string }[] }>('/dialects'),
                 ]);
 
-                setDialects(dialectRes.dialects || [{ id: 6, name: 'General', description: 'כללי' }]);
+                setDialects(dialectRes.dialects || [{ id: 6, name: 'General', description: t('general') }]);
 
                 const entry = entryRes.entry;
                 if (entry) {
-                    const t = entry.translations?.[0];
+                    const t = entry.dialectScripts?.[0];
                     // Pre-fill only empty fields (don't overwrite existingTranslation)
                     if (!existingTranslation) {
-                        if (entry.term && !termField) setTermField(entry.term);
-                        if (t?.hebrew && !hebrew) setHebrew(t.hebrew);
-                        if (t?.latin && !latin) setLatin(t.latin);
-                        if (t?.cyrillic && !cyrillic) setCyrillic(t.cyrillic);
+                        if (entry.hebrewScript && !termField) setTermField(entry.hebrewScript);
+                        if (t?.hebrewScript && !hebrew) setHebrew(t.hebrewScript);
+                        if (t?.latinScript && !latin) setLatin(t.latinScript);
+                        if (t?.cyrillicScript && !cyrillic) setCyrillic(t.cyrillicScript);
                         if (t?.dialect) setSelectedDialect(t.dialect || 'General');
                     }
                 }
             } catch {
-                setDialects([{ id: 6, name: 'General', description: 'כללי' }]);
+                setDialects([{ id: 6, name: 'General', description: t('general') }]);
             } finally {
                 setLoading(false);
             }
@@ -102,7 +105,7 @@ const TranslationModal: React.FC<TranslationModalProps> = ({ entryId, term, onCl
             setRecordingTime(0);
             timerRef.current = setInterval(() => setRecordingTime(prev => prev + 1), 1000);
         } catch {
-            setError('לא ניתן להקליט. יש לאשר גישה למיקרופון.');
+            setError(t('micError'));
         }
     };
 
@@ -133,7 +136,7 @@ const TranslationModal: React.FC<TranslationModalProps> = ({ entryId, term, onCl
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!hebrew.trim() && !latin.trim() && !cyrillic.trim()) {
-            setError('יש למלא לפחות שדה אחד (עברית, לטיני, או קירילי)');
+            setError(t('fillAtLeastOne'));
             return;
         }
 
@@ -154,7 +157,7 @@ const TranslationModal: React.FC<TranslationModalProps> = ({ entryId, term, onCl
 
                 await fetch(`/api/dictionary/entries/${entryId}/suggest`, {
                     method: 'POST', body: formData
-                }).then(res => { if (!res.ok) throw new Error('שגיאה בשליחת התרגום'); return res.json(); });
+                }).then(res => { if (!res.ok) throw new Error(t('submitError')); return res.json(); });
             } else {
                 await apiService.post(`/dictionary/entries/${entryId}/suggest`, {
                     dialect: selectedDialect,
@@ -168,7 +171,7 @@ const TranslationModal: React.FC<TranslationModalProps> = ({ entryId, term, onCl
             onSuccess();
             onClose();
         } catch (err: any) {
-            setError(err.message || 'שגיאה בשליחת התרגום');
+            setError(err.message || t('submitError'));
         } finally {
             setIsSubmitting(false);
         }
@@ -181,8 +184,8 @@ const TranslationModal: React.FC<TranslationModalProps> = ({ entryId, term, onCl
 
                 {/* Header */}
                 <div className="p-4 border-b border-white/10 flex justify-between items-center shrink-0">
-                    <span id="translation-modal-title" className="text-sm text-slate-400 font-medium">השלם תרגום</span>
-                    <button type="button" onClick={onClose} title="סגור" className="p-1.5 hover:bg-white/10 rounded-lg transition-colors text-slate-400">
+                    <span id="translation-modal-title" className="text-sm text-slate-400 font-medium">{t('title')}</span>
+                    <button type="button" onClick={onClose} title={tc('close')} className="p-1.5 hover:bg-white/10 rounded-lg transition-colors text-slate-400">
                         <X size={18} />
                     </button>
                 </div>
@@ -201,26 +204,26 @@ const TranslationModal: React.FC<TranslationModalProps> = ({ entryId, term, onCl
 
                         {/* Term (Hebrew transliteration) */}
                         <div>
-                            <label className="block text-sm font-medium mb-1 text-slate-300">תעתיק עברי (term)</label>
+                            <label className="block text-sm font-medium mb-1 text-slate-300">{t('hebrewScript')}</label>
                             <DictionaryInput
                                 fieldName="term"
                                 value={termField}
                                 onChange={setTermField}
                                 latinHint={latin}
-                                placeholder="הזן תעתיק עברי..."
+                                placeholder={t('hebrewScriptPlaceholder')}
                                 className="w-full p-2.5 border border-white/10 rounded-lg bg-white/5 text-white placeholder-slate-500"
                             />
                         </div>
 
                         {/* Hebrew translation */}
                         <div>
-                            <label className="block text-sm font-medium mb-1 text-slate-300">תרגום בעברית</label>
+                            <label className="block text-sm font-medium mb-1 text-slate-300">{t('hebrewTranslation')}</label>
                             <DictionaryInput
                                 fieldName="hebrew"
                                 value={hebrew}
                                 onChange={setHebrew}
                                 latinHint={latin}
-                                placeholder="הזן תרגום בעברית..."
+                                placeholder={t('hebrewTranslationPlaceholder')}
                                 className="w-full p-2.5 border border-white/10 rounded-lg bg-white/5 text-white placeholder-slate-500"
                             />
                         </div>
@@ -228,7 +231,7 @@ const TranslationModal: React.FC<TranslationModalProps> = ({ entryId, term, onCl
                         {/* Latin + Cyrillic */}
                         <div className="grid grid-cols-2 gap-3">
                             <div>
-                                <label className="block text-sm font-medium mb-1 text-slate-300">תעתיק לטיני</label>
+                                <label className="block text-sm font-medium mb-1 text-slate-300">{t('latinScript')}</label>
                                 <DictionaryInput
                                     fieldName="latin"
                                     value={latin}
@@ -238,7 +241,7 @@ const TranslationModal: React.FC<TranslationModalProps> = ({ entryId, term, onCl
                                 />
                             </div>
                             <div>
-                                <label className="block text-sm font-medium mb-1 text-slate-300">קירילית</label>
+                                <label className="block text-sm font-medium mb-1 text-slate-300">{t('cyrillicScript')}</label>
                                 <DictionaryInput
                                     fieldName="cyrillic"
                                     value={cyrillic}
@@ -251,16 +254,16 @@ const TranslationModal: React.FC<TranslationModalProps> = ({ entryId, term, onCl
 
                         {/* Dialect */}
                         <div>
-                            <label className="block text-sm font-medium mb-1 text-slate-300">ניב</label>
+                            <label className="block text-sm font-medium mb-1 text-slate-300">{t('dialect')}</label>
                             <select
                                 value={selectedDialect}
                                 onChange={(e) => setSelectedDialect(e.target.value)}
-                                title="בחר ניב"
+                                title={t('dialect')}
                                 className="w-full p-2.5 border border-white/10 rounded-lg bg-white/5 text-white"
                             >
                                 {dialects.map(d => (
                                     <option key={d.id} value={d.name}>
-                                        {d.description || (d.name === 'General' ? 'כללי' : d.name)}
+                                        {d.description || (d.name === 'General' ? t('general') : d.name)}
                                     </option>
                                 ))}
                             </select>
@@ -268,13 +271,13 @@ const TranslationModal: React.FC<TranslationModalProps> = ({ entryId, term, onCl
 
                         {/* Notes */}
                         <div>
-                            <label className="block text-sm font-medium mb-1 text-slate-300">הערות (אופציונלי)</label>
+                            <label className="block text-sm font-medium mb-1 text-slate-300">{t('notes')}</label>
                             <textarea
                                 value={reason}
                                 onChange={(e) => setReason(e.target.value)}
                                 className="w-full p-2.5 border border-white/10 rounded-lg bg-white/5 text-white resize-none placeholder-slate-500"
                                 rows={2}
-                                placeholder="מקור המידע, הערות נוספות..."
+                                placeholder={t('notesPlaceholder')}
                                 dir="rtl"
                             />
                         </div>
@@ -284,7 +287,7 @@ const TranslationModal: React.FC<TranslationModalProps> = ({ entryId, term, onCl
                             <div className="flex items-center justify-between">
                                 <h4 className="text-sm font-semibold text-slate-300 flex items-center gap-2">
                                     <Mic size={16} />
-                                    הקלט הגייה (אופציונלי)
+                                    {t('recording')}
                                 </h4>
                                 <span className="text-xs text-slate-400">{formatTime(recordingTime)}</span>
                             </div>
@@ -292,7 +295,7 @@ const TranslationModal: React.FC<TranslationModalProps> = ({ entryId, term, onCl
                                 {!audioUrl ? (
                                     <button
                                         type="button"
-                                        title={isRecording ? 'עצור הקלטה' : 'התחל הקלטה'}
+                                        title={isRecording ? t('stopRecording') : t('startRecording')}
                                         onClick={isRecording ? stopRecording : startRecording}
                                         className={`w-14 h-14 rounded-full flex items-center justify-center transition-all shadow-lg ${isRecording ? 'bg-red-500 hover:bg-red-600 animate-pulse' : 'bg-amber-500 hover:bg-amber-600'} text-white`}
                                     >
@@ -300,19 +303,19 @@ const TranslationModal: React.FC<TranslationModalProps> = ({ entryId, term, onCl
                                     </button>
                                 ) : (
                                     <>
-                                        <button type="button" onClick={resetRecording} title="הקלט מחדש"
+                                        <button type="button" onClick={resetRecording} title={t('reRecord')}
                                             className="w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center transition-colors">
                                             <RotateCcw size={18} className="text-slate-300" />
                                         </button>
-                                        <button type="button" onClick={togglePlayback} title="נגן"
+                                        <button type="button" onClick={togglePlayback} title={t('play')}
                                             className="w-12 h-12 rounded-full bg-indigo-500 hover:bg-indigo-600 flex items-center justify-center transition-colors text-white shadow-lg">
                                             {isPlaying ? <Pause size={20} /> : <Play size={20} className="mr-[-2px]" />}
                                         </button>
-                                        <span className="text-sm text-green-400 font-medium">✓ הוקלט</span>
+                                        <span className="text-sm text-green-400 font-medium">{t('recorded')}</span>
                                     </>
                                 )}
                             </div>
-                            {isRecording && <p className="text-center text-sm text-red-400 animate-pulse">מקליט...</p>}
+                            {isRecording && <p className="text-center text-sm text-red-400 animate-pulse">{t('recording_status')}</p>}
                             {audioUrl && <audio ref={audioRef} src={audioUrl} onEnded={() => setIsPlaying(false)} className="hidden" />}
                         </div>
 
@@ -320,20 +323,20 @@ const TranslationModal: React.FC<TranslationModalProps> = ({ entryId, term, onCl
                         <div className="flex gap-3 pt-2">
                             <button type="button" onClick={onClose}
                                 className="flex-1 py-2.5 bg-white/5 border border-white/10 hover:bg-white/10 rounded-lg text-slate-300 transition-colors font-medium">
-                                ביטול
+                                {tc('cancel')}
                             </button>
                             <button type="submit" disabled={isSubmitting}
                                 className="flex-1 py-2.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg flex justify-center items-center gap-2 transition-colors font-medium disabled:opacity-50">
                                 {isSubmitting ? (
-                                    <><Loader2 className="animate-spin" size={18} /> שולח...</>
+                                    <><Loader2 className="animate-spin" size={18} /> {t('submitting')}</>
                                 ) : (
-                                    <><Send size={18} /> שלח לאישור</>
+                                    <><Send size={18} /> {t('submitButton')}</>
                                 )}
                             </button>
                         </div>
 
                         <p className="text-xs text-slate-400 text-center">
-                            ההצעה תישלח לאישור מנהלים לפני הוספה למאגר
+                            {t('approvalNote')}
                         </p>
                     </form>
                 )}

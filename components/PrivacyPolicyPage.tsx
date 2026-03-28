@@ -2,17 +2,19 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { Home } from 'lucide-react';
 
 const PrivacyPolicyPage: React.FC = () => {
+  const t = useTranslations('pages');
   return (
     <div className="w-full max-w-5xl mx-auto px-4 py-12">
       <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-lg p-8 md:p-12 border border-white/10">
         <h1 className="text-3xl md:text-4xl font-bold text-center mb-4 text-slate-900 dark:text-slate-50">
-          מדיניות פרטיות
+          {t('privacyTitle')}
         </h1>
         <p className="text-sm text-slate-400 dark:text-slate-400 text-center mb-10">
-          עודכן לאחרונה: 5 במרץ 2026
+          {t('lastUpdated', { date: '5 במרץ 2026' })}
         </p>
 
         <section className="mb-8">
@@ -78,7 +80,7 @@ const PrivacyPolicyPage: React.FC = () => {
         <div className="text-center mt-10">
           <Link href="/" className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-bold rounded-xl shadow-lg hover:scale-105 transition-all duration-300">
             <Home size={18} />
-            חזרה לדף הבית
+            {t('backHome')}
           </Link>
         </div>
       </div>

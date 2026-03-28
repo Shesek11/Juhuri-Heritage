@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import FocusTrap from 'focus-trap-react';
 import { X, User as UserIcon, Lock, Save, Loader2, CheckCircle, AlertCircle, Award, Flame, Edit3, Star, TrendingUp, MessageSquare, Heart, ChevronDown, ChevronUp } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import { User } from '../types';
 import apiService from '../services/apiService';
 
@@ -30,13 +31,15 @@ const getLevelInfo = (xp: number) => {
     return { level: currentLevel, progress: Math.min(progress, 100), xpToNext: xpForNextLevel - xp };
 };
 
-// Level title based on level number
-const getLevelTitle = (level: number): string => {
-    const titles = ['מתחיל', 'לומד', 'מתקדם', 'בקיא', 'מומחה', 'אמן', 'למדן', 'חכם', 'רב', 'גאון', 'אגדה'];
-    return titles[Math.min(level - 1, titles.length - 1)] || 'אגדה';
+// Level title based on level number - now requires t function from next-intl
+const getLevelTitle = (level: number, t: (key: string) => string): string => {
+    const idx = Math.min(level, 11);
+    return t(`levels.${idx}`);
 };
 
 const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user, onUpdate }) => {
+    const t = useTranslations('profile');
+    const tc = useTranslations('common');
     const [name, setName] = useState('');
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
@@ -59,7 +62,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user, onUp
     if (!isOpen) return null;
 
     const levelInfo = getLevelInfo(user.xp || 0);
-    const levelTitle = getLevelTitle(levelInfo.level);
+    const levelTitle = getLevelTitle(levelInfo.level, t);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -69,14 +72,14 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user, onUp
 
         if (!name.trim()) {
             setStatus('error');
-            setFeedback('שם לא יכול להיות ריק');
+            setFeedback(t('nameRequired'));
             setLoading(false);
             return;
         }
 
         if (password && password !== confirmPassword) {
             setStatus('error');
-            setFeedback('הסיסמאות אינן תואמות');
+            setFeedback(t('passwordMismatch'));
             setLoading(false);
             return;
         }
@@ -91,7 +94,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user, onUp
             onUpdate({ ...user, name });
 
             setStatus('success');
-            setFeedback('הפרטים עודכנו בהצלחה!');
+            setFeedback(t('updateSuccess'));
 
             setTimeout(() => {
                 setShowEditSection(false);
@@ -99,7 +102,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user, onUp
 
         } catch (err) {
             setStatus('error');
-            setFeedback('אירעה שגיאה בעדכון הפרטים.');
+            setFeedback(t('updateError'));
         } finally {
             setLoading(false);
         }
@@ -113,9 +116,9 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user, onUp
     // Role badge color
     const getRoleBadge = (role: string) => {
         switch (role) {
-            case 'admin': return { text: 'מנהל', bg: 'bg-red-500', icon: '👑' };
-            case 'approver': return { text: 'מאשר', bg: 'bg-amber-500', icon: '✓' };
-            default: return { text: 'חבר קהילה', bg: 'bg-indigo-500', icon: '👤' };
+            case 'admin': return { text: t('admin'), bg: 'bg-red-500', icon: '👑' };
+            case 'approver': return { text: t('approver'), bg: 'bg-amber-500', icon: '✓' };
+            default: return { text: t('member'), bg: 'bg-indigo-500', icon: '👤' };
         }
     };
 
@@ -168,7 +171,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user, onUp
                             <Star className="text-indigo-500" size={20} />
                         </div>
                         <div className="text-xl font-bold text-indigo-600 dark:text-indigo-400">{(user.xp || 0).toLocaleString()}</div>
-                        <div className="text-xs text-slate-400 dark:text-slate-400">נקודות XP</div>
+                        <div className="text-xs text-slate-400 dark:text-slate-400">{t('xpPoints')}</div>
                     </div>
 
                     {/* Level Card */}
@@ -186,15 +189,15 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user, onUp
                             <Flame className="text-red-500" size={20} />
                         </div>
                         <div className="text-xl font-bold text-red-500 dark:text-red-400">{user.currentStreak || 0}</div>
-                        <div className="text-xs text-slate-400 dark:text-slate-400">ימים רצופים</div>
+                        <div className="text-xs text-slate-400 dark:text-slate-400">{t('streak')}</div>
                     </div>
                 </div>
 
                 {/* XP Progress Bar */}
                 <div className="px-5 pb-4">
                     <div className="flex justify-between text-xs text-slate-400 dark:text-slate-400 mb-1">
-                        <span>התקדמות לרמה {levelInfo.level + 1}</span>
-                        <span>{levelInfo.xpToNext} XP נותרו</span>
+                        <span>{t('progressToLevel', { level: levelInfo.level + 1 })}</span>
+                        <span>{levelInfo.xpToNext} {t('xpRemaining')}</span>
                     </div>
                     <div className="h-2.5 bg-white/10 rounded-full overflow-hidden">
                         <div
@@ -213,11 +216,11 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user, onUp
                             </div>
                             <div>
                                 <div className="text-lg font-bold text-slate-800 dark:text-white">{user.contributionsCount || 0}</div>
-                                <div className="text-xs text-slate-400">תרומות למילון</div>
+                                <div className="text-xs text-slate-400">{t('contributions')}</div>
                             </div>
                         </div>
                         <div className="text-right text-xs text-slate-400">
-                            הצטרף ב-{new Date(user.joinedAt).toLocaleDateString('he-IL')}
+                            {t('joinedAt')}{new Date(user.joinedAt).toLocaleDateString('he-IL')}
                         </div>
                     </div>
                 </div>
@@ -230,7 +233,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user, onUp
                     >
                         <span className="flex items-center gap-2 font-medium">
                             <Edit3 size={18} />
-                            עריכת פרטים אישיים
+                            {t('editDetails')}
                         </span>
                         {showEditSection ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
                     </button>
@@ -238,7 +241,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user, onUp
                     {showEditSection && (
                         <form onSubmit={handleSubmit} className="p-5 pt-0 space-y-4 animate-in slide-in-from-top-2">
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">שם מלא</label>
+                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t('fullName')}</label>
                                 <div className="relative">
                                     <UserIcon className="absolute right-3 top-3 text-slate-400" size={18} />
                                     <input
@@ -251,13 +254,13 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user, onUp
                             </div>
 
                             <div className="border-t border-white/10 pt-4">
-                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">שינוי סיסמה (אופציונלי)</label>
+                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t('changePassword')}</label>
                                 <div className="space-y-3">
                                     <div className="relative">
                                         <Lock className="absolute right-3 top-3 text-slate-400" size={18} />
                                         <input
                                             type="password"
-                                            placeholder="סיסמה חדשה"
+                                            placeholder={t('newPassword')}
                                             value={password}
                                             onChange={(e) => setPassword(e.target.value)}
                                             className="w-full pr-10 pl-4 py-2.5 rounded-lg border border-white/10 bg-[#0d1424]/60 backdrop-blur-xl text-white focus:ring-2 focus:ring-indigo-500 outline-none placeholder:text-slate-400"
@@ -267,7 +270,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user, onUp
                                         <Lock className="absolute right-3 top-3 text-slate-400" size={18} />
                                         <input
                                             type="password"
-                                            placeholder="אימות סיסמה חדשה"
+                                            placeholder={t('confirmPassword')}
                                             value={confirmPassword}
                                             onChange={(e) => setConfirmPassword(e.target.value)}
                                             className="w-full pr-10 pl-4 py-2.5 rounded-lg border border-white/10 bg-[#0d1424]/60 backdrop-blur-xl text-white focus:ring-2 focus:ring-indigo-500 outline-none placeholder:text-slate-400"
@@ -296,7 +299,7 @@ const ProfileModal: React.FC<ProfileModalProps> = ({ isOpen, onClose, user, onUp
                                 className="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/20 transition-all flex justify-center items-center gap-2 disabled:opacity-70"
                             >
                                 {loading ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
-                                {loading ? 'שומר...' : 'שמור שינויים'}
+                                {loading ? t('saving') : t('saveChanges')}
                             </button>
                         </form>
                     )}

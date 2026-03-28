@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import FocusTrap from 'focus-trap-react';
 import { X, AlertTriangle, Send } from 'lucide-react';
 import { DictionaryEntry } from '../../types';
@@ -18,14 +19,17 @@ export interface ReportData {
   explanation?: string;
 }
 
-const REPORT_REASONS = [
-  { value: 'wrong', label: 'התרגום לא נכון' },
-  { value: 'partial', label: 'חלקי/חסר ניואנס' },
-  { value: 'spelling', label: 'שגיאת כתיב' },
-  { value: 'other', label: 'אחר' },
-] as const;
+const REPORT_REASON_KEYS = ['wrong', 'partial', 'spelling', 'other'] as const;
+const REPORT_REASON_I18N: Record<string, string> = {
+  wrong: 'wrongTranslation',
+  partial: 'partialMissing',
+  spelling: 'typo',
+  other: 'other',
+};
 
 const ReportModal: React.FC<ReportModalProps> = ({ searchQuery, entry, onClose, onSubmit }) => {
+  const t = useTranslations('report');
+  const tc = useTranslations('common');
   const { isAuthenticated } = useAuth();
   const [reportType, setReportType] = useState('wrong');
   const [betterTranslation, setBetterTranslation] = useState('');
@@ -47,7 +51,7 @@ const ReportModal: React.FC<ReportModalProps> = ({ searchQuery, entry, onClose, 
 
       if (entry.id) {
         await apiService.post(`/dictionary/entries/${entry.id}/suggest-field`, {
-          fieldName: 'hebrew',
+          fieldName: 'hebrewShort',
           suggestedValue: betterTranslation.trim() || `[דיווח: ${reportType}]`,
           reason: explanation.trim() || undefined,
           report_type: 'report',
@@ -65,7 +69,7 @@ const ReportModal: React.FC<ReportModalProps> = ({ searchQuery, entry, onClose, 
     }
   };
 
-  const primaryTranslation = entry.translations[0];
+  const primaryTranslation = entry.dialectScripts[0];
 
   return (
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
@@ -82,7 +86,7 @@ const ReportModal: React.FC<ReportModalProps> = ({ searchQuery, entry, onClose, 
         <div className="flex items-center justify-between p-5 border-b border-white/10">
           <div className="flex items-center gap-2">
             <AlertTriangle className="w-5 h-5 text-amber-400" />
-            <h2 id="report-modal-title" className="text-lg font-bold text-white">דיווח על תרגום</h2>
+            <h2 id="report-modal-title" className="text-lg font-bold text-white">{t('title')}</h2>
           </div>
           <button onClick={onClose} className="p-1.5 text-slate-400 hover:bg-white/5 rounded-lg transition-colors">
             <X className="w-5 h-5" />
@@ -95,15 +99,15 @@ const ReportModal: React.FC<ReportModalProps> = ({ searchQuery, entry, onClose, 
             <div className="w-12 h-12 rounded-full bg-emerald-500/20 flex items-center justify-center mx-auto">
               <AlertTriangle className="w-6 h-6 text-emerald-400" />
             </div>
-            <p className="text-white font-medium">תודה על הדיווח!</p>
-            <p className="text-slate-400 text-sm">הדיווח נשלח לבדיקה.</p>
+            <p className="text-white font-medium">{t('thankYou')}</p>
+            <p className="text-slate-400 text-sm">{t('sentForReview')}</p>
             {!isAuthenticated && (
               <p className="text-indigo-300 text-sm">
-                הירשם כדי לעקוב אחרי הדיווחים שלך ולצבור נקודות ניסיון.
+                {t('signUpToTrack')}
               </p>
             )}
             <button onClick={onClose} className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm">
-              סגור
+              {tc('close')}
             </button>
           </div>
         ) : (
@@ -112,16 +116,16 @@ const ReportModal: React.FC<ReportModalProps> = ({ searchQuery, entry, onClose, 
             {/* Context */}
             <div className="bg-white/5 rounded-lg p-3 space-y-1">
               <div className="flex items-center gap-2 text-sm">
-                <span className="text-slate-400">חיפוש:</span>
+                <span className="text-slate-400">{t('searchLabel')}</span>
                 <span className="text-white font-medium">{searchQuery}</span>
               </div>
               <div className="flex items-center gap-2 text-sm">
-                <span className="text-slate-400">תוצאה:</span>
-                <span className="text-white">{entry.term}</span>
-                {primaryTranslation?.hebrew && (
+                <span className="text-slate-400">{t('resultLabel')}</span>
+                <span className="text-white">{entry.hebrewScript}</span>
+                {entry.hebrewShort && (
                   <>
                     <span className="text-slate-400">&larr;</span>
-                    <span className="text-slate-300">{primaryTranslation.hebrew}</span>
+                    <span className="text-slate-300">{entry.hebrewShort}</span>
                   </>
                 )}
               </div>
@@ -129,13 +133,13 @@ const ReportModal: React.FC<ReportModalProps> = ({ searchQuery, entry, onClose, 
 
             {/* Report type */}
             <div className="space-y-2">
-              <label className="text-sm text-slate-300 font-medium">מה הבעיה?</label>
+              <label className="text-sm text-slate-300 font-medium">{t('whatIsWrong')}</label>
               <div className="space-y-2">
-                {REPORT_REASONS.map((reason) => (
+                {REPORT_REASON_KEYS.map((value) => (
                   <label
-                    key={reason.value}
+                    key={value}
                     className={`flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors ${
-                      reportType === reason.value
+                      reportType === value
                         ? 'border-indigo-500/50 bg-indigo-500/10'
                         : 'border-white/10 hover:bg-white/5'
                     }`}
@@ -143,12 +147,12 @@ const ReportModal: React.FC<ReportModalProps> = ({ searchQuery, entry, onClose, 
                     <input
                       type="radio"
                       name="reportType"
-                      value={reason.value}
-                      checked={reportType === reason.value}
+                      value={value}
+                      checked={reportType === value}
                       onChange={(e) => setReportType(e.target.value)}
                       className="accent-indigo-500"
                     />
-                    <span className="text-sm text-white">{reason.label}</span>
+                    <span className="text-sm text-white">{t(REPORT_REASON_I18N[value])}</span>
                   </label>
                 ))}
               </div>
@@ -156,23 +160,23 @@ const ReportModal: React.FC<ReportModalProps> = ({ searchQuery, entry, onClose, 
 
             {/* Better translation */}
             <div className="space-y-1.5">
-              <label className="text-sm text-slate-300 font-medium">תרגום מדויק יותר (אופציונלי)</label>
+              <label className="text-sm text-slate-300 font-medium">{t('betterTranslation')}</label>
               <input
                 type="text"
                 value={betterTranslation}
                 onChange={(e) => setBetterTranslation(e.target.value)}
-                placeholder="הכנס תרגום טוב יותר..."
+                placeholder={t('betterTranslationPlaceholder')}
                 className="w-full px-3 py-2 text-sm rounded-md border border-slate-600 bg-[#0d1424]/60 backdrop-blur-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 outline-none"
               />
             </div>
 
             {/* Explanation */}
             <div className="space-y-1.5">
-              <label className="text-sm text-slate-300 font-medium">הסבר (אופציונלי)</label>
+              <label className="text-sm text-slate-300 font-medium">{t('explanation')}</label>
               <textarea
                 value={explanation}
                 onChange={(e) => setExplanation(e.target.value)}
-                placeholder="למה התרגום לא מדויק..."
+                placeholder={t('explanationPlaceholder')}
                 rows={3}
                 className="w-full px-3 py-2 text-sm rounded-md border border-slate-600 bg-[#0d1424]/60 backdrop-blur-xl text-white placeholder-slate-500 focus:ring-2 focus:ring-indigo-500 outline-none resize-none"
               />
@@ -185,11 +189,11 @@ const ReportModal: React.FC<ReportModalProps> = ({ searchQuery, entry, onClose, 
               className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {submitting ? (
-                <span>שולח...</span>
+                <span>{t('sending')}</span>
               ) : (
                 <>
                   <Send className="w-4 h-4" />
-                  <span>שלח דיווח</span>
+                  <span>{t('sendReport')}</span>
                 </>
               )}
             </button>

@@ -1,5 +1,6 @@
 import React from 'react';
 import { Search, Sparkles } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 interface HeroSectionProps {
   scrollY: number;
@@ -9,6 +10,7 @@ interface HeroSectionProps {
 }
 
 const HeroSection: React.FC<HeroSectionProps> = ({ scrollY, searchTerm, setSearchTerm, handleSearch }) => {
+  const t = useTranslations('home');
   return (
     <section className="relative z-10 min-h-[100vh] flex flex-col items-center justify-end overflow-hidden">
       {/* Mountain Background Image */}
@@ -77,20 +79,20 @@ const HeroSection: React.FC<HeroSectionProps> = ({ scrollY, searchTerm, setSearc
         {/* Badge */}
         <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#050B14]/50 border border-amber-500/30 text-amber-300 text-sm font-medium backdrop-blur-xl shadow-xl">
           <Sparkles size={16} />
-          <span>הבית של יהדות קווקז ברשת</span>
+          <span>{t('badge')}</span>
         </div>
 
         {/* Title */}
         <h1 className="text-5xl sm:text-6xl md:text-8xl font-black text-white tracking-tight leading-[1.05] drop-shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
-          מורשת{' '}
+          {t('title')}{' '}
           <span className="text-transparent bg-clip-text bg-gradient-to-l from-amber-200 via-amber-400 to-yellow-500">
-            ג'והורי
+            {t('titleHighlight')}
           </span>
         </h1>
 
         {/* Subtitle */}
         <p className="text-lg sm:text-xl md:text-2xl text-slate-200/90 max-w-xl font-light leading-relaxed drop-shadow-lg">
-          שימור השפה, התרבות והמסורת של יהודי ההרים
+          {t('subtitle')}
         </p>
 
         {/* Search Bar */}
@@ -103,15 +105,15 @@ const HeroSection: React.FC<HeroSectionProps> = ({ scrollY, searchTerm, setSearc
             <div className="relative flex items-center bg-[#0d1424]/90 border border-amber-500/30 hover:border-amber-400 rounded-full p-1.5 pr-5 transition-all duration-500 shadow-[0_20px_50px_-12px_rgba(245,158,11,0.4)] backdrop-blur-3xl">
               <input
                 type="text"
-                placeholder="חפשו שם, מאכל או פתגם בקווקזית..."
+                placeholder={t('searchPlaceholder')}
                 className="w-full bg-transparent text-white placeholder-slate-400 font-medium border-none outline-none text-lg sm:text-xl px-2 h-14"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
               <button
                 type="submit"
-                aria-label="חיפוש במילון"
-                title="חיפוש במילון"
+                aria-label={t('searchButton')}
+                title={t('searchButton')}
                 className="flex items-center justify-center w-14 h-14 bg-gradient-to-br from-amber-400 via-amber-500 to-orange-600 text-[#050B14] rounded-full hover:scale-105 hover:shadow-[0_0_20px_rgba(245,158,11,0.6)] transition-all duration-300 shrink-0"
               >
                 <Search size={24} className="stroke-[2.5]" />

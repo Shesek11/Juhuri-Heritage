@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Languages, Plus, Loader2 } from 'lucide-react';
 import apiService from '../../services/apiService';
 import { useAuth } from '../../contexts/AuthContext';
@@ -16,6 +17,7 @@ interface HebrewOnlyWidgetProps {
 }
 
 const HebrewOnlyWidget: React.FC<HebrewOnlyWidgetProps> = ({ onAddTranslation, onOpenAuthModal, onViewAll }) => {
+    const t = useTranslations('widgets');
     const { isAuthenticated } = useAuth();
     const [entries, setEntries] = useState<HebrewOnlyEntry[]>([]);
     const [loading, setLoading] = useState(true);
@@ -38,7 +40,7 @@ const HebrewOnlyWidget: React.FC<HebrewOnlyWidgetProps> = ({ onAddTranslation, o
 
     const handleAddClick = (entry: HebrewOnlyEntry) => {
         if (!isAuthenticated) {
-            onOpenAuthModal('כדי להוסיף תרגום ג\'והורי, יש להתחבר תחילה');
+            onOpenAuthModal(t('hebrewOnly.loginToTranslate'));
             return;
         }
         onAddTranslation(entry.id, entry.term);
@@ -59,14 +61,14 @@ const HebrewOnlyWidget: React.FC<HebrewOnlyWidgetProps> = ({ onAddTranslation, o
                 <div className="w-12 h-12 bg-gradient-to-br from-amber-400 to-orange-600 rounded-2xl flex items-center justify-center shadow-lg shadow-amber-500/20 mb-3 text-white">
                     <Languages size={24} />
                 </div>
-                <h3 className="font-bold text-lg text-white">חסר ג'והורי</h3>
-                <p className="text-xs text-white/50 mt-1 line-clamp-1">מילים עם עברית בלבד</p>
+                <h3 className="font-bold text-lg text-white">{t('hebrewOnly.title')}</h3>
+                <p className="text-xs text-white/50 mt-1 line-clamp-1">{t('hebrewOnly.subtitle')}</p>
             </div>
 
             <div className="flex-1 p-2 overflow-y-auto">
                 {entries.length === 0 ? (
                     <div className="flex items-center justify-center h-full text-slate-400 text-sm p-4">
-                        כל המילים כוללות תרגום ג'והורי!
+                        {t('hebrewOnly.allTranslated')}
                     </div>
                 ) : (
                     <div className="space-y-1">
@@ -98,7 +100,7 @@ const HebrewOnlyWidget: React.FC<HebrewOnlyWidgetProps> = ({ onAddTranslation, o
                 className="p-3 border-t border-white/10 text-center hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors"
             >
                 <span className="text-xs text-slate-400 hover:text-amber-600 dark:hover:text-amber-400">
-                    צפייה בכל {total.toLocaleString()} המילים
+                    {t('hebrewOnly.viewAll', { count: total.toLocaleString() })}
                 </span>
             </button>
         </div>

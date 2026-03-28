@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslations } from 'next-intl';
 import { LessonUnit, UnitMasteryInfo } from '../../types';
 import { CURRICULUM_SECTIONS } from '../../services/curriculumService';
 import { Lock, CheckCircle, Star, ShieldCheck, Hand, Hash, Palette, Users, Apple, Home, HeartPulse, Shirt, Flame, Coffee, TreePine, MessageSquare, Scroll, Music, GraduationCap, Sparkles } from 'lucide-react';
@@ -57,6 +58,7 @@ const MASTERY_BG: Record<number, string> = {
 };
 
 export default function LearningPath({ unitMastery, completedUnits, onUnitClick, onReviewClick, wordsDueForReview }: Props) {
+  const t = useTranslations('tutor');
   const activeRef = useRef<HTMLDivElement>(null);
 
   // Scroll to active unit on mount
@@ -165,7 +167,7 @@ export default function LearningPath({ unitMastery, completedUnits, onUnitClick,
                           type="button"
                           onClick={() => !locked && onUnitClick(unit)}
                           disabled={locked}
-                          aria-label={`${unit.title}${locked ? ' - נעול' : completed ? ` - רמה ${level}` : ' - התחל'}`}
+                          aria-label={`${unit.title}${locked ? ` - ${t('locked')}` : completed ? ` - ${t('levelN', { level })}` : ` - ${t('start')}`}`}
                           className={`
                             relative z-10 rounded-full flex items-center justify-center transition-all duration-300
                             w-[72px] h-[72px] sm:w-20 sm:h-20 lg:w-24 lg:h-24

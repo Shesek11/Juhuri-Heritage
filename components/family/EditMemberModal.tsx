@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslations } from 'next-intl';
 import { createPortal } from 'react-dom';
 import { FamilyMember, familyService } from '../../services/familyService';
 import { User, X, Check, Loader2, Upload, Pencil, UserPlus, Users, Baby, Heart, Trash2, AlertTriangle, Link, Sparkles, Calendar } from 'lucide-react';
@@ -75,6 +76,7 @@ interface EditMemberModalProps {
 }
 
 export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member, currentUserId, isAdmin, onClose, onSuccess, onGraphRefresh, onAddRelative, potentialRelations = [] }) => {
+    const t = useTranslations('family');
     const [loading, setLoading] = useState(false);
     const [activeTab, setActiveTab] = useState<'details' | 'connections'>('details');
     const isEditing = !!member?.id;
@@ -418,20 +420,20 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                 <div className="p-4 border-b border-white/10 flex justify-between items-center bg-white/5">
                     <h2 className="text-xl font-bold text-white flex items-center gap-2">
                         {isEditing ? <Pencil className="text-indigo-400" size={20} /> : <UserPlus className="text-indigo-400" size={20} />}
-                        {isEditing ? 'עריכת בן משפחה' : 'הוספת בן משפחה'}
+                        {isEditing ? t('modal.editMember') : t('modal.addMember')}
                     </h2>
                     <div className="flex gap-2">
                         <button
                             onClick={() => setActiveTab('details')}
                             className={`px-3 py-1 rounded-full text-sm ${activeTab === 'details' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}
                         >
-                            פרטים
+                            {t('modal.details')}
                         </button>
                         <button
                             onClick={() => setActiveTab('connections')}
                             className={`px-3 py-1 rounded-full text-sm ${activeTab === 'connections' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:bg-white/10'}`}
                         >
-                            קשרי משפחה {!isEditing && <span className="text-xs opacity-75">(קשר לאדם קיים)</span>}
+                            {t('modal.connections')} {!isEditing && <span className="text-xs opacity-75">({t('modal.linkExisting')})</span>}
                         </button>
                         <button onClick={onClose}><X className="text-slate-400 hover:text-white" /></button>
                     </div>
@@ -900,15 +902,15 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                         {!isEditing ? (
                             <div className="text-center py-12">
                                 <Heart size={48} className="mx-auto text-slate-500 mb-4" />
-                                <h3 className="text-lg font-bold text-white mb-2">קשר אדם זה למשפחה</h3>
+                                <h3 className="text-lg font-bold text-white mb-2">{t('modal.linkToFamily')}</h3>
                                 <p className="text-sm text-slate-400 mb-6">
-                                    כדי לקשר אדם חדש למשפחה, קודם שמור את הפרטים הבסיסיים שלו.
+                                    {t('modal.saveFirstToLink')}
                                 </p>
                                 <button
                                     onClick={handleSubmit}
                                     className="bg-indigo-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-indigo-700"
                                 >
-                                    שמור ועבור לקישור
+                                    {t('modal.saveAndLink')}
                                 </button>
                             </div>
                         ) : (
@@ -917,9 +919,9 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                         <div className="space-y-3">
                             <div className="flex justify-between items-center">
                                 <h3 className="font-bold text-white flex items-center gap-2">
-                                    <Users size={16} /> הורים
+                                    <Users size={16} /> {t('modal.parents')}
                                 </h3>
-                                <button onClick={() => setConnectMode('parent')} className="text-xs text-indigo-600 hover:underline">+ חבר הורה קיים</button>
+                                <button onClick={() => setConnectMode('parent')} className="text-xs text-indigo-600 hover:underline">+ {t('modal.linkParent')}</button>
                             </div>
                             {parents.map(p => (
                                 <div key={p.id} className="flex justify-between items-center bg-white/5 p-2 rounded border border-white/10">
@@ -927,16 +929,16 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                                     <button onClick={() => handleRemoveRelationship('parent', p.id)} className="text-red-500 hover:bg-red-50 p-1 rounded"><X size={14} /></button>
                                 </div>
                             ))}
-                            {parents.length === 0 && <p className="text-sm text-slate-500 italic">אין הורים רשומים.</p>}
+                            {parents.length === 0 && <p className="text-sm text-slate-500 italic">{t('modal.noParents')}</p>}
                         </div>
 
                         {/* Spouse Section */}
                         <div className="space-y-3">
                             <div className="flex justify-between items-center">
                                 <h3 className="font-bold text-white flex items-center gap-2">
-                                    <Heart size={16} /> בני זוג
+                                    <Heart size={16} /> {t('modal.spouses')}
                                 </h3>
-                                <button onClick={() => setConnectMode('spouse')} className="text-xs text-pink-600 hover:underline">+ חבר בן/ת זוג</button>
+                                <button onClick={() => setConnectMode('spouse')} className="text-xs text-pink-600 hover:underline">+ {t('modal.linkSpouse')}</button>
                             </div>
                             {partnerships.map(p => (
                                 <div key={p.id} className="bg-white/5 p-3 rounded border border-white/10">
@@ -944,7 +946,7 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                                         <div className="space-y-2">
                                             <div className="flex justify-between items-center mb-2">
                                                 <span className="font-medium text-slate-200">{p.partner?.first_name || p.partner_first_name} {p.partner?.last_name || p.partner_last_name}</span>
-                                                <button onClick={() => setEditingPartnership(null)} className="text-xs text-slate-400">ביטול</button>
+                                                <button onClick={() => setEditingPartnership(null)} className="text-xs text-slate-400">{t('modal.cancel')}</button>
                                             </div>
                                             <select
                                                 className={selectClass}
@@ -972,9 +974,9 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                                                     }}
                                                     className="flex-1 bg-green-600 text-white px-3 py-1 rounded text-xs hover:bg-green-700"
                                                 >
-                                                    <Check size={12} className="inline mr-1" /> שמור
+                                                    <Check size={12} className="inline mr-1" /> {t('modal.save')}
                                                 </button>
-                                                <button onClick={() => handleRemoveRelationship('spouse', p.id)} className="text-red-500 hover:bg-red-50 px-3 py-1 rounded text-xs">מחק</button>
+                                                <button onClick={() => handleRemoveRelationship('spouse', p.id)} className="text-red-500 hover:bg-red-50 px-3 py-1 rounded text-xs">{t('modal.delete')}</button>
                                             </div>
                                         </div>
                                     ) : (
@@ -1013,9 +1015,9 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                         <div className="space-y-3">
                             <div className="flex justify-between items-center">
                                 <h3 className="font-bold text-white flex items-center gap-2">
-                                    <Baby size={16} /> ילדים
+                                    <Baby size={16} /> {t('modal.children')}
                                 </h3>
-                                <button onClick={() => setConnectMode('child')} className="text-xs text-green-600 hover:underline">+ חבר ילד קיים</button>
+                                <button onClick={() => setConnectMode('child')} className="text-xs text-green-600 hover:underline">+ {t('modal.linkChild')}</button>
                             </div>
                             {children.map(c => (
                                 <div key={c.id} className="flex justify-between items-center bg-white/5 p-2 rounded border border-white/10">
@@ -1023,14 +1025,14 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                                     <button onClick={() => handleRemoveRelationship('child', c.id)} className="text-red-500 hover:bg-red-50 p-1 rounded"><X size={14} /></button>
                                 </div>
                             ))}
-                            {children.length === 0 && <p className="text-sm text-slate-500 italic">אין ילדים רשומים.</p>}
+                            {children.length === 0 && <p className="text-sm text-slate-500 italic">{t('modal.noChildren')}</p>}
                         </div>
 
                         {/* Connect Modal Overlay */}
                         {connectMode !== 'none' && (
                             <div className="border-t pt-4 mt-4 bg-indigo-900/30 border border-indigo-500/20 p-4 rounded-lg">
                                 <h4 className="font-bold mb-2 text-sm text-white">
-                                    {connectMode === 'parent' ? 'חיבור הורה' : connectMode === 'child' ? 'חיבור ילד' : 'חיבור בן/ת זוג'}
+                                    {connectMode === 'parent' ? t('modal.connectParent') : connectMode === 'child' ? t('modal.connectChild') : t('modal.connectSpouse')}
                                 </h4>
                                 <div className="space-y-3">
                                     {/* Success feedback */}
@@ -1122,16 +1124,16 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                                             }}
                                             className="text-xs text-indigo-400 hover:text-indigo-300 flex items-center gap-1"
                                         >
-                                            <UserPlus size={12} /> צור אדם חדש
+                                            <UserPlus size={12} /> {t('modal.createNew')}
                                         </button>
                                         <div className="flex gap-2">
-                                            <button onClick={() => { setConnectMode('none'); setConnectSearch(''); setConnectSuccess(''); }} className="text-sm text-slate-400 px-3 py-1">ביטול</button>
+                                            <button onClick={() => { setConnectMode('none'); setConnectSearch(''); setConnectSuccess(''); }} className="text-sm text-slate-400 px-3 py-1">{t('modal.cancel')}</button>
                                             <button
                                                 onClick={handleConnect}
                                                 disabled={!selectedConnectId}
                                                 className="text-sm bg-indigo-600 text-white px-3 py-1.5 rounded hover:bg-indigo-700 disabled:opacity-50"
                                             >
-                                                חבר
+                                                {t('modal.connect')}
                                             </button>
                                         </div>
                                     </div>
@@ -1147,28 +1149,28 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                     {/* Only show quick add relative in Details tab */}
                     {activeTab === 'details' && onAddRelative && isEditing && (
                         <div className="mb-4">
-                            <div className="text-xs font-medium text-slate-400 mb-2">הוסף קרוב משפחה:</div>
+                            <div className="text-xs font-medium text-slate-400 mb-2">{t('modal.addRelative')}:</div>
                             <div className="flex gap-2 flex-wrap">
                                 <button
                                     type="button"
                                     onClick={() => { onClose(); onAddRelative('parent'); }}
                                     className="flex items-center gap-1 px-3 py-1.5 bg-white/10 text-indigo-300 rounded-lg text-sm hover:bg-white/20 border border-white/10"
                                 >
-                                    <Users size={14} /> הורה
+                                    <Users size={14} /> {t('modal.parent')}
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => { onClose(); onAddRelative('child'); }}
                                     className="flex items-center gap-1 px-3 py-1.5 bg-green-100 text-green-700 rounded-lg text-sm hover:bg-green-200"
                                 >
-                                    <Baby size={14} /> ילד/ה
+                                    <Baby size={14} /> {t('modal.child')}
                                 </button>
                                 <button
                                     type="button"
                                     onClick={() => { onClose(); onAddRelative('spouse'); }}
                                     className="flex items-center gap-1 px-3 py-1.5 bg-pink-100 text-pink-700 rounded-lg text-sm hover:bg-pink-200"
                                 >
-                                    <Heart size={14} /> בן/ת זוג
+                                    <Heart size={14} /> {t('modal.spouse')}
                                 </button>
                             </div>
                         </div>
@@ -1181,15 +1183,15 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                                 onClick={handleDeleteMember}
                                 disabled={loading}
                                 className="px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg flex items-center gap-2 disabled:opacity-50 transition-colors"
-                                title="מחק אדם זה"
+                                title={t('modal.deletePerson')}
                             >
                                 <Trash2 size={16} />
-                                <span>מחק</span>
+                                <span>{t('modal.delete')}</span>
                             </button>
                         )}
 
                         <div className="flex gap-3 mr-auto">
-                            <button onClick={onClose} className="px-4 py-2 text-slate-400 hover:bg-white/10 rounded-lg">סגור</button>
+                            <button onClick={onClose} className="px-4 py-2 text-slate-400 hover:bg-white/10 rounded-lg">{t('modal.close')}</button>
                             {activeTab === 'details' && canEdit && (
                                 <button
                                     onClick={handleSubmit}
@@ -1197,11 +1199,11 @@ export const EditMemberModal: React.FC<EditMemberModalProps> = ({ isOpen, member
                                     className="bg-indigo-600 text-white px-6 py-2 rounded-lg font-bold flex items-center gap-2 hover:bg-indigo-700 disabled:opacity-50"
                                 >
                                     {loading ? <Loader2 className="animate-spin" /> : <Check size={18} />}
-                                    {isEditing ? 'עדכן' : 'שמור'}
+                                    {isEditing ? t('modal.update') : t('modal.save')}
                                 </button>
                             )}
                             {activeTab === 'details' && !canEdit && isEditing && (
-                                <span className="px-4 py-2 text-slate-500 text-sm">צפייה בלבד — נוסף ע״י משתמש אחר</span>
+                                <span className="px-4 py-2 text-slate-500 text-sm">{t('modal.viewOnly')}</span>
                             )}
                         </div>
                     </div>

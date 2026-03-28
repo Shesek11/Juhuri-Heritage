@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { CheckCircle, ThumbsUp, Loader2 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import apiService from '../../services/apiService';
 
 interface PendingSuggestion {
@@ -16,6 +17,7 @@ interface PendingApprovalsProps {
 }
 
 const PendingApprovals: React.FC<PendingApprovalsProps> = ({ onViewDetails }) => {
+    const t = useTranslations('widgets');
     const [suggestions, setSuggestions] = useState<PendingSuggestion[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -48,11 +50,11 @@ const PendingApprovals: React.FC<PendingApprovalsProps> = ({ onViewDetails }) =>
                     <div className="w-12 h-12 bg-gradient-to-br from-emerald-400 to-green-600 rounded-2xl flex items-center justify-center shadow-lg shadow-green-500/20 mb-3 text-white">
                         <CheckCircle size={24} />
                     </div>
-                    <h3 className="font-bold text-lg text-white">ממתינים לאישור</h3>
-                    <p className="text-xs text-white/50 mt-1 line-clamp-1">הצעות הממתינות לעורך</p>
+                    <h3 className="font-bold text-lg text-white">{t('pendingTitle')}</h3>
+                    <p className="text-xs text-white/50 mt-1 line-clamp-1">{t('pendingSubtitle')}</p>
                 </div>
                 <div className="flex-1 flex items-center justify-center text-slate-400 text-sm p-4">
-                    אין הצעות ממתינות! ✨
+                    {t('noPending')}
                 </div>
             </div>
         );
@@ -63,9 +65,9 @@ const PendingApprovals: React.FC<PendingApprovalsProps> = ({ onViewDetails }) =>
             <div className="absolute top-0 left-0 right-0 h-[3px] bg-gradient-to-r from-transparent via-amber-500/80 to-transparent scale-x-0 group-hover:scale-x-100 transition-transform duration-700 z-50" />
             <div className="bg-white/5 border-b border-white/10 backdrop-blur-xl p-4 text-white">
                 <h3 className="font-bold text-lg flex items-center gap-2">
-                    <CheckCircle size={20} /> ממתינים לאישור
+                    <CheckCircle size={20} /> {t('pendingTitle')}
                 </h3>
-                <p className="text-xs text-white/80 mt-1">הצעות תרגום מהקהילה</p>
+                <p className="text-xs text-white/80 mt-1">{t('communityTitle')}</p>
             </div>
 
             <div className="flex-1 p-2 overflow-y-auto">
@@ -89,7 +91,7 @@ const PendingApprovals: React.FC<PendingApprovalsProps> = ({ onViewDetails }) =>
                                     {suggestion.suggested_hebrew}
                                 </div>
                                 <div className="text-[11px] text-slate-400 mt-1">
-                                    הוצע ע״י {suggestion.user_name}
+                                    {t('suggestedBy')} {suggestion.user_name}
                                 </div>
                             </div>
                             <div className="bg-emerald-100 dark:bg-emerald-900/30 p-2 rounded-lg text-emerald-600 dark:text-emerald-400 opacity-0 group-hover:opacity-100 transition-all mr-2">
@@ -102,7 +104,7 @@ const PendingApprovals: React.FC<PendingApprovalsProps> = ({ onViewDetails }) =>
 
             <div className="p-3 border-t border-white/10 text-center">
                 <span className="text-xs text-slate-400">
-                    {suggestions.length} הצעות ממתינות
+                    {suggestions.length} {t('pendingSuggestions')}
                 </span>
             </div>
         </div>

@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useTranslations } from 'next-intl';
 import { Bell, Check, CheckCheck, X, ShoppingBag, Star, Package } from 'lucide-react';
 import { Notification, marketplaceService } from '../../services/marketplaceService';
 import { useAuth } from '../../contexts/AuthContext';
 
 export const NotificationBell: React.FC = () => {
+    const t = useTranslations('marketplace');
     const { user } = useAuth();
     const [notifications, setNotifications] = useState<Notification[]>([]);
     const [unreadCount, setUnreadCount] = useState(0);
@@ -96,10 +98,10 @@ export const NotificationBell: React.FC = () => {
         const diffHours = Math.floor(diffMins / 60);
         const diffDays = Math.floor(diffHours / 24);
 
-        if (diffMins < 1) return 'עכשיו';
-        if (diffMins < 60) return `לפני ${diffMins} דקות`;
-        if (diffHours < 24) return `לפני ${diffHours} שעות`;
-        if (diffDays < 7) return `לפני ${diffDays} ימים`;
+        if (diffMins < 1) return t('now');
+        if (diffMins < 60) return t('minutesAgo', { count: diffMins });
+        if (diffHours < 24) return t('hoursAgo', { count: diffHours });
+        if (diffDays < 7) return t('daysAgo', { count: diffDays });
         return date.toLocaleDateString('he-IL');
     };
 
@@ -123,7 +125,7 @@ export const NotificationBell: React.FC = () => {
                 <div className="absolute left-0 mt-2 w-80 bg-[#0d1424]/60 backdrop-blur-xl rounded-xl shadow-2xl border border-white/10 z-50 max-h-[500px] flex flex-col">
                     {/* Header */}
                     <div className="p-4 border-b border-white/10 flex justify-between items-center">
-                        <h3 className="font-bold text-slate-100">התראות</h3>
+                        <h3 className="font-bold text-slate-100">{t('notifications')}</h3>
                         {unreadCount > 0 && (
                             <button
                                 onClick={markAllAsRead}
@@ -131,7 +133,7 @@ export const NotificationBell: React.FC = () => {
                                 className="text-xs text-orange-600 hover:text-orange-700 font-bold flex items-center gap-1 disabled:opacity-50"
                             >
                                 <CheckCheck size={14} />
-                                סמן הכל כנקרא
+                                {t('markAllRead')}
                             </button>
                         )}
                     </div>
@@ -141,7 +143,7 @@ export const NotificationBell: React.FC = () => {
                         {notifications.length === 0 ? (
                             <div className="text-center py-10 text-slate-400">
                                 <Bell size={48} className="mx-auto mb-4 opacity-30" />
-                                <p className="text-sm">אין התראות</p>
+                                <p className="text-sm">{t('noNotifications')}</p>
                             </div>
                         ) : (
                             <div className="divide-y divide-slate-100 dark:divide-slate-700">

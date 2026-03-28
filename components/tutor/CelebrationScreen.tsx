@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { Trophy, Star, Sparkles, ArrowRight } from 'lucide-react';
 
 interface Props {
@@ -12,6 +13,7 @@ interface Props {
 }
 
 export default function CelebrationScreen({ score, accuracy, xpEarned, masteryLevel, wordsLearned, onContinue, milestone }: Props) {
+  const t = useTranslations('tutor');
   const [showConfetti, setShowConfetti] = useState(false);
   const [showContent, setShowContent] = useState(false);
 
@@ -20,7 +22,7 @@ export default function CelebrationScreen({ score, accuracy, xpEarned, masteryLe
     setTimeout(() => setShowContent(true), 300);
   }, []);
 
-  const masteryNames = ['', 'ברונזה', 'כסף', 'זהב', 'פלטינום', 'יהלום'];
+  const masteryNames = ['', t('bronzeLevel'), t('silverLevel'), t('goldLevel'), t('platinumLevel'), t('diamondLevel')];
   const masteryColors = ['', 'text-amber-600', 'text-slate-300', 'text-yellow-400', 'text-cyan-300', 'text-purple-400'];
 
   return (
@@ -52,8 +54,8 @@ export default function CelebrationScreen({ score, accuracy, xpEarned, masteryLe
               <Trophy size={52} className="text-amber-400 lg:w-16 lg:h-16" />
             </div>
 
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-100 mb-1.5">כל הכבוד!</h2>
-            <p className="text-sm sm:text-base text-slate-400 mb-8">סיימת את השיעור בהצלחה</p>
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-slate-100 mb-1.5">{t('congrats')}</h2>
+            <p className="text-sm sm:text-base text-slate-400 mb-8">{t('lessonComplete')}</p>
 
             {/* Stats */}
             <div className="grid grid-cols-3 gap-6 sm:gap-10 lg:gap-14 w-full max-w-sm lg:max-w-md mb-8">
@@ -63,11 +65,11 @@ export default function CelebrationScreen({ score, accuracy, xpEarned, masteryLe
               </div>
               <div className="flex flex-col items-center gap-1.5">
                 <span className="text-3xl sm:text-4xl font-bold text-green-400">{accuracy}%</span>
-                <span className="text-xs sm:text-sm text-slate-400 font-medium">דיוק</span>
+                <span className="text-xs sm:text-sm text-slate-400 font-medium">{t('accuracy')}</span>
               </div>
               <div className="flex flex-col items-center gap-1.5">
                 <span className="text-3xl sm:text-4xl font-bold text-blue-400">{wordsLearned}</span>
-                <span className="text-xs sm:text-sm text-slate-400 font-medium">מילים</span>
+                <span className="text-xs sm:text-sm text-slate-400 font-medium">{t('words')}</span>
               </div>
             </div>
 
@@ -98,7 +100,7 @@ export default function CelebrationScreen({ score, accuracy, xpEarned, masteryLe
               onClick={onContinue}
               className="mt-2 flex items-center gap-2.5 bg-gradient-to-r from-amber-400 via-amber-500 to-orange-600 text-[#050B14] px-10 py-3.5 rounded-xl font-bold text-base sm:text-lg hover:scale-105 shadow-[0_0_30px_rgba(245,158,11,0.3)] transition-transform"
             >
-              המשך
+              {t('continue')}
               <ArrowRight size={20} />
             </button>
           </>

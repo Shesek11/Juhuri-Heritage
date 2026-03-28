@@ -5,6 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { Search, ChefHat, Plus, Filter, Grid, List, Loader2, RefreshCw } from 'lucide-react';
 import { recipesService, Recipe, RecipeTag, RecipesResponse } from '../services/recipesService';
 import { RecipeCard } from './recipes/RecipeCard';
@@ -18,6 +19,7 @@ type SortOption = 'newest' | 'popular' | 'likes' | 'oldest';
 type ViewMode = 'grid' | 'list';
 
 export const RecipesPage: React.FC = () => {
+    const t = useTranslations('recipes');
     const params = useParams();
     const routeRecipeId = params?.id as string | undefined;
     const router = useRouter();
@@ -53,7 +55,7 @@ export const RecipesPage: React.FC = () => {
             setPagination(response.pagination);
         } catch (err) {
             console.error('Error loading recipes:', err);
-            setError('שגיאה בטעינת המתכונים');
+            setError(t('loadError'));
         } finally {
             setLoading(false);
         }
@@ -105,10 +107,10 @@ export const RecipesPage: React.FC = () => {
             <div className="flex flex-col items-center justify-center min-h-[60vh] text-center p-8">
                 <ChefHat className="w-16 h-16 text-amber-300 mb-4" />
                 <h2 className="text-2xl font-bold text-slate-700 dark:text-slate-300 mb-2">
-                    מודול המתכונים בפיתוח
+                    {t('devMode')}
                 </h2>
                 <p className="text-slate-400 dark:text-slate-400">
-                    המודול יהיה זמין בקרוב. הישארו מעודכנים!
+                    {t('devModeDesc')}
                 </p>
             </div>
         );
@@ -127,22 +129,21 @@ export const RecipesPage: React.FC = () => {
     return (
         <div className="max-w-5xl mx-auto px-4 py-8">
             <SEOHead
-                title="מתכונים קווקזיים מסורתיים"
-                description="אוסף מתכונים אותנטיים מהמטבח הג'והורי והקווקזי-יהודי. שמרו את המסורת הקולינרית של הקהילה."
+                title={t('heading')}
+                description={t('description')}
                 canonicalPath="/recipes"
             />
             {/* Header */}
             <div className="text-center mb-8">
                 <div className="inline-flex items-center gap-2 px-4 py-2 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-full text-sm font-medium mb-4">
                     <ChefHat className="w-4 h-4" />
-                    מטבח קווקזי יהודי
+                    {t('badge')}
                 </div>
                 <h1 className="text-3xl md:text-4xl font-bold text-slate-800 dark:text-white mb-3">
-                    מתכונים מסורתיים
+                    {t('heading')}
                 </h1>
                 <p className="text-slate-400 dark:text-slate-400 max-w-2xl mx-auto">
-                    אוסף מתכונים אותנטיים מהמטבח הג׳והורי והקווקזי-יהודי.
-                    שמור את המסורת הקולינרית של הקהילה.
+                    {t('description')}
                 </p>
             </div>
 
@@ -157,7 +158,7 @@ export const RecipesPage: React.FC = () => {
                                 type="text"
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                placeholder="חפש מתכון..."
+                                placeholder={t('searchPlaceholder')}
                                 className="w-full pr-10 pl-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-200 focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:border-transparent"
                             />
                         </div>
@@ -173,7 +174,7 @@ export const RecipesPage: React.FC = () => {
                                 }`}
                         >
                             <Filter className="w-4 h-4" />
-                            סינון
+                            {t('filter')}
                         </button>
 
                         <select
@@ -181,10 +182,10 @@ export const RecipesPage: React.FC = () => {
                             onChange={(e) => setSort(e.target.value as SortOption)}
                             className="px-4 py-2.5 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300"
                         >
-                            <option value="newest">חדשים</option>
-                            <option value="popular">פופולריים</option>
-                            <option value="likes">הכי אהובים</option>
-                            <option value="oldest">ישנים</option>
+                            <option value="newest">{t('sortNewest')}</option>
+                            <option value="popular">{t('sortPopular')}</option>
+                            <option value="likes">{t('sortFavorite')}</option>
+                            <option value="oldest">{t('sortOldest')}</option>
                         </select>
 
                         <div className="flex border border-slate-300 dark:border-slate-600 rounded-lg overflow-hidden">
@@ -228,7 +229,7 @@ export const RecipesPage: React.FC = () => {
             {loading ? (
                 <div className="flex items-center justify-center py-16">
                     <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
-                    <span className="mr-3 text-slate-400">טוען מתכונים...</span>
+                    <span className="mr-3 text-slate-400">{t('loading')}</span>
                 </div>
             ) : error ? (
                 <div className="text-center py-16">
@@ -237,24 +238,24 @@ export const RecipesPage: React.FC = () => {
                         onClick={() => loadRecipes(1)}
                         className="px-4 py-2 bg-amber-500 text-white rounded-lg hover:bg-amber-600"
                     >
-                        נסה שוב
+                        {t('tryAgain')}
                     </button>
                 </div>
             ) : recipes.length === 0 ? (
                 <div className="text-center py-16">
                     <ChefHat className="w-16 h-16 text-slate-300 dark:text-slate-600 mx-auto mb-4" />
                     <h3 className="text-xl font-medium text-slate-600 dark:text-slate-400 mb-2">
-                        לא נמצאו מתכונים
+                        {t('noResults')}
                     </h3>
                     <p className="text-slate-400 dark:text-slate-400 mb-6">
-                        נסה לשנות את הסינון או להוסיף מתכון חדש
+                        {t('noResultsHint')}
                     </p>
                     <button
                         onClick={() => setIsWizardOpen(true)}
                         className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all"
                     >
                         <Plus className="w-5 h-5" />
-                        הוסף מתכון
+                        {t('addRecipe')}
                     </button>
                 </div>
             ) : (

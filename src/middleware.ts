@@ -1,13 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
+import createIntlMiddleware from 'next-intl/middleware';
+import { routing } from './i18n/routing';
+
+// ---------------------------------------------------------------------------
+// next-intl locale middleware
+// ---------------------------------------------------------------------------
+
+const intlMiddleware = createIntlMiddleware(routing);
 
 // ---------------------------------------------------------------------------
 // Admin route protection (JWT-based)
 // ---------------------------------------------------------------------------
 
 // Pages accessible to both admin and approver:
-// /admin/dictionary, /admin/dictionary/pending, /admin/dictionary/ai, /admin/family
-// Everything else requires admin role specifically
 const APPROVER_ALLOWED = new Set([
   '/admin',
   '/admin/dictionary',
@@ -16,10 +22,8 @@ const APPROVER_ALLOWED = new Set([
   '/admin/family',
 ]);
 
-async function handleAdminAuth(request: NextRequest): Promise<NextResponse | null> {
-  const pathname = request.nextUrl.pathname;
-
-  if (!pathname.startsWith('/admin')) {
+async function handleAdminAuth(request: NextRequest, pathnameWithoutLocale: string): Promise<NextResponse | null> {
+  if (!pathnameWithoutLocale.startsWith('/admin')) {
     return null; // not an admin route — skip
   }
 
@@ -36,25 +40,23 @@ async function handleAdminAuth(request: NextRequest): Promise<NextResponse | nul
     const { payload } = await jwtVerify(token, secret);
     const role = payload.role as string | undefined;
 
-    // Only admin and approver roles may access /admin/*
     if (role !== 'admin' && role !== 'approver') {
       const url = request.nextUrl.clone();
       url.pathname = '/';
       return NextResponse.redirect(url);
     }
 
-    // Approvers can only access specific pages; everything else requires admin
-    // Normalize trailing slash to prevent bypass (e.g. /admin/users/ vs /admin/users)
-    const normalizedPath = pathname.replace(/\/$/, '') || '/admin';
+    const normalizedPath = pathnameWithoutLocale.replace(/\/$/, '') || '/admin';
     if (role === 'approver' && !APPROVER_ALLOWED.has(normalizedPath)) {
       const url = request.nextUrl.clone();
-      url.pathname = '/admin/dictionary';
+      // Redirect to admin dictionary under the current locale
+      const locale = extractLocale(request.nextUrl.pathname);
+      url.pathname = `/${locale}/admin/dictionary`;
       return NextResponse.redirect(url);
     }
 
     return null; // authenticated — continue
   } catch {
-    // Invalid / expired token
     const url = request.nextUrl.clone();
     url.pathname = '/';
     return NextResponse.redirect(url);
@@ -63,8 +65,6 @@ async function handleAdminAuth(request: NextRequest): Promise<NextResponse | nul
 
 // ---------------------------------------------------------------------------
 // In-memory redirect cache (2-minute TTL)
-// Middleware runs on Edge Runtime — cannot import mysql2 directly.
-// Instead we fetch redirects from our own API route.
 // ---------------------------------------------------------------------------
 
 interface RedirectEntry {
@@ -75,7 +75,7 @@ interface RedirectEntry {
 
 let redirectCache: Map<string, RedirectEntry> | null = null;
 let cacheTimestamp = 0;
-const CACHE_TTL = 2 * 60 * 1000; // 2 minutes
+const CACHE_TTL = 2 * 60 * 1000;
 
 async function getRedirects(origin: string): Promise<Map<string, RedirectEntry>> {
   const now = Date.now();
@@ -101,13 +101,34 @@ async function getRedirects(origin: string): Promise<Map<string, RedirectEntry>>
     cacheTimestamp = now;
     return map;
   } catch {
-    // On error, return existing cache or empty map
     return redirectCache || new Map();
   }
 }
 
 // ---------------------------------------------------------------------------
-// Middleware: apply DB-managed redirects
+// Helpers
+// ---------------------------------------------------------------------------
+
+function extractLocale(pathname: string): string {
+  const segments = pathname.split('/').filter(Boolean);
+  const first = segments[0];
+  if (first && (routing.locales as readonly string[]).includes(first)) {
+    return first;
+  }
+  return routing.defaultLocale;
+}
+
+function stripLocalePrefix(pathname: string): string {
+  const segments = pathname.split('/').filter(Boolean);
+  const first = segments[0];
+  if (first && (routing.locales as readonly string[]).includes(first)) {
+    return '/' + segments.slice(1).join('/') || '/';
+  }
+  return pathname;
+}
+
+// ---------------------------------------------------------------------------
+// Middleware
 // ---------------------------------------------------------------------------
 
 export async function middleware(request: NextRequest) {
@@ -119,37 +140,42 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/_next/') ||
     pathname.startsWith('/images/') ||
     pathname.startsWith('/uploads/') ||
-    pathname === '/favicon.ico'
+    pathname === '/favicon.ico' ||
+    /\.(?:ico|png|jpg|jpeg|svg|webp|gif|css|js|woff|woff2|ttf|map)$/.test(pathname)
   ) {
     return NextResponse.next();
   }
 
-  // --- Admin route protection (before redirect logic) ---
-  const adminResponse = await handleAdminAuth(request);
+  // --- DB-managed redirects (check BEFORE locale rewrite) ---
+  const pathnameWithoutLocale = stripLocalePrefix(pathname);
+  const origin = request.nextUrl.origin;
+  const redirects = await getRedirects(origin);
+  const match = redirects.get(pathnameWithoutLocale);
+
+  if (match) {
+    if (match.to_path.startsWith('http')) {
+      return NextResponse.redirect(match.to_path, match.status_code || 301);
+    }
+    // Redirect target should include locale
+    const locale = extractLocale(pathname);
+    const url = request.nextUrl.clone();
+    url.pathname = `/${locale}${match.to_path}`;
+    return NextResponse.redirect(url, match.status_code || 301);
+  }
+
+  // --- Admin route protection (before locale middleware) ---
+  const adminResponse = await handleAdminAuth(request, pathnameWithoutLocale);
   if (adminResponse) {
     return adminResponse;
   }
 
-  const origin = request.nextUrl.origin;
-  const redirects = await getRedirects(origin);
-  const match = redirects.get(pathname);
-
-  if (match) {
-    const url = request.nextUrl.clone();
-    // Support both relative and absolute redirect targets
-    if (match.to_path.startsWith('http')) {
-      return NextResponse.redirect(match.to_path, match.status_code || 301);
-    }
-    url.pathname = match.to_path;
-    return NextResponse.redirect(url, match.status_code || 301);
-  }
-
-  return NextResponse.next();
+  // --- next-intl locale handling ---
+  return intlMiddleware(request);
 }
 
 export const config = {
   matcher: [
     // Match all paths except static files and Next.js internals
-    '/((?!_next/static|_next/image|favicon.ico|images/|uploads/).*)',
+    '/((?!_next/static|_next/image|favicon.ico|images/|uploads/|api/).*)',
   ],
 };

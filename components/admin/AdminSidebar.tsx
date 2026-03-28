@@ -10,9 +10,11 @@ import {
     GitBranch,
     Globe,
     Settings,
+    Mail,
     ChevronUp,
     ChevronDown,
 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 
 interface MenuItem {
     label: string;
@@ -28,65 +30,80 @@ interface MenuSection {
     adminOnly?: boolean;
 }
 
-const MENU_SECTIONS: MenuSection[] = [
-    {
-        id: 'dictionary',
-        label: 'מילון',
-        icon: <BookOpen size={18} />,
-        items: [
-            { label: 'מאגר פעיל', href: '/admin/dictionary' },
-            { label: 'אישורים', href: '/admin/dictionary/pending', badgeKey: 'pending' },
-            { label: 'אישור AI', href: '/admin/dictionary/ai' },
-            { label: 'ניהול ניבים', href: '/admin/dictionary/dialects' },
-            { label: 'כפילויות', href: '/admin/dictionary/duplicates' },
-        ],
-    },
-    {
-        id: 'recipes',
-        label: 'מתכונים',
-        icon: <Tag size={18} />,
-        items: [
-            { label: 'ניהול תגיות', href: '/admin/recipes' },
-        ],
-    },
-    {
-        id: 'marketplace',
-        label: 'שוק',
-        icon: <ShoppingCart size={18} />,
-        items: [
-            { label: 'ניהול חנויות', href: '/admin/marketplace' },
-        ],
-    },
-    {
-        id: 'family',
-        label: 'אילן יוחסין',
-        icon: <GitBranch size={18} />,
-        items: [
-            { label: 'הצעות ובקשות', href: '/admin/family' },
-        ],
-    },
-    {
-        id: 'seo',
-        label: 'SEO',
-        icon: <Globe size={18} />,
-        items: [
-            { label: 'ניהול SEO', href: '/admin/seo' },
-            { label: 'Analytics', href: '/admin/analytics' },
-        ],
-    },
-    {
-        id: 'general',
-        label: 'כללי',
-        icon: <Settings size={18} />,
-        adminOnly: true,
-        items: [
-            { label: 'משתמשים', href: '/admin/users' },
-            { label: 'יומן אירועים', href: '/admin/logs' },
-            { label: 'ניהול פיצ\'רים', href: '/admin/features' },
-            { label: 'מפתחות API', href: '/admin/settings' },
-        ],
-    },
-];
+function buildMenuSections(t: (key: string) => string): MenuSection[] {
+    return [
+        {
+            id: 'dictionary',
+            label: t('dictionary'),
+            icon: <BookOpen size={18} />,
+            items: [
+                { label: t('activeRepo'), href: '/admin/dictionary' },
+                { label: t('approvals'), href: '/admin/dictionary/pending', badgeKey: 'pending' },
+                { label: t('aiApproval'), href: '/admin/dictionary/ai' },
+                { label: t('dialects'), href: '/admin/dictionary/dialects' },
+                { label: t('duplicates'), href: '/admin/dictionary/duplicates' },
+            ],
+        },
+        {
+            id: 'recipes',
+            label: t('recipes'),
+            icon: <Tag size={18} />,
+            items: [
+                { label: t('tagManagement'), href: '/admin/recipes' },
+            ],
+        },
+        {
+            id: 'marketplace',
+            label: t('market'),
+            icon: <ShoppingCart size={18} />,
+            items: [
+                { label: t('storeManagement'), href: '/admin/marketplace' },
+            ],
+        },
+        {
+            id: 'family',
+            label: t('familyTree'),
+            icon: <GitBranch size={18} />,
+            items: [
+                { label: t('suggestionsRequests'), href: '/admin/family' },
+            ],
+        },
+        {
+            id: 'seo',
+            label: 'SEO',
+            icon: <Globe size={18} />,
+            items: [
+                { label: t('seoManagement'), href: '/admin/seo' },
+                { label: 'Analytics', href: '/admin/analytics' },
+            ],
+        },
+        {
+            id: 'email',
+            label: t('emails'),
+            icon: <Mail size={18} />,
+            adminOnly: true,
+            items: [
+                { label: t('triggers'), href: '/admin/email-triggers' },
+                { label: t('templates'), href: '/admin/email-templates' },
+                { label: t('sendLog'), href: '/admin/email-logs' },
+                { label: t('inbox'), href: '/admin/email-inbox' },
+            ],
+        },
+        {
+            id: 'general',
+            label: t('general'),
+            icon: <Settings size={18} />,
+            adminOnly: true,
+            items: [
+                { label: t('users'), href: '/admin/users' },
+                { label: t('eventLog'), href: '/admin/logs' },
+                { label: t('featureManagement'), href: '/admin/features' },
+                { label: t('translations'), href: '/admin/translations' },
+                { label: t('apiKeys'), href: '/admin/settings' },
+            ],
+        },
+    ];
+}
 
 interface AdminSidebarProps {
     userRole: string;
@@ -94,8 +111,10 @@ interface AdminSidebarProps {
 
 export default function AdminSidebar({ userRole }: AdminSidebarProps) {
     const pathname = usePathname();
+    const t = useTranslations('admin');
     const [expanded, setExpanded] = useState<Record<string, boolean>>({});
     const [badges, setBadges] = useState<Record<string, number>>({});
+    const MENU_SECTIONS = buildMenuSections(t);
 
     // Fetch pending counts on mount
     useEffect(() => {

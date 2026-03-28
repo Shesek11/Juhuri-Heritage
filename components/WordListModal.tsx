@@ -1,14 +1,15 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import FocusTrap from 'focus-trap-react';
 import { X, Search, ChevronRight, ChevronLeft, Loader2 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
 import apiService from '../services/apiService';
 
 interface WordListEntry {
     id: number;
-    term: string;
+    term: string; // kept as 'term' since this comes from a simplified API endpoint
     detected_language?: string;
-    hebrew?: string;
-    latin?: string;
+    hebrew?: string; // Hebrew meaning
+    latin?: string; // Latin script
     cyrillic?: string;
     existingDialects?: string[];
     missingDialects?: string[];
@@ -33,6 +34,8 @@ const WordListModal: React.FC<WordListModalProps> = ({
     onSelectWord,
     featuredTerm,
 }) => {
+    const t = useTranslations('wordList');
+    const tc = useTranslations('common');
     const [entries, setEntries] = useState<WordListEntry[]>([]);
     const [loading, setLoading] = useState(false);
     const [searchTerm, setSearchTerm] = useState('');
@@ -134,9 +137,9 @@ const WordListModal: React.FC<WordListModalProps> = ({
     const getMissingInfo = (entry: WordListEntry) => {
         switch (category) {
             case 'hebrew-only':
-                return <span className="text-amber-600 dark:text-amber-400">חסר: ג'והורי/לטינית</span>;
+                return <span className="text-amber-600 dark:text-amber-400">{t('missingJuhuri')}</span>;
             case 'juhuri-only':
-                return <span className="text-emerald-600 dark:text-emerald-400">חסר: עברית</span>;
+                return <span className="text-emerald-600 dark:text-emerald-400">{t('missingHebrew')}</span>;
             case 'missing-dialects':
                 return (
                     <div className="flex flex-wrap gap-1">
@@ -151,7 +154,7 @@ const WordListModal: React.FC<WordListModalProps> = ({
                     </div>
                 );
             case 'missing-audio':
-                return <span className="text-purple-600 dark:text-purple-400">חסר: הקלטה</span>;
+                return <span className="text-purple-600 dark:text-purple-400">{t('missingAudio')}</span>;
             default:
                 return null;
         }
@@ -166,9 +169,9 @@ const WordListModal: React.FC<WordListModalProps> = ({
                 <div className={`p-5 bg-gradient-to-r ${getCategoryColor()} text-white flex justify-between items-center shrink-0`}>
                     <div>
                         <h3 id="wordlist-modal-title" className="font-bold text-lg">{title}</h3>
-                        <p className="text-sm text-white/80">{serverTotal.toLocaleString()} מילים</p>
+                        <p className="text-sm text-white/80">{serverTotal.toLocaleString()} {t('words')}</p>
                     </div>
-                    <button type="button" onClick={onClose} title="סגור" className="p-2 rounded-full hover:bg-white/20 transition-colors">
+                    <button type="button" onClick={onClose} title={tc('close')} className="p-2 rounded-full hover:bg-white/20 transition-colors">
                         <X size={20} />
                     </button>
                 </div>
@@ -181,7 +184,7 @@ const WordListModal: React.FC<WordListModalProps> = ({
                             type="text"
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            placeholder="חיפוש בכל התוצאות..."
+                            placeholder={t('searchPlaceholder')}
                             className="w-full pr-10 pl-4 py-2 border border-white/10 rounded-xl bg-slate-50 dark:bg-slate-700 text-slate-200 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                         />
                     </div>
@@ -195,7 +198,7 @@ const WordListModal: React.FC<WordListModalProps> = ({
                         </div>
                     ) : entries.length === 0 && !featuredEntry ? (
                         <div className="text-center text-slate-400 py-8">
-                            {searchTerm ? 'לא נמצאו תוצאות' : 'אין מילים בקטגוריה זו'}
+                            {searchTerm ? t('noResults') : t('noWordsInCategory')}
                         </div>
                     ) : (
                         <div className="space-y-2">
@@ -207,7 +210,7 @@ const WordListModal: React.FC<WordListModalProps> = ({
                                     className={`w-full text-right p-5 rounded-xl transition-all group border ${getCategoryBorderClass()} mb-3`}
                                 >
                                     <div className={`text-xs font-semibold uppercase tracking-wider ${getCategoryTextClass()} mb-2`}>
-                                        המילה שבחרתם
+                                        {t('selectedWord')}
                                     </div>
                                     <div className="font-bold text-xl text-white group-hover:text-amber-400 transition-colors">
                                         {featuredEntry.term}
@@ -259,17 +262,17 @@ const WordListModal: React.FC<WordListModalProps> = ({
                             className="flex items-center gap-1 px-3 py-2 rounded-lg border border-white/10 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
                             <ChevronRight size={16} />
-                            הקודם
+                            {tc('previous')}
                         </button>
                         <span className="text-sm text-slate-400">
-                            עמוד {page + 1} מתוך {totalPages}
+                            {t('pageOf', { page: page + 1, total: totalPages })}
                         </span>
                         <button
                             onClick={() => setPage(p => Math.min(totalPages - 1, p + 1))}
                             disabled={page >= totalPages - 1}
                             className="flex items-center gap-1 px-3 py-2 rounded-lg border border-white/10 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
-                            הבא
+                            {tc('next')}
                             <ChevronLeft size={16} />
                         </button>
                     </div>

@@ -1,12 +1,9 @@
-import type { Metadata } from 'next';
-import Script from 'next/script';
 import { Rubik } from 'next/font/google';
+import Script from 'next/script';
 import './globals.css';
-import AppProviders from '../../components/providers/AppProviders';
-import { getSeoSettings } from '@/src/lib/seo-settings';
 
 const rubik = Rubik({
-  subsets: ['latin', 'hebrew'],
+  subsets: ['latin', 'hebrew', 'cyrillic'],
   weight: ['300', '400', '500', '600', '700', '800'],
   display: 'swap',
   variable: '--font-rubik',
@@ -14,96 +11,14 @@ const rubik = Rubik({
 
 const GA_MEASUREMENT_ID = process.env.GA_MEASUREMENT_ID || '';
 
-export async function generateMetadata(): Promise<Metadata> {
-  const settings = await getSeoSettings();
-  const ogImage = settings.ogImage || '/images/og-default.png';
-  const favicon = settings.favicon;
-
-  return {
-    metadataBase: new URL(process.env.SITE_URL || 'https://jun-juhuri.com'),
-    title: {
-      default: "מורשת ג'והורי | המילון לשימור השפה",
-      template: "%s | מורשת ג'והורי",
-    },
-    description:
-      "מילון ג'והורי-עברי אינטראקטיבי לשימור שפת יהודי ההרים (ג'והורית). חפש מילים, למד את השפה ותרום לשימור המורשת.",
-    keywords: ["ג'והורי", 'Juhuri', 'יהודי ההרים', 'מילון', 'שפה', 'מורשת', 'קווקז'],
-    alternates: { canonical: '/' },
-    openGraph: {
-      title: "מורשת ג'והורי - המילון לשימור השפה",
-      description: "מילון ג'והורי-עברי אינטראקטיבי עם מורה פרטי AI",
-      type: 'website',
-      locale: 'he_IL',
-      siteName: "מורשת ג'והורי",
-      images: [{ url: ogImage, width: 1200, height: 630 }],
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title: "מורשת ג'והורי - המילון לשימור השפה",
-      description: "מילון ג'והורי-עברי אינטראקטיבי לשימור שפת יהודי ההרים",
-      images: [ogImage],
-    },
-    verification: {
-      google: 'A3yUQjWHTO2y6V4kjV3k61E43gkDr4yxavoZfyxKc4U',
-    },
-    icons: favicon
-      ? { icon: favicon }
-      : { icon: "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📜</text></svg>" },
-  };
-}
-
-const SITE_URL = process.env.SITE_URL || 'https://jun-juhuri.com';
-
-const jsonLd = {
-  '@context': 'https://schema.org',
-  '@graph': [
-    {
-      '@type': 'WebSite',
-      '@id': `${SITE_URL}/#website`,
-      url: SITE_URL,
-      name: "מורשת ג'והורי",
-      description: "מילון ג'והורי-עברי אינטראקטיבי לשימור שפת יהודי ההרים",
-      inLanguage: 'he',
-      potentialAction: {
-        '@type': 'SearchAction',
-        target: {
-          '@type': 'EntryPoint',
-          urlTemplate: `${SITE_URL}/dictionary?q={search_term_string}`,
-        },
-        'query-input': 'required name=search_term_string',
-      },
-    },
-    {
-      '@type': 'Organization',
-      '@id': `${SITE_URL}/#organization`,
-      name: "מורשת ג'והורי",
-      url: SITE_URL,
-      logo: {
-        '@type': 'ImageObject',
-        url: `${SITE_URL}/images/og-default.png`,
-      },
-      description: "פרויקט לשימור שפת ג'והורית — שפת יהודי ההרים מהקווקז",
-    },
-  ],
-};
-
 export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  // JSON-LD is a hardcoded server-side object, safe to inject
-  const jsonLdHtml = JSON.stringify(jsonLd);
-
   return (
     <html lang="he" dir="rtl" suppressHydrationWarning>
-      <head>
-        <script
-          type="application/ld+json"
-          dangerouslySetInnerHTML={{ __html: jsonLdHtml }}
-        />
-      </head>
-      <body className={`${rubik.variable} font-rubik`}>
+      <body className={`${rubik.variable} font-rubik overflow-x-hidden`}>
         {GA_MEASUREMENT_ID && (
           <>
             <Script
@@ -120,7 +35,7 @@ export default function RootLayout({
             </Script>
           </>
         )}
-        <AppProviders>{children}</AppProviders>
+        {children}
       </body>
     </html>
   );

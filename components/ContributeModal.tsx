@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useTranslations } from 'next-intl';
 import FocusTrap from 'focus-trap-react';
 import { X, Send, Loader2, CheckCircle, AlertCircle, Feather, Mic, Square, Play, Pause, RotateCcw, Search, Edit3, GitBranch } from 'lucide-react';
 import { verifySuggestion } from '../services/geminiService';
@@ -15,6 +16,8 @@ interface ContributeModalProps {
 }
 
 const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user }) => {
+  const t = useTranslations('contribute');
+  const tc = useTranslations('common');
   const [term, setTerm] = useState('');
   const [hebrew, setHebrew] = useState('');
   const [latin, setLatin] = useState('');
@@ -68,8 +71,8 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
         if (result.found && result.entry) {
           // Check for exact match
           const entry = result.entry;
-          const isExact = entry.term === term.trim() ||
-            entry.translations?.some((t: any) => t.hebrew === term.trim());
+          const isExact = entry.hebrewScript === term.trim() ||
+            entry.hebrewShort === term.trim();
           if (isExact) {
             setExistingEntry(entry);
             setDuplicateMode('found');
@@ -125,7 +128,7 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
       }, 1000);
     } catch (err) {
       console.error('Failed to start recording:', err);
-      setFeedback('לא ניתן להקליט. יש לאשר גישה למיקרופון.');
+      setFeedback(t('micError'));
       setStatus('error');
     }
   };
@@ -174,15 +177,16 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
       if (result.isValid) {
         // Construct Entry Object
         const entry: DictionaryEntry = {
-          term: term,
+          hebrewScript: term,
           detectedLanguage: 'Hebrew',
-          translations: [{
+          dialectScripts: [{
             dialect: dialect || 'General',
-            hebrew: hebrew,
-            latin: latin,
-            cyrillic: cyrillic
+            hebrewScript: term,
+            latinScript: latin,
+            cyrillicScript: cyrillic
           }],
-          definitions: [`User contribution: ${hebrew}`],
+          hebrewShort: hebrew,
+          hebrewLong: null,
           examples: [],
           source: 'קהילה',
           status: 'pending',
@@ -205,18 +209,18 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
         }
 
         setStatus('success');
-        setFeedback("תודה! התרומה נשלחה לאישור ותתווסף בהקדם.");
+        setFeedback(t('successMessage'));
         setTimeout(() => {
           onClose();
           resetForm();
         }, 2500);
       } else {
         setStatus('error');
-        setFeedback(result.feedback || "המערכת זיהתה אי-התאמה. אנא ודאו שהפרטים מדויקים.");
+        setFeedback(result.feedback || t('validationError'));
       }
     } catch (error) {
       setStatus('error');
-      setFeedback("אירעה שגיאה בשמירת התרומה.");
+      setFeedback(t('saveError'));
     } finally {
       setLoading(false);
     }
@@ -234,11 +238,11 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
       });
       setSuggestionSent(true);
       setStatus('success');
-      setFeedback('ההצעה נשלחה בהצלחה! תודה על התרומה.');
+      setFeedback(t('suggestionSuccess'));
       setTimeout(() => { onClose(); resetForm(); }, 2500);
     } catch {
       setStatus('error');
-      setFeedback('שגיאה בשליחת ההצעה.');
+      setFeedback(t('suggestionError'));
     } finally {
       setLoading(false);
     }
@@ -266,7 +270,7 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
         <div className="p-5 border-b border-white/10 flex justify-between items-center bg-gradient-to-r from-amber-50 to-orange-50 dark:from-slate-800 dark:to-slate-800">
           <div className="flex items-center gap-2 text-amber-800 dark:text-amber-400">
             <Feather size={22} />
-            <h3 id="contribute-modal-title" className="font-bold text-lg">הוספת מילה חדשה</h3>
+            <h3 id="contribute-modal-title" className="font-bold text-lg">{t('title')}</h3>
           </div>
           <button onClick={onClose} className="p-1.5 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 transition-colors">
             <X size={20} />
@@ -275,13 +279,13 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
 
         <form onSubmit={handleSubmit} className="p-5 space-y-4">
           <p className="text-sm text-slate-400 dark:text-slate-400">
-            עזרו לנו לתעד את השפה. הוסיפו מילה, פתגם או ביטוי שחסר במילון.
+            {t('description')}
           </p>
 
           {/* Term */}
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-              המילה / הביטוי <span className="text-red-500">*</span>
+              {t('termLabel')} <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -289,7 +293,7 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
               value={term}
               onChange={(e) => setTerm(e.target.value)}
               className="w-full px-4 py-2.5 rounded-lg border border-white/10 bg-[#0d1424]/60 backdrop-blur-xl text-slate-900 dark:text-amber-500 focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
-              placeholder="למשל: מזל טוב"
+              placeholder={t('termPlaceholder')}
             />
           </div>
 
@@ -297,7 +301,7 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
           {checkingDuplicate && (
             <div className="flex items-center gap-2 text-xs text-slate-400">
               <Loader2 size={12} className="animate-spin" />
-              בודק אם המילה קיימת...
+              {t('checking')}
             </div>
           )}
 
@@ -306,22 +310,22 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
               <div className="flex items-start gap-2">
                 <AlertCircle size={18} className="text-amber-600 shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-sm font-bold text-amber-800 dark:text-amber-300">מילה זו כבר קיימת במאגר!</p>
-                  <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">ניתן להציע תיקון לרשומה הקיימת או להוסיף דיאלקט חדש.</p>
+                  <p className="text-sm font-bold text-amber-800 dark:text-amber-300">{t('existsTitle')}</p>
+                  <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">{t('existsDescription')}</p>
                 </div>
               </div>
 
               {/* Existing entry preview */}
               <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-lg p-3 border border-white/10 text-sm">
-                <div className="font-bold text-lg text-amber-500">{existingEntry.term}</div>
-                {existingEntry.translations?.[0]?.hebrew && (
-                  <div className="text-slate-600 dark:text-slate-300">{existingEntry.translations[0].hebrew}</div>
+                <div className="font-bold text-lg text-amber-500">{existingEntry.hebrewScript}</div>
+                {existingEntry.hebrewShort && (
+                  <div className="text-slate-600 dark:text-slate-300">{existingEntry.hebrewShort}</div>
                 )}
-                {existingEntry.translations?.[0]?.latin && (
-                  <div className="text-slate-400 dark:text-slate-400 font-mono text-xs">{existingEntry.translations[0].latin}</div>
+                {existingEntry.dialectScripts?.[0]?.latinScript && (
+                  <div className="text-slate-400 dark:text-slate-400 font-mono text-xs">{existingEntry.dialectScripts[0].latinScript}</div>
                 )}
-                {existingEntry.definitions?.[0] && (
-                  <div className="text-slate-400 dark:text-slate-400 text-xs mt-1">{existingEntry.definitions[0]}</div>
+                {existingEntry.hebrewLong && (
+                  <div className="text-slate-400 dark:text-slate-400 text-xs mt-1">{existingEntry.hebrewLong}</div>
                 )}
               </div>
 
@@ -333,7 +337,7 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
                   className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-indigo-600 text-white text-xs font-medium rounded-lg hover:bg-indigo-700 transition-colors"
                 >
                   <Edit3 size={14} />
-                  הצע תיקון
+                  {t('suggestFix')}
                 </button>
                 <button
                   type="button"
@@ -341,7 +345,7 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
                   className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-emerald-600 text-white text-xs font-medium rounded-lg hover:bg-emerald-700 transition-colors"
                 >
                   <GitBranch size={14} />
-                  הוסף דיאלקט
+                  {t('addDialect')}
                 </button>
               </div>
             </div>
@@ -350,29 +354,29 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
           {/* Field correction mode */}
           {duplicateMode === 'correct' && existingEntry && !suggestionSent && (
             <div className="p-4 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 rounded-xl space-y-3 animate-in fade-in">
-              <p className="text-sm font-bold text-indigo-700 dark:text-indigo-300">הצע תיקון לרשומה: {existingEntry.term}</p>
+              <p className="text-sm font-bold text-indigo-700 dark:text-indigo-300">{t('suggestFixFor', { term: existingEntry.hebrewScript })}</p>
               <div>
-                <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">איזה שדה לתקן?</label>
+                <label className="block text-xs font-medium text-slate-600 dark:text-slate-400 mb-1">{t('whichField')}</label>
                 <select
                   value={fieldSuggestion.fieldName}
                   onChange={e => setFieldSuggestion(prev => ({ ...prev, fieldName: e.target.value }))}
                   className="w-full px-3 py-2 rounded-lg border border-white/10 bg-[#0d1424]/60 backdrop-blur-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
-                  title="בחר שדה לתיקון"
+                  title={t('whichField')}
                 >
-                  <option value="">בחר שדה...</option>
-                  <option value="hebrew">תרגום עברי</option>
-                  <option value="latin">תעתיק לטיני</option>
-                  <option value="cyrillic">כתב קירילי</option>
-                  <option value="russian">רוסית</option>
-                  <option value="definition">הגדרה</option>
-                  <option value="pronunciationGuide">מדריך הגייה</option>
+                  <option value="">{t('selectField')}</option>
+                  <option value="hebrewShort">{t('fieldHebrewTranslation')}</option>
+                  <option value="latinScript">{t('fieldLatinScript')}</option>
+                  <option value="cyrillicScript">{t('fieldCyrillicScript')}</option>
+                  <option value="russianShort">{t('fieldRussian')}</option>
+                  <option value="hebrewLong">{t('fieldDefinition')}</option>
+                  <option value="pronunciationGuide">{t('fieldPronunciation')}</option>
                 </select>
               </div>
               <input
                 type="text"
                 value={fieldSuggestion.value}
                 onChange={e => setFieldSuggestion(prev => ({ ...prev, value: e.target.value }))}
-                placeholder="הערך המוצע..."
+                placeholder={t('suggestedValue')}
                 className="w-full px-3 py-2 rounded-lg border border-white/10 bg-[#0d1424]/60 backdrop-blur-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
                 dir="auto"
               />
@@ -380,7 +384,7 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
                 type="text"
                 value={fieldSuggestion.reason}
                 onChange={e => setFieldSuggestion(prev => ({ ...prev, reason: e.target.value }))}
-                placeholder="סיבה / מקור (אופציונלי)"
+                placeholder={t('reasonSource')}
                 className="w-full px-3 py-2 rounded-lg border border-white/10 bg-[#0d1424]/60 backdrop-blur-xl text-sm focus:ring-2 focus:ring-indigo-500 outline-none"
                 dir="auto"
               />
@@ -392,14 +396,14 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
                   className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-indigo-600 text-white text-xs font-medium rounded-lg hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
                   {loading ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
-                  שלח הצעת תיקון
+                  {t('sendSuggestion')}
                 </button>
                 <button
                   type="button"
                   onClick={() => setDuplicateMode('found')}
                   className="px-3 py-2 text-xs text-slate-400 hover:text-slate-700 transition-colors"
                 >
-                  חזור
+                  {t('goBack')}
                 </button>
               </div>
             </div>
@@ -409,7 +413,7 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
           {(duplicateMode === 'none' || duplicateMode === 'dialect') && (<>
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-              התרגום/פירוש בעברית <span className="text-red-500">*</span>
+              {t('hebrewTranslation')} <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -417,7 +421,7 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
               value={hebrew}
               onChange={(e) => setHebrew(e.target.value)}
               className="w-full px-4 py-2.5 rounded-lg border border-white/10 bg-[#0d1424]/60 backdrop-blur-xl text-slate-900 dark:text-amber-500 focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
-              placeholder="מה זה אומר?"
+              placeholder={t('hebrewPlaceholder')}
             />
           </div>
 
@@ -425,7 +429,7 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                כתיב לטיני
+                {t('latinLabel')}
               </label>
               <input
                 type="text"
@@ -438,7 +442,7 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
-                כתיב קירילי
+                {t('cyrillicLabel')}
               </label>
               <input
                 type="text"
@@ -453,13 +457,13 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
 
           {/* Dialect */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">ניב / מקור</label>
+            <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{t('dialectSource')}</label>
             <select
               value={dialect}
               onChange={(e) => setDialect(e.target.value)}
               className="w-full px-4 py-2.5 rounded-lg border border-white/10 bg-[#0d1424]/60 backdrop-blur-xl text-slate-900 dark:text-amber-500 focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
             >
-              <option value="">כללי / לא ידוע</option>
+              <option value="">{t('generalDialect')}</option>
               {dialects.map(d => (
                 <option key={d.id} value={d.name}>{d.description || d.name}</option>
               ))}
@@ -469,7 +473,7 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
           {/* Audio Recording Section */}
           <div className="bg-white/5 p-4 rounded-xl border border-white/10">
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-3">
-              🎙️ הקלטת הגייה (אופציונלי)
+              {t('recordingLabel')}
             </label>
 
             {!audioBlob ? (
@@ -481,7 +485,7 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
                     className="flex items-center gap-2 px-4 py-2.5 bg-red-500 hover:bg-red-600 text-white rounded-full transition-colors shadow-lg shadow-red-500/20"
                   >
                     <Mic size={18} />
-                    התחל הקלטה
+                    {t('startRecording')}
                   </button>
                 ) : (
                   <div className="flex items-center gap-4">
@@ -495,7 +499,7 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
                       className="flex items-center gap-2 px-4 py-2.5 bg-slate-800 hover:bg-slate-900 text-white rounded-full transition-colors"
                     >
                       <Square size={16} />
-                      סיים הקלטה
+                      {t('stopRecording')}
                     </button>
                   </div>
                 )}
@@ -511,14 +515,14 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
                     {isPlaying ? <Pause size={18} /> : <Play size={18} />}
                   </button>
                   <span className="text-sm text-slate-600 dark:text-slate-300 font-medium">
-                    הקלטה מוכנה ({formatTime(recordingTime)})
+                    {t('recordingReady', { time: formatTime(recordingTime) })}
                   </span>
                 </div>
                 <button
                   type="button"
                   onClick={resetRecording}
                   className="p-2 text-slate-400 hover:text-red-500 transition-colors"
-                  title="הקלט מחדש"
+                  title={t('reRecord')}
                 >
                   <RotateCcw size={18} />
                 </button>
@@ -535,7 +539,7 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
           {/* User notice */}
           {!user && (
             <p className="text-xs text-amber-600 bg-gradient-to-r from-amber-500/10 to-orange-500/5 p-2.5 rounded-lg border border-amber-200 dark:border-amber-800">
-              💡 אתה תורם כאורח. התחבר כדי לקבל קרדיט ולעקוב אחרי התרומות שלך.
+              {t('guestNotice')}
             </p>
           )}
 
@@ -547,7 +551,7 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
               className="w-full flex items-center justify-center gap-2 py-3 px-4 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-bold rounded-xl shadow-lg shadow-amber-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? <Loader2 className="animate-spin" size={20} /> : <Send size={18} />}
-              {loading ? 'שולח לאישור...' : 'שלח לאישור'}
+              {loading ? t('submitting') : t('submitButton')}
             </button>
           </div>
           </>)}

@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/src/lib/db';
 import { requireAuth } from '@/src/lib/auth';
+import { fireEventEmail } from '@/src/lib/email';
+import { logEvent } from '@/src/lib/logEvent';
+import { autoTranslateTitle } from '@/src/lib/autoTranslate';
 
 // Build shared WHERE clause for recipe filters
 function buildRecipeFilters(searchParams: URLSearchParams) {
@@ -185,6 +188,15 @@ export async function POST(request: NextRequest) {
         [tagValues]
       );
     }
+
+    if (user.role !== 'admin') {
+      fireEventEmail('recipe-submitted', { variables: { userName: user.name, recipeTitle: title, recipeId: String(recipeId) } });
+    }
+
+    await logEvent('RECIPE_SUBMITTED', `Recipe submitted: ${title}`, user, { recipeId, title }, request);
+
+    // Auto-translate title to EN + RU (non-blocking)
+    autoTranslateTitle('recipe', String(recipeId), title).catch(() => {});
 
     return NextResponse.json(
       {

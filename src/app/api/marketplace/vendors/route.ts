@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/src/lib/db';
 import { requireAuth } from '@/src/lib/auth';
 import { haversineDistance } from '../_shared';
+import { autoTranslateTitle } from '@/src/lib/autoTranslate';
 
 // GET /api/marketplace/vendors
 export async function GET(request: NextRequest) {
@@ -95,6 +96,9 @@ export async function POST(request: NextRequest) {
     ]) as any[];
 
     await pool.query('CALL create_default_hours(?)', [result.insertId]);
+
+    // Auto-translate vendor name to EN + RU (non-blocking)
+    autoTranslateTitle('vendor', String(result.insertId), name).catch(() => {});
 
     return NextResponse.json({ success: true, vendor_id: result.insertId }, { status: 201 });
   } catch (error) {

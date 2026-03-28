@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { useAuth } from '../../contexts/AuthContext';
 import { CreateVendorInput, marketplaceService } from '../../services/marketplaceService';
 import { Store, MapPin, Image, Check, ChevronRight, ChevronLeft, X, Loader2, Navigation } from 'lucide-react';
@@ -33,6 +34,8 @@ const LocationPicker = ({ position, setPosition }: { position: { lat: number; ln
 };
 
 export const BecomeVendorWizard: React.FC<BecomeVendorWizardProps> = ({ isOpen, onClose, onSuccess }) => {
+    const t = useTranslations('marketplace');
+    const tc = useTranslations('common');
     const { user } = useAuth();
     const [step, setStep] = useState(1);
     const [loading, setLoading] = useState(false);
@@ -79,7 +82,7 @@ export const BecomeVendorWizard: React.FC<BecomeVendorWizardProps> = ({ isOpen, 
 
     const handleGeocodeManually = async () => {
         if (!formData.address) {
-            alert('נא למלא כתובת תחילה');
+            alert(t('fillAddressFirst'));
             return;
         }
 
@@ -137,7 +140,7 @@ export const BecomeVendorWizard: React.FC<BecomeVendorWizardProps> = ({ isOpen, 
             onClose();
         } catch (err: any) {
             console.error(err);
-            setError(err.message || 'שגיאה ביצירת החנות');
+            setError(err.message || t('createError'));
         } finally {
             setLoading(false);
         }
@@ -153,7 +156,7 @@ export const BecomeVendorWizard: React.FC<BecomeVendorWizardProps> = ({ isOpen, 
                         <div className="bg-orange-100 dark:bg-orange-900/40 p-2 rounded-lg">
                             <Store className="text-orange-600 dark:text-orange-400" size={20} />
                         </div>
-                        <h2 className="text-xl font-bold text-slate-100">הצטרפות לשוק הקהילתי</h2>
+                        <h2 className="text-xl font-bold text-slate-100">{t('becomeVendor')}</h2>
                     </div>
                     <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
                         <X size={24} />
@@ -178,10 +181,10 @@ export const BecomeVendorWizard: React.FC<BecomeVendorWizardProps> = ({ isOpen, 
 
                     {step === 1 && (
                         <div className="space-y-4 animate-in slide-in-from-right">
-                            <h3 className="text-lg font-bold text-slate-700 dark:text-slate-200">פרטים בסיסיים</h3>
+                            <h3 className="text-lg font-bold text-slate-700 dark:text-slate-200">{t('basicDetails')}</h3>
 
                             <div>
-                                <label className="block text-sm font-medium mb-1">שם החנות / המטבח</label>
+                                <label className="block text-sm font-medium mb-1">{t('shopName')}</label>
                                 <input
                                     type="text"
                                     value={formData.name}
@@ -193,7 +196,7 @@ export const BecomeVendorWizard: React.FC<BecomeVendorWizardProps> = ({ isOpen, 
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium mb-1">תיאור קצר</label>
+                                <label className="block text-sm font-medium mb-1">{t('shortDesc')}</label>
                                 <textarea
                                     value={formData.about_text}
                                     onChange={e => setFormData({ ...formData, about_text: e.target.value })}
@@ -204,7 +207,7 @@ export const BecomeVendorWizard: React.FC<BecomeVendorWizardProps> = ({ isOpen, 
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium mb-1">מספר טלפון להזמנות</label>
+                                <label className="block text-sm font-medium mb-1">{t('phoneOrders')}</label>
                                 <input
                                     type="tel"
                                     value={formData.phone}
@@ -215,7 +218,7 @@ export const BecomeVendorWizard: React.FC<BecomeVendorWizardProps> = ({ isOpen, 
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium mb-1">אימייל (אופציונלי)</label>
+                                <label className="block text-sm font-medium mb-1">{t('emailOptional')}</label>
                                 <input
                                     type="email"
                                     value={formData.email}
@@ -229,10 +232,10 @@ export const BecomeVendorWizard: React.FC<BecomeVendorWizardProps> = ({ isOpen, 
 
                     {step === 2 && (
                         <div className="space-y-4 animate-in slide-in-from-right h-full flex flex-col">
-                            <h3 className="text-lg font-bold text-slate-700 dark:text-slate-200">מיקום וכתובת</h3>
+                            <h3 className="text-lg font-bold text-slate-700 dark:text-slate-200">{t('locationAddress')}</h3>
 
                             <div>
-                                <label className="block text-sm font-medium mb-1">עיר</label>
+                                <label className="block text-sm font-medium mb-1">{t('city')}</label>
                                 <input
                                     type="text"
                                     value={formData.city}
@@ -243,7 +246,7 @@ export const BecomeVendorWizard: React.FC<BecomeVendorWizardProps> = ({ isOpen, 
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium mb-1">כתובת מלאה</label>
+                                <label className="block text-sm font-medium mb-1">{t('fullAddress')}</label>
                                 <div className="flex gap-2">
                                     <input
                                         type="text"
@@ -268,12 +271,12 @@ export const BecomeVendorWizard: React.FC<BecomeVendorWizardProps> = ({ isOpen, 
                                 </div>
                                 {geocoding && (
                                     <p className="text-xs text-blue-600 dark:text-blue-400 mt-1">
-                                        מחפש מיקום...
+                                        {t('searchingLocation')}
                                     </p>
                                 )}
                                 {locationPicked && (
                                     <p className="text-xs text-green-600 dark:text-green-400 mt-1">
-                                        ✓ מיקום נמצא: {locationPicked.lat.toFixed(4)}, {locationPicked.lng.toFixed(4)}
+                                        ✓ {t('locationFound')}: {locationPicked.lat.toFixed(4)}, {locationPicked.lng.toFixed(4)}
                                     </p>
                                 )}
                             </div>
@@ -294,7 +297,7 @@ export const BecomeVendorWizard: React.FC<BecomeVendorWizardProps> = ({ isOpen, 
                                     />
                                 </MapContainer>
                                 <div className="absolute top-2 right-2 bg-white/90 dark:bg-slate-800/90 p-2 rounded-lg shadow-md text-xs font-medium z-[1000] backdrop-blur-sm pointer-events-none">
-                                    לחץ על המפה כדי לסמן מיקום מדוייק 📍
+                                    {t('clickMapPin')}
                                 </div>
                             </div>
                         </div>
@@ -302,28 +305,28 @@ export const BecomeVendorWizard: React.FC<BecomeVendorWizardProps> = ({ isOpen, 
 
                     {step === 3 && (
                         <div className="space-y-6 animate-in slide-in-from-right">
-                            <h3 className="text-lg font-bold text-slate-700 dark:text-slate-200">תמונות וסיכום</h3>
+                            <h3 className="text-lg font-bold text-slate-700 dark:text-slate-200">{t('photosSummary')}</h3>
 
                             <div className="space-y-4">
                                 <ImageUpload
                                     currentImage={formData.logo_url}
                                     onImageChange={(url) => setFormData({ ...formData, logo_url: url })}
-                                    label="לוגו (אופציונלי)"
+                                    label={t('logoOptional')}
                                     aspectRatio="1/1"
                                 />
 
                                 <ImageUpload
                                     currentImage={formData.about_image_url}
                                     onImageChange={(url) => setFormData({ ...formData, about_image_url: url })}
-                                    label="תמונת אודות (אופציונלי)"
+                                    label={t('aboutPhotoOptional')}
                                     aspectRatio="16/9"
                                 />
                             </div>
 
                             <div className="bg-orange-50 dark:bg-orange-900/20 p-4 rounded-xl border border-orange-100 dark:border-orange-900/40">
-                                <h4 className="font-bold text-orange-900 dark:text-orange-200">מוכן לפרסום?</h4>
+                                <h4 className="font-bold text-orange-900 dark:text-orange-200">{t('readyToPublish')}</h4>
                                 <p className="text-sm text-orange-800 dark:text-orange-300 mt-1">
-                                    לאחר השליחה, החנות שלך תיבדק ותאושר על ידי המנהלים.
+                                    {t('reviewNotice')}
                                 </p>
                             </div>
                         </div>
@@ -340,7 +343,7 @@ export const BecomeVendorWizard: React.FC<BecomeVendorWizardProps> = ({ isOpen, 
                                 : 'text-slate-600 hover:bg-slate-200 dark:text-slate-300 dark:hover:bg-slate-700'
                             }`}
                     >
-                        <ChevronRight size={18} /> חזור
+                        <ChevronRight size={18} /> {tc('back')}
                     </button>
 
                     {step === 3 ? (
@@ -350,7 +353,7 @@ export const BecomeVendorWizard: React.FC<BecomeVendorWizardProps> = ({ isOpen, 
                             className="bg-green-600 hover:bg-green-700 text-white px-8 py-2.5 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-green-600/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {loading ? <Loader2 className="animate-spin" /> : <Check size={18} />}
-                            שלח לאישור
+                            {t('submitForApproval')}
                         </button>
                     ) : (
                         <button
@@ -361,7 +364,7 @@ export const BecomeVendorWizard: React.FC<BecomeVendorWizardProps> = ({ isOpen, 
                             }
                             className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-2 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-orange-600/20 transition-all disabled:opacity-50 disabled:shadow-none disabled:cursor-not-allowed"
                         >
-                            המשך <ChevronLeft size={18} />
+                            {tc('next')} <ChevronLeft size={18} />
                         </button>
                     )}
                 </div>

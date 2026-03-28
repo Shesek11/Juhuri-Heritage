@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslations } from 'next-intl';
 import { Sparkles, Copy, GitMerge, Check, X as XIcon } from 'lucide-react';
-import { DictionaryEntry, DuplicatePreview, Translation, Example, PendingSuggestion } from '../../types';
+import { DictionaryEntry, DuplicatePreview, DialectScript, Example, PendingSuggestion } from '../../types';
 import { generateSpeech } from '../../services/geminiService';
 import { playBase64Audio } from '../../utils/audioUtils';
 import { useAuth } from '../../contexts/AuthContext';
@@ -14,19 +15,20 @@ import CommunityActions from '../dictionary/CommunityActions';
 
 export interface EnrichmentData {
   hebrewTransliteration?: string;
-  hebrew?: string;
-  latin?: string;
-  cyrillic?: string;
-  russian?: string;
+  hebrewShort?: string;
+  hebrewScript?: string;
+  latinScript?: string;
+  cyrillicScript?: string;
+  russianShort?: string;
   pronunciationGuide?: string;
-  definition?: string;
+  hebrewLong?: string;
   partOfSpeech?: string;
 }
 
 interface WordPageProps {
   entry: DictionaryEntry;
   onOpenAuthModal: (reason?: string) => void;
-  onSuggestCorrection?: (translation: Translation, entryId: string, term: string) => void;
+  onSuggestCorrection?: (translation: DialectScript, entryId: string, hebrewScript: string) => void;
   enrichmentData?: EnrichmentData | null;
   enrichmentLoading?: boolean;
 }
@@ -38,6 +40,8 @@ const WordPage: React.FC<WordPageProps> = ({
   enrichmentData,
   enrichmentLoading = false,
 }) => {
+  const t = useTranslations('word');
+  const tc = useTranslations('common');
   const { isAuthenticated } = useAuth();
   const [isPlaying, setIsPlaying] = useState<string | null>(null);
   const [editingField, setEditingField] = useState<string | null>(null);
@@ -47,7 +51,7 @@ const WordPage: React.FC<WordPageProps> = ({
   const [translationVotes, setTranslationVotes] = useState<Record<number, { upvotes: number; downvotes: number; userVote: 'up' | 'down' | null }>>(
     () => {
       const initialVotes: Record<number, { upvotes: number; downvotes: number; userVote: 'up' | 'down' | null }> = {};
-      entry.translations.forEach(t => {
+      entry.dialectScripts.forEach(t => {
         if (t.id) {
           initialVotes[t.id] = { upvotes: t.upvotes || 0, downvotes: t.downvotes || 0, userVote: t.userVote || null };
         }
@@ -57,7 +61,7 @@ const WordPage: React.FC<WordPageProps> = ({
   );
 
   // Related words state (placeholder - will be fetched from API)
-  const [relatedWords, setRelatedWords] = useState<{ id: string; term: string; hebrew: string; partOfSpeech?: string }[]>([]);
+  const [relatedWords, setRelatedWords] = useState<{ id: string; hebrewScript: string; hebrewShort: string; partOfSpeech?: string }[]>([]);
 
   // Recordings state (placeholder - will be fetched from API)
   const [recordings, setRecordings] = useState<any[]>([]);
@@ -70,7 +74,7 @@ const WordPage: React.FC<WordPageProps> = ({
     const fetchRelated = async () => {
       try {
         const apiService = (await import('../../services/apiService')).default;
-        const res = await apiService.get<{ relatedWords: { id: string; term: string; hebrew: string; partOfSpeech?: string }[] }>(
+        const res = await apiService.get<{ relatedWords: { id: string; hebrewScript: string; hebrewShort: string; partOfSpeech?: string }[] }>(
           `/dictionary/entries/${entry.id}/related`
         );
         setRelatedWords(res.relatedWords || []);
@@ -118,7 +122,7 @@ const WordPage: React.FC<WordPageProps> = ({
   };
 
   const handleTranslationVote = async (translationId: number, voteType: 'up' | 'down') => {
-    if (!isAuthenticated) return onOpenAuthModal('כדי להצביע על תרגומים, יש להתחבר תחילה');
+    if (!isAuthenticated) return onOpenAuthModal(t('voteAuth'));
     if (!translationId) return;
 
     const currentVote = translationVotes[translationId];
@@ -151,7 +155,7 @@ const WordPage: React.FC<WordPageProps> = ({
           <Sparkles size={9} />
           AI
         </span>
-        <span>לחצו על תגית זו כדי לאשר או לתקן ערכים שנוצרו על ידי AI</span>
+        <span>{t('aiTip')}</span>
       </div>
 
       {/* Hero Section */}
@@ -179,17 +183,17 @@ const WordPage: React.FC<WordPageProps> = ({
               onCloseEdit={() => setEditingField(null)}
               pendingSuggestions={pendingSuggestions}
               enrichmentLoading={enrichmentLoading}
-              enrichedDefinition={enrichmentData?.definition}
-              enrichedRussian={enrichmentData?.russian}
+              enrichedDefinition={enrichmentData?.hebrewLong}
+              enrichedRussian={enrichmentData?.russianShort}
             />
           </div>
 
           {/* ZONE 3: Dialects table */}
           <div className="border-t border-white/10 pt-6 pb-6">
             <DialectComparison
-              translations={entry.translations}
+              translations={entry.dialectScripts}
               entry={entry}
-              enrichmentData={enrichmentData ? { hebrew: enrichmentData.hebrew, latin: enrichmentData.latin, cyrillic: enrichmentData.cyrillic } : null}
+              enrichmentData={enrichmentData ? { hebrewScript: enrichmentData.hebrewScript, latinScript: enrichmentData.latinScript, cyrillicScript: enrichmentData.cyrillicScript } : null}
               enrichmentLoading={enrichmentLoading}
               pendingSuggestions={pendingSuggestions}
               onVote={handleTranslationVote}
@@ -254,6 +258,9 @@ const PossibleDuplicates: React.FC<{
   isAuthenticated: boolean;
   onOpenAuthModal: (reason?: string) => void;
 }> = ({ entry, duplicates, isAuthenticated, onOpenAuthModal }) => {
+  const t = useTranslations('word');
+  const tc = useTranslations('common');
+  const ts = useTranslations('search');
   const [suggestingId, setSuggestingId] = useState<string | null>(null);
   const [reason, setReason] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -261,7 +268,7 @@ const PossibleDuplicates: React.FC<{
 
   const handleSuggest = async (dupId: string) => {
     if (!isAuthenticated) {
-      onOpenAuthModal('כדי להציע מיזוג ערכים, צריך להתחבר');
+      onOpenAuthModal(t('mergeAuth'));
       return;
     }
     setSubmitting(true);
@@ -280,31 +287,31 @@ const PossibleDuplicates: React.FC<{
 
   return (
     <div dir="rtl">
-      <h3 className="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
+      <h2 className="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
         <Copy className="w-4 h-4 text-orange-400" />
-        ערכים דומים
-      </h3>
+        {t('similarEntries')}
+      </h2>
       <div className="space-y-2">
         {duplicates.map(dup => (
           <div key={dup.id} className="flex items-center justify-between bg-slate-800/40 rounded-lg px-3 py-2.5 border border-slate-700/50">
             <a
-              href={`/word/${encodeURIComponent(dup.term)}`}
+              href={`/word/${encodeURIComponent(dup.hebrewScript)}`}
               className="flex items-center gap-3 text-sm hover:text-amber-300 transition-colors"
               onClick={e => e.stopPropagation()}
             >
-              <span className="text-white font-medium">{dup.term}</span>
-              {dup.hebrew && <span className="text-slate-400">{dup.hebrew}</span>}
-              {dup.latin && <span className="text-slate-500 text-xs">{dup.latin}</span>}
+              <span className="text-white font-medium">{dup.hebrewScript}</span>
+              {dup.hebrewShort && <span className="text-slate-400">{dup.hebrewShort}</span>}
+              {dup.latinScript && <span className="text-slate-500 text-xs">{dup.latinScript}</span>}
             </a>
             {submitted.has(dup.id) ? (
-              <span className="flex items-center gap-1 text-emerald-400 text-xs"><Check className="w-3.5 h-3.5" /> הצעה נשלחה</span>
+              <span className="flex items-center gap-1 text-emerald-400 text-xs"><Check className="w-3.5 h-3.5" /> {t('mergeSuggestionSent')}</span>
             ) : suggestingId === dup.id ? (
               <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
                 <input
                   type="text"
                   value={reason}
                   onChange={e => setReason(e.target.value)}
-                  placeholder="סיבה (לא חובה)"
+                  placeholder={ts('mergeReason')}
                   className="px-2 py-1 bg-slate-900 border border-slate-600 rounded text-xs text-white w-28 placeholder-slate-500 focus:outline-none"
                   dir="rtl"
                 />
@@ -314,9 +321,9 @@ const PossibleDuplicates: React.FC<{
                   disabled={submitting}
                   className="px-2 py-1 bg-amber-600 text-white rounded text-xs hover:bg-amber-700 disabled:opacity-50"
                 >
-                  {submitting ? '...' : 'שלח'}
+                  {submitting ? '...' : tc('submit')}
                 </button>
-                <button type="button" onClick={() => setSuggestingId(null)} title="ביטול" className="text-slate-500 hover:text-white">
+                <button type="button" onClick={() => setSuggestingId(null)} title={tc('cancel')} className="text-slate-500 hover:text-white">
                   <XIcon className="w-3.5 h-3.5" />
                 </button>
               </div>
@@ -327,7 +334,7 @@ const PossibleDuplicates: React.FC<{
                 className="flex items-center gap-1 text-orange-300/70 hover:text-orange-300 text-xs transition-colors"
               >
                 <GitMerge className="w-3.5 h-3.5" />
-                הצע מיזוג
+                {t('suggestMerge')}
               </button>
             )}
           </div>

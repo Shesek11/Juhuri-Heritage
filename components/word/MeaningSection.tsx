@@ -1,4 +1,5 @@
 import React from 'react';
+import { useTranslations } from 'next-intl';
 import { DictionaryEntry, PendingSuggestion } from '../../types';
 import EditableField from '../dictionary/EditableField';
 
@@ -23,9 +24,10 @@ const MeaningSection: React.FC<MeaningSectionProps> = ({
   enrichedDefinition,
   enrichedRussian,
 }) => {
-  const primaryHebrew = entry.translations?.[0]?.hebrew;
-  const primaryLatin = entry.translations?.[0]?.latin;
-  const defText = entry.definitions.length > 0 ? entry.definitions.join('; ') : '';
+  const t = useTranslations('word');
+  const primaryHebrew = entry.hebrewShort;
+  const primaryLatin = entry.dialectScripts?.[0]?.latinScript;
+  const defText = entry.hebrewLong || '';
   const displayDefinition = defText || enrichedDefinition;
   const showDefinition = displayDefinition && displayDefinition !== primaryHebrew;
 
@@ -33,19 +35,19 @@ const MeaningSection: React.FC<MeaningSectionProps> = ({
     <div className="space-y-3">
       {/* Hebrew translation */}
       <div className="flex items-start gap-2">
-        <span className="text-sm text-slate-300 mt-1.5 shrink-0 min-w-[100px]">עברית:</span>
+        <span className="text-sm text-slate-300 mt-1.5 shrink-0 min-w-[100px]">{t('hebrewMeaning')}</span>
         <div className="flex-1">
           <EditableField
             entryId={entry.id}
-            fieldName="hebrew"
+            fieldName="hebrewShort"
             dbValue={primaryHebrew}
             isEnriching={enrichmentLoading && !primaryHebrew}
-            pendingSuggestion={pendingSuggestions.find(s => s.fieldName === 'hebrew')}
-            fieldSource={entry.fieldSources?.hebrew}
+            pendingSuggestion={pendingSuggestions.find(s => s.fieldName === 'hebrewShort')}
+            fieldSource={entry.fieldSources?.hebrewShort}
             latinHint={primaryLatin}
             valueClassName="text-2xl font-bold text-slate-100 font-rubik"
-            isEditing={editingField === 'hebrew'}
-            onStartEdit={() => onStartEdit('hebrew')}
+            isEditing={editingField === 'hebrewShort'}
+            onStartEdit={() => onStartEdit('hebrewShort')}
             onCloseEdit={onCloseEdit}
           />
         </div>
@@ -53,19 +55,19 @@ const MeaningSection: React.FC<MeaningSectionProps> = ({
 
       {/* Russian translation */}
       <div className="flex items-start gap-2">
-        <span className="text-sm text-slate-300 mt-0.5 shrink-0 min-w-[100px]">רוסית:</span>
+        <span className="text-sm text-slate-300 mt-0.5 shrink-0 min-w-[100px]">{t('russianMeaning')}</span>
         <div className="flex-1">
           <EditableField
             entryId={entry.id}
-            fieldName="russian"
-            dbValue={entry.russian}
+            fieldName="russianShort"
+            dbValue={entry.russianShort}
             aiValue={enrichedRussian}
-            isEnriching={enrichmentLoading && !entry.russian}
-            pendingSuggestion={pendingSuggestions.find(s => s.fieldName === 'russian')}
-            fieldSource={entry.fieldSources?.russian}
+            isEnriching={enrichmentLoading && !entry.russianShort}
+            pendingSuggestion={pendingSuggestions.find(s => s.fieldName === 'russianShort')}
+            fieldSource={entry.fieldSources?.russianShort}
             valueClassName="text-lg text-slate-300 font-serif"
-            isEditing={editingField === 'russian'}
-            onStartEdit={() => onStartEdit('russian')}
+            isEditing={editingField === 'russianShort'}
+            onStartEdit={() => onStartEdit('russianShort')}
             onCloseEdit={onCloseEdit}
           />
         </div>
@@ -74,19 +76,19 @@ const MeaningSection: React.FC<MeaningSectionProps> = ({
       {/* Expanded definition */}
       {(showDefinition || (!defText && enrichmentLoading)) && (
         <div className="flex items-start gap-2">
-          <span className="text-sm text-slate-300 mt-0.5 shrink-0 min-w-[100px]">תרגום (עברית):</span>
+          <span className="text-sm text-slate-300 mt-0.5 shrink-0 min-w-[100px]">{t('hebrewTranslation')}</span>
           <div className="flex-1">
             <EditableField
               entryId={entry.id}
-              fieldName="definition"
+              fieldName="hebrewLong"
               dbValue={defText && defText !== primaryHebrew ? defText : undefined}
               aiValue={!defText ? enrichedDefinition : undefined}
               isEnriching={enrichmentLoading && !defText}
-              pendingSuggestion={pendingSuggestions.find(s => s.fieldName === 'definition')}
-              fieldSource={entry.fieldSources?.definition}
+              pendingSuggestion={pendingSuggestions.find(s => s.fieldName === 'hebrewLong')}
+              fieldSource={entry.fieldSources?.hebrewLong}
               valueClassName="text-sm text-slate-300 leading-relaxed"
-              isEditing={editingField === 'definition'}
-              onStartEdit={() => onStartEdit('definition')}
+              isEditing={editingField === 'hebrewLong'}
+              onStartEdit={() => onStartEdit('hebrewLong')}
               onCloseEdit={onCloseEdit}
             />
           </div>

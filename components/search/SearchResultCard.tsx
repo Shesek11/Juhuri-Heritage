@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { ArrowLeft, ThumbsUp, AlertTriangle, Shield, Users, Sparkles, Star, Plus, Copy } from 'lucide-react';
 import { DictionaryEntry } from '../../types';
 import { partOfSpeechHebrew } from '../../utils/pos';
@@ -14,10 +15,11 @@ interface SearchResultCardProps {
   onSuggestMerge?: (entry: DictionaryEntry) => void;
 }
 
-const verificationConfig: Record<string, { icon: React.ReactNode; label: string; color: string }> = {
-  verified: { icon: <Shield className="w-3.5 h-3.5" />, label: 'מאומת', color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
-  community: { icon: <Users className="w-3.5 h-3.5" />, label: 'קהילתי', color: 'text-blue-400 bg-blue-500/10 border-blue-500/20' },
-  ai: { icon: <Sparkles className="w-3.5 h-3.5" />, label: 'AI', color: 'text-purple-400 bg-purple-500/10 border-purple-500/20' },
+// Verification config icons/colors only — labels come from translations
+const verificationIcons: Record<string, { icon: React.ReactNode; color: string }> = {
+  verified: { icon: <Shield className="w-3.5 h-3.5" />, color: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20' },
+  community: { icon: <Users className="w-3.5 h-3.5" />, color: 'text-blue-400 bg-blue-500/10 border-blue-500/20' },
+  ai: { icon: <Sparkles className="w-3.5 h-3.5" />, color: 'text-purple-400 bg-purple-500/10 border-purple-500/20' },
 };
 
 // Check if a string starts with Hebrew characters
@@ -25,30 +27,36 @@ const isHebrew = (s: string) => /^[\u0590-\u05FF]/.test(s);
 const isCyrillic = (s: string) => /^[\u0400-\u04FF]/.test(s);
 
 const SearchResultCard: React.FC<SearchResultCardProps> = ({ entry, isBestMatch, searchQuery, onReport, onNavigate, onSuggestMerge }) => {
+  const t = useTranslations('search');
   const { isAuthenticated } = useAuth();
   const [upvoted, setUpvoted] = useState(false);
-  const [upvoteCount, setUpvoteCount] = useState(entry.translations[0]?.upvotes || 0);
+  const [upvoteCount, setUpvoteCount] = useState(entry.dialectScripts[0]?.upvotes || 0);
 
-  const primaryTranslation = entry.translations[0];
-  const hebrewTranslation = primaryTranslation?.hebrew || '';
-  const latinText = primaryTranslation?.latin || '';
-  const cyrillicText = primaryTranslation?.cyrillic || '';
+  const primaryTranslation = entry.dialectScripts[0];
+  const hebrewTranslation = entry.hebrewShort || '';
+  const latinText = primaryTranslation?.latinScript || '';
+  const cyrillicText = primaryTranslation?.cyrillicScript || '';
   const dialect = primaryTranslation?.dialect;
   const pos = entry.partOfSpeech;
   const score = entry.communityScore;
   const verification = entry.verificationLevel;
-  const verificationInfo = verification ? verificationConfig[verification] : null;
+  const verificationIcon = verification ? verificationIcons[verification] : null;
+  const verificationLabels: Record<string, string> = {
+    verified: t('verified'),
+    community: t('community'),
+    ai: 'AI',
+  };
 
   // Determine what to show as the primary title:
   // If `term` is in Hebrew script → use it directly (it's the Juhuri word in Hebrew chars)
   // If `term` is in Cyrillic → that goes below, title should be Hebrew transliteration if available
-  const termIsHebrew = isHebrew(entry.term);
-  const termIsCyrillic = isCyrillic(entry.term);
+  const termIsHebrew = isHebrew(entry.hebrewScript);
+  const termIsCyrillic = isCyrillic(entry.hebrewScript);
 
   // Primary title: Hebrew-script Juhuri term
-  const primaryTitle = termIsHebrew ? entry.term : null;
+  const primaryTitle = termIsHebrew ? entry.hebrewScript : null;
   // If term is Cyrillic, it goes to secondary line
-  const secondaryTerm = termIsCyrillic ? entry.term : (cyrillicText || null);
+  const secondaryTerm = termIsCyrillic ? entry.hebrewScript : (cyrillicText || null);
   // Missing Hebrew title
   const missingHebrewTitle = !primaryTitle;
 
@@ -80,7 +88,7 @@ const SearchResultCard: React.FC<SearchResultCardProps> = ({ entry, isBestMatch,
     >
       {isBestMatch && (
         <div className="absolute -top-2.5 right-4 px-2.5 py-0.5 bg-amber-500/20 text-amber-400 text-[11px] font-bold rounded-full border border-amber-500/30">
-          התאמה מיטבית
+          {t('bestMatch')}
         </div>
       )}
 
@@ -93,9 +101,9 @@ const SearchResultCard: React.FC<SearchResultCardProps> = ({ entry, isBestMatch,
             </h3>
           ) : (
             /* Missing Hebrew transliteration — show placeholder */
-            <div className="flex items-center gap-1.5 px-3 py-1 border border-dashed border-slate-600/50 rounded-lg text-slate-400 text-sm">
+            <div className="flex items-center gap-1.5 px-3 py-1 border border-dashed border-slate-600/50 rounded-lg text-slate-300 text-sm">
               <Plus size={12} />
-              <span>חסר תעתיק עברי</span>
+              <span>{t('missingScript')}</span>
             </div>
           )}
 
@@ -111,10 +119,10 @@ const SearchResultCard: React.FC<SearchResultCardProps> = ({ entry, isBestMatch,
             </span>
           )}
 
-          {verificationInfo && (
-            <span className={`shrink-0 inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full border font-medium ${verificationInfo.color}`}>
-              {verificationInfo.icon}
-              {verificationInfo.label}
+          {verificationIcon && verification && (
+            <span className={`shrink-0 inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full border font-medium ${verificationIcon.color}`}>
+              {verificationIcon.icon}
+              {verificationLabels[verification]}
             </span>
           )}
         </div>
@@ -130,10 +138,10 @@ const SearchResultCard: React.FC<SearchResultCardProps> = ({ entry, isBestMatch,
       {/* Secondary line: Latin first, then Cyrillic */}
       <div className="flex items-center gap-3 flex-wrap mb-1">
         {latinText && (
-          <span className="text-slate-400 text-sm font-mono" dir="ltr">{latinText}</span>
+          <span className="text-slate-300 text-sm font-mono" dir="ltr">{latinText}</span>
         )}
         {secondaryTerm && (
-          <span className="text-slate-400 text-xs font-serif" dir="ltr">{secondaryTerm}</span>
+          <span className="text-slate-300 text-xs font-serif" dir="ltr">{secondaryTerm}</span>
         )}
       </div>
 
@@ -149,19 +157,19 @@ const SearchResultCard: React.FC<SearchResultCardProps> = ({ entry, isBestMatch,
           className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm transition-colors ${
             upvoted
               ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-              : 'text-slate-400 hover:bg-white/5 border border-transparent'
+              : 'text-slate-300 hover:bg-white/5 border border-transparent'
           }`}
         >
           <ThumbsUp className={`w-3.5 h-3.5 ${upvoted ? 'fill-emerald-400' : ''}`} />
-          <span>{upvoteCount > 0 ? upvoteCount : ''} נכון</span>
+          <span>{upvoteCount > 0 ? upvoteCount : ''} {t('upvote')}</span>
         </button>
 
         <button
           onClick={(e) => { e.stopPropagation(); onReport(); }}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-slate-400 hover:bg-white/5 rounded-lg text-sm transition-colors border border-transparent"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-slate-300 hover:bg-white/5 rounded-lg text-sm transition-colors border border-transparent"
         >
           <AlertTriangle className="w-3.5 h-3.5" />
-          <span>לא מדויק</span>
+          <span>{t('reportInaccurate')}</span>
         </button>
 
         {entry.hasDuplicates && onSuggestMerge && (
@@ -170,7 +178,7 @@ const SearchResultCard: React.FC<SearchResultCardProps> = ({ entry, isBestMatch,
             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-orange-300/70 hover:bg-orange-500/10 rounded-lg text-xs transition-colors border border-transparent"
           >
             <Copy className="w-3 h-3" />
-            <span>נראה כפול?</span>
+            <span>{t('looksDuplicate')}</span>
           </button>
         )}
 
@@ -178,7 +186,7 @@ const SearchResultCard: React.FC<SearchResultCardProps> = ({ entry, isBestMatch,
           onClick={(e) => { e.stopPropagation(); onNavigate(); }}
           className="mr-auto inline-flex items-center gap-1.5 px-3 py-1.5 text-indigo-300 hover:bg-indigo-500/10 rounded-lg text-sm transition-colors border border-transparent"
         >
-          <span>פרטים</span>
+          <span>{t('details')}</span>
           <ArrowLeft className="w-3.5 h-3.5" />
         </button>
       </div>

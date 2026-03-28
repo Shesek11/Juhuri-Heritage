@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { Home } from 'lucide-react';
 
 /*
@@ -13,6 +14,7 @@ import { Home } from 'lucide-react';
  */
 
 const AboutPage: React.FC = () => {
+  const t = useTranslations('pages');
   return (
     <div className="w-full max-w-5xl mx-auto px-4 py-12">
       <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-lg border border-white/10 overflow-hidden">
@@ -20,10 +22,10 @@ const AboutPage: React.FC = () => {
         {/* Header */}
         <div className="p-6 md:p-8 border-b border-white/10 text-center bg-white/5">
           <h1 className="text-3xl md:text-4xl font-bold text-slate-50 mb-2">
-            אודות
+            {t('aboutTitle')}
           </h1>
           <p className="text-slate-400 text-sm">
-            כל מה שצריך לדעת על מורשת ג׳והורי
+            {t('aboutSubtitle')}
           </p>
         </div>
 
@@ -61,7 +63,7 @@ const AboutPage: React.FC = () => {
         <div className="p-6 border-t border-white/10 text-center">
           <Link href="/" className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-bold rounded-xl shadow-lg hover:scale-105 transition-all duration-300">
             <Home size={18} />
-            חזרה לדף הבית
+            {t('backHome')}
           </Link>
         </div>
       </div>

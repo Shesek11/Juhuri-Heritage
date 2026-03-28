@@ -1,4 +1,5 @@
 import React, { useState, useRef } from 'react';
+import { useTranslations } from 'next-intl';
 import { Upload, X, Loader2, Image as ImageIcon } from 'lucide-react';
 
 interface ImageUploadProps {
@@ -11,9 +12,10 @@ interface ImageUploadProps {
 export const ImageUpload: React.FC<ImageUploadProps> = ({
     currentImage,
     onImageChange,
-    label = 'העלה תמונה',
+    label,
     aspectRatio = '16/9'
 }) => {
+    const t = useTranslations('marketplace');
     const [uploading, setUploading] = useState(false);
     const [preview, setPreview] = useState<string | undefined>(currentImage);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -24,13 +26,13 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
 
         // Validate file type
         if (!file.type.startsWith('image/')) {
-            alert('אנא בחר קובץ תמונה');
+            alert(t('selectImageFile'));
             return;
         }
 
         // Validate file size (15MB max)
         if (file.size > 15 * 1024 * 1024) {
-            alert('התמונה גדולה מדי. הגודל המקסימלי הוא 15MB');
+            alert(t('imageTooLarge'));
             return;
         }
 
@@ -57,14 +59,14 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
 
             if (!response.ok) {
                 const error = await response.json();
-                throw new Error(error.error || 'שגיאה בהעלאת התמונה');
+                throw new Error(error.error || t('uploadError'));
             }
 
             const data = await response.json();
             onImageChange(data.url);
         } catch (err) {
             console.error('Upload failed:', err);
-            alert(err instanceof Error ? err.message : 'שגיאה בהעלאת התמונה');
+            alert(err instanceof Error ? err.message : t('uploadError'));
             setPreview(currentImage);
         } finally {
             setUploading(false);
@@ -117,7 +119,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
                             <div className="absolute inset-0 bg-black/60 flex items-center justify-center rounded-xl">
                                 <div className="text-center text-white">
                                     <Loader2 className="animate-spin mx-auto mb-2" size={32} />
-                                    <p className="text-sm">מעלה תמונה...</p>
+                                    <p className="text-sm">{t('uploading')}</p>
                                 </div>
                             </div>
                         )}
@@ -134,13 +136,13 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({
                             {uploading ? (
                                 <>
                                     <Loader2 className="animate-spin mb-3" size={48} />
-                                    <p className="text-sm">מעלה תמונה...</p>
+                                    <p className="text-sm">{t('uploading')}</p>
                                 </>
                             ) : (
                                 <>
                                     <Upload size={48} className="mb-3" />
-                                    <p className="text-sm font-medium">לחץ להעלאת תמונה</p>
-                                    <p className="text-xs mt-1">JPG, PNG, WebP, GIF (עד 15MB)</p>
+                                    <p className="text-sm font-medium">{t('clickToUpload')}</p>
+                                    <p className="text-xs mt-1">{t('fileFormats')}</p>
                                 </>
                             )}
                         </div>

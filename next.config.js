@@ -1,4 +1,7 @@
 const path = require('path');
+const createNextIntlPlugin = require('next-intl/plugin');
+
+const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -53,12 +56,12 @@ const nextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://accounts.google.com https://apis.google.com",
-              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-              "font-src 'self' https://fonts.gstatic.com",
+              "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://www.google-analytics.com https://accounts.google.com https://apis.google.com https://connect.facebook.net",
+              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://unpkg.com https://cdnjs.cloudflare.com https://accounts.google.com",
+              "font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com",
               "img-src 'self' data: blob: https://images.unsplash.com https://ui-avatars.com https://*.tile.openstreetmap.org https://www.google-analytics.com https://www.googletagmanager.com https://lh3.googleusercontent.com",
-              "connect-src 'self' https://www.google-analytics.com https://www.googletagmanager.com https://generativelanguage.googleapis.com https://accounts.google.com",
-              "frame-src https://accounts.google.com",
+              "connect-src 'self' https://www.google-analytics.com https://www.googletagmanager.com https://generativelanguage.googleapis.com https://accounts.google.com https://oauth2.googleapis.com https://app.grapesjs.com https://graph.facebook.com https://www.facebook.com",
+              "frame-src https://accounts.google.com https://www.facebook.com https://web.facebook.com",
               "media-src 'self' blob: data:",
               "object-src 'none'",
               "base-uri 'self'",
@@ -85,4 +88,4 @@ const nextConfig = {
   // Static CSP directives can be added here if needed
 };
 
-module.exports = nextConfig;
+module.exports = withNextIntl(nextConfig);
