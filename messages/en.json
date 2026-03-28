@@ -75,7 +75,27 @@
     "music_module": {
       "title": "Caucasian Music",
       "description": "Listen to the traditional sounds of the Mountain Jews — songs, mugams, and melodies of generations."
+    },
+    "music_teaser": {
+      "heading": "Caucasian Music",
+      "description": "Soon you'll be able to listen to the traditional sounds of the Mountain Jews — ancient songs, mugams, wedding melodies, and music that accompanied the community through generations.",
+      "badge": "Coming Soon — we're working on it",
+      "backHome": "← Back to home"
     }
+  },
+  "dictionary": {
+    "searching": "Searching dictionary...",
+    "notFoundMessage": "The word \"{term}\" was not found in the dictionary.",
+    "searchError": "Search error. Please try again.",
+    "speechError": "Could not recognize speech. Try again, speaking clearly.",
+    "micPermission": "Microphone access is required for recording.",
+    "searchPlaceholder": "Search the heritage dictionary...",
+    "voiceRecord": "Long press to record",
+    "voiceLabel": "Voice recording",
+    "resultsFor": "Results for",
+    "notFoundCta": "Didn't find what you were looking for?",
+    "suggestTranslation": "Suggest a new translation for",
+    "addNewWord": "Add a new word to the dictionary"
   },
   "metadata": {
     "siteName": "Juhuri Heritage",
@@ -399,7 +419,14 @@
     "reviewError": "Error submitting review",
     "sendReview": "Send review",
     "fillAddressFirst": "Please fill in the address first",
-    "createError": "Error creating the shop"
+    "createError": "Error creating the shop",
+    "cookingUp": "The marketplace is cooking...",
+    "comingSoonFeature": "This feature will be available soon!",
+    "foodMarket": "Juhuri Food Market",
+    "sellFood": "Sell food",
+    "searchVendors": "Search food, cooks...",
+    "vendorsInArea": "Cooks in the area",
+    "noVendorsFound": "No cooks found in the area"
   },
   "profile": {
     "admin": "Admin",
@@ -534,6 +561,28 @@
     "translations": "Translations"
   },
   "family": {
+    "loadingTree": "Loading family tree...",
+    "pageTitle": "Community Network",
+    "pageDescription": "Explore the family tree of the Mountain Jews community",
+    "communityNetwork": "🌐 Community Network",
+    "members": "Members",
+    "connections": "Connections",
+    "searchPlaceholder": "Search name...",
+    "addPerson": "Add person",
+    "connectPeople": "Connect people",
+    "legend": "Legend",
+    "legendTitle": "Symbol Legend",
+    "male": "Male",
+    "female": "Female",
+    "parentChild": "Parent-Child",
+    "married": "Married",
+    "divorced": "Divorced",
+    "widowed": "Widowed",
+    "born": "Born",
+    "died": "Died",
+    "residence": "Residence / Origin",
+    "clickToEdit": "Click to edit",
+    "loadingTree": "Loading family tree...",
     "modal": {
       "editMember": "Edit family member",
       "addMember": "Add family member",

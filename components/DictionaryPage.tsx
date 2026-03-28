@@ -21,6 +21,7 @@ import RecentAdditions from './widgets/RecentAdditions';
 import ContributionGrid from './widgets/ContributionGrid';
 import { Mic, Search, Plus, Loader2 } from 'lucide-react';
 import { SEOHead, buildDefinedTermJsonLd } from './seo/SEOHead';
+import { useTranslations } from 'next-intl';
 
 import { partOfSpeechHebrew as posHebrew } from '../utils/pos';
 
@@ -41,6 +42,8 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({
   onOpenTranslationModal,
   onOpenWordListModal,
 }) => {
+  const t = useTranslations('dictionary');
+  const tc = useTranslations('common');
   const { isAuthenticated } = useAuth();
   const params = useParams();
   const searchParams = useSearchParams();
@@ -98,7 +101,7 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({
   // Loading message
   useEffect(() => {
     if (loading) {
-      setLoadingMessage('מחפש במילון...');
+      setLoadingMessage(t('searching'));
     } else {
       setLoadingMessage('');
     }
@@ -147,7 +150,7 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({
       router.push(`/dictionary?q=${encodeURIComponent(searchTerm)}`, { scroll: false });
     } catch (err: any) {
       if (err?.message === 'NOT_FOUND') {
-        setError(`המילה "${searchTerm}" לא נמצאה במילון.`);
+        setError(t('notFoundMessage', { term: searchTerm }));
         // Fetch fuzzy suggestions
         setFuzzySuggestions([]);
         try {
@@ -157,7 +160,7 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({
           setFuzzySuggestions(fuzzy.suggestions || []);
         } catch { /* ignore */ }
       } else {
-        setError('שגיאה בחיפוש. נסה שוב.');
+        setError(t('searchError'));
       }
       setResult(null);
       if (process.env.NODE_ENV === 'development') console.error(err);
@@ -210,7 +213,7 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({
           setQuery(data.hebrewScript);
           router.replace(`/dictionary?q=${encodeURIComponent(data.hebrewScript)}`, { scroll: false });
         } catch (err) {
-          setError('לא הצלחנו לזהות את הדיבור. נסה שוב, בקול ברור.');
+          setError(t('speechError'));
           if (process.env.NODE_ENV === 'development') console.error(err);
         } finally {
           setLoading(false);
@@ -222,7 +225,7 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({
       setIsRecording(true);
     } catch (err) {
       if (process.env.NODE_ENV === 'development') console.error('Error accessing microphone:', err);
-      setError('נדרשת גישה למיקרופון כדי להקליט.');
+      setError(t('micPermission'));
     }
   };
 
@@ -261,7 +264,7 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({
               type="text"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="חפש במילון המורשת..."
+              placeholder={t('searchPlaceholder')}
               className="flex-1 min-w-0 bg-transparent px-4 sm:px-6 py-3 text-lg outline-none text-white placeholder:text-slate-400"
               disabled={loading}
             />
@@ -277,15 +280,15 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({
                   ? 'bg-red-500 text-white scale-110 shadow-[0_0_20px_rgba(239,68,68,0.5)]'
                   : 'text-slate-400 hover:bg-white/5 hover:text-amber-500'
                   }`}
-                title="לחיצה ארוכה להקלט��"
-                aria-label="הקלטה קולית"
+                title={t('voiceRecord')}
+                aria-label={t('voiceLabel')}
               >
                 <Mic size={24} className={isRecording ? 'animate-pulse' : ''} />
               </button>
               <button
                 type="submit"
                 disabled={loading}
-                aria-label="חיפוש"
+                aria-label={tc('search')}
                 className="bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-400 hover:to-orange-500 text-[#050B14] p-3 rounded-full transition-all shadow-[0_0_15px_rgba(245,158,11,0.3)] disabled:opacity-50 hover:scale-105"
               >
                 {loading ? <Loader2 className="animate-spin" size={24} /> : <Search size={24} />}
@@ -301,7 +304,7 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({
         )}
 
         {/* Error Message — only show red banner for actual errors, not "not found" */}
-        {error && !error.includes('לא נמצאה') && (
+        {error && error !== t('notFoundMessage', { term: query }) && (
           <div className="bg-red-500/80 backdrop-blur text-white p-3 rounded-xl text-center animate-in fade-in slide-in-from-top-2 mt-4 mx-auto max-w-lg shadow-lg">
             {error}
           </div>
@@ -379,7 +382,7 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({
             <div className="animate-in slide-in-from-bottom-8 duration-500">
               {/* Results count */}
               <div className="flex items-center justify-between text-sm text-slate-400 px-1 mb-3">
-                <span>{1 + additionalResults.length} תוצאות עבור "{query}"</span>
+                <span>{1 + additionalResults.length} {t('resultsFor')} "{query}"</span>
               </div>
 
               {/* Results grid: auto-fit columns */}
@@ -409,7 +412,7 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({
 
               {/* Bottom actions — full width */}
               <div className="mt-4 bg-[#0d1424]/40 backdrop-blur-xl rounded-xl border border-dashed border-white/10 p-4">
-                <p className="text-sm text-slate-400 mb-3 text-center">לא מצאת מה שחיפשת?</p>
+                <p className="text-sm text-slate-400 mb-3 text-center">{t('notFoundCta')}</p>
                 <div className="flex flex-col sm:flex-row gap-2 justify-center">
                   <button
                     type="button"
@@ -417,14 +420,14 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({
                     className="flex items-center justify-center gap-2 px-4 py-2 bg-indigo-600/20 text-indigo-400 rounded-lg hover:bg-indigo-600/30 transition-colors text-sm font-medium border border-indigo-500/20"
                   >
                     <Plus size={14} />
-                    הצע תרגום חדש ל"{query}"
+                    {t('suggestTranslation')}"{query}"
                   </button>
                   <button
                     type="button"
                     onClick={onOpenContribute}
                     className="flex items-center justify-center gap-2 px-4 py-2 text-slate-400 hover:bg-white/5 rounded-lg transition-colors text-sm"
                   >
-                    הוסף מילה חדשה למילון
+                    {t('addNewWord')}
                   </button>
                 </div>
               </div>

@@ -8,6 +8,7 @@ import { VendorCard } from './marketplace/VendorCard';
 import { ShoppingCart } from './marketplace/ShoppingCart';
 import { Search, MapPin, Plus, Store, Filter, ChefHat, ShoppingCart as CartIcon } from 'lucide-react';
 import { useFeatureFlag } from '../hooks/useFeatureFlag';
+import { useTranslations } from 'next-intl';
 import { BecomeVendorWizard } from './marketplace/BecomeVendorWizard';
 import { VendorDetailsModal } from './marketplace/VendorDetailsModal';
 import { NotificationBell } from './marketplace/NotificationBell';
@@ -28,6 +29,8 @@ export const MarketplacePage: React.FC = () => {
     const [cartCount, setCartCount] = useState(0);
 
     const { isEnabled } = useFeatureFlag('marketplace_module');
+    const t = useTranslations('marketplace');
+    const tc = useTranslations('common');
 
     useEffect(() => {
         loadVendors();
@@ -90,8 +93,8 @@ export const MarketplacePage: React.FC = () => {
         return (
             <div className="flex flex-col items-center justify-center p-8 text-center min-h-[50vh]">
                 <Store size={64} className="text-slate-300 mb-4" />
-                <h2 className="text-2xl font-bold text-slate-700 dark:text-slate-200">השוק מתבשל...</h2>
-                <p className="text-slate-400 mt-2">פיצ'ר זה יהיה זמין בקרוב!</p>
+                <h2 className="text-2xl font-bold text-slate-700 dark:text-slate-200">{t('cookingUp')}</h2>
+                <p className="text-slate-400 mt-2">{t('comingSoonFeature')}</p>
             </div>
         );
     }
@@ -112,7 +115,7 @@ export const MarketplacePage: React.FC = () => {
                         </span>
                         <ChefHat size={24} className="text-orange-500" />
                     </h1>
-                    <p className="text-sm text-slate-400 font-medium">שוק האוכל הג'והורי</p>
+                    <p className="text-sm text-slate-400 font-medium">{t('foodMarket')}</p>
                 </div>
 
                 <div className="flex items-center gap-2">
@@ -137,7 +140,7 @@ export const MarketplacePage: React.FC = () => {
                         onClick={() => setIsWizardOpen(true)}
                         className="bg-slate-900 dark:bg-slate-700 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 shadow-lg shadow-slate-900/20 hover:scale-105 transition-transform"
                     >
-                        <Plus size={16} /> מכור אוכל
+                        <Plus size={16} /> {t('sellFood')}
                     </button>
                 </div>
             </div>
@@ -150,7 +153,7 @@ export const MarketplacePage: React.FC = () => {
                         type="text"
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        placeholder="חפש מאכלים, בשלנים..."
+                        placeholder={t('searchVendors')}
                         className="w-full pe-4 ps-10 py-3 rounded-xl bg-[#0d1424]/60 backdrop-blur-xl border border-white/10 shadow-sm focus-visible:ring-2 focus-visible:ring-orange-500 outline-none"
                     />
                 </form>
@@ -165,7 +168,7 @@ export const MarketplacePage: React.FC = () => {
                     ${viewMode === 'map' ? 'hidden md:flex' : 'flex-1'}
                 `}>
                     <div className="p-4 flex justify-between items-center bg-[#0d1424]/60 backdrop-blur-xl border-b border-white/10 shadow-sm z-10">
-                        <span className="font-bold text-slate-700 dark:text-slate-200">{vendors.length} בשלנים באזור</span>
+                        <span className="font-bold text-slate-700 dark:text-slate-200">{vendors.length} {t('vendorsInArea')}</span>
                         <button className="text-slate-400 hover:text-orange-500">
                             <Filter size={18} />
                         </button>
@@ -173,9 +176,9 @@ export const MarketplacePage: React.FC = () => {
 
                     <div className="flex-1 overflow-y-auto p-4 space-y-4">
                         {loading ? (
-                            <div className="text-center py-10 text-slate-400">טוען...</div>
+                            <div className="text-center py-10 text-slate-400">{tc('loading')}</div>
                         ) : vendors.length === 0 ? (
-                            <div className="text-center py-10 text-slate-400">לא נמצאו בשלנים באזור</div>
+                            <div className="text-center py-10 text-slate-400">{t('noVendorsFound')}</div>
                         ) : (
                             vendors.map(vendor => (
                                 <VendorCard

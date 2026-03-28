@@ -75,7 +75,27 @@
     "music_module": {
       "title": "מוזיקה קווקזית",
       "description": "האזינו לצלילים המסורתיים של יהודי ההרים — שירים, מוגאמים ומנגינות דורות."
+    },
+    "music_teaser": {
+      "heading": "מוזיקה קווקזית",
+      "description": "בקרוב תוכלו להאזין לצלילים המסורתיים של יהודי ההרים — שירים עתיקים, מוגאמים, מנגינות חתונה ומוזיקה שליוותה את הקהילה לאורך הדורות.",
+      "badge": "בקרוב — אנחנו עובדים על זה",
+      "backHome": "← חזרה לעמוד הבית"
     }
+  },
+  "dictionary": {
+    "searching": "מחפש במילון...",
+    "notFoundMessage": "המילה \"{term}\" לא נמצאה במילון.",
+    "searchError": "שגיאה בחיפוש. נסה שוב.",
+    "speechError": "לא הצלחנו לזהות את הדיבור. נסה שוב, בקול ברור.",
+    "micPermission": "נדרשת גישה למיקרופון כדי להקליט.",
+    "searchPlaceholder": "חפש במילון המורשת...",
+    "voiceRecord": "לחיצה ארוכה להקלטה",
+    "voiceLabel": "הקלטה קולית",
+    "resultsFor": "תוצאות עבור",
+    "notFoundCta": "לא מצאת מה שחיפשת?",
+    "suggestTranslation": "הצע תרגום חדש ל",
+    "addNewWord": "הוסף מילה חדשה למילון"
   },
   "metadata": {
     "siteName": "מורשת ג'והורי",
@@ -399,7 +419,14 @@
     "reviewError": "שגיאה בשליחת הביקורת",
     "sendReview": "שלח ביקורת",
     "fillAddressFirst": "נא למלא כתובת תחילה",
-    "createError": "שגיאה ביצירת החנות"
+    "createError": "שגיאה ביצירת החנות",
+    "cookingUp": "השוק מתבשל...",
+    "comingSoonFeature": "פיצ'ר זה יהיה זמין בקרוב!",
+    "foodMarket": "שוק האוכל הג'והורי",
+    "sellFood": "מכור אוכל",
+    "searchVendors": "חפש מאכלים, בשלנים...",
+    "vendorsInArea": "בשלנים באזור",
+    "noVendorsFound": "לא נמצאו בשלנים באזור"
   },
   "profile": {
     "admin": "מנהל",
@@ -534,6 +561,28 @@
     "translations": "תרגומים"
   },
   "family": {
+    "loadingTree": "טוען עץ משפחתי...",
+    "pageTitle": "רשת קהילתית",
+    "pageDescription": "חקרו את עץ המשפחה של קהילת יהודי ההרים",
+    "communityNetwork": "🌐 רשת קהילתית",
+    "members": "בני משפחה",
+    "connections": "קשרים",
+    "searchPlaceholder": "חפש שם...",
+    "addPerson": "הוסף אדם",
+    "connectPeople": "חבר אנשים",
+    "legend": "מקרא",
+    "legendTitle": "מקרא סימנים",
+    "male": "גבר",
+    "female": "אישה",
+    "parentChild": "הורה-ילד",
+    "married": "נשואים",
+    "divorced": "גרושים",
+    "widowed": "אלמן/ה",
+    "born": "נולד",
+    "died": "נפטר",
+    "residence": "מגורים/מוצא",
+    "clickToEdit": "לחץ לעריכה",
+    "loadingTree": "טוען עץ משפחתי...",
     "modal": {
       "editMember": "עריכת בן משפחה",
       "addMember": "הוספת בן משפחה",
