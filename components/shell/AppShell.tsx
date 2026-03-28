@@ -48,22 +48,21 @@ interface NavTabProps {
 const NavTab: React.FC<NavTabProps & { comingSoonLabel?: string }> = ({ href, icon, label, comingSoon, isActive, comingSoonLabel }) => (
   <Link
     href={href}
-    className={`group/tab relative flex items-center gap-1.5 rounded-full font-medium transition-all ${
-      comingSoon ? 'px-2.5 py-2 text-[13px] opacity-60 hover:opacity-100' : 'px-3 py-2 text-sm'
+    className={`group/tab relative flex items-center gap-1 px-2 lg:px-3 py-2 rounded-full text-xs lg:text-sm font-medium transition-all whitespace-nowrap ${
+      comingSoon ? 'opacity-60 hover:opacity-100' : ''
     } ${isActive
       ? 'bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-white border border-amber-500/30 shadow-inner'
       : 'text-slate-300 hover:text-white hover:bg-white/5'
       }`}
-    title={comingSoon ? label : undefined}
   >
     <span className="shrink-0">{icon}</span>
-    {!comingSoon && <span className="whitespace-nowrap">{label}</span>}
+    <span>{label}</span>
     {comingSoon && (
       <span className="w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse shrink-0 group-hover/tab:opacity-0 transition-opacity" />
     )}
     {comingSoon && (
-      <span className="absolute inset-0 flex items-center justify-center rounded-full bg-blue-600/90 backdrop-blur-sm text-[11px] text-white font-bold opacity-0 group-hover/tab:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap">
-        {label}
+      <span className="absolute inset-0 flex items-center justify-center rounded-full bg-blue-600/90 backdrop-blur-sm text-xs text-white font-bold opacity-0 group-hover/tab:opacity-100 transition-opacity duration-200 pointer-events-none">
+        {comingSoonLabel}
       </span>
     )}
   </Link>
