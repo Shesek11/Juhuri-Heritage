@@ -48,29 +48,30 @@ interface NavTabProps {
 const NavTab: React.FC<NavTabProps & { comingSoonLabel?: string }> = ({ href, icon, label, comingSoon, isActive, comingSoonLabel }) => (
   <Link
     href={href}
-    className={`group/tab relative flex flex-col items-center justify-center px-3 py-1 rounded-xl transition-all duration-300 self-stretch ${
+    className={`group/tab relative flex items-center justify-center px-3 py-1.5 rounded-xl transition-all duration-300 self-stretch ${
       comingSoon ? 'opacity-60 hover:opacity-100' : ''
     } ${isActive
       ? 'bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-white border border-amber-500/30'
       : 'text-slate-300 hover:text-white hover:bg-white/5'
       }`}
   >
-    {/* Default state: icon + caption stacked vertically */}
-    <span className="shrink-0 [&>svg]:w-5 [&>svg]:h-5 group-hover/tab:hidden">{icon}</span>
-    <span className="text-xs font-medium mt-0.5 group-hover/tab:hidden">
+    {/* Single element — icon always visible, label slides in on hover */}
+    <span className="shrink-0 [&>svg]:w-5 [&>svg]:h-5 transition-transform duration-300">{icon}</span>
+    {/* Label: max-w-0 → expands on hover with smooth transition */}
+    <span className="max-w-0 overflow-hidden opacity-0 group-hover/tab:max-w-[12rem] group-hover/tab:opacity-100 group-hover/tab:ms-1.5 transition-all duration-300 ease-in-out whitespace-nowrap text-sm font-medium">
       {label}
     </span>
-    {/* Hover state: icon + label side by side, full height centered */}
-    <div className="hidden group-hover/tab:flex items-center gap-1.5">
-      <span className="shrink-0 [&>svg]:w-4 [&>svg]:h-4">{icon}</span>
-      <span className="whitespace-nowrap text-sm font-medium">{label}</span>
-      {comingSoon && (
-        <span className="text-[10px] font-bold text-white bg-blue-500/80 rounded-full px-1.5 py-0.5 whitespace-nowrap">
-          {comingSoonLabel}
-        </span>
-      )}
-    </div>
-    {/* Coming Soon dot — visible only in default state */}
+    {/* Coming Soon badge — slides in alongside label */}
+    {comingSoon && (
+      <span className="max-w-0 overflow-hidden opacity-0 group-hover/tab:max-w-[6rem] group-hover/tab:opacity-100 group-hover/tab:ms-1.5 transition-all duration-300 ease-in-out whitespace-nowrap text-[10px] font-bold text-white bg-blue-500/80 rounded-full px-0 group-hover/tab:px-1.5 group-hover/tab:py-0.5">
+        {comingSoonLabel}
+      </span>
+    )}
+    {/* Caption below — positioned absolutely, fades out on hover */}
+    <span className="absolute -bottom-0.5 inset-x-0 text-center text-[11px] font-medium opacity-80 group-hover/tab:opacity-0 transition-opacity duration-300 pointer-events-none">
+      {label}
+    </span>
+    {/* Coming Soon dot */}
     {comingSoon && (
       <span className="absolute top-0.5 end-0.5 w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse group-hover/tab:opacity-0 transition-opacity duration-300" />
     )}
