@@ -376,8 +376,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             </Link>
 
             {/* Desktop nav — single row */}
-            <nav className="hidden md:flex items-center flex-1 min-w-0 justify-center overflow-hidden" aria-label={t('mainNav')}>
-              <div className="flex items-center p-1 rounded-full gap-0.5 bg-white/5 backdrop-blur-sm border border-white/5 max-w-full overflow-hidden">
+            <nav className="hidden md:flex items-center flex-1 min-w-0 justify-center" aria-label={t('mainNav')}>
+              <div className="flex items-center p-1 rounded-full gap-0.5 bg-white/5 backdrop-blur-sm border border-white/5">
                 <NavTab href="/" icon={<Home size={16} />} label={t('home')} isActive={isActive('/')} />
                 {orderedFeatures.filter(f => f.show_in_nav !== false).map(f => (
                   <NavTab
