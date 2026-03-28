@@ -48,7 +48,7 @@ interface NavTabProps {
 const NavTab: React.FC<NavTabProps & { comingSoonLabel?: string }> = ({ href, icon, label, comingSoon, isActive, comingSoonLabel }) => (
   <Link
     href={href}
-    className={`group/tab relative flex flex-col items-center px-2 py-1 rounded-xl transition-all duration-300 ${
+    className={`group/tab relative flex flex-col items-center justify-center px-2.5 py-1.5 rounded-xl transition-all duration-300 h-full ${
       comingSoon ? 'opacity-60 hover:opacity-100' : ''
     } ${isActive
       ? 'bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-white border border-amber-500/30'
@@ -67,8 +67,8 @@ const NavTab: React.FC<NavTabProps & { comingSoonLabel?: string }> = ({ href, ic
         </span>
       )}
     </div>
-    {/* Small caption below — fades out on hover */}
-    <span className="text-[9px] leading-tight opacity-60 group-hover/tab:opacity-0 group-hover/tab:h-0 group-hover/tab:overflow-hidden transition-all duration-300">
+    {/* Caption below icon — larger default, fades out on hover */}
+    <span className="text-[11px] leading-tight font-medium group-hover/tab:opacity-0 group-hover/tab:h-0 group-hover/tab:overflow-hidden transition-all duration-300">
       {label}
     </span>
     {/* Coming Soon dot — visible only in default state */}
@@ -387,7 +387,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
             {/* Desktop nav — single row */}
             <nav className="hidden md:flex items-center flex-1 min-w-0 justify-center" aria-label={t('mainNav')}>
-              <div className="flex items-end p-1.5 rounded-2xl gap-0.5 bg-white/5 backdrop-blur-sm border border-white/5">
+              <div className="flex items-stretch p-1.5 rounded-2xl gap-0.5 bg-white/5 backdrop-blur-sm border border-white/5">
                 <NavTab href="/" icon={<Home size={16} />} label={t('home')} isActive={isActive('/')} />
                 {orderedFeatures.filter(f => f.show_in_nav !== false).map(f => (
                   <NavTab
