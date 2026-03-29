@@ -376,7 +376,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             {/* Logo */}
             <Link href="/" className={`flex items-center gap-2.5 shrink-0 transition-all ${!isScrolled ? 'bg-[#0d1424]/60 backdrop-blur-md rounded-full ps-1 pe-3 py-1 border border-white/5' : ''}`}>
               <img src={siteLogo || '/images/logo-transparent.png'} alt={t('logo')} className="w-9 h-9 object-contain" />
-              <span className="text-lg font-bold text-white hidden xl:block">{t('logo')}</span>
+              <span className="text-sm md:text-lg font-bold text-white">{t('logo')}</span>
             </Link>
 
             {/* Desktop nav — single row */}
@@ -510,29 +510,21 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
           {/* Mobile Navigation Bar */}
           <nav className="md:hidden border-t border-white/10 bg-[#050B14]/95 backdrop-blur-2xl supports-[backdrop-filter]:bg-[#050B14]/80" aria-label={t('mainNav')}>
-            <div className="flex items-center">
-              {/* Logo + site name — pinned to start */}
-              <Link href="/" className="flex flex-col items-center justify-center gap-0.5 px-3 py-1.5 shrink-0">
-                <img src={siteLogo || '/images/logo-transparent.png'} alt={t('logo')} className="w-8 h-8 object-contain" />
-                <span className="text-[9px] text-amber-500/70 font-semibold">{t('logo')}</span>
-              </Link>
-              {/* Scrollable nav items */}
-              <div className="relative flex-1 min-w-0">
-                <div className="absolute top-0 bottom-0 start-0 w-5 bg-gradient-to-r rtl:bg-gradient-to-l from-[#050B14] via-[#050B14]/80 to-transparent z-10 pointer-events-none" />
-                <div className="absolute top-0 bottom-0 end-0 w-5 bg-gradient-to-l rtl:bg-gradient-to-r from-[#0a0f1a] via-amber-950/10 to-transparent z-10 pointer-events-none" />
-                <div className="flex overflow-x-auto py-1 px-1 gap-0.5 mobile-nav-scroll">
-                  <MobileNavTab href="/" icon={<Home size={18} />} label={t('home')} isActive={isActive('/')} />
-                  {orderedFeatures.filter(f => f.show_in_nav !== false).map(f => (
-                    <MobileNavTab
-                      key={f.feature_key}
-                      href={f.link || '#'}
-                      icon={iconMap[f.icon || ''] || <BookOpen size={18} />}
-                      label={getFeatureName(f)}
-                      isActive={isActive(f.link || '') || (f.link === '/dictionary' && pathWithoutLocale.startsWith('/word/'))}
-                      comingSoon={f.status === 'coming_soon'}
-                    />
-                  ))}
-                </div>
+            <div className="relative">
+              {/* Fade gradient on end edge only — with subtle amber tint */}
+              <div className="absolute top-0 bottom-0 end-0 w-6 bg-gradient-to-l rtl:bg-gradient-to-r from-[#050B14] via-amber-950/15 to-transparent z-10 pointer-events-none" />
+              <div className="flex overflow-x-auto py-1 px-1 gap-0.5 mobile-nav-scroll">
+                <MobileNavTab href="/" icon={<Home size={18} />} label={t('home')} isActive={isActive('/')} />
+                {orderedFeatures.filter(f => f.show_in_nav !== false).map(f => (
+                  <MobileNavTab
+                    key={f.feature_key}
+                    href={f.link || '#'}
+                    icon={iconMap[f.icon || ''] || <BookOpen size={18} />}
+                    label={getFeatureName(f)}
+                    isActive={isActive(f.link || '') || (f.link === '/dictionary' && pathWithoutLocale.startsWith('/word/'))}
+                    comingSoon={f.status === 'coming_soon'}
+                  />
+                ))}
               </div>
             </div>
           </nav>
