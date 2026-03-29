@@ -9,7 +9,10 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   return {
     title: `${t('music_teaser.heading')} — ${t('music_teaser.badge')}`,
     description: t('music_teaser.description'),
-    alternates: { canonical: '/music' },
+    alternates: {
+      canonical: `/${locale}/music`,
+      languages: { he: '/he/music', en: '/en/music', ru: '/ru/music', 'x-default': '/he/music' },
+    },
   };
 }
 
@@ -17,7 +20,7 @@ export default async function MusicPage() {
   const t = await getTranslations('features');
 
   return (
-    <main className="min-h-screen flex items-center justify-center px-4 py-20" dir="rtl">
+    <main className="min-h-screen flex items-center justify-center px-4 py-20">
       <div className="max-w-lg text-center">
         <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-amber-400 to-orange-600 rounded-2xl flex items-center justify-center shadow-lg shadow-amber-500/20">
           <Music size={40} className="text-[#050B14]" />

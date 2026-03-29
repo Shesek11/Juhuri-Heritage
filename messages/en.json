@@ -105,6 +105,16 @@
     "mergeAuth": "Sign in to suggest merging entries",
     "addJuhuri": "Add Juhuri",
     "translateToHebrew": "Translate to Hebrew",
+    "addHebrewScript": "Add Hebrew script",
+    "addTransliteration": "Add transliteration",
+    "addCyrillic": "Add Cyrillic",
+    "addHebrewMeaning": "Add Hebrew meaning",
+    "addEnglishMeaning": "Add meaning",
+    "addRussianMeaning": "Add Russian meaning",
+    "hintAddHebrewScript": "How is it written?",
+    "hintAddLatin": "What's the transliteration?",
+    "hintAddCyrillic": "Write in Cyrillic",
+    "hintAddMeaning": "What does it mean?",
     "completeDialects": "Complete dialects",
     "recordPronunciation": "Record pronunciation",
     "hintKnowHow": "Know how to say it?",
@@ -568,6 +578,8 @@
   "wordList": {
     "missingJuhuri": "Missing: Juhuri/Latin",
     "missingHebrew": "Missing: Hebrew",
+    "missingScript": "Missing: Script",
+    "missingMeaning": "Missing: Meaning",
     "missingAudio": "Missing: Audio",
     "words": "words",
     "searchPlaceholder": "Search all results...",
@@ -658,6 +670,25 @@
       "parent": "Parent",
       "child": "Child",
       "spouse": "Spouse"
+    }
+  },
+  "teaser": {
+    "inDevelopment": "This feature is in final stages of development",
+    "tutor_module": {
+      "title": "AI Tutor — Coming Soon!",
+      "description": "AI-powered language lessons are in development. Soon you'll be able to learn Juhuri at your own pace!"
+    },
+    "recipes_module": {
+      "title": "Recipes — Coming Soon!",
+      "description": "Our Caucasian recipe collection is in development. Soon you'll discover traditional community recipes!"
+    },
+    "marketplace_module": {
+      "title": "Marketplace — Coming Soon!",
+      "description": "Our community marketplace is in development. Soon you'll find businesses and vendors from the community!"
+    },
+    "family_tree_module": {
+      "title": "Family Tree — Coming Soon!",
+      "description": "Our family tree is in development. Soon you'll be able to explore and build your family roots!"
     }
   }
 }

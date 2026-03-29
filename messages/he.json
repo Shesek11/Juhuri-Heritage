@@ -105,6 +105,16 @@
     "mergeAuth": "כדי להציע מיזוג ערכים, צריך להתחבר",
     "addJuhuri": "הוסף ג'והורי",
     "translateToHebrew": "תרגם לעברית",
+    "addHebrewScript": "הוסף כתב עברי",
+    "addTransliteration": "הוסף תעתיק",
+    "addCyrillic": "הוסף קירילית",
+    "addHebrewMeaning": "הוסף משמעות",
+    "addEnglishMeaning": "הוסף באנגלית",
+    "addRussianMeaning": "הוסף ברוסית",
+    "hintAddHebrewScript": "איך כותבים בעברית?",
+    "hintAddLatin": "מה התעתיק?",
+    "hintAddCyrillic": "איך כותבים בקירילית?",
+    "hintAddMeaning": "מה המשמעות?",
     "completeDialects": "השלם ניבים",
     "recordPronunciation": "הקלט הגייה",
     "hintKnowHow": "יודעים איך אומרים?",
@@ -568,6 +578,8 @@
   "wordList": {
     "missingJuhuri": "חסר: ג'והורי/לטינית",
     "missingHebrew": "חסר: עברית",
+    "missingScript": "חסר: כתב",
+    "missingMeaning": "חסר: משמעות",
     "missingAudio": "חסר: הקלטה",
     "words": "מילים",
     "searchPlaceholder": "חיפוש בכל התוצאות...",
@@ -658,6 +670,25 @@
       "parent": "הורה",
       "child": "ילד/ה",
       "spouse": "בן/ת זוג"
+    }
+  },
+  "teaser": {
+    "inDevelopment": "הפיצ'ר בשלבי פיתוח אחרונים",
+    "tutor_module": {
+      "title": "מורה פרטי — בקרוב!",
+      "description": "שיעורי שפה מונחי בינה מלאכותית בפיתוח. בקרוב תוכלו ללמוד ג׳והורית בקצב שלכם!"
+    },
+    "recipes_module": {
+      "title": "מתכונים — בקרוב!",
+      "description": "אוסף המתכונים הקווקזיים שלנו בפיתוח. בקרוב תוכלו לגלות מתכונים מסורתיים!"
+    },
+    "marketplace_module": {
+      "title": "שוק — בקרוב!",
+      "description": "השוק הקהילתי שלנו בפיתוח. בקרוב תוכלו למצוא עסקים ומוכרים מהקהילה!"
+    },
+    "family_tree_module": {
+      "title": "שורשים — בקרוב!",
+      "description": "עץ המשפחה שלנו בפיתוח. בקרוב תוכלו לחקור ולבנות את עץ השורשים של משפחתכם!"
     }
   }
 }
