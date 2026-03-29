@@ -48,22 +48,24 @@ interface NavTabProps {
 const NavTab: React.FC<NavTabProps & { comingSoonLabel?: string }> = ({ href, icon, label, comingSoon, isActive, comingSoonLabel }) => (
   <Link
     href={href}
-    className={`group/tab relative flex flex-col items-center justify-center gap-0.5 px-3 py-1.5 rounded-xl self-stretch transition-all duration-200 hover:scale-110 hover:-translate-y-1 hover:z-10 ${
+    className={`group/tab relative flex flex-col items-center justify-center gap-0.5 px-2.5 py-1.5 rounded-xl self-stretch will-change-transform transition-[transform,opacity] duration-200 ease-out hover:scale-[1.15] hover:-translate-y-0.5 hover:z-10 ${
       comingSoon ? 'opacity-60 hover:opacity-100' : ''
     } ${isActive
       ? 'bg-gradient-to-r from-amber-500/20 to-orange-500/20 text-white border border-amber-500/30'
-      : 'text-slate-300 hover:text-white hover:bg-white/10'
+      : 'text-slate-300 hover:text-white'
       }`}
   >
-    <span className="shrink-0 transition-transform duration-200 group-hover/tab:scale-110">{icon}</span>
-    <span className="text-[11px] font-medium whitespace-nowrap transition-all duration-200 group-hover/tab:text-sm group-hover/tab:font-semibold">{label}</span>
+    <span className="shrink-0">{icon}</span>
+    <span className="text-xs font-medium whitespace-nowrap">{label}</span>
     {comingSoon && (
-      <span className="text-[9px] font-bold text-white bg-blue-500/80 rounded-full px-1.5 py-0.5 whitespace-nowrap opacity-0 h-0 overflow-hidden group-hover/tab:opacity-100 group-hover/tab:h-auto transition-all duration-200">
-        {comingSoonLabel}
+      <span className="absolute -bottom-1 inset-x-0 flex justify-center opacity-0 group-hover/tab:opacity-100 transition-opacity duration-200">
+        <span className="text-[9px] font-bold text-white bg-blue-500 rounded-full px-1.5 py-0.5 whitespace-nowrap shadow-lg">
+          {comingSoonLabel}
+        </span>
       </span>
     )}
     {comingSoon && (
-      <span className="absolute top-0.5 end-0.5 w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse group-hover/tab:opacity-0 transition-opacity duration-200" />
+      <span className="absolute top-0 end-0 w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse group-hover/tab:opacity-0 transition-opacity duration-200" />
     )}
   </Link>
 );
