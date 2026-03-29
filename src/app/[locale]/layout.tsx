@@ -4,6 +4,7 @@ import { NextIntlClientProvider } from 'next-intl';
 import { routing, type Locale } from '@/src/i18n/routing';
 import AppProviders from '../../../components/providers/AppProviders';
 import HtmlLangSetter from '../../../components/providers/HtmlLangSetter';
+import GeoLocaleDetector from '../../../components/providers/GeoLocaleDetector';
 import { getSeoSettings } from '@/src/lib/seo-settings';
 
 const SITE_URL = process.env.SITE_URL || 'https://jun-juhuri.com';
@@ -124,6 +125,7 @@ export default async function LocaleLayout({ children, params }: Props) {
   return (
     <NextIntlClientProvider locale={locale}>
       <HtmlLangSetter />
+      <GeoLocaleDetector />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLdString }}
