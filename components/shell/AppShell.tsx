@@ -49,23 +49,23 @@ const NavTab: React.FC<NavTabProps & { comingSoonLabel?: string }> = ({ href, ic
   <Link
     href={href}
     title={comingSoon ? `${label} — ${comingSoonLabel}` : undefined}
-    className={`group/tab relative flex flex-col items-center justify-center gap-0.5 px-2.5 py-1 rounded-xl self-stretch transition-transform duration-150 ease-out hover:scale-[1.15] ${
+    className={`group/tab relative flex flex-col items-center justify-center gap-1 px-3 py-1.5 rounded-xl self-stretch transition-transform duration-150 ease-out hover:scale-[1.15] ${
       comingSoon ? 'opacity-50 hover:opacity-90' : ''
     } ${isActive
       ? 'text-amber-400'
       : 'text-slate-300 hover:text-white'
       }`}
   >
-    <div className={`relative w-8 h-8 rounded-full flex items-center justify-center [&>svg]:w-[18px] [&>svg]:h-[18px] ${isActive
+    <div className={`relative w-10 h-10 rounded-full flex items-center justify-center ${isActive
       ? 'bg-amber-500/15 border border-amber-500/30 text-amber-400'
       : 'text-slate-400'
       }`}>
       {icon}
       {comingSoon && (
-        <span className="absolute -top-0.5 -end-0.5 w-1.5 h-1.5 rounded-full bg-blue-400 animate-pulse" />
+        <span className="absolute -top-0.5 -end-0.5 w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
       )}
     </div>
-    <span className="text-[11px] font-medium whitespace-nowrap">{label}</span>
+    <span className="text-xs font-medium whitespace-nowrap">{label}</span>
   </Link>
 );
 
@@ -83,14 +83,14 @@ interface MobileNavTabProps {
 const MobileNavTab: React.FC<MobileNavTabProps> = ({ href, icon, label, comingSoon, isActive }) => (
   <Link
     href={href}
-    className={`flex flex-col items-center justify-center gap-0.5 px-1.5 py-1.5 rounded-xl text-[10px] font-medium transition-all shrink-0 ${isActive
+    className={`flex flex-col items-center justify-center gap-0.5 px-2 py-1.5 rounded-xl text-[11px] font-medium transition-all shrink-0 ${isActive
       ? 'text-amber-400'
       : comingSoon ? 'text-slate-500' : 'text-slate-300'
       }`}
     title={label}
     aria-current={isActive ? 'page' : undefined}
   >
-    <div className={`relative w-9 h-9 rounded-full flex items-center justify-center ${isActive
+    <div className={`relative w-10 h-10 rounded-full flex items-center justify-center ${isActive
       ? 'bg-amber-500/15 border border-amber-500/30 text-amber-400'
       : 'text-slate-400'
       }`}>
@@ -99,7 +99,7 @@ const MobileNavTab: React.FC<MobileNavTabProps> = ({ href, icon, label, comingSo
         <span className="absolute -top-0.5 -end-0.5 w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
       )}
     </div>
-    <span className="truncate max-w-[56px]">{label}</span>
+    <span className="truncate max-w-[60px]">{label}</span>
   </Link>
 );
 
@@ -382,12 +382,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             {/* Desktop nav — single row */}
             <nav className="hidden md:flex items-center flex-1 min-w-0 justify-center" aria-label={t('mainNav')}>
               <div className="flex items-center p-1.5 rounded-2xl gap-0.5 bg-white/5 backdrop-blur-sm border border-white/5">
-                <NavTab href="/" icon={<Home size={16} />} label={t('home')} isActive={isActive('/')} />
+                <NavTab href="/" icon={<Home size={20} />} label={t('home')} isActive={isActive('/')} />
                 {orderedFeatures.filter(f => f.show_in_nav !== false).map(f => (
                   <NavTab
                     key={f.feature_key}
                     href={f.link || '#'}
-                    icon={iconMap[f.icon || ''] || <BookOpen size={16} />}
+                    icon={iconMap[f.icon || ''] || <BookOpen size={20} />}
                     label={getFeatureName(f)}
                     isActive={isActive(f.link || '') || (f.link === '/dictionary' && pathWithoutLocale.startsWith('/word/'))}
                     comingSoon={f.status === 'coming_soon'}
@@ -510,28 +510,29 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
           {/* Mobile Navigation Bar */}
           <nav className="md:hidden border-t border-white/10 bg-[#050B14]/95 backdrop-blur-2xl supports-[backdrop-filter]:bg-[#050B14]/80" aria-label={t('mainNav')}>
-            {/* Site name row */}
-            <div className="flex items-center px-3 pt-1.5 pb-0.5">
-              <img src={siteLogo || '/images/logo-transparent.png'} alt="" className="w-4 h-4 object-contain opacity-60 me-1.5" />
-              <span className="text-[10px] text-slate-500 font-medium">{t('logo')}</span>
-              <span className="ms-auto" />
-            </div>
-            {/* Scrollable nav with fade edges */}
-            <div className="relative">
-              <div className="absolute top-0 bottom-0 start-0 w-4 bg-gradient-to-r rtl:bg-gradient-to-l from-[#050B14] to-transparent z-10 pointer-events-none" />
-              <div className="absolute top-0 bottom-0 end-0 w-4 bg-gradient-to-l rtl:bg-gradient-to-r from-[#050B14] to-transparent z-10 pointer-events-none" />
-              <div className="flex overflow-x-auto scrollbar-hide py-1 px-2 gap-1">
-                <MobileNavTab href="/" icon={<Home size={16} />} label={t('home')} isActive={isActive('/')} />
-                {orderedFeatures.filter(f => f.show_in_nav !== false).map(f => (
-                  <MobileNavTab
-                    key={f.feature_key}
-                    href={f.link || '#'}
-                    icon={iconMap[f.icon || ''] || <BookOpen size={16} />}
-                    label={getFeatureName(f)}
-                    isActive={isActive(f.link || '') || (f.link === '/dictionary' && pathWithoutLocale.startsWith('/word/'))}
-                    comingSoon={f.status === 'coming_soon'}
-                  />
-                ))}
+            <div className="flex items-center">
+              {/* Logo + site name — pinned to start */}
+              <Link href="/" className="flex flex-col items-center justify-center gap-0.5 px-3 py-1.5 shrink-0">
+                <img src={siteLogo || '/images/logo-transparent.png'} alt={t('logo')} className="w-8 h-8 object-contain" />
+                <span className="text-[9px] text-amber-500/70 font-semibold">{t('logo')}</span>
+              </Link>
+              {/* Scrollable nav items */}
+              <div className="relative flex-1 min-w-0">
+                <div className="absolute top-0 bottom-0 start-0 w-5 bg-gradient-to-r rtl:bg-gradient-to-l from-[#050B14] via-[#050B14]/80 to-transparent z-10 pointer-events-none" />
+                <div className="absolute top-0 bottom-0 end-0 w-5 bg-gradient-to-l rtl:bg-gradient-to-r from-[#0a0f1a] via-amber-950/10 to-transparent z-10 pointer-events-none" />
+                <div className="flex overflow-x-auto py-1 px-1 gap-0.5 mobile-nav-scroll">
+                  <MobileNavTab href="/" icon={<Home size={18} />} label={t('home')} isActive={isActive('/')} />
+                  {orderedFeatures.filter(f => f.show_in_nav !== false).map(f => (
+                    <MobileNavTab
+                      key={f.feature_key}
+                      href={f.link || '#'}
+                      icon={iconMap[f.icon || ''] || <BookOpen size={18} />}
+                      label={getFeatureName(f)}
+                      isActive={isActive(f.link || '') || (f.link === '/dictionary' && pathWithoutLocale.startsWith('/word/'))}
+                      comingSoon={f.status === 'coming_soon'}
+                    />
+                  ))}
+                </div>
               </div>
             </div>
           </nav>

@@ -26,6 +26,25 @@
   @apply bg-slate-700 hover:bg-slate-600;
 }
 
+/* Mobile nav scrollbar — thin amber */
+.mobile-nav-scroll::-webkit-scrollbar {
+  height: 3px;
+}
+.mobile-nav-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.mobile-nav-scroll::-webkit-scrollbar-thumb {
+  background: rgba(245, 158, 11, 0.3);
+  border-radius: 999px;
+}
+.mobile-nav-scroll::-webkit-scrollbar-thumb:hover {
+  background: rgba(245, 158, 11, 0.5);
+}
+.mobile-nav-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(245, 158, 11, 0.3) transparent;
+}
+
 /* Tutor animations */
 @keyframes confetti {
   0% { transform: translateY(0) rotate(0deg); opacity: 1; }
