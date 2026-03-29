@@ -45,18 +45,22 @@ interface NavTabProps {
   isActive: boolean;
 }
 
-const NavTab: React.FC<NavTabProps & { comingSoonLabel?: string }> = ({ href, icon, label, comingSoon, isActive, comingSoonLabel }) => (
+const NavTab: React.FC<NavTabProps & { comingSoonLabel?: string; compact?: boolean }> = ({ href, icon, label, comingSoon, isActive, comingSoonLabel, compact }) => (
   <Link
     href={href}
     title={comingSoon ? `${label} — ${comingSoonLabel}` : undefined}
-    className={`group/tab relative flex flex-col items-center justify-center gap-1 px-3 py-1.5 rounded-xl self-stretch transition-transform duration-150 ease-out hover:scale-[1.15] ${
+    className={`group/tab relative flex flex-col items-center justify-center rounded-xl self-stretch transition-all duration-300 ease-out hover:scale-[1.15] ${
+      compact ? 'gap-0 px-2 py-0.5' : 'gap-1 px-3 py-1.5'
+    } ${
       comingSoon ? 'opacity-50 hover:opacity-90' : ''
     } ${isActive
       ? 'text-amber-400'
       : 'text-slate-300 hover:text-white'
       }`}
   >
-    <div className={`relative w-10 h-10 rounded-full flex items-center justify-center ${isActive
+    <div className={`relative rounded-full flex items-center justify-center transition-all duration-300 ${
+      compact ? 'w-7 h-7 [&>svg]:w-5 [&>svg]:h-5' : 'w-10 h-10'
+    } ${isActive
       ? 'bg-amber-500/15 border border-amber-500/30 text-amber-400'
       : 'text-slate-400'
       }`}>
@@ -65,7 +69,7 @@ const NavTab: React.FC<NavTabProps & { comingSoonLabel?: string }> = ({ href, ic
         <span className="absolute -top-0.5 -end-0.5 w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
       )}
     </div>
-    <span className="text-[0.85rem] font-medium whitespace-nowrap">{label}</span>
+    <span className={`font-medium whitespace-nowrap transition-all duration-300 ${compact ? 'text-[0.7rem]' : 'text-[0.85rem]'}`}>{label}</span>
   </Link>
 );
 
@@ -381,8 +385,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
             {/* Desktop nav — single row */}
             <nav className="hidden md:flex items-center flex-1 min-w-0 justify-center" aria-label={t('mainNav')}>
-              <div className="flex items-center p-1.5 rounded-2xl gap-0.5 bg-white/5 backdrop-blur-sm border border-white/5">
-                <NavTab href="/" icon={<Home size={24} />} label={t('home')} isActive={isActive('/')} />
+              <div className={`flex items-center rounded-2xl gap-0.5 bg-white/5 backdrop-blur-sm border border-white/5 transition-all duration-300 ${isScrolled ? 'p-0.5' : 'p-1.5'}`}>
+                <NavTab href="/" icon={<Home size={24} />} label={t('home')} isActive={isActive('/')} compact={isScrolled} />
                 {orderedFeatures.filter(f => f.show_in_nav !== false).map(f => (
                   <NavTab
                     key={f.feature_key}
@@ -392,6 +396,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                     isActive={isActive(f.link || '') || (f.link === '/dictionary' && pathWithoutLocale.startsWith('/word/'))}
                     comingSoon={f.status === 'coming_soon'}
                     comingSoonLabel={tc('comingSoon')}
+                    compact={isScrolled}
                   />
                 ))}
               </div>
