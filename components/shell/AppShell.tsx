@@ -50,7 +50,7 @@ const NavTab: React.FC<NavTabProps & { comingSoonLabel?: string; compact?: boole
     href={href}
     title={comingSoon ? `${label} — ${comingSoonLabel}` : undefined}
     className={`group/tab relative flex flex-col items-center justify-center rounded-xl self-stretch transition-all duration-300 ease-out hover:scale-[1.15] ${
-      compact ? 'gap-0 px-2 py-0.5' : 'gap-1 px-3 py-1.5'
+      compact ? 'gap-0 px-1.5 py-0' : 'gap-1 px-3 py-1.5'
     } ${
       comingSoon ? 'opacity-50 hover:opacity-90' : ''
     } ${isActive
@@ -59,7 +59,7 @@ const NavTab: React.FC<NavTabProps & { comingSoonLabel?: string; compact?: boole
       }`}
   >
     <div className={`relative rounded-full flex items-center justify-center transition-all duration-300 ${
-      compact ? 'w-7 h-7 [&>svg]:w-5 [&>svg]:h-5' : 'w-10 h-10'
+      compact ? 'w-6 h-6 [&>svg]:w-[18px] [&>svg]:h-[18px]' : 'w-10 h-10'
     } ${isActive
       ? 'bg-amber-500/15 border border-amber-500/30 text-amber-400'
       : 'text-slate-400'
@@ -82,19 +82,24 @@ interface MobileNavTabProps {
   label: string;
   comingSoon?: boolean;
   isActive: boolean;
+  compact?: boolean;
 }
 
-const MobileNavTab: React.FC<MobileNavTabProps> = ({ href, icon, label, comingSoon, isActive }) => (
+const MobileNavTab: React.FC<MobileNavTabProps> = ({ href, icon, label, comingSoon, isActive, compact }) => (
   <Link
     href={href}
-    className={`flex flex-col items-center justify-center gap-0.5 px-2 py-1.5 rounded-xl text-[11px] font-medium transition-all shrink-0 ${isActive
+    className={`flex flex-col items-center justify-center gap-0.5 rounded-xl font-medium transition-all shrink-0 ${
+      compact ? 'px-1.5 py-1 text-[10px]' : 'px-2 py-1.5 text-[11px]'
+    } ${isActive
       ? 'text-amber-400'
       : comingSoon ? 'text-slate-500' : 'text-slate-300'
       }`}
     title={label}
     aria-current={isActive ? 'page' : undefined}
   >
-    <div className={`relative w-10 h-10 rounded-full flex items-center justify-center ${isActive
+    <div className={`relative rounded-full flex items-center justify-center transition-all duration-300 ${
+      compact ? 'w-8 h-8 [&>svg]:w-5 [&>svg]:h-5' : 'w-10 h-10'
+    } ${isActive
       ? 'bg-amber-500/15 border border-amber-500/30 text-amber-400'
       : 'text-slate-400'
       }`}>
@@ -385,7 +390,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
             {/* Desktop nav — single row */}
             <nav className="hidden md:flex items-center flex-1 min-w-0 justify-center" aria-label={t('mainNav')}>
-              <div className={`flex items-center rounded-2xl gap-0.5 bg-white/5 backdrop-blur-sm border border-white/5 transition-all duration-300 ${isScrolled ? 'p-0.5' : 'p-1.5'}`}>
+              <div className={`flex items-center rounded-2xl bg-white/5 backdrop-blur-sm border border-white/5 transition-all duration-300 ${isScrolled ? 'p-0.5 gap-1' : 'p-1.5 gap-0.5'}`}>
                 <NavTab href="/" icon={<Home size={24} />} label={t('home')} isActive={isActive('/')} compact={isScrolled} />
                 {orderedFeatures.filter(f => f.show_in_nav !== false).map(f => (
                   <NavTab
@@ -519,7 +524,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               {/* Fade gradient on end edge only — with subtle amber tint */}
               <div className="absolute top-0 bottom-0 end-0 w-6 bg-gradient-to-l rtl:bg-gradient-to-r from-[#050B14] via-amber-950/15 to-transparent z-10 pointer-events-none" />
               <div className="flex overflow-x-auto py-1 px-1 gap-0.5 mobile-nav-scroll">
-                <MobileNavTab href="/" icon={<Home size={24} />} label={t('home')} isActive={isActive('/')} />
+                <MobileNavTab href="/" icon={<Home size={24} />} label={t('home')} isActive={isActive('/')} compact={isScrolled} />
                 {orderedFeatures.filter(f => f.show_in_nav !== false).map(f => (
                   <MobileNavTab
                     key={f.feature_key}
@@ -528,6 +533,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
                     label={getFeatureName(f)}
                     isActive={isActive(f.link || '') || (f.link === '/dictionary' && pathWithoutLocale.startsWith('/word/'))}
                     comingSoon={f.status === 'coming_soon'}
+                    compact={isScrolled}
                   />
                 ))}
               </div>
