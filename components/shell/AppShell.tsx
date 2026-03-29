@@ -65,7 +65,7 @@ const NavTab: React.FC<NavTabProps & { comingSoonLabel?: string }> = ({ href, ic
         <span className="absolute -top-0.5 -end-0.5 w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
       )}
     </div>
-    <span className="text-xs font-medium whitespace-nowrap">{label}</span>
+    <span className="text-[0.85rem] font-medium whitespace-nowrap">{label}</span>
   </Link>
 );
 
@@ -374,7 +374,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center gap-3">
 
             {/* Logo */}
-            <Link href="/" className={`flex items-center gap-2.5 shrink-0 transition-all ${!isScrolled ? 'bg-[#0d1424]/60 backdrop-blur-md rounded-full ps-1 pe-3 py-1 border border-white/5' : ''}`}>
+            <Link href="/" className={`flex items-center gap-2.5 shrink-0 me-auto transition-all ${!isScrolled ? 'bg-[#0d1424]/60 backdrop-blur-md rounded-full ps-1 pe-3 py-1 border border-white/5' : ''}`}>
               <img src={siteLogo || '/images/logo-transparent.png'} alt={t('logo')} className="w-9 h-9 object-contain" />
               <span className="text-sm md:text-lg font-bold text-white">{t('logo')}</span>
             </Link>
@@ -382,12 +382,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             {/* Desktop nav — single row */}
             <nav className="hidden md:flex items-center flex-1 min-w-0 justify-center" aria-label={t('mainNav')}>
               <div className="flex items-center p-1.5 rounded-2xl gap-0.5 bg-white/5 backdrop-blur-sm border border-white/5">
-                <NavTab href="/" icon={<Home size={20} />} label={t('home')} isActive={isActive('/')} />
+                <NavTab href="/" icon={<Home size={24} />} label={t('home')} isActive={isActive('/')} />
                 {orderedFeatures.filter(f => f.show_in_nav !== false).map(f => (
                   <NavTab
                     key={f.feature_key}
                     href={f.link || '#'}
-                    icon={iconMap[f.icon || ''] || <BookOpen size={20} />}
+                    icon={iconMap[f.icon || ''] || <BookOpen size={24} />}
                     label={getFeatureName(f)}
                     isActive={isActive(f.link || '') || (f.link === '/dictionary' && pathWithoutLocale.startsWith('/word/'))}
                     comingSoon={f.status === 'coming_soon'}
@@ -514,12 +514,12 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
               {/* Fade gradient on end edge only — with subtle amber tint */}
               <div className="absolute top-0 bottom-0 end-0 w-6 bg-gradient-to-l rtl:bg-gradient-to-r from-[#050B14] via-amber-950/15 to-transparent z-10 pointer-events-none" />
               <div className="flex overflow-x-auto py-1 px-1 gap-0.5 mobile-nav-scroll">
-                <MobileNavTab href="/" icon={<Home size={18} />} label={t('home')} isActive={isActive('/')} />
+                <MobileNavTab href="/" icon={<Home size={24} />} label={t('home')} isActive={isActive('/')} />
                 {orderedFeatures.filter(f => f.show_in_nav !== false).map(f => (
                   <MobileNavTab
                     key={f.feature_key}
                     href={f.link || '#'}
-                    icon={iconMap[f.icon || ''] || <BookOpen size={18} />}
+                    icon={iconMap[f.icon || ''] || <BookOpen size={24} />}
                     label={getFeatureName(f)}
                     isActive={isActive(f.link || '') || (f.link === '/dictionary' && pathWithoutLocale.startsWith('/word/'))}
                     comingSoon={f.status === 'coming_soon'}
