@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { ThumbsUp, ThumbsDown, Plus, Edit3, Volume2 } from 'lucide-react';
 import { DialectScript, DictionaryEntry, PendingSuggestion } from '../../types';
 import EditableField from '../dictionary/EditableField';
+import { getDialectDisplayName } from '../../utils/localeDisplay';
 
 interface EnrichmentData {
   hebrewScript?: string;
@@ -36,6 +37,7 @@ const DialectComparison: React.FC<DialectComparisonProps> = ({
   translationVotes,
 }) => {
   const t = useTranslations('word');
+  const locale = useLocale();
   const [editingField, setEditingField] = useState<string | null>(null);
 
   const latinSuggestion = pendingSuggestions.find(s => s.fieldName === 'latinScript');
@@ -72,7 +74,7 @@ const DialectComparison: React.FC<DialectComparisonProps> = ({
                       {/* Dialect name */}
                       <td className="py-3 px-3">
                         <span className="text-indigo-400 font-bold text-xs bg-indigo-900/30 px-1.5 py-0.5 rounded">
-                          {tr.dialect && tr.dialect !== 'לא ידוע' && tr.dialect !== 'General' ? tr.dialect : '-'}
+                          {getDialectDisplayName(tr.dialect, locale)}
                         </span>
                       </td>
 

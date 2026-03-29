@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { Volume2, Copy, Check, Share2, Bot, Users, Pencil, Shield, Star } from 'lucide-react';
 import { DictionaryEntry, PendingSuggestion, DialectScript } from '../../types';
 import { partOfSpeechHebrew } from '../../utils/pos';
@@ -7,6 +7,7 @@ import { generateSpeech } from '../../services/geminiService';
 import { playBase64Audio } from '../../utils/audioUtils';
 import EditableField from '../dictionary/EditableField';
 import TransliterationGuideModal from '../dictionary/TransliterationGuideModal';
+import { getDialectDisplayName } from '../../utils/localeDisplay';
 
 interface WordHeroProps {
   entry: DictionaryEntry;
@@ -27,6 +28,7 @@ const WordHero: React.FC<WordHeroProps> = ({
 }) => {
   const t = useTranslations('word');
   const tc = useTranslations('common');
+  const locale = useLocale();
   const [isPlaying, setIsPlaying] = useState(false);
   const [copied, setCopied] = useState(false);
   const [voice, setVoice] = useState<'Zephyr' | 'Fenrir'>('Zephyr');
@@ -171,7 +173,7 @@ const WordHero: React.FC<WordHeroProps> = ({
               onClick={() => setEditingDialect(true)}
               className="inline-flex items-center gap-1 px-2 py-1 bg-violet-500/30 border border-violet-400/30 rounded-md text-xs font-medium text-violet-300 hover:bg-violet-500/40 transition-colors cursor-pointer"
             >
-              {currentDialect}
+              {getDialectDisplayName(currentDialect, locale)}
               <Pencil size={8} />
             </button>
           ) : (
@@ -200,7 +202,7 @@ const WordHero: React.FC<WordHeroProps> = ({
             >
               <option value="">{t('noDialect')}</option>
               {dialects.map(d => (
-                <option key={d.id} value={d.name}>{d.description || d.name}</option>
+                <option key={d.id} value={d.name}>{getDialectDisplayName(d.name, locale)}</option>
               ))}
             </select>
             <button

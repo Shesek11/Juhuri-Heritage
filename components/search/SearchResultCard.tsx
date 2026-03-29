@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { ArrowLeft, ThumbsUp, AlertTriangle, Shield, Users, Sparkles, Star, Plus, Copy } from 'lucide-react';
 import { DictionaryEntry } from '../../types';
 import { partOfSpeechHebrew } from '../../utils/pos';
 import apiService from '../../services/apiService';
 import { useAuth } from '../../contexts/AuthContext';
+import { getDialectDisplayName } from '../../utils/localeDisplay';
 
 interface SearchResultCardProps {
   entry: DictionaryEntry;
@@ -28,6 +29,7 @@ const isCyrillic = (s: string) => /^[\u0400-\u04FF]/.test(s);
 
 const SearchResultCard: React.FC<SearchResultCardProps> = ({ entry, isBestMatch, searchQuery, onReport, onNavigate, onSuggestMerge }) => {
   const t = useTranslations('search');
+  const locale = useLocale();
   const { isAuthenticated } = useAuth();
   const [upvoted, setUpvoted] = useState(false);
   const [upvoteCount, setUpvoteCount] = useState(entry.dialectScripts[0]?.upvotes || 0);
@@ -115,7 +117,7 @@ const SearchResultCard: React.FC<SearchResultCardProps> = ({ entry, isBestMatch,
 
           {dialect && dialect !== 'General' && dialect !== 'לא ידוע' && (
             <span className="shrink-0 text-[11px] px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-300 border border-amber-500/20 font-medium">
-              {dialect}
+              {getDialectDisplayName(dialect, locale)}
             </span>
           )}
 

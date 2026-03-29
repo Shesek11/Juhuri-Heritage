@@ -1,7 +1,9 @@
 import React from 'react';
+import { useLocale } from 'next-intl';
 import { Volume2, ThumbsUp, ThumbsDown, Edit3 } from 'lucide-react';
 import { DialectScript, DictionaryEntry, PendingSuggestion } from '../../types';
 import EditableField from './EditableField';
+import { getDialectDisplayName } from '../../utils/localeDisplay';
 
 interface EnrichmentData {
   hebrewScript?: string;
@@ -42,6 +44,7 @@ const TranslationCard: React.FC<TranslationCardProps> = ({
   enrichmentLoading = false,
   enrichmentData,
 }) => {
+  const locale = useLocale();
   const latinSuggestion = pendingSuggestions.find(s => s.fieldName === 'latinScript');
   const cyrillicSuggestion = pendingSuggestions.find(s => s.fieldName === 'cyrillicScript');
   const hebrewSuggestion = pendingSuggestions.find(s => s.fieldName === 'hebrewShort');
@@ -76,7 +79,7 @@ const TranslationCard: React.FC<TranslationCardProps> = ({
           {/* Latin + Dialect row */}
           <div className="flex items-center gap-2 text-sm flex-wrap">
             {t.dialect && t.dialect !== 'לא ידוע' && (
-              <span className="text-indigo-600 dark:text-indigo-400 font-bold bg-indigo-50 dark:bg-indigo-900/30 px-1.5 py-0.5 rounded text-xs">{t.dialect}</span>
+              <span className="text-indigo-600 dark:text-indigo-400 font-bold bg-indigo-50 dark:bg-indigo-900/30 px-1.5 py-0.5 rounded text-xs">{getDialectDisplayName(t.dialect, locale)}</span>
             )}
             <EditableField
               entryId={entry.id}

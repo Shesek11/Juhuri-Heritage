@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useLocale } from 'next-intl';
 import { DictionaryEntry, Comment, DialectScript } from '../types';
 import { Volume2, Copy, Check, CheckCircle, Settings2, Heart, MessageCircle, Send, Loader2, ThumbsUp, ThumbsDown, Edit3, Bot, Users, Pencil, X as XIcon, Plus, Info } from 'lucide-react';
 import { generateSpeech } from '../services/geminiService';
@@ -6,6 +7,7 @@ import { playBase64Audio } from '../utils/audioUtils';
 import apiService from '../services/apiService';
 import { useAuth } from '../contexts/AuthContext';
 import VoiceRecorder from './audio/VoiceRecorder';
+import { getDialectDisplayName } from '../utils/localeDisplay';
 
 /** Small badge showing the source of a field value */
 const FieldSourceBadge: React.FC<{ source?: string }> = ({ source }) => {
@@ -220,6 +222,7 @@ interface ResultCardProps {
 
 const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal, onSuggestCorrection }) => {
   const { isAuthenticated } = useAuth();
+  const locale = useLocale();
   const [isPlaying, setIsPlaying] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [voice, setVoice] = useState<'Zephyr' | 'Fenrir'>('Zephyr');
@@ -598,7 +601,7 @@ const ResultCard: React.FC<ResultCardProps> = ({ entry, onOpenAuthModal, onSugge
                     )}
                     <div className="flex items-center gap-2 text-sm">
                       {t.dialect && t.dialect !== 'לא ידוע' && (
-                        <span className="text-indigo-600 dark:text-indigo-400 font-bold bg-indigo-50 dark:bg-indigo-900/30 px-1.5 py-0.5 rounded text-xs">{t.dialect}</span>
+                        <span className="text-indigo-600 dark:text-indigo-400 font-bold bg-indigo-50 dark:bg-indigo-900/30 px-1.5 py-0.5 rounded text-xs">{getDialectDisplayName(t.dialect, locale)}</span>
                       )}
                       {t.latinScript && (
                         <span className="text-slate-600 dark:text-slate-300 font-mono tracking-wide flex items-center gap-1">
