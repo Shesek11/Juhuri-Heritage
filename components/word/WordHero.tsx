@@ -251,19 +251,43 @@ const WordHero: React.FC<WordHeroProps> = ({
           </div>
         )}
 
-        {/* Subtitle: Latin + Cyrillic transliterations */}
+        {/* Subtitle: transliterations ordered by locale */}
         <div className="flex items-center gap-3 text-base text-indigo-200 flex-wrap">
-          <span className="flex items-center gap-1.5">
-            <span className="text-slate-300 text-xs">{t('latinScript')}</span>
-            <EditableField
-              entryId={entry.id}
-              fieldName="latinScript"
-              dbValue={entry.dialectScripts?.[0]?.latinScript || undefined}
-              compact
-              valueClassName="font-mono text-indigo-200"
-            />
-          </span>
-          {entry.dialectScripts?.[0]?.cyrillicScript && (
+          {/* Latin always shown */}
+          {(locale === 'en' || locale === 'he') && (
+            <span className="flex items-center gap-1.5">
+              <span className="text-slate-300 text-xs">{t('latinScript')}</span>
+              <EditableField
+                entryId={entry.id}
+                fieldName="latinScript"
+                dbValue={entry.dialectScripts?.[0]?.latinScript || undefined}
+                compact
+                valueClassName="font-mono text-indigo-200"
+              />
+            </span>
+          )}
+          {/* Cyrillic — show for en (second) and ru (first) */}
+          {entry.dialectScripts?.[0]?.cyrillicScript && (locale === 'ru' || locale === 'en') && (
+            <span className="flex items-center gap-1.5">
+              <span className="text-slate-300 text-xs">{t('cyrillicScript')}</span>
+              <span className="font-serif" dir="ltr">{entry.dialectScripts[0].cyrillicScript}</span>
+            </span>
+          )}
+          {/* For ru: also show Latin after Cyrillic */}
+          {locale === 'ru' && (
+            <span className="flex items-center gap-1.5">
+              <span className="text-slate-300 text-xs">{t('latinScript')}</span>
+              <EditableField
+                entryId={entry.id}
+                fieldName="latinScript"
+                dbValue={entry.dialectScripts?.[0]?.latinScript || undefined}
+                compact
+                valueClassName="font-mono text-indigo-200"
+              />
+            </span>
+          )}
+          {/* For he: also show Cyrillic after Latin */}
+          {locale === 'he' && entry.dialectScripts?.[0]?.cyrillicScript && (
             <span className="flex items-center gap-1.5">
               <span className="text-slate-300 text-xs">{t('cyrillicScript')}</span>
               <span className="font-serif" dir="ltr">{entry.dialectScripts[0].cyrillicScript}</span>

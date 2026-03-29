@@ -123,6 +123,7 @@
     "hintRecordIt": "הקליטו את ההגייה",
     "wordsWaiting": "{count} מילים מחכות",
     "noWords": "אין מילים",
+    "verifyAi": "אשרו AI",
     "missingPrefix": "חסר: {dialect}"
   },
   "metadata": {
@@ -214,6 +215,7 @@
     "share": "שתף",
     "pendingContributions": "תרומות ממתינות",
     "hebrewMeaning": "עברית:",
+    "englishMeaning": "אנגלית:",
     "russianMeaning": "רוסית:",
     "hebrewTranslation": "תרגום (עברית):",
     "relatedWords": "מילים קשורות",
@@ -690,5 +692,36 @@
       "title": "שורשים — בקרוב!",
       "description": "עץ המשפחה שלנו בפיתוח. בקרוב תוכלו לחקור ולבנות את עץ השורשים של משפחתכם!"
     }
+  },
+  "examples": {
+    "title": "פתגמים וברכות",
+    "addProverb": "הוסף פתגם",
+    "addProverbTitle": "הוסף פתגם או ברכה",
+    "aiSearching": "AI מחפש דוגמאות...",
+    "empty": "אין עדיין פתגמים למילה זו. היה הראשון להוסיף!",
+    "aiDisclaimer": "המשפטים נוצרו בעזרת AI ועשויים להכיל אי-דיוקים. יש לכם הצעה טובה יותר? לחצו על \"הוסף פתגם\".",
+    "communityProverbs": "פתגמים מהקהילה",
+    "contribution": "תרומה",
+    "formTitle": "הוסף פתגם, ברכה או דוגמת שימוש",
+    "originPlaceholder": "הפתגם / הברכה בשפת המקור...",
+    "translationPlaceholder": "תרגום (אופציונלי)",
+    "translitPlaceholder": "תעתיק לטיני (אופציונלי)",
+    "submitProverb": "שלח פתגם",
+    "submitSuccess": "הפתגם נשלח לאישור. תודה!",
+    "submitError": "שגיאה בשליחת הפתגם"
+  },
+  "recordings": {
+    "title": "הגיות מהקהילה",
+    "play": "השמע",
+    "empty": "אין עדיין הקלטות למילה זו. היו הראשונים להקליט!"
+  },
+  "community": {
+    "likeAuth": "כדי לאהוב ערכים במילון, יש להתחבר תחילה",
+    "commentsTitle": "תגובות בקהילה",
+    "noComments": "אין עדיין תגובות. היה הראשון להגיב!",
+    "yourName": "השם שלך",
+    "commentPlaceholder": "הוסף תגובה, דוגמה או הערה...",
+    "guestModeration": "תגובות אורחים ממתינות לאישור מנהל",
+    "commentError": "שגיאה בשליחת התגובה"
   }
 }

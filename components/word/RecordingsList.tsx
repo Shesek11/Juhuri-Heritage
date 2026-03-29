@@ -1,6 +1,8 @@
 import React from 'react';
+import { useTranslations, useLocale } from 'next-intl';
 import { Mic, Play, ThumbsUp } from 'lucide-react';
 import VoiceRecorder from '../audio/VoiceRecorder';
+import { getDialectDisplayName } from '../../utils/localeDisplay';
 
 interface Recording {
   id: string | number;
@@ -17,6 +19,9 @@ interface RecordingsListProps {
 }
 
 const RecordingsList: React.FC<RecordingsListProps> = ({ recordings, entryId }) => {
+  const t = useTranslations('recordings');
+  const locale = useLocale();
+
   const formatDuration = (seconds?: number) => {
     if (!seconds) return '0:00';
     const mins = Math.floor(seconds / 60);
@@ -28,7 +33,7 @@ const RecordingsList: React.FC<RecordingsListProps> = ({ recordings, entryId }) 
     <div className="space-y-3">
       <h3 className="text-sm uppercase tracking-wider text-slate-300 dark:text-slate-300 font-bold flex items-center gap-2">
         <Mic size={14} />
-        הגיות מהקהילה
+        {t('title')}
       </h3>
 
       {recordings.length > 0 ? (
@@ -40,7 +45,7 @@ const RecordingsList: React.FC<RecordingsListProps> = ({ recordings, entryId }) 
             >
               <button
                 className="p-2 rounded-full bg-indigo-500/20 text-indigo-400 hover:bg-indigo-500/30 transition-colors shrink-0"
-                title="השמע"
+                title={t('play')}
               >
                 <Play size={16} />
               </button>
@@ -50,7 +55,7 @@ const RecordingsList: React.FC<RecordingsListProps> = ({ recordings, entryId }) 
                   <span className="text-sm font-medium text-slate-200 truncate">{rec.userName}</span>
                   {rec.dialect && (
                     <span className="text-xs text-indigo-400 bg-indigo-900/30 px-1.5 py-0.5 rounded">
-                      {rec.dialect}
+                      {getDialectDisplayName(rec.dialect, locale)}
                     </span>
                   )}
                 </div>
@@ -67,12 +72,9 @@ const RecordingsList: React.FC<RecordingsListProps> = ({ recordings, entryId }) 
           ))}
         </div>
       ) : (
-        <p className="text-sm text-slate-300">
-          אין עדיין הקלטות למילה זו. היו הראשונים להקליט!
-        </p>
+        <p className="text-sm text-slate-300">{t('empty')}</p>
       )}
 
-      {/* Voice recorder */}
       <VoiceRecorder entryId={entryId} />
     </div>
   );

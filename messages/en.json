@@ -123,6 +123,7 @@
     "hintRecordIt": "Record the pronunciation",
     "wordsWaiting": "{count} words waiting",
     "noWords": "No words",
+    "verifyAi": "Verify AI",
     "missingPrefix": "Missing: {dialect}"
   },
   "metadata": {
@@ -214,6 +215,7 @@
     "share": "Share",
     "pendingContributions": "Pending contributions",
     "hebrewMeaning": "Hebrew:",
+    "englishMeaning": "English:",
     "russianMeaning": "Russian:",
     "hebrewTranslation": "Translation (Hebrew):",
     "relatedWords": "Related words",
@@ -690,5 +692,36 @@
       "title": "Family Tree — Coming Soon!",
       "description": "Our family tree is in development. Soon you'll be able to explore and build your family roots!"
     }
+  },
+  "examples": {
+    "title": "Proverbs & Blessings",
+    "addProverb": "Add proverb",
+    "addProverbTitle": "Add a proverb or blessing",
+    "aiSearching": "AI searching for examples...",
+    "empty": "No proverbs yet for this word. Be the first to add one!",
+    "aiDisclaimer": "These sentences were generated with AI and may contain inaccuracies. Have a better suggestion? Click \"Add proverb\".",
+    "communityProverbs": "Community proverbs",
+    "contribution": "Contribution",
+    "formTitle": "Add a proverb, blessing, or usage example",
+    "originPlaceholder": "The proverb / blessing in the original language...",
+    "translationPlaceholder": "Translation (optional)",
+    "translitPlaceholder": "Latin transliteration (optional)",
+    "submitProverb": "Submit proverb",
+    "submitSuccess": "Proverb submitted for approval. Thank you!",
+    "submitError": "Error submitting proverb"
+  },
+  "recordings": {
+    "title": "Community Pronunciations",
+    "play": "Play",
+    "empty": "No recordings yet for this word. Be the first to record!"
+  },
+  "community": {
+    "likeAuth": "Sign in to like dictionary entries",
+    "commentsTitle": "Community Comments",
+    "noComments": "No comments yet. Be the first to comment!",
+    "yourName": "Your name",
+    "commentPlaceholder": "Add a comment, example, or note...",
+    "guestModeration": "Guest comments require admin approval",
+    "commentError": "Error submitting comment"
   }
 }
