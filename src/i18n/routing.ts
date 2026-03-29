@@ -4,7 +4,7 @@ export const routing = defineRouting({
   locales: ['he', 'en', 'ru'] as const,
   defaultLocale: 'he',
   localePrefix: 'always',
-  localeDetection: true,
+  localeDetection: false,
   localeCookie: {
     name: 'NEXT_LOCALE',
     sameSite: 'lax',
