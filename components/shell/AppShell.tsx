@@ -225,13 +225,13 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
   // Icon map for dynamic features
   const iconMap: Record<string, React.ReactNode> = {
-    BookOpen: <BookOpen size={16} />,
-    GraduationCap: <GraduationCap size={16} />,
-    ChefHat: <ChefHat size={16} />,
-    Store: <Store size={16} />,
-    Users: <TreeDeciduous size={16} />,
-    TreeDeciduous: <TreeDeciduous size={16} />,
-    Music: <Music size={16} />,
+    BookOpen: <BookOpen size={24} />,
+    GraduationCap: <GraduationCap size={24} />,
+    ChefHat: <ChefHat size={24} />,
+    Store: <Store size={24} />,
+    Users: <TreeDeciduous size={24} />,
+    TreeDeciduous: <TreeDeciduous size={24} />,
+    Music: <Music size={24} />,
   };
 
   // Derived
@@ -370,8 +370,8 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
         />
 
         {/* Header / Nav — single row */}
-        <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b ${isScrolled ? 'bg-[#050B14]/95 backdrop-blur-2xl border-white/10 shadow-lg py-1' : 'bg-transparent border-transparent py-3'}`}>
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 flex items-center gap-3">
+        <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 border-b ${isScrolled ? 'bg-[#050B14]/95 backdrop-blur-2xl border-white/10 shadow-lg' : 'bg-transparent border-transparent'}`}>
+          <div className={`max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center gap-3 transition-all duration-300 ${isScrolled ? 'h-12' : 'h-20'}`}>
 
             {/* Logo */}
             <Link href="/" className={`flex items-center gap-2.5 shrink-0 me-auto transition-all ${!isScrolled ? 'bg-[#0d1424]/60 backdrop-blur-md rounded-full ps-1 pe-3 py-1 border border-white/5' : ''}`}>
