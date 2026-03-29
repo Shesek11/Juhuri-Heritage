@@ -209,6 +209,7 @@
     "noDialect": "ללא ניב",
     "latinScript": "תעתיק לטיני:",
     "cyrillicScript": "תעתיק קירילי:",
+    "hebrewScript": "כתב עברי:",
     "pronunciation": "הגייה:",
     "playPronunciation": "השמע הגייה",
     "play": "השמע",
@@ -723,5 +724,16 @@
     "commentPlaceholder": "הוסף תגובה, דוגמה או הערה...",
     "guestModeration": "תגובות אורחים ממתינות לאישור מנהל",
     "commentError": "שגיאה בשליחת התגובה"
+  },
+  "voiceRecorder": {
+    "title": "הקלט את ההגייה שלך",
+    "yourName": "השם שלך",
+    "micPermission": "לא ניתן להקליט. יש לאשר גישה למיקרופון.",
+    "nameRequired": "יש להזין שם לפני העלאה",
+    "uploadError": "שגיאה בהעלאה",
+    "reRecord": "הקלט מחדש",
+    "upload": "העלה",
+    "recording": "מקליט...",
+    "guestModeration": "הקלטות אורחים ממתינות לאישור מנהל"
   }
 }

@@ -209,6 +209,7 @@
     "noDialect": "No dialect",
     "latinScript": "Latin script:",
     "cyrillicScript": "Cyrillic script:",
+    "hebrewScript": "Hebrew script:",
     "pronunciation": "Pronunciation:",
     "playPronunciation": "Play pronunciation",
     "play": "Play",
@@ -723,5 +724,16 @@
     "commentPlaceholder": "Add a comment, example, or note...",
     "guestModeration": "Guest comments require admin approval",
     "commentError": "Error submitting comment"
+  },
+  "voiceRecorder": {
+    "title": "Record your pronunciation",
+    "yourName": "Your name",
+    "micPermission": "Cannot record. Please allow microphone access.",
+    "nameRequired": "Please enter your name before uploading",
+    "uploadError": "Upload error",
+    "reRecord": "Re-record",
+    "upload": "Upload",
+    "recording": "Recording...",
+    "guestModeration": "Guest recordings require admin approval"
   }
 }

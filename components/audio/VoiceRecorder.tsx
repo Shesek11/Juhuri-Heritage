@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Mic, Square, Play, Pause, Upload, X, RotateCcw, CheckCircle } from 'lucide-react';
+import { useTranslations } from 'next-intl';
+import { Mic, Square, Play, Pause, Upload, RotateCcw, CheckCircle } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
 interface VoiceRecorderProps {
@@ -10,8 +11,9 @@ interface VoiceRecorderProps {
 
 const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ entryId, dialectId, onRecordingComplete }) => {
     const { user, isAuthenticated } = useAuth();
+    const t = useTranslations('voiceRecorder');
+    const tc = useTranslations('common');
     const [isRecording, setIsRecording] = useState(false);
-    const [isPaused, setIsPaused] = useState(false);
     const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
     const [audioUrl, setAudioUrl] = useState<string | null>(null);
     const [isPlaying, setIsPlaying] = useState(false);
@@ -36,34 +38,21 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ entryId, dialectId, onRec
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             const mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
-
             mediaRecorderRef.current = mediaRecorder;
             chunksRef.current = [];
-
-            mediaRecorder.ondataavailable = (e) => {
-                if (e.data.size > 0) {
-                    chunksRef.current.push(e.data);
-                }
-            };
-
+            mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) chunksRef.current.push(e.data); };
             mediaRecorder.onstop = () => {
                 const blob = new Blob(chunksRef.current, { type: 'audio/webm' });
                 setAudioBlob(blob);
                 setAudioUrl(URL.createObjectURL(blob));
                 stream.getTracks().forEach(track => track.stop());
             };
-
             mediaRecorder.start();
             setIsRecording(true);
             setRecordingTime(0);
-
-            timerRef.current = setInterval(() => {
-                setRecordingTime(prev => prev + 1);
-            }, 1000);
-
-        } catch (err) {
-            console.error('Failed to start recording:', err);
-            alert('לא ניתן להקליט. יש לאשר גישה למיקרופון.');
+            timerRef.current = setInterval(() => setRecordingTime(prev => prev + 1), 1000);
+        } catch {
+            alert(t('micPermission'));
         }
     };
 
@@ -71,21 +60,13 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ entryId, dialectId, onRec
         if (mediaRecorderRef.current && isRecording) {
             mediaRecorderRef.current.stop();
             setIsRecording(false);
-            if (timerRef.current) {
-                clearInterval(timerRef.current);
-                timerRef.current = null;
-            }
+            if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
         }
     };
 
     const togglePlayback = () => {
         if (!audioRef.current || !audioUrl) return;
-
-        if (isPlaying) {
-            audioRef.current.pause();
-        } else {
-            audioRef.current.play();
-        }
+        if (isPlaying) audioRef.current.pause(); else audioRef.current.play();
         setIsPlaying(!isPlaying);
     };
 
@@ -99,43 +80,27 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ entryId, dialectId, onRec
 
     const uploadRecording = async () => {
         if (!audioBlob) return;
-        if (!isAuthenticated && !guestName.trim()) {
-            alert('יש להזין שם לפני העלאה');
-            return;
-        }
-
+        if (!isAuthenticated && !guestName.trim()) { alert(t('nameRequired')); return; }
         setIsUploading(true);
         setUploadStatus(null);
-
         try {
             const formData = new FormData();
             formData.append('audio', audioBlob, 'recording.webm');
             formData.append('entryId', String(entryId));
             formData.append('duration', String(recordingTime));
             if (dialectId) formData.append('dialectId', String(dialectId));
-            if (!isAuthenticated) {
-                formData.append('guestName', guestName);
-            }
-
-            const response = await fetch('/api/recordings/upload', {
-                method: 'POST',
-                body: formData,
-                credentials: 'include',
-            });
-
+            if (!isAuthenticated) formData.append('guestName', guestName);
+            const response = await fetch('/api/recordings/upload', { method: 'POST', body: formData, credentials: 'include' });
             const data = await response.json();
-
             if (data.success) {
                 setUploadStatus({ success: true, message: data.message });
                 onRecordingComplete?.(data.fileUrl);
                 setTimeout(() => resetRecording(), 3000);
             } else {
-                setUploadStatus({ success: false, message: data.error || 'שגיאה בהעלאה' });
+                setUploadStatus({ success: false, message: data.error || t('uploadError') });
             }
-
-        } catch (err) {
-            console.error('Upload failed:', err);
-            setUploadStatus({ success: false, message: 'שגיאה בהעלאה' });
+        } catch {
+            setUploadStatus({ success: false, message: t('uploadError') });
         } finally {
             setIsUploading(false);
         }
@@ -152,75 +117,41 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ entryId, dialectId, onRec
             <div className="flex items-center justify-between">
                 <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
                     <Mic size={16} />
-                    הקלט את ההגייה שלך
+                    {t('title')}
                 </h4>
                 <span className="text-xs text-slate-400">{formatTime(recordingTime)}</span>
             </div>
 
-            {/* Guest Name Input */}
             {!isAuthenticated && !audioUrl && (
-                <input
-                    type="text"
-                    value={guestName}
-                    onChange={(e) => setGuestName(e.target.value)}
-                    placeholder="השם שלך"
-                    className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-200"
-                />
+                <input type="text" value={guestName} onChange={(e) => setGuestName(e.target.value)}
+                    placeholder={t('yourName')}
+                    className="w-full px-3 py-2 text-sm rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 text-slate-200" />
             )}
 
-            {/* Recording Controls */}
             <div className="flex items-center justify-center gap-3">
                 {!audioUrl ? (
-                    // Recording mode
-                    <button
-                        onClick={isRecording ? stopRecording : startRecording}
-                        className={`w-16 h-16 rounded-full flex items-center justify-center transition-all shadow-lg ${isRecording
-                            ? 'bg-red-500 hover:bg-red-600 animate-pulse'
-                            : 'bg-amber-500 hover:bg-amber-600'
-                            } text-white`}
-                    >
+                    <button type="button" onClick={isRecording ? stopRecording : startRecording}
+                        className={`w-16 h-16 rounded-full flex items-center justify-center transition-all shadow-lg ${isRecording ? 'bg-red-500 hover:bg-red-600 animate-pulse' : 'bg-amber-500 hover:bg-amber-600'} text-white`}>
                         {isRecording ? <Square size={24} /> : <Mic size={28} />}
                     </button>
                 ) : (
-                    // Playback mode
                     <>
-                        <button
-                            onClick={resetRecording}
-                            className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 flex items-center justify-center transition-colors"
-                            title="הקלט מחדש"
-                        >
+                        <button type="button" onClick={resetRecording} className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 flex items-center justify-center transition-colors" title={t('reRecord')}>
                             <RotateCcw size={18} className="text-slate-600 dark:text-slate-300" />
                         </button>
-
-                        <button
-                            onClick={togglePlayback}
-                            className="w-14 h-14 rounded-full bg-indigo-500 hover:bg-indigo-600 flex items-center justify-center transition-colors text-white shadow-lg"
-                        >
+                        <button type="button" onClick={togglePlayback} className="w-14 h-14 rounded-full bg-indigo-500 hover:bg-indigo-600 flex items-center justify-center transition-colors text-white shadow-lg">
                             {isPlaying ? <Pause size={24} /> : <Play size={24} className="ms-[-2px]" />}
                         </button>
-
-                        <button
-                            onClick={uploadRecording}
-                            disabled={isUploading || (!isAuthenticated && !guestName.trim())}
-                            className="w-10 h-10 rounded-full bg-green-500 hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition-colors text-white"
-                            title="העלה"
-                        >
-                            {isUploading ? (
-                                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                            ) : (
-                                <Upload size={18} />
-                            )}
+                        <button type="button" onClick={uploadRecording} disabled={isUploading || (!isAuthenticated && !guestName.trim())}
+                            className="w-10 h-10 rounded-full bg-green-500 hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center transition-colors text-white" title={t('upload')}>
+                            {isUploading ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Upload size={18} />}
                         </button>
                     </>
                 )}
             </div>
 
-            {/* Recording indicator */}
-            {isRecording && (
-                <p className="text-center text-sm text-red-500 animate-pulse">מקליט...</p>
-            )}
+            {isRecording && <p className="text-center text-sm text-red-500 animate-pulse">{t('recording')}</p>}
 
-            {/* Status message */}
             {uploadStatus && (
                 <div className={`flex items-center justify-center gap-2 text-sm ${uploadStatus.success ? 'text-green-600' : 'text-red-500'}`}>
                     {uploadStatus.success && <CheckCircle size={16} />}
@@ -228,21 +159,9 @@ const VoiceRecorder: React.FC<VoiceRecorderProps> = ({ entryId, dialectId, onRec
                 </div>
             )}
 
-            {/* Hidden audio element */}
-            {audioUrl && (
-                <audio
-                    ref={audioRef}
-                    src={audioUrl}
-                    onEnded={() => setIsPlaying(false)}
-                    className="hidden"
-                />
-            )}
+            {audioUrl && <audio ref={audioRef} src={audioUrl} onEnded={() => setIsPlaying(false)} className="hidden" />}
 
-            {!isAuthenticated && (
-                <p className="text-xs text-slate-300 text-center">
-                    הקלטות אורחים ממתינות לאישור מנהל
-                </p>
-            )}
+            {!isAuthenticated && <p className="text-xs text-slate-300 text-center">{t('guestModeration')}</p>}
         </div>
     );
 };

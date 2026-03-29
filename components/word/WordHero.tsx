@@ -229,73 +229,27 @@ const WordHero: React.FC<WordHeroProps> = ({
           <span className="text-xs text-slate-300">{t('attribution', { source: (entry as any).sourceName || (entry as any).contributorName || 'הקהילה' })}</span>
         )}
 
-        {/* Term - Hebrew script is primary */}
-        {/^[\u0590-\u05FF]/.test(entry.hebrewScript) ? (
-          <h1 className="text-5xl md:text-6xl font-bold tracking-tight leading-tight">{entry.hebrewScript}</h1>
-        ) : (
-          <div>
-            <EditableField
-              entryId={entry.id}
-              fieldName="hebrewTransliteration"
-              aiValue={enrichedHebrewTransliteration}
-              isEnriching={enrichmentLoading && !enrichedHebrewTransliteration}
-              latinHint={entry.dialectScripts?.[0]?.latinScript}
-              compact
-              valueClassName="text-5xl md:text-6xl font-bold tracking-tight leading-tight"
-            />
-            {entry.hebrewScript && (
-              <h1 className="text-4xl md:text-5xl font-bold tracking-tight leading-tight font-serif text-slate-200 mt-2" dir="ltr">
-                {entry.hebrewScript}
-              </h1>
-            )}
-          </div>
-        )}
+        {/* Primary term — locale's script as big heading */}
+        {(() => {
+          const latin = entry.dialectScripts?.[0]?.latinScript;
+          const cyrillic = entry.dialectScripts?.[0]?.cyrillicScript;
+          const hebrew = entry.hebrewScript;
 
-        {/* Subtitle: transliterations ordered by locale */}
-        <div className="flex items-center gap-3 text-base text-indigo-200 flex-wrap">
-          {/* Latin always shown */}
-          {(locale === 'en' || locale === 'he') && (
-            <span className="flex items-center gap-1.5">
-              <span className="text-slate-300 text-xs">{t('latinScript')}</span>
-              <EditableField
-                entryId={entry.id}
-                fieldName="latinScript"
-                dbValue={entry.dialectScripts?.[0]?.latinScript || undefined}
-                compact
-                valueClassName="font-mono text-indigo-200"
-              />
-            </span>
-          )}
-          {/* Cyrillic — show for en (second) and ru (first) */}
-          {entry.dialectScripts?.[0]?.cyrillicScript && (locale === 'ru' || locale === 'en') && (
-            <span className="flex items-center gap-1.5">
-              <span className="text-slate-300 text-xs">{t('cyrillicScript')}</span>
-              <span className="font-serif" dir="ltr">{entry.dialectScripts[0].cyrillicScript}</span>
-            </span>
-          )}
-          {/* For ru: also show Latin after Cyrillic */}
-          {locale === 'ru' && (
-            <span className="flex items-center gap-1.5">
-              <span className="text-slate-300 text-xs">{t('latinScript')}</span>
-              <EditableField
-                entryId={entry.id}
-                fieldName="latinScript"
-                dbValue={entry.dialectScripts?.[0]?.latinScript || undefined}
-                compact
-                valueClassName="font-mono text-indigo-200"
-              />
-            </span>
-          )}
-          {/* For he: also show Cyrillic after Latin */}
-          {locale === 'he' && entry.dialectScripts?.[0]?.cyrillicScript && (
-            <span className="flex items-center gap-1.5">
-              <span className="text-slate-300 text-xs">{t('cyrillicScript')}</span>
-              <span className="font-serif" dir="ltr">{entry.dialectScripts[0].cyrillicScript}</span>
-            </span>
-          )}
-        </div>
+          // Pick the primary display term based on locale
+          const primaryTerm = locale === 'ru'
+            ? (cyrillic || latin || hebrew)
+            : locale === 'en'
+            ? (latin || hebrew || cyrillic)
+            : hebrew; // he default
 
-        {/* Pronunciation */}
+          return (
+            <h1 className="text-5xl md:text-6xl font-bold tracking-tight leading-tight" dir="auto">
+              {primaryTerm}
+            </h1>
+          );
+        })()}
+
+        {/* Pronunciation guide — right below term */}
         <div className="flex items-center gap-1.5">
           <span className="text-slate-300 text-xs">{t('pronunciation')}</span>
           <EditableField
@@ -311,6 +265,53 @@ const WordHero: React.FC<WordHeroProps> = ({
             onStartEdit={() => setEditingPronunciation(true)}
             onCloseEdit={() => setEditingPronunciation(false)}
           />
+        </div>
+
+        {/* Transliterations — ordered by locale */}
+        <div className="space-y-1">
+          {/* he: Latin → Cyrillic → Hebrew(skip, it's primary) */}
+          {/* en: Cyrillic → Hebrew */}
+          {/* ru: Latin → Hebrew */}
+          {locale === 'he' && (
+            <>
+              <div className="flex items-center gap-1.5 text-base text-indigo-200">
+                <span className="text-slate-300 text-xs">{t('latinScript')}</span>
+                <EditableField entryId={entry.id} fieldName="latinScript" dbValue={entry.dialectScripts?.[0]?.latinScript || undefined} compact valueClassName="font-mono text-indigo-200" />
+              </div>
+              {entry.dialectScripts?.[0]?.cyrillicScript && (
+                <div className="flex items-center gap-1.5 text-base text-indigo-200">
+                  <span className="text-slate-300 text-xs">{t('cyrillicScript')}</span>
+                  <span className="font-serif" dir="ltr">{entry.dialectScripts[0].cyrillicScript}</span>
+                </div>
+              )}
+            </>
+          )}
+          {locale === 'en' && (
+            <>
+              {entry.dialectScripts?.[0]?.cyrillicScript && (
+                <div className="flex items-center gap-1.5 text-base text-indigo-200">
+                  <span className="text-slate-300 text-xs">{t('cyrillicScript')}</span>
+                  <span className="font-serif" dir="ltr">{entry.dialectScripts[0].cyrillicScript}</span>
+                </div>
+              )}
+              <div className="flex items-center gap-1.5 text-base text-indigo-200">
+                <span className="text-slate-300 text-xs">{t('hebrewScript')}</span>
+                <span dir="rtl">{entry.hebrewScript}</span>
+              </div>
+            </>
+          )}
+          {locale === 'ru' && (
+            <>
+              <div className="flex items-center gap-1.5 text-base text-indigo-200">
+                <span className="text-slate-300 text-xs">{t('latinScript')}</span>
+                <EditableField entryId={entry.id} fieldName="latinScript" dbValue={entry.dialectScripts?.[0]?.latinScript || undefined} compact valueClassName="font-mono text-indigo-200" />
+              </div>
+              <div className="flex items-center gap-1.5 text-base text-indigo-200">
+                <span className="text-slate-300 text-xs">{t('hebrewScript')}</span>
+                <span dir="rtl">{entry.hebrewScript}</span>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Action buttons row */}
