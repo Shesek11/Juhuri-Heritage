@@ -6,6 +6,38 @@ const { body, query: queryParam, param, validationResult } = require('express-va
 const { normalizeHebrewScript } = require('../utils/normalization');
 const { logEvent, getClientIp } = require('../utils/logEvent');
 
+// Extract Hebrew stem by stripping common prefixes/suffixes
+// e.g. "הצלחה" → "צלח", "להצליח" → "צליח", "מצליח" → "צליח"
+function extractHebrewStems(term) {
+    if (!term || term.length < 3) return [];
+    const stems = new Set();
+    const prefixes = ['הת', 'שה', 'וה', 'לה', 'מה', 'בה', 'כה', 'שמ', 'של', 'וב', 'ול', 'ומ', 'וש', 'שב', 'ה', 'ל', 'מ', 'ב', 'כ', 'ו', 'ש'];
+    const suffixes = ['ות', 'ים', 'ון', 'ית', 'ת', 'ה', 'י', 'ן', 'ם'];
+
+    const variants = [term];
+    // Strip prefixes
+    for (const p of prefixes) {
+        if (term.startsWith(p) && term.length - p.length >= 2) {
+            variants.push(term.slice(p.length));
+        }
+    }
+    // For each variant, also strip suffixes
+    for (const v of [...variants]) {
+        for (const s of suffixes) {
+            if (v.endsWith(s) && v.length - s.length >= 2) {
+                variants.push(v.slice(0, -s.length));
+            }
+        }
+    }
+    // Only keep stems that are 2+ chars and different from original
+    for (const v of variants) {
+        if (v.length >= 2 && v !== term) {
+            stems.add(v);
+        }
+    }
+    return [...stems];
+}
+
 // Validation middleware helper
 const validate = (req, res, next) => {
     const errors = validationResult(req);
@@ -34,8 +66,8 @@ router.get('/search', [
              LEFT JOIN dialect_scripts t ON de.id = t.entry_id
              WHERE de.status = 'active'
                AND (de.hebrew_script LIKE ?
-                    OR MATCH(t.hebrew_script) AGAINST(? IN BOOLEAN MODE)
-                    OR t.hebrew_script LIKE ?
+                    OR MATCH(de.hebrew_script) AGAINST(? IN BOOLEAN MODE)
+                    OR de.hebrew_script LIKE ?
                     OR t.latin_script LIKE ?
                     OR t.cyrillic_script LIKE ?
                     OR de.russian_short LIKE ?)
@@ -43,11 +75,11 @@ router.get('/search', [
              ORDER BY
                 CASE
                   WHEN de.hebrew_script = ? THEN 0
-                  WHEN t.hebrew_script = ? THEN 1
+                  WHEN de.hebrew_script = ? THEN 1
                   WHEN t.latin_script = ? THEN 1
                   WHEN t.cyrillic_script = ? THEN 1
                   WHEN de.hebrew_script LIKE ? THEN 2
-                  WHEN t.hebrew_script LIKE ? THEN 3
+                  WHEN de.hebrew_script LIKE ? THEN 3
                   ELSE 4
                 END,
                 community_score DESC,
@@ -56,6 +88,32 @@ router.get('/search', [
             [`%${term}%`, `${term}*`, `%${term}%`, `%${term}%`, `%${term}%`, `%${term}%`,
              term, term, term, term, `${term}%`, `${term}%`]
         );
+
+        if (entries.length === 0) {
+            // Try stem-based search: strip Hebrew prefixes/suffixes and search again
+            const stems = extractHebrewStems(term);
+            if (stems.length > 0) {
+                const stemConditions = stems.map(() => 'de.hebrew_script LIKE ?').join(' OR ');
+                const stemParams = stems.map(s => `%${s}%`);
+                const [stemEntries] = await db.query(
+                    `SELECT de.*, u.name as contributor_name, a.name as approver_name,
+                            SUM(COALESCE(t.upvotes, 0)) - SUM(COALESCE(t.downvotes, 0)) as community_score
+                     FROM dictionary_entries de
+                     LEFT JOIN users u ON de.contributor_id = u.id
+                     LEFT JOIN users a ON de.approved_by = a.id
+                     LEFT JOIN dialect_scripts t ON de.id = t.entry_id
+                     WHERE de.status = 'active'
+                       AND (${stemConditions})
+                     GROUP BY de.id
+                     ORDER BY CHAR_LENGTH(de.hebrew_script), community_score DESC
+                     LIMIT 10`,
+                    stemParams
+                );
+                if (stemEntries.length > 0) {
+                    entries.push(...stemEntries);
+                }
+            }
+        }
 
         if (entries.length === 0) {
             return res.json({ found: false, entry: null });
@@ -280,7 +338,7 @@ router.get('/entry/:term', async (req, res) => {
             ),
             db.query(
                 `SELECT rw.relation_type, de.id, de.hebrew_script, de.part_of_speech,
-                        (SELECT t.hebrew_script FROM dialect_scripts t WHERE t.entry_id = de.id LIMIT 1) as dialect_hebrew_script
+                        de.hebrew_script as dialect_hebrew_script
                  FROM related_words rw
                  JOIN dictionary_entries de ON de.id = rw.related_entry_id
                  WHERE rw.entry_id = ? AND de.status = 'active'
@@ -293,7 +351,7 @@ router.get('/entry/:term', async (req, res) => {
             entry.hebrew_script_normalized
                 ? db.query(
                     `SELECT de.id, de.hebrew_script,
-                            (SELECT t.hebrew_script FROM dialect_scripts t WHERE t.entry_id = de.id LIMIT 1) as dialect_hebrew_script,
+                            de.hebrew_script as dialect_hebrew_script,
                             (SELECT t.latin_script FROM dialect_scripts t WHERE t.entry_id = de.id LIMIT 1) as latin_script
                      FROM dictionary_entries de
                      WHERE de.hebrew_script_normalized = ? AND de.id != ? AND de.status = 'active'
@@ -402,7 +460,7 @@ router.get('/word-of-day', async (req, res) => {
         const [[{ total }]] = await db.query(
             `SELECT COUNT(*) as total FROM dictionary_entries de
              JOIN dialect_scripts t ON de.id = t.entry_id
-             WHERE de.status = 'active' AND t.hebrew_script IS NOT NULL AND TRIM(t.hebrew_script) != ''`
+             WHERE de.status = 'active' AND de.hebrew_script IS NOT NULL AND TRIM(de.hebrew_script) != ''`
         );
 
         if (total === 0) {
@@ -418,12 +476,13 @@ router.get('/word-of-day', async (req, res) => {
         // Get the word at that offset
         const [entries] = await db.query(
             `SELECT de.id, de.hebrew_script, de.detected_language,
-                    t.hebrew_script as dialect_hebrew_script, t.latin_script, t.cyrillic_script,
+                    de.hebrew_short, de.english_short, de.russian_short,
+                    de.hebrew_script as dialect_hebrew_script, t.latin_script, t.cyrillic_script,
                     t.pronunciation_guide, COALESCE(d.name, '') as dialect
              FROM dictionary_entries de
              JOIN dialect_scripts t ON de.id = t.entry_id
              LEFT JOIN dialects d ON t.dialect_id = d.id
-             WHERE de.status = 'active' AND t.hebrew_script IS NOT NULL AND t.hebrew_script != ''
+             WHERE de.status = 'active' AND de.hebrew_script IS NOT NULL AND de.hebrew_script != ''
              ORDER BY de.id
              LIMIT 1 OFFSET ?`,
             [offset]
@@ -439,6 +498,9 @@ router.get('/word-of-day', async (req, res) => {
                 id: entry.id,
                 hebrewScript: entry.hebrew_script,
                 detectedLanguage: entry.detected_language,
+                hebrewShort: entry.hebrew_short || null,
+                englishShort: entry.english_short || null,
+                russianShort: entry.russian_short || null,
                 pronunciationGuide: entry.pronunciation_guide,
                 dialectScripts: [{
                     dialect: entry.dialect,
@@ -461,7 +523,8 @@ router.get('/recent', async (req, res) => {
 
         const [rows] = await db.query(
             `SELECT de.id, de.hebrew_script, de.detected_language, de.created_at,
-                    t.hebrew_script as t_hebrew_script, t.latin_script
+                    de.hebrew_short, de.english_short, de.russian_short,
+                    de.hebrew_script as t_hebrew_script, t.latin_script, t.cyrillic_script
              FROM dictionary_entries de
              LEFT JOIN dialect_scripts t ON de.id = t.entry_id
              WHERE de.status = 'active'
@@ -473,11 +536,14 @@ router.get('/recent', async (req, res) => {
 
         const entries = rows.map(e => ({
             id: e.id,
-            hebrewScript: e.hebrew_script,
+            hebrewScript: e.hebrew_script || e.t_hebrew_script,
             detectedLanguage: e.detected_language,
             createdAt: e.created_at,
-            hebrewShort: e.t_hebrew_script,
-            latinScript: e.latin_script,
+            hebrewShort: e.hebrew_short || e.t_hebrew_script,
+            englishShort: e.english_short || null,
+            russianShort: e.russian_short || null,
+            latinScript: e.latin_script || null,
+            cyrillicScript: e.cyrillic_script || null,
         }));
 
         res.json({ entries });
@@ -526,8 +592,8 @@ router.get('/entries', authenticate, requireApprover, async (req, res) => {
         }
 
         if (search && search.trim()) {
-            conditions.push('(de.hebrew_script LIKE ? OR t_search.hebrew_script LIKE ?)');
-            params.push(`%${search.trim()}%`, `%${search.trim()}%`);
+            conditions.push('(de.hebrew_script LIKE ?)');
+            params.push(`%${search.trim()}%`);
         }
 
         const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
@@ -548,7 +614,7 @@ router.get('/entries', authenticate, requireApprover, async (req, res) => {
                     de.english_short, de.english_long,
                     de.part_of_speech, de.source, de.source_name, de.status, de.created_at,
                     u.name as contributor_name,
-                    t.id as trans_id, t.hebrew_script as dialect_hebrew_script, t.latin_script, t.cyrillic_script,
+                    t.id as trans_id, de.hebrew_script as dialect_hebrew_script, t.latin_script, t.cyrillic_script,
                     t.pronunciation_guide,
                     COALESCE(d.name, '') as dialect
              FROM dictionary_entries de
@@ -1284,7 +1350,7 @@ router.get('/stats', async (req, res) => {
                 SELECT COUNT(DISTINCT de.id) as count FROM dictionary_entries de
                 JOIN dialect_scripts t ON de.id = t.entry_id
                 WHERE de.status = 'active'
-                AND t.hebrew_script IS NOT NULL AND t.hebrew_script != ''
+                AND de.hebrew_script IS NOT NULL AND de.hebrew_script != ''
                 AND (t.latin_script IS NULL OR t.latin_script = '')
             `),
             db.query(`
@@ -1292,7 +1358,7 @@ router.get('/stats', async (req, res) => {
                 JOIN dialect_scripts t ON de.id = t.entry_id
                 WHERE de.status = 'active'
                 AND de.detected_language = 'Juhuri'
-                AND (t.hebrew_script IS NULL OR t.hebrew_script = '')
+                AND (de.hebrew_script IS NULL OR de.hebrew_script = '')
             `),
             db.query('SELECT COUNT(*) as dialectCount FROM dialects'),
             db.query(`SELECT COUNT(*) as count FROM dictionary_entries WHERE status = 'active'`),
@@ -1358,15 +1424,15 @@ router.get('/hebrew-only', async (req, res) => {
         const offset = parseInt(req.query.offset) || 0;
         const search = req.query.search?.trim();
 
-        const searchCondition = search ? 'AND (de.hebrew_script LIKE ? OR t.hebrew_script LIKE ?)' : '';
-        const searchParams = search ? [`%${search}%`, `%${search}%`] : [];
+        const searchCondition = search ? 'AND (de.hebrew_script LIKE ?)' : '';
+        const searchParams = search ? [`%${search}%`] : [];
 
         const [entries] = await db.query(`
-            SELECT de.id, de.hebrew_script, de.detected_language, t.hebrew_script as dialect_hebrew_script
+            SELECT de.id, de.hebrew_script, de.detected_language, de.hebrew_script as dialect_hebrew_script
             FROM dictionary_entries de
             JOIN dialect_scripts t ON de.id = t.entry_id
             WHERE de.status = 'active'
-            AND t.hebrew_script IS NOT NULL AND t.hebrew_script != ''
+            AND de.hebrew_script IS NOT NULL AND de.hebrew_script != ''
             AND (t.latin_script IS NULL OR t.latin_script = '')
             ${searchCondition}
             GROUP BY de.id
@@ -1378,7 +1444,7 @@ router.get('/hebrew-only', async (req, res) => {
             SELECT COUNT(DISTINCT de.id) as total FROM dictionary_entries de
             JOIN dialect_scripts t ON de.id = t.entry_id
             WHERE de.status = 'active'
-            AND t.hebrew_script IS NOT NULL AND t.hebrew_script != ''
+            AND de.hebrew_script IS NOT NULL AND de.hebrew_script != ''
             AND (t.latin_script IS NULL OR t.latin_script = '')
             ${searchCondition}
         `, searchParams);
@@ -1406,7 +1472,7 @@ router.get('/juhuri-only', async (req, res) => {
             JOIN dialect_scripts t ON de.id = t.entry_id
             WHERE de.status = 'active'
             AND de.detected_language = 'Juhuri'
-            AND (t.hebrew_script IS NULL OR t.hebrew_script = '')
+            AND (de.hebrew_script IS NULL OR de.hebrew_script = '')
             ${searchCondition}
             GROUP BY de.id
             ORDER BY de.created_at DESC
@@ -1418,7 +1484,7 @@ router.get('/juhuri-only', async (req, res) => {
             JOIN dialect_scripts t ON de.id = t.entry_id
             WHERE de.status = 'active'
             AND de.detected_language = 'Juhuri'
-            AND (t.hebrew_script IS NULL OR t.hebrew_script = '')
+            AND (de.hebrew_script IS NULL OR de.hebrew_script = '')
             ${searchCondition}
         `, searchParams);
 
@@ -1436,20 +1502,20 @@ router.get('/missing-audio', async (req, res) => {
         const offset = parseInt(req.query.offset) || 0;
         const search = req.query.search?.trim();
 
-        const searchCondition = search ? 'AND (de.hebrew_script LIKE ? OR t.hebrew_script LIKE ?)' : '';
-        const searchParams = search ? [`%${search}%`, `%${search}%`] : [];
+        const searchCondition = search ? 'AND (de.hebrew_script LIKE ?)' : '';
+        const searchParams = search ? [`%${search}%`] : [];
 
         // Only return entries that have a pronunciation_guide in dialect_scripts but no audio file path,
         // prioritizing entries with Hebrew translations (more useful to record)
         const [entries] = await db.query(`
-            SELECT de.id, de.hebrew_script, de.detected_language, t.hebrew_script as dialect_hebrew_script, t.latin_script
+            SELECT de.id, de.hebrew_script, de.detected_language, de.hebrew_script as dialect_hebrew_script, t.latin_script
             FROM dictionary_entries de
             LEFT JOIN dialect_scripts t ON de.id = t.entry_id
             WHERE de.status = 'active'
               AND (t.pronunciation_guide IS NOT NULL AND t.pronunciation_guide != '')
               ${searchCondition}
             GROUP BY de.id
-            ORDER BY CASE WHEN t.hebrew_script IS NOT NULL AND t.hebrew_script != '' THEN 0 ELSE 1 END, de.created_at DESC
+            ORDER BY CASE WHEN de.hebrew_script IS NOT NULL AND de.hebrew_script != '' THEN 0 ELSE 1 END, de.created_at DESC
             LIMIT ? OFFSET ?
         `, [...searchParams, limit, offset]);
 
@@ -1466,6 +1532,149 @@ router.get('/missing-audio', async (req, res) => {
     } catch (err) {
         console.error('Missing audio error:', err);
         res.status(500).json({ error: 'שגיאה בטעינת מילים' });
+    }
+});
+
+// field_sources uses camelCase field names: latinScript, cyrillicScript, hebrewShort, etc.
+const SCRIPT_TO_FS_FIELD = { hebrew: 'hebrewScript', latin: 'latinScript', cyrillic: 'cyrillicScript' };
+const LANG_TO_FS_FIELD = { he: 'hebrewShort', en: 'englishShort', ru: 'russianShort' };
+
+// GET /api/dictionary/missing-script - Entries missing or AI-sourced for a specific script
+router.get('/missing-script', async (req, res) => {
+    try {
+        const type = req.query.type; // hebrew, latin, cyrillic
+        if (!['hebrew', 'latin', 'cyrillic'].includes(type)) {
+            return res.status(400).json({ error: 'Invalid type. Use: hebrew, latin, cyrillic' });
+        }
+
+        const limit = parseInt(req.query.limit) || 20;
+        const offset = parseInt(req.query.offset) || 0;
+        const search = req.query.search?.trim();
+
+        const scriptCol = `${type}_script`;
+        const scriptTbl = type === 'hebrew' ? 'de' : 't';
+        const fsField = SCRIPT_TO_FS_FIELD[type];
+        const otherScripts = ['hebrew', 'latin', 'cyrillic'].filter(s => s !== type);
+        const hasOtherCondition = otherScripts.map(s => {
+            const tbl = s === 'hebrew' ? 'de' : 't';
+            return `(${tbl}.${s}_script IS NOT NULL AND ${tbl}.${s}_script != '')`;
+        }).join(' OR ');
+
+        const searchCondition = search ? 'AND (de.hebrew_script LIKE ? OR t.latin_script LIKE ?)' : '';
+        const searchParams = search ? [`%${search}%`, `%${search}%`] : [];
+
+        // Include entries where the field is empty OR was AI-generated
+        const [entries] = await db.query(`
+            SELECT de.id, de.hebrew_script, de.detected_language,
+                   de.hebrew_script as dialect_hebrew_script, t.latin_script, t.cyrillic_script,
+                   fs.source_type as ai_source
+            FROM dictionary_entries de
+            JOIN dialect_scripts t ON de.id = t.entry_id
+            LEFT JOIN field_sources fs ON fs.entry_id = de.id AND fs.field_name = ? AND fs.source_type = 'ai'
+            WHERE de.status = 'active'
+            AND (
+                (${scriptTbl}.${scriptCol} IS NULL OR ${scriptTbl}.${scriptCol} = '')
+                OR fs.id IS NOT NULL
+            )
+            AND (${hasOtherCondition})
+            ${searchCondition}
+            GROUP BY de.id
+            ORDER BY CASE WHEN fs.id IS NOT NULL AND ${scriptTbl}.${scriptCol} IS NOT NULL AND ${scriptTbl}.${scriptCol} != '' THEN 1 ELSE 0 END,
+                     de.created_at DESC
+            LIMIT ? OFFSET ?
+        `, [fsField, ...searchParams, limit, offset]);
+
+        const [[{ total }]] = await db.query(`
+            SELECT COUNT(DISTINCT de.id) as total FROM dictionary_entries de
+            JOIN dialect_scripts t ON de.id = t.entry_id
+            LEFT JOIN field_sources fs ON fs.entry_id = de.id AND fs.field_name = ? AND fs.source_type = 'ai'
+            WHERE de.status = 'active'
+            AND (
+                (${scriptTbl}.${scriptCol} IS NULL OR ${scriptTbl}.${scriptCol} = '')
+                OR fs.id IS NOT NULL
+            )
+            AND (${hasOtherCondition})
+            ${searchCondition}
+        `, [fsField, ...searchParams]);
+
+        const mapped = entries.map(e => ({
+            id: e.id,
+            term: e.dialect_hebrew_script || e.latin_script || e.cyrillic_script || e.hebrew_script || '',
+            hebrew: e.dialect_hebrew_script || null,
+            latin: e.latin_script || null,
+            cyrillic: e.cyrillic_script || null,
+            isAi: !!e.ai_source,
+        }));
+
+        res.json({ entries: mapped, total });
+    } catch (err) {
+        console.error('Missing script error:', err);
+        res.status(500).json({ error: 'Error loading entries' });
+    }
+});
+
+// GET /api/dictionary/missing-meaning - Entries missing or AI-sourced translation
+router.get('/missing-meaning', async (req, res) => {
+    try {
+        const lang = req.query.lang; // he, en, ru
+        const langToCol = { he: 'hebrew_short', en: 'english_short', ru: 'russian_short' };
+        if (!langToCol[lang]) {
+            return res.status(400).json({ error: 'Invalid lang. Use: he, en, ru' });
+        }
+
+        const limit = parseInt(req.query.limit) || 20;
+        const offset = parseInt(req.query.offset) || 0;
+        const search = req.query.search?.trim();
+
+        const col = langToCol[lang];
+        const fsField = LANG_TO_FS_FIELD[lang];
+        const searchCondition = search ? 'AND (de.hebrew_script LIKE ? OR t.latin_script LIKE ?)' : '';
+        const searchParams = search ? [`%${search}%`, `%${search}%`] : [];
+
+        const [entries] = await db.query(`
+            SELECT de.id, de.hebrew_script, de.detected_language,
+                   de.hebrew_script as dialect_hebrew_script, t.latin_script, t.cyrillic_script,
+                   fs.source_type as ai_source
+            FROM dictionary_entries de
+            LEFT JOIN dialect_scripts t ON de.id = t.entry_id
+            LEFT JOIN field_sources fs ON fs.entry_id = de.id AND fs.field_name = ? AND fs.source_type = 'ai'
+            WHERE de.status = 'active'
+            AND (
+                (de.${col} IS NULL OR de.${col} = '')
+                OR fs.id IS NOT NULL
+            )
+            ${searchCondition}
+            GROUP BY de.id
+            ORDER BY CASE WHEN fs.id IS NOT NULL AND de.${col} IS NOT NULL AND de.${col} != '' THEN 1 ELSE 0 END,
+                     de.created_at DESC
+            LIMIT ? OFFSET ?
+        `, [fsField, ...searchParams, limit, offset]);
+
+        const [[{ total }]] = await db.query(`
+            SELECT COUNT(DISTINCT de.id) as total FROM dictionary_entries de
+            LEFT JOIN dialect_scripts t ON de.id = t.entry_id
+            LEFT JOIN field_sources fs ON fs.entry_id = de.id AND fs.field_name = ? AND fs.source_type = 'ai'
+            WHERE de.status = 'active'
+            AND (
+                (de.${col} IS NULL OR de.${col} = '')
+                OR fs.id IS NOT NULL
+            )
+            ${searchCondition}
+        `, [fsField, ...searchParams]);
+
+        const mapped = entries.map(e => ({
+            id: e.id,
+            term: e.dialect_hebrew_script || e.latin_script || e.cyrillic_script || e.hebrew_script || '',
+            hebrew: e.dialect_hebrew_script || null,
+            latin: e.latin_script || null,
+            cyrillic: e.cyrillic_script || null,
+            isAi: !!e.ai_source,
+        }));
+
+        res.json({ entries: mapped, total });
+    } catch (err) {
+        console.error('Missing meaning error:', err);
+        res.status(500).json({ error: 'Error loading entries' });
     }
 });
 
@@ -1488,7 +1697,7 @@ router.get('/ai-fields', async (req, res) => {
         const [entries] = await db.query(
             `SELECT de.id, de.hebrew_script,
                     GROUP_CONCAT(DISTINCT fs.field_name ORDER BY fs.field_name SEPARATOR ', ') as ai_fields,
-                    t.hebrew_script as dialect_hebrew_script, t.latin_script, t.cyrillic_script, t.pronunciation_guide
+                    de.hebrew_script as dialect_hebrew_script, t.latin_script, t.cyrillic_script, t.pronunciation_guide
              FROM field_sources fs
              JOIN dictionary_entries de ON fs.entry_id = de.id
              LEFT JOIN dialect_scripts t ON de.id = t.entry_id
@@ -1995,10 +2204,14 @@ router.get('/similar', async (req, res) => {
         if (!term) return res.json({ suggestions: [] });
         const limit = Math.min(parseInt(req.query.limit) || 5, 10);
 
-        // Search by SOUNDEX, substring match, and partial overlap
+        // Search by SOUNDEX, substring match, partial overlap, and Hebrew stems
+        const stems = extractHebrewStems(term);
+        const stemConditions = stems.map(() => 'de.hebrew_script LIKE CONCAT(\'%\', ?, \'%\')').join(' OR ');
+        const stemParams = stems.length > 0 ? stems : [];
+
         const [results] = await db.query(
             `SELECT DISTINCT de.id, de.hebrew_script, de.part_of_speech,
-                    (SELECT t.hebrew_script FROM dialect_scripts t WHERE t.entry_id = de.id LIMIT 1) as dialect_hebrew_script,
+                    de.hebrew_script as dialect_hebrew_script,
                     (SELECT t.latin_script FROM dialect_scripts t WHERE t.entry_id = de.id AND t.latin_script IS NOT NULL LIMIT 1) as latin_script,
                     CASE
                       WHEN SOUNDEX(de.hebrew_script) = SOUNDEX(?) THEN 1
@@ -2010,14 +2223,15 @@ router.get('/similar', async (req, res) => {
              WHERE de.status = 'active'
                AND de.hebrew_script != ?
                AND (SOUNDEX(de.hebrew_script) = SOUNDEX(?)
-                    OR SOUNDEX(t.hebrew_script) = SOUNDEX(?)
+                    OR SOUNDEX(de.hebrew_script) = SOUNDEX(?)
                     OR de.hebrew_script LIKE CONCAT('%', ?, '%')
-                    OR t.hebrew_script LIKE CONCAT('%', ?, '%')
-                    OR t.latin_script LIKE CONCAT('%', ?, '%'))
+                    OR de.hebrew_script LIKE CONCAT('%', ?, '%')
+                    OR t.latin_script LIKE CONCAT('%', ?, '%')
+                    ${stemConditions ? `OR ${stemConditions}` : ''})
              GROUP BY de.id
              ORDER BY match_rank, de.hebrew_script
              LIMIT ?`,
-            [term, term, term, term, term, term, term, term, limit]
+            [term, term, term, term, term, term, term, term, ...stemParams, limit]
         );
 
         res.json({
@@ -2239,7 +2453,7 @@ router.get('/duplicates', authenticate, requireApprover, async (req, res) => {
 
         const [entries] = await db.query(
             `SELECT de.id, de.hebrew_script, de.hebrew_script_normalized, de.part_of_speech, de.source_name, de.source, de.created_at,
-                    (SELECT JSON_ARRAYAGG(JSON_OBJECT('hebrewScript', t.hebrew_script, 'latinScript', t.latin_script, 'cyrillicScript', t.cyrillic_script, 'dialect', COALESCE(d.name, '')))
+                    (SELECT JSON_ARRAYAGG(JSON_OBJECT('hebrewScript', de.hebrew_script, 'latinScript', t.latin_script, 'cyrillicScript', t.cyrillic_script, 'dialect', COALESCE(d.name, '')))
                      FROM dialect_scripts t LEFT JOIN dialects d ON t.dialect_id = d.id WHERE t.entry_id = de.id) as translations_json
              FROM dictionary_entries de
              WHERE de.id IN (${allIds.map(() => '?').join(',')})`,
@@ -2607,8 +2821,8 @@ router.get('/duplicates/suggestions', authenticate, requireApprover, async (req,
         const [suggestions] = await db.query(
             `SELECT ms.*,
                     a.hebrew_script as term_a, b.hebrew_script as term_b,
-                    (SELECT t.hebrew_script FROM dialect_scripts t WHERE t.entry_id = ms.entry_id_a LIMIT 1) as hebrew_a,
-                    (SELECT t.hebrew_script FROM dialect_scripts t WHERE t.entry_id = ms.entry_id_b LIMIT 1) as hebrew_b,
+                    a.hebrew_script as hebrew_a,
+                    b.hebrew_script as hebrew_b,
                     (SELECT t.latin_script FROM dialect_scripts t WHERE t.entry_id = ms.entry_id_a LIMIT 1) as latin_a,
                     (SELECT t.latin_script FROM dialect_scripts t WHERE t.entry_id = ms.entry_id_b LIMIT 1) as latin_b
              FROM merge_suggestions ms

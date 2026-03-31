@@ -32,7 +32,7 @@ interface DictionaryPageProps {
   onOpenContribute: () => void;
   onOpenAuthModal: (reason?: string) => void;
   onOpenTranslationModal: (entry: { id: number; term: string; existingTranslation?: any }) => void;
-  onOpenWordListModal: (category: 'hebrew-only' | 'juhuri-only' | 'missing-dialects' | 'missing-audio', title: string, totalCount: number, featuredTerm?: string) => void;
+  onOpenWordListModal: (category: import('./shell/AppContext').ContributionCategory, title: string, totalCount: number, featuredTerm?: string) => void;
 }
 
 const DictionaryPage: React.FC<DictionaryPageProps> = ({
@@ -58,6 +58,7 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({
   const [loading, setLoading] = useState(false);
   const [loadingMessage, setLoadingMessage] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [notFound, setNotFound] = useState(false);
   const [history, setHistory] = useState<HistoryItem[]>([]);
   const [isRecording, setIsRecording] = useState(false);
   const [enrichmentData, setEnrichmentData] = useState<EnrichmentData | null>(null);
@@ -123,6 +124,7 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({
     if (!searchTerm.trim()) return;
     setLoading(true);
     setError(null);
+    setNotFound(false);
     setAdditionalResults([]);
     setEnrichmentData(null);
     setEnrichmentLoading(false);
@@ -150,6 +152,7 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({
       router.push(`/dictionary?q=${encodeURIComponent(searchTerm)}`, { scroll: false });
     } catch (err: any) {
       if (err?.message === 'NOT_FOUND') {
+        setNotFound(true);
         setError(t('notFoundMessage', { term: searchTerm }));
         // Fetch fuzzy suggestions
         setFuzzySuggestions([]);
@@ -303,8 +306,8 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({
           </div>
         )}
 
-        {/* Error Message — only show red banner for actual errors, not "not found" */}
-        {error && error !== t('notFoundMessage', { term: query }) && (
+        {/* Error Message — only show red banner for actual network/server errors, not "not found" */}
+        {error && !notFound && (
           <div className="bg-red-500/80 backdrop-blur text-white p-3 rounded-xl text-center animate-in fade-in slide-in-from-top-2 mt-4 mx-auto max-w-lg shadow-lg">
             {error}
           </div>
@@ -358,10 +361,10 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({
 
             {/* Content: Word of Day + Recent Additions */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4 animate-in slide-in-from-bottom-6 duration-700 delay-150">
-              <div className="h-64 md:h-72">
+              <div className="min-h-64 md:min-h-72">
                 <WordOfTheDay onSelectWord={(term) => { setQuery(term); handleSearch(undefined, term); }} />
               </div>
-              <div className="h-64 md:h-72">
+              <div className="min-h-64 md:min-h-72 max-h-96">
                 <RecentAdditions onSelectWord={(_term, id) => {
                   router.push(`/word/${id}`);
                 }} />
