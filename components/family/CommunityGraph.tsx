@@ -1255,51 +1255,43 @@ export const CommunityGraph: React.FC = () => {
                 return;
             }
 
-            // Ctrl+Click: focus on this person's lineage
-            if (event.ctrlKey || event.metaKey) {
-                if (!d.isJunction) {
-                    setFocalPersonId(d.id);
-                }
+            // Click: show tooltip with action buttons (works on mobile too)
+            if (d.isJunction) return;
+            const member = allMembers.find(m => m.id === d.id);
+            if (!member) return;
+
+            // Calculate tooltip position
+            const svgEl = svgRef.current!;
+            const svgRect = svgEl.getBoundingClientRect();
+            const t = zoomRef.current ? zoomTransform(svgEl) : { applyX: (v: number) => v, applyY: (v: number) => v };
+            const screenX = svgRect.left + t.applyX(d.x ?? 0);
+            const circleTop = svgRect.top + t.applyY(d.y ?? 0) - 35;
+            const circleBottom = svgRect.top + t.applyY(d.y ?? 0) + 30;
+            const flipped = circleTop < 220;
+
+            // Toggle: if clicking same node, hide tooltip
+            if (tooltip.visible && tooltip.member?.id === member.id) {
+                setTooltip(prev => ({ ...prev, visible: false }));
                 return;
             }
 
-            // Normal click - open edit modal
-            const member = allMembers.find(m => m.id === d.id);
-            if (member) {
-                setSelectedMember(member);
-                setIsEditModalOpen(true);
-            }
+            if (tooltipHideRef.current) clearTimeout(tooltipHideRef.current);
+            setTooltip({
+                visible: true,
+                x: screenX,
+                y: flipped ? circleBottom : circleTop,
+                flipped,
+                member
+            });
         });
 
-        // Hover effects with tooltip
+        // Hover effects (visual only — tooltip is click-based)
         node.on('mouseenter', function (event, d: GraphNode) {
             // Enlarge circle
             select(this).select('circle')
                 .transition()
                 .duration(200)
                 .attr('r', 30);
-
-            // Show tooltip using screen coordinates (fixed positioning)
-            const member = allMembers.find(m => m.id === d.id);
-            if (member && svgRef.current) {
-                const svgEl = svgRef.current;
-                const t = zoomTransform(svgEl);
-                const svgRect = svgEl.getBoundingClientRect();
-                // Node coords in SVG space → screen space
-                const screenX = svgRect.left + t.applyX(d.x ?? 0);
-                const circleTop = svgRect.top + t.applyY(d.y ?? 0) - 30;
-                const circleBottom = svgRect.top + t.applyY(d.y ?? 0) + 30;
-                // If not enough room above (~220px for tooltip), flip below
-                const flipped = circleTop < 220;
-                if (tooltipHideRef.current) clearTimeout(tooltipHideRef.current);
-                setTooltip({
-                    visible: true,
-                    x: screenX,
-                    y: flipped ? circleBottom : circleTop,
-                    flipped,
-                    member: member
-                });
-            }
 
             // Find and pulse first-degree relatives
             const firstDegreeRelatives: number[] = [];
@@ -1412,10 +1404,7 @@ export const CommunityGraph: React.FC = () => {
                 .duration(200)
                 .attr('r', 25);
 
-            // Hide tooltip with delay (allows hovering to tooltip buttons)
-            tooltipHideRef.current = setTimeout(() => {
-                setTooltip(prev => ({ ...prev, visible: false }));
-            }, 300);
+            // Tooltip is click-based now, not hidden on mouseleave
         });
 
         // Build node lookup for edge drawing (since we don't use forceLink)
@@ -1930,6 +1919,7 @@ export const CommunityGraph: React.FC = () => {
                     ref={svgRef}
                     width="100%"
                     height="100%"
+                    onClick={() => setTooltip(prev => ({ ...prev, visible: false }))}
                     style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', display: 'block', touchAction: 'none' }}
                 />
 
