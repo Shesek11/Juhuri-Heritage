@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
           END,
           ABS(CHAR_LENGTH(de.phonetic_key) - CHAR_LENGTH(?)) ASC,
           de.created_at DESC
-       LIMIT 30`,
+       LIMIT 100`,
       [
         `%${term}%`, `${term}*`, `%${term}%`, `%${term}%`, `%${term}%`, `%${term}%`, `%${term}%`,
         `%${phoneticTerm}%`,
@@ -105,6 +105,7 @@ export async function GET(request: NextRequest) {
       return { ...e, _dist: isExactText ? -2 : isExactMeaning ? -1 : dist };
     });
     rankedEntries.sort((a: any, b: any) => a._dist - b._dist);
+    rankedEntries.splice(30); // Keep top 30 after re-ranking
 
     // Get the best match
     const entry = rankedEntries[0];
