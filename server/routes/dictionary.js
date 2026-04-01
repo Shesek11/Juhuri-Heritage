@@ -679,10 +679,13 @@ router.post('/entries', optionalAuth, [
         .isLength({ max: 500 }).withMessage('התרגום ארוך מדי'),
     body('notes').optional().trim().isLength({ max: 1000 }),
     body('dialect').optional().trim().isLength({ max: 50 }),
+    body('hebrewShort').optional().trim().isLength({ max: 500 }),
+    body('latinScript').optional().trim().isLength({ max: 200 }),
+    body('cyrillicScript').optional().trim().isLength({ max: 200 }),
     validate
 ], async (req, res) => {
     try {
-        const { term, translation, dialect, notes, detectedLanguage } = req.body;
+        const { term, translation, dialect, notes, detectedLanguage, hebrewShort, latinScript, cyrillicScript } = req.body;
 
         // Status based on user role
         const status = req.user?.role === 'admin' || req.user?.role === 'approver' ? 'active' : 'pending';
@@ -690,9 +693,9 @@ router.post('/entries', optionalAuth, [
         // Insert entry
         const [result] = await db.query(
             `INSERT INTO dictionary_entries
-             (hebrew_script, hebrew_script_normalized, detected_language, hebrew_long, source, status, contributor_id)
-             VALUES (?, ?, ?, ?, 'User', ?, ?)`,
-            [term, normalizeHebrewScript(term), detectedLanguage || 'Hebrew', notes || null, status, req.user?.id || null]
+             (hebrew_script, hebrew_script_normalized, detected_language, hebrew_short, hebrew_long, source, status, contributor_id)
+             VALUES (?, ?, ?, ?, ?, 'User', ?, ?)`,
+            [term, normalizeHebrewScript(term), detectedLanguage || 'Hebrew', hebrewShort || translation || null, notes || null, status, req.user?.id || null]
         );
 
         const entryId = result.insertId;
@@ -706,8 +709,8 @@ router.post('/entries', optionalAuth, [
 
         // Insert dialect_script
         await db.query(
-            `INSERT INTO dialect_scripts (entry_id, dialect_id, hebrew_script, latin_script) VALUES (?, ?, ?, ?)`,
-            [entryId, dialectId, translation, '']
+            `INSERT INTO dialect_scripts (entry_id, dialect_id, hebrew_script, latin_script, cyrillic_script) VALUES (?, ?, ?, ?, ?)`,
+            [entryId, dialectId, translation, latinScript || '', cyrillicScript || '']
         );
 
         // Update contributor count
