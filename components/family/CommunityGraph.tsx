@@ -62,6 +62,7 @@ export const CommunityGraph: React.FC = () => {
     const [allMembers, setAllMembers] = useState<FamilyMember[]>([]);
     const [showLegend, setShowLegend] = useState(false);
     const [showControls, setShowControls] = useState(false);
+    const [focalPersonId, setFocalPersonId] = useState<number | null>(null);
 
     // Force simulation parameters (with sliders)
     const [forceParams, setForceParams] = useState({
@@ -140,8 +141,70 @@ export const CommunityGraph: React.FC = () => {
 
             setAllMembers(members);
 
+            // ── Focal Person Filter ──
+            // When a focal person is selected, only show their bloodline:
+            // ancestors (up), descendants (down), siblings, and spouses as leaves
+            let filteredMembers = members;
+            let filteredPC = parentChild;
+            let filteredPartners = partnerships;
+
+            if (focalPersonId) {
+                const includedIds = new Set<number>();
+                const pcMap = new Map<number, number[]>(); // child → parent IDs
+                const cpMap = new Map<number, number[]>(); // parent → child IDs
+                const spouseOf = new Map<number, number[]>();
+
+                parentChild.forEach((pc: any) => {
+                    if (!pcMap.has(pc.child_id)) pcMap.set(pc.child_id, []);
+                    pcMap.get(pc.child_id)!.push(pc.parent_id);
+                    if (!cpMap.has(pc.parent_id)) cpMap.set(pc.parent_id, []);
+                    cpMap.get(pc.parent_id)!.push(pc.child_id);
+                });
+                partnerships.forEach((p: any) => {
+                    if (!spouseOf.has(p.person1_id)) spouseOf.set(p.person1_id, []);
+                    spouseOf.get(p.person1_id)!.push(p.person2_id);
+                    if (!spouseOf.has(p.person2_id)) spouseOf.set(p.person2_id, []);
+                    spouseOf.get(p.person2_id)!.push(p.person1_id);
+                });
+
+                // Walk up: ancestors
+                const walkUp = (id: number) => {
+                    if (includedIds.has(id)) return;
+                    includedIds.add(id);
+                    // Add spouse(s)
+                    (spouseOf.get(id) || []).forEach(sid => includedIds.add(sid));
+                    // Add parents
+                    (pcMap.get(id) || []).forEach(pid => walkUp(pid));
+                };
+
+                // Walk down: descendants
+                const walkDown = (id: number) => {
+                    if (includedIds.has(id)) return;
+                    includedIds.add(id);
+                    // Add spouse(s)
+                    (spouseOf.get(id) || []).forEach(sid => includedIds.add(sid));
+                    // Add children
+                    (cpMap.get(id) || []).forEach(cid => walkDown(cid));
+                };
+
+                // Start from focal person
+                walkUp(focalPersonId);
+                walkDown(focalPersonId);
+
+                // Add siblings (same parents' other children)
+                (pcMap.get(focalPersonId) || []).forEach(pid => {
+                    (cpMap.get(pid) || []).forEach(sibId => {
+                        walkDown(sibId); // sibling + their descendants
+                    });
+                });
+
+                filteredMembers = members.filter((m: any) => includedIds.has(m.id));
+                filteredPC = parentChild.filter((pc: any) => includedIds.has(pc.parent_id) && includedIds.has(pc.child_id));
+                filteredPartners = partnerships.filter((p: any) => includedIds.has(p.person1_id) && includedIds.has(p.person2_id));
+            }
+
             // Convert to graph nodes
-            const graphNodes: GraphNode[] = members.map(m => ({
+            const graphNodes: GraphNode[] = filteredMembers.map((m: any) => ({
                 id: m.id,
                 name: `${m.first_name} ${m.last_name || ''}`.trim(),
                 nameRu: (m.first_name_ru || m.last_name_ru) ? `${m.first_name_ru || ''} ${m.last_name_ru || ''}`.trim() : undefined,
@@ -162,7 +225,7 @@ export const CommunityGraph: React.FC = () => {
 
             // Build map of children to their parents
             const childToParentsMap = new Map<number, number[]>();
-            parentChild.forEach((pc: any) => {
+            filteredPC.forEach((pc: any) => {
                 if (!childToParentsMap.has(pc.child_id)) {
                     childToParentsMap.set(pc.child_id, []);
                 }
@@ -249,7 +312,7 @@ export const CommunityGraph: React.FC = () => {
             });
 
             // Partnerships (spouse relationships)
-            partnerships.forEach((p: any) => {
+            filteredPartners.forEach((p: any) => {
                 graphEdges.push({
                     source: p.person1_id,
                     target: p.person2_id,
@@ -326,7 +389,7 @@ export const CommunityGraph: React.FC = () => {
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [focalPersonId]);
 
     useEffect(() => {
         loadData();
@@ -1175,6 +1238,14 @@ export const CommunityGraph: React.FC = () => {
                 return;
             }
 
+            // Ctrl+Click: focus on this person's lineage
+            if (event.ctrlKey || event.metaKey) {
+                if (!d.isJunction) {
+                    setFocalPersonId(d.id);
+                }
+                return;
+            }
+
             // Normal click - open edit modal
             const member = allMembers.find(m => m.id === d.id);
             if (member) {
@@ -1707,6 +1778,19 @@ export const CommunityGraph: React.FC = () => {
                             </div>
                         )}
                     </div>
+
+                    {/* Focal person indicator */}
+                    {focalPersonId && (
+                        <button
+                            type="button"
+                            onClick={() => setFocalPersonId(null)}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 rounded-lg text-white text-xs font-medium transition-colors"
+                        >
+                            <Eye size={14} />
+                            <span>{allMembers.find(m => m.id === focalPersonId)?.first_name || '?'}</span>
+                            <X size={12} />
+                        </button>
+                    )}
 
                     <div className="hidden md:block w-px h-6 bg-slate-600" />
 
