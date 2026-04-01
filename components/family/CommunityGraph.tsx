@@ -741,6 +741,14 @@ export const CommunityGraph: React.FC = () => {
             rootX += unit.subtreeWidth + FAMILY_GAP;
         });
 
+        // ── Center entire tree in viewport ──
+        const allX = realNodes.filter(n => n.x != null).map(n => n.x!);
+        if (allX.length > 0) {
+            const treeCenter = (Math.min(...allX) + Math.max(...allX)) / 2;
+            const shift = width / 2 - treeCenter;
+            realNodes.forEach(n => { if (n.x != null) n.x! += shift; });
+        }
+
         // ── Position junction nodes ──
         nodes.forEach(n => {
             if (!n.isJunction) return;
