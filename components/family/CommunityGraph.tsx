@@ -467,8 +467,8 @@ export const CommunityGraph: React.FC = () => {
         }
 
         // ===== HIERARCHICAL LAYOUT WITH TIMELINE Y-AXIS =====
-        const NODE_SPACING = 110; // Horizontal gap between nodes
-        const COUPLE_GAP = 60; // Gap between spouses
+        const NODE_SPACING = 115; // Horizontal gap between nodes
+        const COUPLE_GAP = 65; // Gap between spouses
         const padding = 80;
         const leftPadding = 60;
 
@@ -636,7 +636,7 @@ export const CommunityGraph: React.FC = () => {
         }
 
         // ── Layout each component independently ──
-        const FAMILY_GAP = 200;
+        const FAMILY_GAP = 300;
         let componentXCursor = 0;
 
         components.forEach((compNodes, compIdx) => {
@@ -710,63 +710,66 @@ export const CommunityGraph: React.FC = () => {
                 });
             });
 
-            // Re-center children under their parents (within this component)
-            sortedGens.forEach(gen => {
-                if (gen === sortedGens[0]) return;
-                realChildrenOfCouple.forEach((childIds, parentKey) => {
-                    const parentIds = parentKey.split(',').map(Number);
-                    if (!parentIds.some(pid => compIds.has(pid))) return;
+            // Alternating rounds of re-centering children under parents + overlap resolution
+            const MIN_GAP = 105;
+            for (let round = 0; round < 3; round++) {
+                // Re-center children under their parents (within this component)
+                sortedGens.forEach(gen => {
+                    if (gen === sortedGens[0]) return;
+                    realChildrenOfCouple.forEach((childIds, parentKey) => {
+                        const parentIds = parentKey.split(',').map(Number);
+                        if (!parentIds.some(pid => compIds.has(pid))) return;
 
-                    const pNodes = parentIds.map(pid => nodes.find(n => n.id === pid)).filter(Boolean) as GraphNode[];
-                    if (pNodes.length === 0 || pNodes.some(p => p.x == null)) return;
-                    const parentCenterX = pNodes.reduce((sum, p) => sum + (p.x || 0), 0) / pNodes.length;
+                        const pNodes = parentIds.map(pid => nodes.find(n => n.id === pid)).filter(Boolean) as GraphNode[];
+                        if (pNodes.length === 0 || pNodes.some(p => p.x == null)) return;
+                        const parentCenterX = pNodes.reduce((sum, p) => sum + (p.x || 0), 0) / pNodes.length;
 
-                    const cNodes = childIds
-                        .map(cid => nodes.find(n => n.id === cid))
-                        .filter(n => n && n.generation === gen) as GraphNode[];
-                    if (cNodes.length === 0) return;
+                        const cNodes = childIds
+                            .map(cid => nodes.find(n => n.id === cid))
+                            .filter(n => n && n.generation === gen) as GraphNode[];
+                        if (cNodes.length === 0) return;
 
-                    const childCenterX = cNodes.reduce((sum, c) => sum + (c.x || 0), 0) / cNodes.length;
-                    const shift = parentCenterX - childCenterX;
+                        const childCenterX = cNodes.reduce((sum, c) => sum + (c.x || 0), 0) / cNodes.length;
+                        const shift = parentCenterX - childCenterX;
 
-                    cNodes.forEach(c => {
-                        c.x = (c.x || 0) + shift;
-                        const sId = spouseMap.get(c.id);
-                        if (sId) {
-                            const spouse = nodes.find(n => n.id === sId);
-                            if (spouse && spouse.generation === gen) spouse.x = (spouse.x || 0) + shift;
-                        }
+                        cNodes.forEach(c => {
+                            c.x = (c.x || 0) + shift;
+                            const sId = spouseMap.get(c.id);
+                            if (sId) {
+                                const spouse = nodes.find(n => n.id === sId);
+                                if (spouse && spouse.generation === gen) spouse.x = (spouse.x || 0) + shift;
+                            }
+                        });
                     });
                 });
-            });
 
-            // Post-process: iteratively push overlapping nodes apart per generation
-            for (let pass = 0; pass < 3; pass++) {
-                sortedGens.forEach(gen => {
-                    const genNodes = genGroups.get(gen)!;
-                    const sorted = [...genNodes].sort((a, b) => (a.x || 0) - (b.x || 0));
-                    const MIN_GAP = 95;
-                    for (let i = 1; i < sorted.length; i++) {
-                        const prev = sorted[i - 1];
-                        const curr = sorted[i];
-                        const gap = (curr.x || 0) - (prev.x || 0);
-                        if (gap < MIN_GAP) {
-                            const push = (MIN_GAP - gap) / 2;
-                            prev.x = (prev.x || 0) - push;
-                            curr.x = (curr.x || 0) + push;
-                            const prevSpouseId = spouseMap.get(prev.id);
-                            if (prevSpouseId) {
-                                const s = compNodes.find(n => n.id === prevSpouseId);
-                                if (s && s.generation === gen) s.x = (s.x || 0) - push;
-                            }
-                            const currSpouseId = spouseMap.get(curr.id);
-                            if (currSpouseId) {
-                                const s = compNodes.find(n => n.id === currSpouseId);
-                                if (s && s.generation === gen) s.x = (s.x || 0) + push;
+                // Push overlapping nodes apart per generation
+                for (let pass = 0; pass < 3; pass++) {
+                    sortedGens.forEach(gen => {
+                        const genNodes = genGroups.get(gen)!;
+                        const sorted = [...genNodes].sort((a, b) => (a.x || 0) - (b.x || 0));
+                        for (let i = 1; i < sorted.length; i++) {
+                            const prev = sorted[i - 1];
+                            const curr = sorted[i];
+                            const gap = (curr.x || 0) - (prev.x || 0);
+                            if (gap < MIN_GAP) {
+                                const push = (MIN_GAP - gap) / 2;
+                                prev.x = (prev.x || 0) - push;
+                                curr.x = (curr.x || 0) + push;
+                                const prevSpouseId = spouseMap.get(prev.id);
+                                if (prevSpouseId) {
+                                    const s = compNodes.find(n => n.id === prevSpouseId);
+                                    if (s && s.generation === gen) s.x = (s.x || 0) - push;
+                                }
+                                const currSpouseId = spouseMap.get(curr.id);
+                                if (currSpouseId) {
+                                    const s = compNodes.find(n => n.id === currSpouseId);
+                                    if (s && s.generation === gen) s.x = (s.x || 0) + push;
+                                }
                             }
                         }
-                    }
-                });
+                    });
+                }
             }
 
             // Advance cursor past this component
@@ -825,12 +828,12 @@ export const CommunityGraph: React.FC = () => {
 
         // Light simulation: only collision avoidance + snap-back to computed positions
         const simulation = forceSimulation<GraphNode>(nodes)
-            .force('collision', forceCollide().radius(45))
+            .force('collision', forceCollide().radius(52))
             .force('snapBack', () => {
                 nodes.forEach(n => {
                     const target = targetPositions.get(n.id);
                     if (!target) return;
-                    const strength = 0.25;
+                    const strength = 0.3;
                     n.vx = (n.vx || 0) + (target.x - (n.x || 0)) * strength;
                     n.vy = (n.vy || 0) + (target.y - (n.y || 0)) * strength;
                 });
