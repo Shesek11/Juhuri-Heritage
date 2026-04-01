@@ -74,6 +74,18 @@ export const CommunityGraph: React.FC = () => {
         yForceStrength: 1.00
     });
 
+    // Layout parameters (tunable via debug panel)
+    const [layoutParams, setLayoutParams] = useState({
+        nodeSpacing: 160,
+        coupleGap: 65,
+        familyGap: 300,
+        yearPx: 12,
+        minGap: 105,
+        collisionRadius: 52,
+        snapBack: 0.3,
+        overlapRounds: 3,
+    });
+
     // Edit modal state
     const [selectedMember, setSelectedMember] = useState<FamilyMember | null>(null);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
@@ -467,8 +479,8 @@ export const CommunityGraph: React.FC = () => {
         }
 
         // ===== HIERARCHICAL LAYOUT WITH TIMELINE Y-AXIS =====
-        const NODE_SPACING = 160; // Horizontal gap between nodes
-        const COUPLE_GAP = 65; // Gap between spouses
+        const NODE_SPACING = layoutParams.nodeSpacing;
+        const COUPLE_GAP = layoutParams.coupleGap;
         const padding = 80;
         const leftPadding = 60;
 
@@ -477,7 +489,7 @@ export const CommunityGraph: React.FC = () => {
         const minYear = years.length > 0 ? Math.min(...years) : 1940;
         const maxYear = years.length > 0 ? Math.max(...years) : 2025;
         const yearSpan = Math.max(maxYear - minYear, 30);
-        const YEAR_HEIGHT = Math.max(height, yearSpan * 12); // ~12px per year minimum
+        const YEAR_HEIGHT = Math.max(height, yearSpan * layoutParams.yearPx);
         const yearToY = (year: number) => padding + ((year - minYear) / yearSpan) * (YEAR_HEIGHT - 2 * padding);
 
         // Draw year markers: lines in graph group, labels fixed on right
@@ -637,7 +649,7 @@ export const CommunityGraph: React.FC = () => {
         }
 
         // ── Layout each component independently ──
-        const FAMILY_GAP = 300;
+        const FAMILY_GAP = layoutParams.familyGap;
         let componentXCursor = 0;
 
         components.forEach((compNodes, compIdx) => {
@@ -739,8 +751,8 @@ export const CommunityGraph: React.FC = () => {
             });
 
             // Alternating rounds of re-centering children under parents + overlap resolution
-            const MIN_GAP = 105;
-            for (let round = 0; round < 3; round++) {
+            const MIN_GAP = layoutParams.minGap;
+            for (let round = 0; round < layoutParams.overlapRounds; round++) {
                 // Re-center children under their parents (within this component)
                 sortedGens.forEach(gen => {
                     if (gen === sortedGens[0]) return;
@@ -856,12 +868,12 @@ export const CommunityGraph: React.FC = () => {
 
         // Light simulation: only collision avoidance + snap-back to computed positions
         const simulation = forceSimulation<GraphNode>(nodes)
-            .force('collision', forceCollide().radius(52))
+            .force('collision', forceCollide().radius(layoutParams.collisionRadius))
             .force('snapBack', () => {
                 nodes.forEach(n => {
                     const target = targetPositions.get(n.id);
                     if (!target) return;
-                    const strength = 0.3;
+                    const strength = layoutParams.snapBack;
                     n.vx = (n.vx || 0) + (target.x - (n.x || 0)) * strength;
                     n.vy = (n.vy || 0) + (target.y - (n.y || 0)) * strength;
                 });
@@ -1495,7 +1507,7 @@ export const CommunityGraph: React.FC = () => {
         return () => {
             simulation.stop();
         };
-    }, [loading, nodes, edges, allMembers, connectionMode, firstSelectedNode]);
+    }, [loading, nodes, edges, allMembers, connectionMode, firstSelectedNode, layoutParams]);
 
     // Connection mode handlers
     const startConnectionMode = () => {
@@ -1913,6 +1925,43 @@ export const CommunityGraph: React.FC = () => {
                     style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', display: 'block', touchAction: 'none' }}
                 />
 
+                {/* Layout Debug Panel */}
+                {showControls && (
+                    <div className="absolute top-2 left-2 bg-slate-900/95 border border-slate-600 rounded-xl p-3 z-50 w-64 max-h-[80vh] overflow-y-auto text-xs" dir="ltr" onClick={e => e.stopPropagation()}>
+                        <div className="flex justify-between items-center mb-2">
+                            <h3 className="font-bold text-white text-sm">Layout Params</h3>
+                            <button onClick={() => setShowControls(false)} className="text-slate-400 hover:text-white"><X size={14} /></button>
+                        </div>
+                        {([
+                            { key: 'nodeSpacing', label: 'Node Spacing', min: 60, max: 250, step: 5 },
+                            { key: 'coupleGap', label: 'Couple Gap', min: 30, max: 150, step: 5 },
+                            { key: 'familyGap', label: 'Family Gap', min: 50, max: 500, step: 10 },
+                            { key: 'yearPx', label: 'Year px', min: 4, max: 30, step: 1 },
+                            { key: 'minGap', label: 'Min Gap (overlap)', min: 50, max: 200, step: 5 },
+                            { key: 'collisionRadius', label: 'Collision Radius', min: 20, max: 80, step: 2 },
+                            { key: 'snapBack', label: 'Snap-back', min: 0.05, max: 0.8, step: 0.05 },
+                            { key: 'overlapRounds', label: 'Overlap Rounds', min: 0, max: 10, step: 1 },
+                        ] as const).map(({ key, label, min, max, step }) => (
+                            <div key={key} className="mb-2">
+                                <div className="flex justify-between text-slate-300">
+                                    <span>{label}</span>
+                                    <span className="text-indigo-400 font-mono">{layoutParams[key]}</span>
+                                </div>
+                                <input
+                                    type="range" min={min} max={max} step={step}
+                                    value={layoutParams[key]}
+                                    onChange={e => setLayoutParams(p => ({ ...p, [key]: parseFloat(e.target.value) }))}
+                                    className="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+                                />
+                            </div>
+                        ))}
+                        <button
+                            onClick={() => setLayoutParams({ nodeSpacing: 160, coupleGap: 65, familyGap: 300, yearPx: 12, minGap: 105, collisionRadius: 52, snapBack: 0.3, overlapRounds: 3 })}
+                            className="w-full mt-1 px-2 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded text-xs"
+                        >Reset defaults</button>
+                    </div>
+                )}
+
                 {/* Connection Type Selection Modal */}
                 {connectionMode === 'selecting-type' && firstSelectedNode && secondSelectedNode && (
                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center backdrop-blur-sm z-50" onClick={cancelConnection}>
@@ -1992,7 +2041,17 @@ export const CommunityGraph: React.FC = () => {
                     </button>
                 </div>
 
-                {/* (Force controls removed — layout is now deterministic) */}
+                {/* Layout debug toggle */}
+                {isAdmin && (
+                    <button
+                        type="button"
+                        onClick={() => setShowControls(v => !v)}
+                        className="p-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-white transition-colors"
+                        title="Layout params"
+                    >
+                        <Sliders size={20} />
+                    </button>
+                )}
             </div>
 
             {/* Tooltip */}
