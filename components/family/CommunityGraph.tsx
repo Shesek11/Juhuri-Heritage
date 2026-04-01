@@ -126,6 +126,9 @@ export const CommunityGraph: React.FC = () => {
     // Node hover pulsing intervals (for first-degree relatives)
     const nodeHoverIntervalsRef = useRef<NodeJS.Timeout[]>([]);
 
+    // Tooltip hide timer (allows hovering to tooltip buttons)
+    const tooltipHideRef = useRef<NodeJS.Timeout | null>(null);
+
     // Simulation ref for real-time parameter updates
     const simulationRef = useRef<Simulation<GraphNode, undefined> | null>(null);
 
@@ -1288,6 +1291,7 @@ export const CommunityGraph: React.FC = () => {
                 const circleBottom = svgRect.top + t.applyY(d.y ?? 0) + 30;
                 // If not enough room above (~220px for tooltip), flip below
                 const flipped = circleTop < 220;
+                if (tooltipHideRef.current) clearTimeout(tooltipHideRef.current);
                 setTooltip({
                     visible: true,
                     x: screenX,
@@ -1408,8 +1412,10 @@ export const CommunityGraph: React.FC = () => {
                 .duration(200)
                 .attr('r', 25);
 
-            // Hide tooltip
-            setTooltip(prev => ({ ...prev, visible: false }));
+            // Hide tooltip with delay (allows hovering to tooltip buttons)
+            tooltipHideRef.current = setTimeout(() => {
+                setTooltip(prev => ({ ...prev, visible: false }));
+            }, 300);
         });
 
         // Build node lookup for edge drawing (since we don't use forceLink)
@@ -2058,7 +2064,9 @@ export const CommunityGraph: React.FC = () => {
             {/* Tooltip */}
             {tooltip.visible && tooltip.member && (
                 <div
-                    className="fixed z-[200] pointer-events-none"
+                    onMouseEnter={() => { if (tooltipHideRef.current) clearTimeout(tooltipHideRef.current); }}
+                    onMouseLeave={() => { setTooltip(prev => ({ ...prev, visible: false })); }}
+                    className="fixed z-[200]"
                     style={{
                         left: `${tooltip.x}px`,
                         top: `${tooltip.y}px`,
