@@ -467,8 +467,8 @@ export const CommunityGraph: React.FC = () => {
         }
 
         // ===== HIERARCHICAL LAYOUT WITH TIMELINE Y-AXIS =====
-        const NODE_SPACING = 100; // Horizontal gap between nodes
-        const COUPLE_GAP = 60; // Gap between spouses
+        const NODE_SPACING = 140; // Horizontal gap between nodes
+        const COUPLE_GAP = 90; // Gap between spouses
         const padding = 80;
         const leftPadding = 60;
 
@@ -769,7 +769,7 @@ export const CommunityGraph: React.FC = () => {
 
         // Light simulation: only collision avoidance + snap-back to computed positions
         const simulation = forceSimulation<GraphNode>(nodes)
-            .force('collision', forceCollide().radius(35))
+            .force('collision', forceCollide().radius(50))
             .force('snapBack', () => {
                 nodes.forEach(n => {
                     const target = targetPositions.get(n.id);
@@ -1073,30 +1073,35 @@ export const CommunityGraph: React.FC = () => {
             });
 
         // Node labels (name below) - with background for better readability
+        const maxLabelLen = width < 500 ? 12 : 16;
+        const truncName = (name: string) => name.length > maxLabelLen ? name.substring(0, maxLabelLen - 2) + '…' : name;
+        const charWidth = 6.5; // Approx px per character for 10px Hebrew font
+
         node.append('rect')
             .attr('x', d => {
-                const text = d.name.length > 18 ? d.name.substring(0, 15) + '...' : d.name;
-                return -(text.length * 3.5); // Approximate width based on character count
+                const text = truncName(d.name);
+                return -(text.length * charWidth / 2 + 4);
             })
-            .attr('y', 32)
+            .attr('y', 30)
             .attr('width', d => {
-                const text = d.name.length > 18 ? d.name.substring(0, 15) + '...' : d.name;
-                return text.length * 7; // Approximate width
+                const text = truncName(d.name);
+                return text.length * charWidth + 8;
             })
             .attr('height', 18)
             .attr('rx', 4)
-            .attr('fill', 'rgba(30, 41, 59, 0.85)')
-            .attr('stroke', 'rgba(148, 163, 184, 0.3)')
-            .attr('stroke-width', 1)
+            .attr('fill', 'rgba(15, 23, 42, 0.92)')
+            .attr('stroke', 'rgba(148, 163, 184, 0.2)')
+            .attr('stroke-width', 0.5)
             .attr('pointer-events', 'none');
 
         node.append('text')
             .attr('text-anchor', 'middle')
-            .attr('dy', '45px')
-            .attr('font-size', '11px')
-            .attr('fill', '#fff')
+            .attr('dy', '43px')
+            .attr('font-size', '10px')
+            .attr('font-weight', '500')
+            .attr('fill', '#e2e8f0')
             .attr('pointer-events', 'none')
-            .text(d => d.name.length > 18 ? d.name.substring(0, 15) + '...' : d.name);
+            .text(d => truncName(d.name));
 
         // Click handler - support connection mode
         node.on('click', (event, d) => {
