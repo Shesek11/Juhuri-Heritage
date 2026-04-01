@@ -95,7 +95,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const user = await getAuthUser(request);
-    const { term, translation, dialect, notes, detectedLanguage } = await request.json();
+    const { term, translation, dialect, notes, detectedLanguage, hebrewShort, latinScript, cyrillicScript, source } = await request.json();
 
     if (!term || !term.trim()) {
       return NextResponse.json({ error: 'נדרש מונח' }, { status: 400 });
@@ -110,13 +110,15 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'התרגום ארוך מדי' }, { status: 400 });
     }
 
-    const status = user?.role === 'admin' || user?.role === 'approver' ? 'active' : 'pending';
+    // Community contributions always go to pending for review
+    const isCommunity = source === 'קהילה';
+    const status = !isCommunity && (user?.role === 'admin' || user?.role === 'approver') ? 'active' : 'pending';
 
     const [result] = await pool.query(
       `INSERT INTO dictionary_entries
-       (hebrew_script, detected_language, source, status, contributor_id)
-       VALUES (?, ?, 'קהילה', ?, ?)`,
-      [term.trim(), detectedLanguage || 'Hebrew', status, user?.id || null]
+       (hebrew_script, detected_language, hebrew_short, hebrew_long, source, status, contributor_id)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`,
+      [term.trim(), detectedLanguage || 'Hebrew', hebrewShort || translation || null, notes || null, source || 'קהילה', status, user?.id || null]
     ) as any[];
 
     const entryId = result.insertId;
@@ -128,16 +130,9 @@ export async function POST(request: NextRequest) {
     }
 
     await pool.query(
-      `INSERT INTO dialect_scripts (entry_id, dialect_id, hebrew_script, latin_script) VALUES (?, ?, ?, ?)`,
-      [entryId, dialectId, translation.trim(), '']
+      `INSERT INTO dialect_scripts (entry_id, dialect_id, hebrew_script, latin_script, cyrillic_script) VALUES (?, ?, ?, ?, ?)`,
+      [entryId, dialectId, translation.trim(), latinScript || '', cyrillicScript || '']
     );
-
-    if (notes) {
-      await pool.query(
-        'UPDATE dictionary_entries SET hebrew_long = ? WHERE id = ?',
-        [notes, entryId]
-      );
-    }
 
     if (user?.id) {
       await pool.query(
