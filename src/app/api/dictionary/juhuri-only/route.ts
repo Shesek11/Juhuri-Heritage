@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
       JOIN dialect_scripts t ON de.id = t.entry_id
       WHERE de.status = 'active'
       AND de.detected_language = 'Juhuri'
-      AND (t.hebrew_script IS NULL OR t.hebrew_script = '')
+      AND (de.hebrew_script IS NULL OR de.hebrew_script = '')
       ${searchCondition}
       GROUP BY de.id
       ORDER BY de.created_at DESC
@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
       JOIN dialect_scripts t ON de.id = t.entry_id
       WHERE de.status = 'active'
       AND de.detected_language = 'Juhuri'
-      AND (t.hebrew_script IS NULL OR t.hebrew_script = '')
+      AND (de.hebrew_script IS NULL OR de.hebrew_script = '')
       ${searchCondition}
     `, searchParams) as any[];
 

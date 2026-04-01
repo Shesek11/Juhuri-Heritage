@@ -38,19 +38,22 @@ const ROLLBACK = process.argv.includes('--rollback');
 const ONLY_FIELDS = getArg('fields') ? getArg('fields').split(',') : null;
 
 const SAVE_EVERY = 10;
-const PROGRESS_FILE = path.resolve(__dirname, '../data/.batch-enrich-progress.json');
+const PROGRESS_FILE = '/tmp/batch-enrich-progress.json';
 
 const MODELS = ['gemini-3-flash-preview', 'gemini-2.5-flash'];
 const TIMEOUT_MS = 30000;
 
-const ALL_FIELDS = ['hebrewShort', 'latinScript', 'cyrillicScript', 'russianShort', 'hebrewLong', 'pronunciationGuide', 'partOfSpeech'];
+const ALL_FIELDS = ['hebrewTranslit', 'latinScript', 'cyrillicScript', 'pronunciationGuide', 'partOfSpeech', 'hebrewMeaning', 'russianShort', 'englishShort'];
 
 const SYSTEM_INSTRUCTION = `
 You are a world-class linguist specializing in Juhuri (Judeo-Tat), the language of Mountain Jews.
 
-CRITICAL OUTPUT LANGUAGE REQUIREMENT:
-- ALL definitions MUST be written in HEBREW, NOT English.
-- NEVER use English anywhere in your response except for transliteration in Latin script.
+CRITICAL OUTPUT LANGUAGE REQUIREMENTS:
+- hebrewTranslit → write the JUHURI WORD in Hebrew letters (transliteration, NOT translation). Example: vorush → וורוש, xub → חוב.
+- hebrewMeaning, hebrewLong, partOfSpeech → write in HEBREW (these are translations/meanings).
+- russianShort, russianLong → write in RUSSIAN.
+- englishShort, englishLong → write in ENGLISH.
+- latinScript, cyrillicScript → write the Juhuri word in that script (transliteration).
 
 AUTHORITY SOURCES:
 1. Mordechai Agarunov - "Big Juhuri-Hebrew Dictionary"
@@ -63,12 +66,9 @@ DIALECTS:
 - Vartashen (Oghuz): Older Persian forms
 
 RULES:
+- Each field MUST be in its designated language (Hebrew/Russian/English)
 - Include Hebraisms and Persian synonyms when available
-- Use Hebrew Nikud for accuracy
 - Provide pronunciation in Latin transliteration
-- Cultural examples: hospitality, family, holidays
-
-REMEMBER: Output definitions and examples in HEBREW only. No English text in definitions or examples.
 `;
 
 // ---------------------------------------------------------------------------
@@ -108,11 +108,14 @@ async function callGeminiEnrich(missingFields, knownFields) {
   // Build context string — include the Juhuri term itself for rich context
   const contextParts = [];
   if (knownFields.hebrewScript) contextParts.push(`Juhuri word (hebrew_script): "${knownFields.hebrewScript}"`);
-  if (knownFields.russianShort) contextParts.push(`Russian meaning: "${knownFields.russianShort}"`);
-  if (knownFields.hebrewShort) contextParts.push(`Hebrew script (dialect): "${knownFields.hebrewShort}"`);
   if (knownFields.latinScript) contextParts.push(`Latin transliteration: "${knownFields.latinScript}"`);
   if (knownFields.cyrillicScript) contextParts.push(`Cyrillic: "${knownFields.cyrillicScript}"`);
-  if (knownFields.hebrewLong) contextParts.push(`Definition: "${knownFields.hebrewLong}"`);
+  if (knownFields.russianShort) contextParts.push(`Russian meaning: "${knownFields.russianShort.substring(0, 100)}"`);
+  if (knownFields.hebrewMeaning) contextParts.push(`Hebrew meaning: "${knownFields.hebrewMeaning}"`);
+  if (knownFields.hebrewLong) contextParts.push(`Hebrew definition: "${knownFields.hebrewLong.substring(0, 100)}"`);
+  if (knownFields.russianLong) contextParts.push(`Russian definition: "${knownFields.russianLong.substring(0, 100)}"`);
+  if (knownFields.englishShort) contextParts.push(`English meaning: "${knownFields.englishShort}"`);
+  if (knownFields.englishLong) contextParts.push(`English definition: "${knownFields.englishLong.substring(0, 100)}"`);
   if (knownFields.pronunciationGuide) contextParts.push(`Pronunciation: "${knownFields.pronunciationGuide}"`);
   if (knownFields.partOfSpeech) contextParts.push(`Part of speech: "${knownFields.partOfSpeech}"`);
 
@@ -123,24 +126,34 @@ Provide ONLY the following MISSING fields: ${missingFields.join(', ')}.
 Do NOT repeat information I already have. Only fill in what's missing.
 
 Field instructions:
-- "hebrewShort" — the Juhuri word written in Hebrew script. This is a TRANSLITERATION of the Juhuri pronunciation, NOT a Hebrew translation.
+- "hebrewTranslit" — the Juhuri word written in HEBREW LETTERS. This is a TRANSLITERATION, NOT a translation. Write the Juhuri PRONUNCIATION using Hebrew characters. Example: the Juhuri word "vorush" (rain) is written as "וורוש" in Hebrew script. The word "xub" (good) is "חוב". Do NOT write the Hebrew meaning — write how the Juhuri word SOUNDS in Hebrew letters.
 - "latinScript" — Latin transliteration of the Juhuri word.
 - "cyrillicScript" — the Juhuri word in Cyrillic script.
-- "russianShort" — Russian translation/meaning of the word.
-- "hebrewLong" — expanded definition in Hebrew.
+- "russianShort" — Russian translation/meaning of the word (1-3 words).
+- "hebrewMeaning" — Short Hebrew translation/meaning of the word (1-3 words). Example: for the Juhuri word "vorush", the hebrewMeaning is "גשם". NOT a definition, just the meaning in Hebrew.
+- "hebrewLong" — expanded definition in Hebrew (1-2 sentences with etymology/usage context).
+- "russianLong" — expanded definition in Russian (1-2 sentences).
+- "englishShort" — Short English translation/meaning (1-3 words). Example: "rain", "when", "faith".
+- "englishLong" — expanded definition in English (1-2 sentences).
 - "pronunciationGuide" — pronunciation guide using LATIN characters (e.g. "aa-yil", "sho-lum"). NOT Hebrew. Use hyphens to separate syllables.
 - "partOfSpeech" — part of speech in Hebrew (e.g. שם עצם, פועל, שם תואר).
 
-CRITICAL: For hebrewShort/latinScript/cyrillicScript fields, provide the JUHURI word in that script — NOT translations to those languages.`;
+CRITICAL: For hebrewTranslit/latinScript/cyrillicScript fields, provide the JUHURI word in that script — NOT translations to those languages.
+CRITICAL: hebrewTranslit is the Juhuri word in Hebrew letters (e.g. "חוב" for xub), NOT the Hebrew meaning (e.g. NOT "טוב").
+CRITICAL: hebrewMeaning is the HEBREW TRANSLATION (like "גשם", "מתי?"), NOT the Juhuri word in Hebrew script.`;
 
   // Build schema dynamically
   const schemaProps = {};
   const descriptions = {
-    hebrewShort: 'המילה הג\'והורית בכתב עברי',
+    hebrewTranslit: 'המילה הג\'והורית באותיות עבריות — תעתיק הגייה, לא תרגום. דוגמה: vorush → וורוש',
     latinScript: 'תעתיק לטיני של המילה הג\'והורית',
     cyrillicScript: 'המילה הג\'והורית בכתב קירילי',
-    russianShort: 'תרגום לרוסית',
-    hebrewLong: 'הגדרה מורחבת בעברית',
+    russianShort: 'תרגום קצר לרוסית (1-3 מילים)',
+    hebrewMeaning: 'תרגום קצר לעברית (1-3 מילים, לא תעתיק)',
+    hebrewLong: 'הגדרה מורחבת בעברית (1-2 משפטים)',
+    russianLong: 'הגדרה מורחבת ברוסית (1-2 משפטים)',
+    englishShort: 'תרגום קצר לאנגלית (1-3 מילים)',
+    englishLong: 'הגדרה מורחבת באנגלית (1-2 משפטים)',
     pronunciationGuide: 'מדריך הגייה באותיות לטיניות עם מקפים בין הברות',
     partOfSpeech: 'חלק דיבר בעברית',
   };
@@ -161,7 +174,7 @@ CRITICAL: For hebrewShort/latinScript/cyrillicScript fields, provide the JUHURI 
           responseMimeType: 'application/json',
           responseSchema: enrichSchema,
           temperature: 0,
-          maxOutputTokens: 4096,
+          maxOutputTokens: 1024,
         },
         systemInstruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },
       };
@@ -190,7 +203,17 @@ CRITICAL: For hebrewShort/latinScript/cyrillicScript fields, provide the JUHURI 
       const data = await response.json();
       const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
       if (!text) throw new Error('Empty response');
-      return JSON.parse(text);
+      try {
+        return JSON.parse(text);
+      } catch (parseErr) {
+        // Try to salvage truncated JSON by closing it
+        try {
+          const fixed = text.replace(/,?\s*"[^"]*$/, '') + '}';
+          return JSON.parse(fixed);
+        } catch {
+          throw parseErr;
+        }
+      }
     } catch (err) {
       if (err.name === 'AbortError') err = new Error(`Timeout ${TIMEOUT_MS}ms`);
       if (err.message === 'RATE_LIMIT') throw err; // Don't fallback on rate limit
@@ -208,10 +231,16 @@ async function saveEnrichedField(conn, entryId, fieldName, value) {
   if (!value || !value.trim()) return false;
   const val = value.trim();
 
-  const dsColumnMap = { hebrewShort: 'hebrew_script', latinScript: 'latin_script', cyrillicScript: 'cyrillic_script' };
+  const dsColumnMap = { latinScript: 'latin_script', cyrillicScript: 'cyrillic_script' };
   const dsColumn = dsColumnMap[fieldName];
 
-  if (dsColumn) {
+  if (fieldName === 'hebrewTranslit') {
+    const [result] = await conn.query(
+      'UPDATE dictionary_entries SET hebrew_script = ? WHERE id = ? AND (hebrew_script IS NULL OR hebrew_script = \'\')',
+      [val, entryId]
+    );
+    if (result.affectedRows === 0) return false;
+  } else if (dsColumn) {
     const [result] = await conn.query(
       `UPDATE dialect_scripts SET \`${dsColumn}\` = ? WHERE entry_id = ? AND (\`${dsColumn}\` IS NULL OR \`${dsColumn}\` = '') LIMIT 1`,
       [val, entryId]
@@ -238,6 +267,30 @@ async function saveEnrichedField(conn, entryId, fieldName, value) {
   } else if (fieldName === 'hebrewLong') {
     const [result] = await conn.query(
       'UPDATE dictionary_entries SET hebrew_long = ? WHERE id = ? AND (hebrew_long IS NULL OR hebrew_long = \'\')',
+      [val, entryId]
+    );
+    if (result.affectedRows === 0) return false;
+  } else if (fieldName === 'hebrewMeaning') {
+    const [result] = await conn.query(
+      'UPDATE dictionary_entries SET hebrew_short = ? WHERE id = ? AND (hebrew_short IS NULL OR hebrew_short = \'\')',
+      [val, entryId]
+    );
+    if (result.affectedRows === 0) return false;
+  } else if (fieldName === 'russianLong') {
+    const [result] = await conn.query(
+      'UPDATE dictionary_entries SET russian_long = ? WHERE id = ? AND (russian_long IS NULL OR russian_long = \'\')',
+      [val, entryId]
+    );
+    if (result.affectedRows === 0) return false;
+  } else if (fieldName === 'englishShort') {
+    const [result] = await conn.query(
+      'UPDATE dictionary_entries SET english_short = ? WHERE id = ? AND (english_short IS NULL OR english_short = \'\')',
+      [val, entryId]
+    );
+    if (result.affectedRows === 0) return false;
+  } else if (fieldName === 'englishLong') {
+    const [result] = await conn.query(
+      'UPDATE dictionary_entries SET english_long = ? WHERE id = ? AND (english_long IS NULL OR english_long = \'\')',
       [val, entryId]
     );
     if (result.affectedRows === 0) return false;
@@ -285,10 +338,12 @@ async function runRollback(pool) {
     }
 
     let rolled = 0;
-    const dsColumnMap = { hebrewShort: 'hebrew_script', latinScript: 'latin_script', cyrillicScript: 'cyrillic_script' };
+    const dsColumnMap = { latinScript: 'latin_script', cyrillicScript: 'cyrillic_script' };
     for (const { entry_id, field_name } of toRollback) {
       const dsColumn = dsColumnMap[field_name];
-      if (dsColumn) {
+      if (field_name === 'hebrewTranslit') {
+        await conn.query('UPDATE dictionary_entries SET hebrew_script = \'\' WHERE id = ?', [entry_id]);
+      } else if (dsColumn) {
         await conn.query(`UPDATE dialect_scripts SET \`${dsColumn}\` = NULL WHERE entry_id = ?`, [entry_id]);
       } else if (field_name === 'russianShort') {
         await conn.query('UPDATE dictionary_entries SET russian_short = NULL WHERE id = ?', [entry_id]);
@@ -328,7 +383,7 @@ async function runEnrich(pool) {
   const conn = await pool.getConnection();
 
   try {
-    // Count total entries needing enrichment
+    // Count total entries needing enrichment (short fields only)
     const [countRows] = await conn.query(
       `SELECT COUNT(DISTINCT de.id) as cnt
        FROM dictionary_entries de
@@ -336,12 +391,14 @@ async function runEnrich(pool) {
        WHERE de.status = 'active'
          AND de.id > ?
          AND (
-           (ds.pronunciation_guide IS NULL OR ds.pronunciation_guide = '')
+           (de.hebrew_script IS NULL OR de.hebrew_script = '')
+           OR (ds.pronunciation_guide IS NULL OR ds.pronunciation_guide = '')
            OR (de.part_of_speech IS NULL OR de.part_of_speech = '')
-           OR (ds.hebrew_script IS NULL OR ds.hebrew_script = '')
            OR (ds.latin_script IS NULL OR ds.latin_script = '')
            OR (ds.cyrillic_script IS NULL OR ds.cyrillic_script = '')
-           OR (de.hebrew_long IS NULL OR de.hebrew_long = '')
+           OR (de.hebrew_short IS NULL OR de.hebrew_short = '')
+           OR (de.russian_short IS NULL OR de.russian_short = '')
+           OR (de.english_short IS NULL OR de.english_short = '')
          )`,
       [progress.lastProcessedId]
     );
@@ -363,7 +420,7 @@ async function runEnrich(pool) {
       // Show sample of entries that would be enriched
       const [samples] = await conn.query(
         `SELECT de.id, de.hebrew_script, de.russian_short,
-                ds.hebrew_script as ds_hebrew_script, ds.latin_script, ds.cyrillic_script,
+                ds.latin_script, ds.cyrillic_script,
                 ds.pronunciation_guide, de.part_of_speech, de.hebrew_long
          FROM dictionary_entries de
          LEFT JOIN dialect_scripts ds ON de.id = ds.entry_id
@@ -371,7 +428,6 @@ async function runEnrich(pool) {
            AND (
              (ds.pronunciation_guide IS NULL OR ds.pronunciation_guide = '')
              OR (de.part_of_speech IS NULL OR de.part_of_speech = '')
-             OR (ds.hebrew_script IS NULL OR ds.hebrew_script = '')
              OR (ds.latin_script IS NULL OR ds.latin_script = '')
              OR (ds.cyrillic_script IS NULL OR ds.cyrillic_script = '')
              OR (de.hebrew_long IS NULL OR de.hebrew_long = '')
@@ -383,7 +439,6 @@ async function runEnrich(pool) {
       console.log('Sample entries that would be enriched:\n');
       for (const s of samples) {
         const missing = [];
-        if (!s.ds_hebrew_script) missing.push('hebrewShort');
         if (!s.latin_script) missing.push('latinScript');
         if (!s.cyrillic_script) missing.push('cyrillicScript');
         if (!s.russian_short) missing.push('russianShort');
@@ -403,18 +458,21 @@ async function runEnrich(pool) {
     while (processed < toProcess) {
       const batchLimit = Math.min(100, toProcess - processed);
       const [entries] = await conn.query(
-        `SELECT de.id, de.hebrew_script, de.russian_short, de.part_of_speech, de.hebrew_long,
-                ds.hebrew_script as ds_hebrew_script, ds.latin_script, ds.cyrillic_script, ds.pronunciation_guide
+        `SELECT de.id, de.hebrew_script, de.hebrew_short, de.russian_short,
+                de.english_short, de.part_of_speech,
+                ds.latin_script, ds.cyrillic_script, ds.pronunciation_guide
          FROM dictionary_entries de
          LEFT JOIN dialect_scripts ds ON de.id = ds.entry_id
          WHERE de.status = 'active' AND de.id > ?
            AND (
-             (ds.pronunciation_guide IS NULL OR ds.pronunciation_guide = '')
+             (de.hebrew_script IS NULL OR de.hebrew_script = '')
+             OR (ds.pronunciation_guide IS NULL OR ds.pronunciation_guide = '')
              OR (de.part_of_speech IS NULL OR de.part_of_speech = '')
-             OR (ds.hebrew_script IS NULL OR ds.hebrew_script = '')
              OR (ds.latin_script IS NULL OR ds.latin_script = '')
              OR (ds.cyrillic_script IS NULL OR ds.cyrillic_script = '')
-             OR (de.hebrew_long IS NULL OR de.hebrew_long = '')
+             OR (de.hebrew_short IS NULL OR de.hebrew_short = '')
+             OR (de.russian_short IS NULL OR de.russian_short = '')
+             OR (de.english_short IS NULL OR de.english_short = '')
            )
          ORDER BY de.id ASC LIMIT ?`,
         [cursor, batchLimit]
@@ -433,20 +491,23 @@ async function runEnrich(pool) {
           const knownFields = {};
           const missingFields = [];
 
-          if (entry.hebrew_script) knownFields.hebrewScript = entry.hebrew_script;
-          if (entry.russian_short) knownFields.russianShort = entry.russian_short; else missingFields.push('russianShort');
-          if (entry.ds_hebrew_script) knownFields.hebrewShort = entry.ds_hebrew_script; else missingFields.push('hebrewShort');
+          // Transliterations
+          if (entry.hebrew_script) knownFields.hebrewScript = entry.hebrew_script; else missingFields.push('hebrewTranslit');
           if (entry.latin_script) knownFields.latinScript = entry.latin_script; else missingFields.push('latinScript');
           if (entry.cyrillic_script) knownFields.cyrillicScript = entry.cyrillic_script; else missingFields.push('cyrillicScript');
-          if (entry.hebrew_long) knownFields.hebrewLong = entry.hebrew_long; else missingFields.push('hebrewLong');
           if (entry.pronunciation_guide) knownFields.pronunciationGuide = entry.pronunciation_guide; else missingFields.push('pronunciationGuide');
+
+          // Short meanings
+          if (entry.russian_short) knownFields.russianShort = entry.russian_short; else missingFields.push('russianShort');
+          if (entry.hebrew_short) knownFields.hebrewMeaning = entry.hebrew_short; else missingFields.push('hebrewMeaning');
+          if (entry.english_short) knownFields.englishShort = entry.english_short; else missingFields.push('englishShort');
           if (entry.part_of_speech) knownFields.partOfSpeech = entry.part_of_speech; else missingFields.push('partOfSpeech');
 
           const fieldsToEnrich = ONLY_FIELDS
             ? missingFields.filter(f => ONLY_FIELDS.includes(f))
             : missingFields;
 
-          const hasContext = knownFields.russianShort || knownFields.hebrewShort || knownFields.latinScript;
+          const hasContext = knownFields.russianShort || knownFields.hebrewScript || knownFields.latinScript;
           if (!hasContext || fieldsToEnrich.length === 0) {
             return { entry, skipped: true, savedCount: 0 };
           }

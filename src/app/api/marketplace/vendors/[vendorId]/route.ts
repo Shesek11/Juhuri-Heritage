@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/src/lib/db';
 import { requireAuth } from '@/src/lib/auth';
+import { logEvent } from '@/src/lib/logEvent';
 
 // GET /api/marketplace/vendors/:slug
 export async function GET(
@@ -125,6 +126,8 @@ export async function PUT(
     queryParams.push(id);
     await pool.query(`UPDATE marketplace_vendors SET ${updates.join(', ')} WHERE id = ?`, queryParams);
 
+    await logEvent('VENDOR_UPDATED', `חנות ${id} עודכנה`, user, { vendorId: id }, request);
+
     return NextResponse.json({ success: true });
   } catch (error) {
     if (error instanceof Response) return error;
@@ -156,6 +159,8 @@ export async function DELETE(
     }
 
     await pool.query('DELETE FROM marketplace_vendors WHERE id = ?', [id]);
+
+    await logEvent('VENDOR_DELETED', `חנות ${id} נמחקה`, user, { vendorId: id }, request);
 
     return NextResponse.json({ success: true });
   } catch (error) {

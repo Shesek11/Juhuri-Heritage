@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/src/lib/auth';
+import { logEvent } from '@/src/lib/logEvent';
 import fs from 'fs/promises';
 import path from 'path';
 
@@ -68,6 +69,8 @@ export async function PUT(request: NextRequest) {
     setNestedValue(messages, key, value);
 
     await fs.writeFile(filePath, JSON.stringify(messages, null, 2) + '\n', 'utf-8');
+
+    await logEvent('TRANSLATION_UPDATED', `תרגום עודכן: ${key} (${locale})`, user, { key, locale, value }, request);
 
     return NextResponse.json({ success: true });
   } catch (error) {

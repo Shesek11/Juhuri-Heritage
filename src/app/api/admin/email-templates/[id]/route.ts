@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/src/lib/db';
 import { requireAdmin } from '@/src/lib/auth';
+import { logEvent } from '@/src/lib/logEvent';
 
 // GET /api/admin/email-templates/:id
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -28,7 +29,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 // PUT /api/admin/email-templates/:id
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    await requireAdmin(request);
+    const user = await requireAdmin(request);
     const { id } = await params;
     const body = await request.json();
     const { slug, name, subject, html_body, from_name, from_email, to_type, to_address, variables, is_active } = body;
@@ -57,6 +58,8 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       ]
     );
 
+    await logEvent('EMAIL_TEMPLATE_UPDATED', `תבנית אימייל עודכנה: ${slug || id}`, user, { templateId: id, slug }, request);
+
     return NextResponse.json({ success: true });
   } catch (error) {
     if (error instanceof Response) return error;
@@ -71,10 +74,12 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
 // DELETE /api/admin/email-templates/:id
 export async function DELETE(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    await requireAdmin(request);
+    const user = await requireAdmin(request);
     const { id } = await params;
 
     await pool.query('DELETE FROM email_templates WHERE id = ?', [id]);
+
+    await logEvent('EMAIL_TEMPLATE_DELETED', `תבנית אימייל נמחקה: ${id}`, user, { templateId: id }, request);
 
     return NextResponse.json({ success: true });
   } catch (error) {

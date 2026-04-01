@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { permanentRedirect } from 'next/navigation';
 import pool from '@/src/lib/db';
 import { buildPageMeta } from '@/src/lib/seo-settings';
 import {
@@ -18,6 +19,7 @@ const SITE_URL = process.env.SITE_URL || 'https://jun-juhuri.com';
 
 interface DictionaryRow {
   id: number;
+  slug: string | null;
   hebrew_script: string;
   hebrew_short: string | null;
   russian_short: string | null;
@@ -31,20 +33,35 @@ interface DialectScriptRow {
   pronunciation_guide: string | null;
 }
 
-type Props = { params: Promise<{ term: string }> };
+type Props = { params: Promise<{ locale: string; term: string }> };
 
 // ---------------------------------------------------------------------------
 // Metadata (server-side SEO)
 // ---------------------------------------------------------------------------
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { term } = await params;
+  const { locale, term } = await params;
   const decodedTerm = decodeURIComponent(term);
 
   const isNumericId = /^\d+$/.test(decodedTerm);
+  const isLatin = /^[a-z0-9\u00c0-\u024f\-]+$/i.test(decodedTerm);
+
+  let where: string;
+  let qp: any[];
+  if (isNumericId) {
+    where = '(id = ? OR hebrew_script = ? OR slug = ?)';
+    qp = [decodedTerm, decodedTerm, decodedTerm];
+  } else if (isLatin) {
+    where = '(slug = ? OR hebrew_script = ?)';
+    qp = [decodedTerm, decodedTerm];
+  } else {
+    where = 'hebrew_script = ?';
+    qp = [decodedTerm];
+  }
+
   const [rows] = await pool.query<DictionaryRow[] & any>(
-    `SELECT * FROM dictionary_entries WHERE ${isNumericId ? '(id = ? OR hebrew_script = ?)' : 'hebrew_script = ?'} LIMIT 1`,
-    isNumericId ? [decodedTerm, decodedTerm] : [decodedTerm],
+    `SELECT * FROM dictionary_entries WHERE ${where} LIMIT 1`,
+    qp,
   );
   const entry = (rows as DictionaryRow[])[0];
   if (!entry) {
@@ -52,6 +69,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   }
 
   const displayTerm = entry.hebrew_script || decodedTerm;
+  const canonicalSlug = entry.slug || encodeURIComponent(entry.hebrew_script);
   const meanings = [entry.hebrew_short, entry.russian_short, entry.english_short].filter(Boolean).join(' | ');
   let descOverride = meanings
     ? `${displayTerm} \u2014 ${meanings}`
@@ -68,7 +86,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   return buildPageMeta('word', { term: displayTerm }, {
     description: descOverride,
     ogType: 'article',
-    canonicalPath: `/word/${encodeURIComponent(entry.hebrew_script)}`,
+    canonicalPath: `/word/${canonicalSlug}`,
+    locale,
+    dynamicOgImage: true,
   });
 }
 
@@ -97,11 +117,32 @@ export default async function WordPage({ params }: Props) {
 
   // Fetch entry for JSON-LD structured data
   const isId = /^\d+$/.test(decodedTerm);
+  const isLatinSlug = /^[a-z0-9\u00c0-\u024f\-]+$/i.test(decodedTerm);
+
+  let entryWhere: string;
+  let entryParams: any[];
+  if (isId) {
+    entryWhere = '(id = ? OR hebrew_script = ? OR slug = ?)';
+    entryParams = [decodedTerm, decodedTerm, decodedTerm];
+  } else if (isLatinSlug) {
+    entryWhere = '(slug = ? OR hebrew_script = ?)';
+    entryParams = [decodedTerm, decodedTerm];
+  } else {
+    entryWhere = 'hebrew_script = ?';
+    entryParams = [decodedTerm];
+  }
+
   const [entryRows] = await pool.query<DictionaryRow[] & any>(
-    `SELECT * FROM dictionary_entries WHERE ${isId ? '(id = ? OR hebrew_script = ?)' : 'hebrew_script = ?'} LIMIT 1`,
-    isId ? [decodedTerm, decodedTerm] : [decodedTerm],
+    `SELECT * FROM dictionary_entries WHERE ${entryWhere} LIMIT 1`,
+    entryParams,
   );
   const entry = (entryRows as DictionaryRow[])[0];
+
+  // Redirect old Hebrew/ID URLs to canonical latin slug
+  if (entry?.slug && decodedTerm !== entry.slug) {
+    const { locale: pageLocale } = await params;
+    permanentRedirect(`/${pageLocale}/word/${entry.slug}`);
+  }
 
   // Fetch first dialect script for JSON-LD pronunciation
   let firstPronunciation: string | undefined;
@@ -117,6 +158,7 @@ export default async function WordPage({ params }: Props) {
   const jsonLd = entry
     ? buildJsonLdGraph(
         buildDefinedTermJsonLd({
+          slug: entry.slug,
           hebrewScript: entry.hebrew_script,
           hebrewShort: entry.hebrew_short || undefined,
           russianShort: entry.russian_short || undefined,
@@ -127,7 +169,7 @@ export default async function WordPage({ params }: Props) {
         buildBreadcrumbJsonLd([
           { name: '\u05D3\u05E3 \u05D4\u05D1\u05D9\u05EA', url: SITE_URL },
           { name: '\u05DE\u05D9\u05DC\u05D5\u05DF', url: `${SITE_URL}/dictionary` },
-          { name: entry.hebrew_script, url: `${SITE_URL}/word/${encodeURIComponent(entry.hebrew_script)}` },
+          { name: entry.hebrew_script, url: `${SITE_URL}/word/${entry.slug || encodeURIComponent(entry.hebrew_script)}` },
         ]),
       )
     : null;

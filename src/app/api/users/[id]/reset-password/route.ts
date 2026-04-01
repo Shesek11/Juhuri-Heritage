@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs';
 import pool from '@/src/lib/db';
 import { requireAdmin } from '@/src/lib/auth';
 import { fireEventEmail } from '@/src/lib/email';
+import { logEvent } from '@/src/lib/logEvent';
 
 // PUT /api/users/:id/reset-password - Reset password (Admin only)
 export async function PUT(
@@ -19,11 +20,7 @@ export async function PUT(
 
     await pool.query('UPDATE users SET password_hash = ? WHERE id = ?', [passwordHash, id]);
 
-    // Log password reset (without exposing the password)
-    await pool.query(
-      `INSERT INTO system_logs (event_type, description, user_id, user_name) VALUES (?, ?, ?, ?)`,
-      ['PASSWORD_RESET', `Admin reset password for user ${id}`, user.id, user.name]
-    ).catch(() => {});
+    await logEvent('PASSWORD_RESET', `Admin reset password for user ${id}`, user, { targetUserId: id }, request);
 
     // Notify the user about the password reset
     const [targetUser] = await pool.query('SELECT email, name FROM users WHERE id = ?', [id]) as [any[], any];

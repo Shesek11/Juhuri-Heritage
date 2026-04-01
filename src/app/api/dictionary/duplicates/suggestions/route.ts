@@ -9,8 +9,8 @@ export async function GET(request: NextRequest) {
     const [suggestions] = await pool.query(
       `SELECT ms.*,
               a.hebrew_script as term_a, b.hebrew_script as term_b,
-              (SELECT t.hebrew_script FROM dialect_scripts t WHERE t.entry_id = ms.entry_id_a LIMIT 1) as hebrew_a,
-              (SELECT t.hebrew_script FROM dialect_scripts t WHERE t.entry_id = ms.entry_id_b LIMIT 1) as hebrew_b,
+              a.hebrew_script as hebrew_a,
+              b.hebrew_script as hebrew_b,
               (SELECT t.latin_script FROM dialect_scripts t WHERE t.entry_id = ms.entry_id_a LIMIT 1) as latin_a,
               (SELECT t.latin_script FROM dialect_scripts t WHERE t.entry_id = ms.entry_id_b LIMIT 1) as latin_b
        FROM merge_suggestions ms

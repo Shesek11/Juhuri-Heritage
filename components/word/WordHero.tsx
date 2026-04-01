@@ -90,7 +90,7 @@ const WordHero: React.FC<WordHeroProps> = ({
   };
 
   const copyToClipboard = () => {
-    const allText = `${entry.hebrewScript}\n${entry.dialectScripts.map(t => `${t.hebrewScript} | ${t.latinScript} | ${t.cyrillicScript}`).join('\n')}`;
+    const allText = `${entry.hebrewScript}\n${entry.dialectScripts.map(t => `${entry.hebrewShort} | ${t.latinScript} | ${t.cyrillicScript}`).join('\n')}`;
     navigator.clipboard.writeText(allText);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);

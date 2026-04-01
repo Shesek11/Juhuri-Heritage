@@ -15,10 +15,11 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
     openGraph: {
       title,
       type: 'website',
-      url: `${SITE_URL}/marketplace`,
+      url: `${SITE_URL}/${locale}/marketplace`,
     },
     alternates: {
-      canonical: `${SITE_URL}/marketplace`,
+      canonical: `/${locale}/marketplace`,
+      languages: { he: '/he/marketplace', en: '/en/marketplace', ru: '/ru/marketplace', 'x-default': '/he/marketplace' },
     },
   };
 }

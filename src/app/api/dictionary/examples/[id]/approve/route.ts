@@ -22,7 +22,7 @@ export async function PUT(
       if (words.length > 0) {
         const placeholders = words.map(() => '?').join(',');
         const [matchedEntries] = await pool.query(
-          `SELECT id FROM dictionary_entries WHERE term IN (${placeholders}) AND status = 'active'`,
+          `SELECT id FROM dictionary_entries WHERE hebrew_script IN (${placeholders}) AND status = 'active'`,
           words
         ) as any[];
         for (const matched of matchedEntries) {
@@ -43,8 +43,12 @@ export async function PUT(
     // Notify the example author
     if (examples[0]?.user_id) {
       const [authorRows] = await pool.query('SELECT email, name FROM users WHERE id = ?', [examples[0].user_id]) as any[];
+      const [entryRows] = await pool.query('SELECT hebrew_script FROM dictionary_entries WHERE id = ?', [examples[0].entry_id]) as any[];
       if (authorRows.length && authorRows[0].email) {
-        fireEventEmail('example-approved', { to: authorRows[0].email, variables: { userName: authorRows[0].name || '' } });
+        fireEventEmail('example-approved', {
+          to: authorRows[0].email,
+          variables: { userName: authorRows[0].name || '', term: entryRows[0]?.hebrew_script || '', origin: examples[0].origin || '' },
+        });
       }
     }
 

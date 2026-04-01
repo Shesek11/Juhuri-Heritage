@@ -64,7 +64,9 @@ export async function POST(
     const xpAmount = audioUrl ? 30 : 20;
     await pool.query('UPDATE users SET xp = xp + ? WHERE id = ?', [xpAmount, user.id]);
 
-    fireEventEmail('suggestion-submitted', { variables: { userName: user.name, entryId: id, dialect: dialect || '', hebrew: hebrew || '' } });
+    // Get entry term for email
+    const [entryRows] = await pool.query('SELECT hebrew_script FROM dictionary_entries WHERE id = ?', [id]) as any[];
+    fireEventEmail('suggestion-submitted', { variables: { userName: user.name, entryId: id, term: entryRows[0]?.hebrew_script || '', dialect: dialect || '', hebrew: hebrew || '' } });
 
     await logEvent('DICTIONARY_SUGGESTION', `Translation suggestion for entry ${id}`, user, { entryId: id, dialect, hebrew }, request);
 

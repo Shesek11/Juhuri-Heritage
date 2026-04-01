@@ -92,8 +92,9 @@ export async function PUT(
         [entryId]
       );
       if (watchers.length > 0) {
-        const [entryRows] = await connection.query('SELECT hebrew_script FROM dictionary_entries WHERE id = ?', [entryId]);
+        const [entryRows] = await connection.query('SELECT hebrew_script, slug FROM dictionary_entries WHERE id = ?', [entryId]);
         const entryTerm = entryRows[0]?.hebrew_script || '';
+        const entrySlug = entryRows[0]?.slug || null;
         for (const w of watchers) {
           await connection.query(
             `INSERT INTO notifications (user_id, type, title, message, link)
@@ -102,7 +103,7 @@ export async function PUT(
               w.user_id,
               `תרגום חדש למילה "${entryTerm}"`,
               `למילה "${entryTerm}" נוסף תרגום חדש!`,
-              `/word/${encodeURIComponent(entryTerm)}`
+              `/word/${entrySlug || encodeURIComponent(entryTerm)}`
             ]
           );
         }

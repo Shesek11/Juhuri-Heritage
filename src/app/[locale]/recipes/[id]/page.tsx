@@ -25,11 +25,11 @@ interface RecipeRow {
   alt_text: string | null;
 }
 
-type Props = { params: Promise<{ id: string }> };
+type Props = { params: Promise<{ locale: string; id: string }> };
 
 // Server-side metadata for SEO
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { id } = await params;
+  const { locale, id } = await params;
   const numericId = parseInt(id, 10);
   if (isNaN(numericId)) return { title: '\u05DE\u05EA\u05DB\u05D5\u05DF \u05DC\u05D0 \u05E0\u05DE\u05E6\u05D0' };
 
@@ -49,6 +49,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     ogImage: recipe.photo_url || undefined,
     ogType: 'article',
     canonicalPath: `/recipes/${recipe.id}`,
+    locale,
   });
 }
 

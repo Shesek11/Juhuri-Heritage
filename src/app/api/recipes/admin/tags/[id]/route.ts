@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/src/lib/db';
 import { requireRole } from '@/src/lib/auth';
+import { logEvent } from '@/src/lib/logEvent';
 
 // PUT /api/recipes/admin/tags/:id - Update tag (admin only)
 export async function PUT(
@@ -24,6 +25,8 @@ export async function PUT(
       'UPDATE recipe_tags SET name = ?, name_hebrew = ?, icon = ?, color = ?, category = ? WHERE id = ?',
       [name, name_hebrew, icon || '', color || '#F59E0B', category || 'general', id]
     );
+
+    await logEvent('RECIPE_TAG_UPDATED', `תגית מתכון ${id} עודכנה: ${name}`, user, { tagId: id, name }, request);
 
     return NextResponse.json({
       success: true,
@@ -62,6 +65,8 @@ export async function DELETE(
     }
 
     await pool.query('DELETE FROM recipe_tags WHERE id = ?', [id]);
+
+    await logEvent('RECIPE_TAG_DELETED', `תגית מתכון ${id} נמחקה`, user, { tagId: id }, request);
 
     return NextResponse.json({
       success: true,

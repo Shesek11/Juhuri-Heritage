@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/src/lib/db';
 import { requireAuth } from '@/src/lib/auth';
+import { logEvent } from '@/src/lib/logEvent';
 
 export async function PUT(
   request: NextRequest,
@@ -105,6 +106,9 @@ export async function PUT(
 
     await connection.commit();
     connection.release();
+
+    await logEvent('ORDER_STATUS_CHANGED', `הזמנה ${orderId} → ${status}`, user, { orderId, status, orderNumber: order.order_number }, request);
+
     return NextResponse.json({ success: true, status });
   } catch (error) {
     await connection.rollback();

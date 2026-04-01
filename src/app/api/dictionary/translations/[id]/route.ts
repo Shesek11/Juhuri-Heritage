@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/src/lib/db';
 import { requireApprover } from '@/src/lib/auth';
+import { logEvent } from '@/src/lib/logEvent';
 
 // PUT /api/dictionary/translations/:id - Update dialect script (admin direct edit)
 export async function PUT(
@@ -8,7 +9,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await requireApprover(request);
+    const user = await requireApprover(request);
     const { id } = await params;
     const { hebrew, latin, cyrillic, dialectId, pronunciationGuide } = await request.json();
 
@@ -42,6 +43,8 @@ export async function PUT(
       `UPDATE dialect_scripts SET ${updates.join(', ')} WHERE id = ?`,
       values
     );
+
+    await logEvent('TRANSLATION_EDITED', `עריכת תרגום ${id}`, user, { translationId: id, hebrew }, request);
 
     return NextResponse.json({ success: true });
   } catch (error) {

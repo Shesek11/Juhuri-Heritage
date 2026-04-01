@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
     const [entries] = await pool.query(
       `SELECT de.id, de.hebrew_script,
               GROUP_CONCAT(DISTINCT fs.field_name ORDER BY fs.field_name SEPARATOR ', ') as ai_fields,
-              t.hebrew_script as t_hebrew_script, t.latin_script as t_latin_script, t.cyrillic_script as t_cyrillic_script,
+              de.hebrew_script as t_hebrew_script, t.latin_script as t_latin_script, t.cyrillic_script as t_cyrillic_script,
               t.pronunciation_guide as t_pronunciation_guide
        FROM field_sources fs
        JOIN dictionary_entries de ON fs.entry_id = de.id

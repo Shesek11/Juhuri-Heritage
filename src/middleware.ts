@@ -134,16 +134,24 @@ function stripLocalePrefix(pathname: string): string {
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
-  // Skip API routes, static files, Next.js internals
+  // Skip API routes, static files, Next.js internals, and SEO files
   if (
     pathname.startsWith('/api/') ||
     pathname.startsWith('/_next/') ||
     pathname.startsWith('/images/') ||
     pathname.startsWith('/uploads/') ||
     pathname === '/favicon.ico' ||
+    pathname === '/robots.txt' ||
     /\.(?:ico|png|jpg|jpeg|svg|webp|gif|css|js|woff|woff2|ttf|map)$/.test(pathname)
   ) {
     return NextResponse.next();
+  }
+
+  // --- Sitemap redirect to API handler ---
+  if (pathname === '/sitemap.xml') {
+    const url = request.nextUrl.clone();
+    url.pathname = '/api/sitemap';
+    return NextResponse.rewrite(url);
   }
 
   // --- DB-managed redirects (check BEFORE locale rewrite) ---

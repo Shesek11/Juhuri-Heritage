@@ -64,7 +64,14 @@ export async function POST(request: NextRequest) {
       VALUES (?, ?, ?, ?, ?)
     `, [user.id, source_member_id, target_member_id, relationship_type, message || null]) as any[];
 
-    fireEventEmail('family-link-request', { variables: { userName: user.name, relationshipType: relationship_type } });
+    // Notify the target member's owner about the link request
+    const [targetOwnerRows] = await pool.query(
+      `SELECT u.email, u.name FROM family_members fm JOIN users u ON fm.user_id = u.id WHERE fm.id = ?`,
+      [target_member_id]
+    ) as any[];
+    if (targetOwnerRows.length && targetOwnerRows[0].email) {
+      fireEventEmail('family-link-request', { to: targetOwnerRows[0].email, variables: { userName: user.name, relationshipType: relationship_type } });
+    }
 
     return NextResponse.json({ success: true, id: result.insertId }, { status: 201 });
   } catch (error) {

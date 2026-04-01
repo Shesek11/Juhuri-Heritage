@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/src/lib/db';
 import { requireAuth, getAuthUser } from '@/src/lib/auth';
+import { logEvent } from '@/src/lib/logEvent';
 
 // GET /api/recipes/:id - Get single recipe by ID
 export async function GET(
@@ -181,6 +182,8 @@ export async function PUT(
       }
     }
 
+    await logEvent('RECIPE_UPDATED', `מתכון ${id} עודכן`, user, { recipeId: id, title }, request);
+
     return NextResponse.json({ success: true, message: 'המתכון עודכן בהצלחה' });
   } catch (error) {
     if (error instanceof Response) return error;
@@ -212,6 +215,8 @@ export async function DELETE(
     }
 
     await pool.query('DELETE FROM recipes WHERE id = ?', [id]);
+
+    await logEvent('RECIPE_DELETED', `מתכון ${id} נמחק`, user, { recipeId: id }, request);
 
     return NextResponse.json({ success: true, message: 'המתכון נמחק' });
   } catch (error) {

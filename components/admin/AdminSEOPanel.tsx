@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import {
     Globe, FileText, ArrowRightLeft, BarChart3, Search, RefreshCw, Loader2,
     Save, Plus, Trash2, CheckCircle, XCircle, ExternalLink, Copy, Eye,
-    AlertTriangle, Bot, Map, Upload, Image, Palette, Cpu
+    AlertTriangle, Bot, Map, Upload, Image, Palette, Cpu, Target, TrendingUp
 } from 'lucide-react';
 import apiService from '../../services/apiService';
 import AdminGSCPanel from './AdminGSCPanel';
@@ -36,7 +36,19 @@ interface Redirect {
     created_at: string;
 }
 
-type SEOTab = 'overview' | 'gsc' | 'meta' | 'robots' | 'llms' | 'branding' | 'redirects' | 'preview';
+interface SEOKeyword {
+    id: number;
+    keyword: string;
+    language: 'he' | 'en' | 'ru';
+    monthly_volume: number | null;
+    current_position: number | null;
+    target_page: string | null;
+    priority: 'high' | 'medium' | 'low';
+    notes: string | null;
+    last_checked: string | null;
+}
+
+type SEOTab = 'overview' | 'gsc' | 'meta' | 'robots' | 'llms' | 'branding' | 'redirects' | 'keywords' | 'preview';
 
 const PAGE_TYPE_LABELS: Record<string, string> = {
     home: 'דף הבית',
@@ -89,6 +101,12 @@ export const AdminSEOPanel: React.FC = () => {
     // Preview
     const [previewUrl, setPreviewUrl] = useState('');
 
+    // Keywords
+    const [keywords, setKeywords] = useState<SEOKeyword[]>([]);
+    const [keywordFilter, setKeywordFilter] = useState<'all' | 'he' | 'en' | 'ru'>('all');
+    const [editingKeyword, setEditingKeyword] = useState<SEOKeyword | null>(null);
+    const [newKeyword, setNewKeyword] = useState({ keyword: '', language: 'he' as const, monthly_volume: '', target_page: '', priority: 'medium' as const, notes: '' });
+
     const tabs: { id: SEOTab; label: string; icon: React.ReactNode }[] = [
         { id: 'overview', label: 'סקירה', icon: <BarChart3 size={16} /> },
         { id: 'gsc', label: 'Search Console', icon: <Search size={16} /> },
@@ -96,6 +114,7 @@ export const AdminSEOPanel: React.FC = () => {
         { id: 'meta', label: 'Meta תבניות', icon: <FileText size={16} /> },
         { id: 'robots', label: 'robots.txt', icon: <Bot size={16} /> },
         { id: 'llms', label: 'llms.txt', icon: <Cpu size={16} /> },
+        { id: 'keywords', label: 'מילות מפתח', icon: <Target size={16} /> },
         { id: 'redirects', label: 'הפניות (301)', icon: <ArrowRightLeft size={16} /> },
         { id: 'preview', label: 'תצוגה מקדימה', icon: <Eye size={16} /> },
     ];
@@ -116,6 +135,7 @@ export const AdminSEOPanel: React.FC = () => {
         if (activeTab === 'llms') loadLlms();
         if (activeTab === 'branding') loadAssets();
         if (activeTab === 'redirects') loadRedirects();
+        if (activeTab === 'keywords') loadKeywords();
     }, [activeTab]);
 
     // ============================================
@@ -322,6 +342,51 @@ export const AdminSEOPanel: React.FC = () => {
             </div>
         </div>
     );
+
+    // ============================================
+    // KEYWORDS API
+    // ============================================
+
+    const loadKeywords = async () => {
+        try {
+            setLoading(true);
+            const data = await apiService.get('/admin/seo/keywords');
+            setKeywords(data);
+        } catch (err) {
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const saveKeyword = async (kw: Partial<SEOKeyword> & { keyword: string; language: string }) => {
+        try {
+            setSaving(true);
+            if (kw.id) {
+                await apiService.put('/admin/seo/keywords', kw);
+            } else {
+                await apiService.post('/admin/seo/keywords', kw);
+            }
+            setSuccess('מילת מפתח נשמרה');
+            setEditingKeyword(null);
+            setNewKeyword({ keyword: '', language: 'he', monthly_volume: '', target_page: '', priority: 'medium', notes: '' });
+            loadKeywords();
+        } catch (err) {
+            setError('שגיאה בשמירה');
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    const deleteKeyword = async (id: number) => {
+        try {
+            await apiService.delete('/admin/seo/keywords', { id });
+            setSuccess('מילת מפתח נמחקה');
+            loadKeywords();
+        } catch (err) {
+            setError('שגיאה במחיקה');
+        }
+    };
 
     // ============================================
     // TAB CONTENT
@@ -774,6 +839,82 @@ export const AdminSEOPanel: React.FC = () => {
         </div>
     );
 
+    const renderKeywords = () => {
+        const LANG_LABELS: Record<string, string> = { he: 'עברית', en: 'English', ru: 'Русский' };
+        const PRIORITY_COLORS: Record<string, string> = {
+            high: 'bg-red-500/20 text-red-300 border-red-500/30',
+            medium: 'bg-amber-500/20 text-amber-300 border-amber-500/30',
+            low: 'bg-slate-500/20 text-slate-400 border-slate-500/30',
+        };
+        const filtered = keywordFilter === 'all' ? keywords : keywords.filter(k => k.language === keywordFilter);
+        const grouped = { high: filtered.filter(k => k.priority === 'high'), medium: filtered.filter(k => k.priority === 'medium'), low: filtered.filter(k => k.priority === 'low') };
+
+        return (
+            <div className="space-y-6">
+                {/* Stats bar */}
+                <div className="grid grid-cols-4 gap-3">
+                    {(['all', 'he', 'en', 'ru'] as const).map(lang => {
+                        const count = lang === 'all' ? keywords.length : keywords.filter(k => k.language === lang).length;
+                        return (
+                            <button key={lang} onClick={() => setKeywordFilter(lang)}
+                                className={`p-3 rounded-lg border text-center transition-all ${keywordFilter === lang ? 'bg-indigo-600/20 border-indigo-500 text-indigo-300' : 'bg-white/5 border-white/10 text-slate-400 hover:border-white/20'}`}>
+                                <div className="text-lg font-bold">{count}</div>
+                                <div className="text-xs">{lang === 'all' ? 'הכל' : LANG_LABELS[lang]}</div>
+                            </button>
+                        );
+                    })}
+                </div>
+
+                {/* Add new keyword */}
+                <div className="bg-white/5 rounded-xl border border-white/10 p-4">
+                    <h3 className="text-sm font-medium text-white mb-3 flex items-center gap-2"><Plus size={14} /> הוסף מילת מפתח</h3>
+                    <div className="grid grid-cols-6 gap-2">
+                        <input className="col-span-2 bg-slate-800 border border-slate-600 rounded px-3 py-2 text-sm text-white placeholder-slate-500" placeholder="מילת מפתח" value={newKeyword.keyword} onChange={e => setNewKeyword({...newKeyword, keyword: e.target.value})} />
+                        <select title="שפה" className="bg-slate-800 border border-slate-600 rounded px-2 py-2 text-sm text-white" value={newKeyword.language} onChange={e => setNewKeyword({...newKeyword, language: e.target.value as any})}>
+                            <option value="he">עברית</option><option value="en">English</option><option value="ru">Русский</option>
+                        </select>
+                        <input className="bg-slate-800 border border-slate-600 rounded px-3 py-2 text-sm text-white placeholder-slate-500" placeholder="נפח חודשי" type="number" value={newKeyword.monthly_volume} onChange={e => setNewKeyword({...newKeyword, monthly_volume: e.target.value})} />
+                        <select title="עדיפות" className="bg-slate-800 border border-slate-600 rounded px-2 py-2 text-sm text-white" value={newKeyword.priority} onChange={e => setNewKeyword({...newKeyword, priority: e.target.value as any})}>
+                            <option value="high">גבוה</option><option value="medium">בינוני</option><option value="low">נמוך</option>
+                        </select>
+                        <button type="button" onClick={() => { if (newKeyword.keyword) saveKeyword({ keyword: newKeyword.keyword, language: newKeyword.language, monthly_volume: newKeyword.monthly_volume ? parseInt(newKeyword.monthly_volume) : null, target_page: newKeyword.target_page || null, priority: newKeyword.priority } as any); }}
+                            disabled={!newKeyword.keyword || saving}
+                            className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 rounded px-3 py-2 text-sm text-white font-medium flex items-center justify-center gap-1">
+                            {saving ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />} הוסף
+                        </button>
+                    </div>
+                </div>
+
+                {/* Keyword list by priority */}
+                {(['high', 'medium', 'low'] as const).map(priority => {
+                    const items = grouped[priority];
+                    if (items.length === 0) return null;
+                    return (
+                        <div key={priority} className="space-y-2">
+                            <h3 className="text-xs font-medium text-slate-400 uppercase flex items-center gap-2">
+                                <TrendingUp size={12} />
+                                {priority === 'high' ? 'עדיפות גבוהה' : priority === 'medium' ? 'עדיפות בינונית' : 'עדיפות נמוכה'}
+                                <span className="text-slate-500">({items.length})</span>
+                            </h3>
+                            <div className="space-y-1">
+                                {items.map(kw => (
+                                    <div key={kw.id} className="flex items-center gap-3 bg-white/5 rounded-lg px-4 py-2.5 border border-white/10 hover:border-white/20 transition-all group">
+                                        <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase border ${PRIORITY_COLORS[kw.priority]}`}>{LANG_LABELS[kw.language]}</span>
+                                        <span className="text-white font-medium flex-1" dir={kw.language === 'he' ? 'rtl' : 'ltr'}>{kw.keyword}</span>
+                                        {kw.monthly_volume && <span className="text-xs text-slate-400">{kw.monthly_volume.toLocaleString()}/mo</span>}
+                                        {kw.current_position && <span className="text-xs text-emerald-400">#{kw.current_position}</span>}
+                                        {kw.target_page && <span className="text-xs text-indigo-400 font-mono">{kw.target_page}</span>}
+                                        <button type="button" title="מחק" onClick={() => deleteKeyword(kw.id)} className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-300 transition-all"><Trash2 size={14} /></button>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+        );
+    };
+
     const renderPreview = () => {
         const siteUrl = 'https://jun-juhuri.com';
         const testUrls = [
@@ -928,6 +1069,7 @@ export const AdminSEOPanel: React.FC = () => {
             {activeTab === 'robots' && renderRobots()}
             {activeTab === 'llms' && renderLlms()}
             {activeTab === 'redirects' && renderRedirects()}
+            {activeTab === 'keywords' && renderKeywords()}
             {activeTab === 'preview' && renderPreview()}
         </div>
     );

@@ -19,7 +19,10 @@
       "Read(//c/Users/shimo/AppData/Local/Programs/Antigravity/bin//**)",
       "Bash(grep -n \"source\" c:devjuhuri-heritagemigrations/*.sql)",
       "Bash(curl -s -X POST \"https://api.emailit.com/v2/emails\" -H \"Authorization: Bearer secret_7P9Wn0Bf01Dz1GOA597V41QmwgMwge7v\" -H \"Content-Type: application/json\" --data '{\"\"\"\"from\"\"\"\":\"\"\"\"Juhuri Heritage <info@jun-juhuri.com>\"\"\"\",\"\"\"\"to\"\"\"\":[\"\"\"\"jun.juhuri@gmail.com\"\"\"\"],\"\"\"\"subject\"\"\"\":\"\"\"\"EmailIt Works! - Juhuri Heritage\"\"\"\",\"\"\"\"html\"\"\"\":\"\"\"\"<div dir=\\\\\"\"\"\"rtl\\\\\"\"\"\" style=\\\\\"\"\"\"font-family:Arial;padding:20px;\\\\\"\"\"\"><h2 style=\\\\\"\"\"\"color:#fbbf24;\\\\\"\"\"\">המייל עובד!</h2><p>שליחה מ-jun-juhuri.com דרך EmailIt מאומתת ועובדת.</p></div>\"\"\"\"}')",
-      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d, indent=2\\)\\)\")"
+      "Bash(python3 -c \"import sys,json; d=json.load\\(sys.stdin\\); print\\(json.dumps\\(d, indent=2\\)\\)\")",
+      "Bash(rm -rf .next node_modules/.cache)",
+      "Bash(npx next:*)",
+      "Bash(curl -s \"https://jun-juhuri.com/he\" -o /dev/null -w \"HTTP %{http_code} \\(%{time_total}s\\)\")"
     ]
   }
 }

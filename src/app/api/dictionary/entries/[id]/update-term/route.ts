@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/src/lib/db';
 import { requireApprover } from '@/src/lib/auth';
+import { logEvent } from '@/src/lib/logEvent';
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    await requireApprover(request);
+    const user = await requireApprover(request);
     const { id } = await params;
     const { term } = await request.json();
 
@@ -16,6 +17,8 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       'UPDATE dictionary_entries SET hebrew_script = ? WHERE id = ?',
       [term.trim(), id]
     );
+
+    await logEvent('TERM_UPDATED', `עדכון מונח ערך ${id}: ${term.trim()}`, user, { entryId: id, newTerm: term.trim() }, request);
 
     return NextResponse.json({ success: true });
   } catch (error) {

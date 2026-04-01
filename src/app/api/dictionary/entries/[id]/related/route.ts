@@ -13,7 +13,7 @@ export async function GET(
     }
 
     const [rows] = await pool.query(
-      `SELECT de.id, de.hebrew_script, t.hebrew_script as t_hebrew_script, de.part_of_speech as partOfSpeech
+      `SELECT de.id, de.slug, de.hebrew_script, de.hebrew_script as t_hebrew_script, de.part_of_speech as partOfSpeech
        FROM related_words rw
        JOIN dictionary_entries de ON de.id = rw.related_entry_id
        LEFT JOIN dialect_scripts t ON t.entry_id = de.id

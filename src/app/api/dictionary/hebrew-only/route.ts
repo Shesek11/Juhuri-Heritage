@@ -7,13 +7,13 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(request.nextUrl.searchParams.get('offset') || '0') || 0;
     const search = request.nextUrl.searchParams.get('search')?.trim();
 
-    const searchCondition = search ? 'AND (de.hebrew_script LIKE ? OR t.hebrew_script LIKE ? OR t.latin_script LIKE ?)' : '';
-    const searchParams = search ? [`%${search}%`, `%${search}%`, `%${search}%`] : [];
+    const searchCondition = search ? 'AND (de.hebrew_script LIKE ? OR t.latin_script LIKE ?)' : '';
+    const searchParams = search ? [`%${search}%`, `%${search}%`] : [];
 
     // "הוסף ג'והורי" = entries that have latin or cyrillic but NO Hebrew term.
     // These need someone to add the Hebrew transliteration.
     const [entries] = await pool.query(`
-      SELECT de.id, de.hebrew_script, de.detected_language, t.hebrew_script as t_hebrew_script, t.latin_script, t.cyrillic_script
+      SELECT de.id, de.hebrew_script, de.detected_language, de.hebrew_script as t_hebrew_script, t.latin_script, t.cyrillic_script
       FROM dictionary_entries de
       JOIN dialect_scripts t ON de.id = t.entry_id
       WHERE de.status = 'active'

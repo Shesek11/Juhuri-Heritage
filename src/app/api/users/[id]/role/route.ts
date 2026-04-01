@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/src/lib/db';
 import { requireAdmin } from '@/src/lib/auth';
+import { fireEventEmail } from '@/src/lib/email';
 
 // PUT /api/users/:id/role - Update user role (Admin only)
 export async function PUT(
@@ -16,8 +17,8 @@ export async function PUT(
       return NextResponse.json({ error: 'תפקיד לא תקין' }, { status: 400 });
     }
 
-    // Get target user name for logging
-    const [users]: any = await pool.query('SELECT name FROM users WHERE id = ?', [id]);
+    // Get target user info
+    const [users]: any = await pool.query('SELECT name, email FROM users WHERE id = ?', [id]);
     if (users.length === 0) {
       return NextResponse.json({ error: 'משתמש לא נמצא' }, { status: 404 });
     }
@@ -34,6 +35,15 @@ export async function PUT(
         JSON.stringify({ targetId: id, role }),
       ]
     );
+
+    // Notify user about role change
+    const roleNames: Record<string, string> = { admin: 'מנהל', approver: 'מאשר', user: 'משתמש' };
+    if (users[0]?.email) {
+      fireEventEmail('role-changed', {
+        to: users[0].email,
+        variables: { userName: users[0].name || '', role, roleName: roleNames[role] || role },
+      });
+    }
 
     return NextResponse.json({ success: true });
   } catch (error) {

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/src/lib/db';
 import { requireAdmin } from '@/src/lib/auth';
+import { logEvent } from '@/src/lib/logEvent';
 
 // DELETE /api/users/:id (Admin only)
 export async function DELETE(
@@ -24,10 +25,7 @@ export async function DELETE(
 
     await pool.query('DELETE FROM users WHERE id = ?', [id]);
 
-    await pool.query(
-      `INSERT INTO system_logs (event_type, description, user_id, user_name, metadata) VALUES (?, ?, ?, ?, ?)`,
-      ['USER_DELETED', `נמחק משתמש: ${users[0].name}`, user.id, user.name, JSON.stringify({ targetId: id })]
-    );
+    await logEvent('USER_DELETED', `נמחק משתמש: ${users[0].name}`, user, { targetId: id }, request);
 
     return NextResponse.json({ success: true });
   } catch (error) {

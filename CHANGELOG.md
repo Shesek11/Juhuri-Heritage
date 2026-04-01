@@ -13,10 +13,30 @@ All notable changes to this project will be documented in this file.
 - **In-Memory Rate Limiting**: Replaces `express-rate-limit` with Map-based sliding window.
 - **Manual Google OAuth**: Replaces Passport.js with direct OAuth2 flow (~60 lines).
 - **JWT Auth Utilities**: Ported to `src/lib/auth.ts` with `getAuthUser()`, `requireAuth()`, `requireRole()`.
+- **Dictionary Card Redesign**: New word card layout with AI badge, click-to-confirm AI fields, improved label readability.
+- **Responsive Header**: Two-row header with scroll collapse, collapsible admin sidebar, single-row compact mode.
 
 ### Added
 - Playwright E2E test suites: SSR output, SEO meta, JSON-LD, API smoke, navigation.
 - `deploy-nextjs.sh` deployment script for xCloud standalone output.
+- **i18n Support**: Full Hebrew, English, and Russian interface translations with locale persistence and flag-based switcher.
+- **Email System**: Complete email infrastructure with EmailIt API, 21 event-driven templates, admin template editor, event trigger management, and email logs.
+- **Event Logging**: Comprehensive `logEvent()` across all write operations — dictionary suggestions, word submissions, field corrections, duplicate merge proposals, comment moderation, recipe approvals, family link requests, feature flag changes, and email template edits.
+- **Duplicate Management**: Merge suggestion flow with admin comparison view, field override selection, and full audit trail via `merge_log`.
+- **Community Contributions**: Guest users can add untranslated words, suggest field corrections, submit proverbs/examples, and leave comments (pending moderation).
+- **Dictionary Notifications**: In-app notification system for translation watchers and community activity.
+- **Coming Soon Badges**: Nav items for unreleased features show icon-only with hover-expand labels.
+- **RTL Improvements**: Logical CSS properties, locale-aware links, proper bidirectional text handling across all pages.
+
+### Fixed
+- WCAG AA accessibility fixes across 94 files (27 issues resolved).
+- Mobile dictionary layout — gutter, modal fullscreen, search bar button clipping.
+- Production hardening — CSP headers, security, performance, stability.
+- QA bug fixes — API routes, duplicate titles, contact meta.
+- Deploy script now stops PM2 before file replacement.
+- Nav tabs no longer clip icons or overflow header on any screen size.
+- TTS empty text handling, word-of-day Hebrew filter, modal display fixes.
+- Widget counts, TranslationModal rewrite, navigation improvements.
 
 ### Removed
 - Prerender server dependency (SEO now handled natively by Next.js SSR).

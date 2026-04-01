@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
 import pool from '@/src/lib/db';
 import { requireAuth } from '@/src/lib/auth';
+import { logEvent } from '@/src/lib/logEvent';
 
 export async function PUT(request: NextRequest) {
   try {
@@ -28,6 +29,8 @@ export async function PUT(request: NextRequest) {
 
     params.push(user.id);
     await pool.query(`UPDATE users SET ${updates.join(', ')} WHERE id = ?`, params);
+
+    await logEvent('PROFILE_UPDATED', `פרופיל עודכן`, user, { changedFields: Object.keys({ ...(name ? { name } : {}), ...(password ? { password: true } : {}) }) }, request);
 
     // Get updated user
     const [users] = await pool.query(

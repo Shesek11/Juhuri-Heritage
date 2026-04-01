@@ -38,7 +38,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       template: t('titleTemplate'),
     },
     description: t('description'),
-    keywords: ["ג'והורי", 'Juhuri', 'Джуури', 'Mountain Jews', 'יהודי ההרים'],
+    keywords: [
+      "ג'והורי", "מילון ג'והורי", "יהודי ההרים", "שפת יהודי ההרים", "יהודי קווקז",
+      'Juhuri', 'Juhuri dictionary', 'Judeo-Tat', 'Mountain Jews', 'Mountain Jews language',
+      'Джуури', 'горские евреи', 'горско-еврейский язык', 'горско-еврейский словарь',
+    ],
     alternates: {
       canonical: `/${locale}`,
       languages: {
@@ -54,13 +58,13 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       type: 'website',
       locale: OG_LOCALE_MAP[locale as Locale] || 'he_IL',
       siteName: t('siteName'),
-      images: [{ url: ogImage, width: 1200, height: 630 }],
+      // images handled by opengraph-image.tsx (or admin override)
     },
     twitter: {
       card: 'summary_large_image',
       title: t('ogTitle'),
       description: t('description'),
-      images: [ogImage],
+      // images handled by opengraph-image.tsx (or admin override)
     },
     verification: {
       google: 'A3yUQjWHTO2y6V4kjV3k61E43gkDr4yxavoZfyxKc4U',

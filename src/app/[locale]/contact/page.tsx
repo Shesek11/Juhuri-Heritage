@@ -7,6 +7,10 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   const t = await getTranslations({ locale, namespace: 'contact' });
   return {
     title: t('pageTitle'),
+    alternates: {
+      canonical: `/${locale}/contact`,
+      languages: { he: '/he/contact', en: '/en/contact', ru: '/ru/contact', 'x-default': '/he/contact' },
+    },
   };
 }
 

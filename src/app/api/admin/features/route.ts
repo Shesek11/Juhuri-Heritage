@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/src/lib/db';
 import { requireAdmin } from '@/src/lib/auth';
+import { logEvent } from '@/src/lib/logEvent';
 
 // GET /api/admin/features - Get all feature flags (Admin only)
 export async function GET(request: NextRequest) {
@@ -20,7 +21,7 @@ export async function GET(request: NextRequest) {
 // PUT /api/admin/features - Reorder features
 export async function PUT(request: NextRequest) {
   try {
-    await requireAdmin(request);
+    const user = await requireAdmin(request);
     const { order } = await request.json(); // [{ feature_key: string, sort_order: number }]
 
     if (!Array.isArray(order)) {
@@ -33,6 +34,8 @@ export async function PUT(request: NextRequest) {
         [item.sort_order, item.feature_key]
       );
     }
+
+    await logEvent('FEATURES_REORDERED', 'סדר פיצ\'רים עודכן', user, { count: order.length }, request);
 
     return NextResponse.json({ success: true });
   } catch (error) {

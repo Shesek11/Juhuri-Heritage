@@ -6,6 +6,7 @@ import { partOfSpeechHebrew } from '../../utils/pos';
 
 interface RelatedWord {
   id: string;
+  slug?: string | null;
   hebrewScript: string;
   hebrewShort: string;
   partOfSpeech?: string;
@@ -29,7 +30,7 @@ const RelatedWords: React.FC<RelatedWordsProps> = ({ relatedWords }) => {
         {relatedWords.map((word) => (
           <Link
             key={word.id}
-            href={`/word/${encodeURIComponent(word.hebrewScript)}`}
+            href={`/word/${word.slug || encodeURIComponent(word.hebrewScript)}`}
             className="group/related flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 hover:border-indigo-500/40 transition-all"
           >
             <div className="flex flex-col">

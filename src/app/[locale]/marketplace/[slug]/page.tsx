@@ -29,11 +29,11 @@ interface VendorRow {
   total_reviews: number | null;
 }
 
-type Props = { params: Promise<{ slug: string }> };
+type Props = { params: Promise<{ locale: string; slug: string }> };
 
 // Server-side metadata for SEO
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const { slug } = await params;
+  const { locale, slug } = await params;
 
   const [rows] = await pool.query<VendorRow[] & any>(
     `SELECT v.*, s.average_rating, s.total_reviews
@@ -50,6 +50,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     description: vendor.about_text || undefined,
     ogImage: vendor.logo_url || undefined,
     canonicalPath: `/marketplace/${vendor.slug}`,
+    locale,
   });
 }
 

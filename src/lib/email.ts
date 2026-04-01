@@ -32,7 +32,7 @@ async function sendRawEmail({ to, subject, html, from, templateSlug }: {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${EMAILIT_API_KEY}`,
-      'Content-Type': 'application/json',
+      'Content-Type': 'application/json; charset=utf-8',
     },
     body: JSON.stringify({ from: fromAddr, to: toList, subject, html }),
   });
@@ -117,7 +117,7 @@ export async function sendEventEmail(
   return sendRawEmail({
     to: recipient,
     subject: interpolate(template.subject, fullVars),
-    html: `<html><head><meta charset="utf-8"></head><body>${interpolate(template.html_body, fullVars)}</body></html>`,
+    html: `<html><head><meta http-equiv="Content-Type" content="text/html; charset=utf-8"></head><body>${interpolate(template.html_body, fullVars)}</body></html>`,
     from: template.from_email || DEFAULT_FROM,
     templateSlug: slug,
   });

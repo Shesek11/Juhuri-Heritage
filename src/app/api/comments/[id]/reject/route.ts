@@ -13,18 +13,26 @@ export async function POST(
     const user = await requireApprover(request);
     const { id } = await params;
 
-    // Get comment author info before rejecting
-    const [commentRows] = await pool.query('SELECT user_id FROM comments WHERE id = ?', [id]) as any[];
-    const commentUserId = commentRows[0]?.user_id;
+    // Get comment + entry info before rejecting
+    const [commentRows] = await pool.query(
+      `SELECT c.user_id, c.content, c.entry_id, de.hebrew_script as term
+       FROM comments c
+       LEFT JOIN dictionary_entries de ON c.entry_id = de.id
+       WHERE c.id = ?`, [id]
+    ) as any[];
+    const comment = commentRows[0];
 
     await pool.query("UPDATE comments SET status = 'rejected' WHERE id = ?", [id]);
 
     await logEvent('COMMENT_REJECTED', `Comment ${id} rejected`, user, { commentId: id }, request);
 
-    if (commentUserId) {
-      const [userRows] = await pool.query('SELECT email, name FROM users WHERE id = ?', [commentUserId]) as any[];
+    if (comment?.user_id) {
+      const [userRows] = await pool.query('SELECT email, name FROM users WHERE id = ?', [comment.user_id]) as any[];
       if (userRows.length && userRows[0].email) {
-        fireEventEmail('comment-rejected', { to: userRows[0].email, variables: { userName: userRows[0].name || '' } });
+        fireEventEmail('comment-rejected', {
+          to: userRows[0].email,
+          variables: { userName: userRows[0].name || '', term: comment.term || '', commentContent: comment.content || '' },
+        });
       }
     }
 

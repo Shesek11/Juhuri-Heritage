@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/src/lib/db';
 import { requireAdmin } from '@/src/lib/auth';
+import { logEvent } from '@/src/lib/logEvent';
 
 // GET /api/admin/seo/settings - Get all SEO settings
 export async function GET(request: NextRequest) {
@@ -56,12 +57,7 @@ export async function PUT(request: NextRequest) {
       );
     }
 
-    // Audit log
-    await pool.query(
-      `INSERT INTO system_logs (event_type, description, user_id, user_name, metadata)
-       VALUES ('SEO_SETTINGS_CHANGED', ?, ?, ?, ?)`,
-      ['הגדרות SEO עודכנו', (user as any).id, (user as any).name, JSON.stringify({ keys: Object.keys(settings) })]
-    );
+    await logEvent('SEO_SETTINGS_CHANGED', 'הגדרות SEO עודכנו', user, { keys: Object.keys(settings) }, request);
 
     return NextResponse.json({ success: true });
   } catch (error) {

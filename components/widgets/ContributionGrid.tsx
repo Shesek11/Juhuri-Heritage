@@ -1,60 +1,71 @@
-import React, { useEffect, useState, useRef, useCallback } from 'react';
-import { Languages, BookText, Globe, Mic, Loader2 } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import React, { useEffect, useState, useRef, useCallback, useMemo } from 'react';
+import { Languages, BookText, Globe, Mic, Loader2, Type, Sparkles } from 'lucide-react';
+import { useTranslations, useLocale } from 'next-intl';
+import { ContributionCategory, categoryToApiPath } from '../shell/AppContext';
+import { getTermByLocale } from '../../utils/localeDisplay';
 import apiService from '../../services/apiService';
 
 interface RotatingWord {
   id: number;
   term: string;
   subHint?: string;
+  isAi?: boolean;
 }
 
 interface CardConfig {
-  category: 'hebrew-only' | 'juhuri-only' | 'missing-dialects' | 'missing-audio';
+  category: ContributionCategory;
   labelKey: string;
   icon: React.ReactNode;
   hintKey: string;
   buildSubHintKey?: string;
 }
 
-const CARD_CONFIGS: CardConfig[] = [
-  {
-    category: 'hebrew-only',
-    labelKey: 'addJuhuri',
-    icon: <Languages size={22} />,
-    hintKey: 'hintKnowHow',
-  },
-  {
-    category: 'juhuri-only',
-    labelKey: 'translateToHebrew',
-    icon: <BookText size={22} />,
-    hintKey: 'hintWhatHebrew',
-  },
-  {
-    category: 'missing-dialects',
-    labelKey: 'completeDialects',
-    icon: <Globe size={22} />,
-    hintKey: 'hintWhichDialect',
-    buildSubHintKey: 'missingPrefix',
-  },
-  {
-    category: 'missing-audio',
-    labelKey: 'recordPronunciation',
-    icon: <Mic size={22} />,
-    hintKey: 'hintRecordIt',
-  },
-];
+function getCardConfigs(locale: string): CardConfig[] {
+  // Cards 1 & 2 adapt per locale; cards 3 & 4 are universal
+  const scriptCard: CardConfig = locale === 'ru'
+    ? { category: 'missing-script-cyrillic', labelKey: 'addCyrillic', icon: <Type size={22} />, hintKey: 'hintAddCyrillic' }
+    : locale === 'en'
+    ? { category: 'missing-script-latin', labelKey: 'addTransliteration', icon: <Type size={22} />, hintKey: 'hintAddLatin' }
+    : { category: 'missing-script-hebrew', labelKey: 'addHebrewScript', icon: <Languages size={22} />, hintKey: 'hintAddHebrewScript' };
+
+  const meaningCard: CardConfig = locale === 'ru'
+    ? { category: 'missing-meaning-ru', labelKey: 'addRussianMeaning', icon: <BookText size={22} />, hintKey: 'hintAddMeaning' }
+    : locale === 'en'
+    ? { category: 'missing-meaning-en', labelKey: 'addEnglishMeaning', icon: <BookText size={22} />, hintKey: 'hintAddMeaning' }
+    : { category: 'missing-meaning-he', labelKey: 'addHebrewMeaning', icon: <BookText size={22} />, hintKey: 'hintAddMeaning' };
+
+  return [
+    scriptCard,
+    meaningCard,
+    {
+      category: 'missing-dialects',
+      labelKey: 'completeDialects',
+      icon: <Globe size={22} />,
+      hintKey: 'hintWhichDialect',
+      buildSubHintKey: 'missingPrefix',
+    },
+    {
+      category: 'missing-audio',
+      labelKey: 'recordPronunciation',
+      icon: <Mic size={22} />,
+      hintKey: 'hintRecordIt',
+    },
+  ];
+}
 
 const INTERVALS = [3500, 4200, 3800, 4500];
 
 interface ContributionGridProps {
-  onOpenWordList: (category: 'hebrew-only' | 'juhuri-only' | 'missing-dialects' | 'missing-audio', title: string, totalCount: number, featuredTerm?: string) => void;
+  onOpenWordList: (category: ContributionCategory, title: string, totalCount: number, featuredTerm?: string) => void;
 }
 
 const ContributionGrid: React.FC<ContributionGridProps> = ({ onOpenWordList }) => {
   const t = useTranslations('dictionary');
+  const locale = useLocale();
+  const cardConfigs = useMemo(() => getCardConfigs(locale), [locale]);
+
   const [cardData, setCardData] = useState<{ words: RotatingWord[]; total: number; currentIndex: number }[]>(
-    CARD_CONFIGS.map(() => ({ words: [], total: 0, currentIndex: 0 }))
+    cardConfigs.map(() => ({ words: [], total: 0, currentIndex: 0 }))
   );
   const [loading, setLoading] = useState(true);
   const [fading, setFading] = useState<boolean[]>([false, false, false, false]);
@@ -63,17 +74,19 @@ const ContributionGrid: React.FC<ContributionGridProps> = ({ onOpenWordList }) =
   useEffect(() => {
     const fetchCategory = async (config: CardConfig) => {
       try {
+        const apiPath = categoryToApiPath(config.category);
+        const separator = apiPath.includes('?') ? '&' : '?';
         const res = await apiService.get<{ entries: any[]; total: number }>(
-          `/dictionary/${config.category}?limit=5`
+          `/dictionary/${apiPath}${separator}limit=5`
         );
         const words: RotatingWord[] = (res.entries || [])
           .map((e: any) => ({
             id: e.id,
-            // Use term if Hebrew, otherwise fall back to latin/cyrillic/hebrew translation
-            term: (e.term && /^[\u0590-\u05FF]/.test(e.term)) ? e.term : (e.latin || e.cyrillic || e.hebrew || e.term || ''),
+            term: getTermByLocale(e, locale),
             subHint: config.buildSubHintKey && e.missingDialects?.[0] ? t(config.buildSubHintKey, { dialect: e.missingDialects[0] }) : undefined,
+            isAi: e.isAi || false,
           }))
-          .filter((w: RotatingWord) => w.term && w.term.length <= 25);
+          .filter((w: RotatingWord) => w.term && w.term !== '—' && w.term.length <= 25);
         return { words, total: res.total || 0 };
       } catch {
         return { words: [], total: 0 };
@@ -81,12 +94,12 @@ const ContributionGrid: React.FC<ContributionGridProps> = ({ onOpenWordList }) =
     };
 
     const fetchAll = async () => {
-      const results = await Promise.all(CARD_CONFIGS.map(fetchCategory));
+      const results = await Promise.all(cardConfigs.map(fetchCategory));
       setCardData(results.map((r) => ({ ...r, currentIndex: 0 })));
       setLoading(false);
     };
     fetchAll();
-  }, []);
+  }, [cardConfigs]);
 
   const rotateCard = useCallback((cardIndex: number) => {
     setFading((prev) => {
@@ -120,7 +133,7 @@ const ContributionGrid: React.FC<ContributionGridProps> = ({ onOpenWordList }) =
   }, [loading, rotateCard]);
 
   const handleCardClick = (cardIndex: number) => {
-    const config = CARD_CONFIGS[cardIndex];
+    const config = cardConfigs[cardIndex];
     const data = cardData[cardIndex];
     const currentWord = data.words[data.currentIndex];
     onOpenWordList(config.category, t(config.labelKey), data.total, currentWord?.term);
@@ -140,7 +153,7 @@ const ContributionGrid: React.FC<ContributionGridProps> = ({ onOpenWordList }) =
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 animate-in slide-in-from-bottom-6 duration-700">
-      {CARD_CONFIGS.map((config, i) => {
+      {cardConfigs.map((config, i) => {
         const data = cardData[i];
         const currentWord = data.words[data.currentIndex];
 
@@ -151,7 +164,7 @@ const ContributionGrid: React.FC<ContributionGridProps> = ({ onOpenWordList }) =
             onClick={() => handleCardClick(i)}
             className="group relative bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl border border-white/[0.06] p-5 text-center transition-all duration-300 hover:-translate-y-1 hover:border-amber-500/30 hover:shadow-[0_12px_30px_-10px_rgba(245,158,11,0.12)] font-rubik cursor-pointer"
           >
-            {/* Icon — amber outline style like HeartHandshake */}
+            {/* Icon */}
             <div className="w-11 h-11 mx-auto mb-3 rounded-full bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shadow-[0_0_15px_rgba(245,158,11,0.15)]">
               {config.icon}
             </div>
@@ -164,17 +177,22 @@ const ContributionGrid: React.FC<ContributionGridProps> = ({ onOpenWordList }) =
               {data.total > 0 ? t('wordsWaiting', { count: data.total.toLocaleString() }) : t('noWords')}
             </div>
 
-            {/* Rotating word area — fixed height, truncated */}
+            {/* Rotating word area */}
             {currentWord && (
               <div className="pt-3 border-t border-white/[0.05] h-[3.5rem] flex flex-col items-center justify-center overflow-hidden">
                 <div className="text-[0.8rem] text-slate-400 leading-relaxed w-full truncate">
                   <span
                     className={`font-bold text-amber-400 inline-block transition-opacity duration-300 max-w-[8ch] truncate align-bottom ${fading[i] ? 'opacity-0' : 'opacity-100'}`}
+                    dir="auto"
                   >
                     {currentWord.term}
                   </span>
                   <span className="mx-1 text-slate-600">&mdash;</span>
-                  <span>{t(config.hintKey)}</span>
+                  {currentWord.isAi ? (
+                    <span className="inline-flex items-center gap-0.5 text-purple-400"><Sparkles size={10} /> {t('verifyAi')}</span>
+                  ) : (
+                    <span>{t(config.hintKey)}</span>
+                  )}
                 </div>
 
                 {currentWord.subHint && (

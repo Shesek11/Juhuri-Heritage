@@ -296,7 +296,7 @@ const PossibleDuplicates: React.FC<{
         {duplicates.map(dup => (
           <div key={dup.id} className="flex items-center justify-between bg-slate-800/40 rounded-lg px-3 py-2.5 border border-slate-700/50">
             <Link
-              href={`/word/${encodeURIComponent(dup.hebrewScript)}`}
+              href={`/word/${dup.slug || encodeURIComponent(dup.hebrewScript)}`}
               className="flex items-center gap-3 text-sm hover:text-amber-300 transition-colors"
               onClick={e => e.stopPropagation()}
             >

@@ -22,7 +22,7 @@ export async function POST(
       'SELECT r.title, u.email, u.name FROM recipes r JOIN users u ON r.user_id = u.id WHERE r.id = ?', [id]
     ) as [any[], any];
     if (recipeRows.length && recipeRows[0].email) {
-      fireEventEmail('recipe-approved', { to: recipeRows[0].email, variables: { userName: recipeRows[0].name || '', recipeTitle: recipeRows[0].title || '' } });
+      fireEventEmail('recipe-approved', { to: recipeRows[0].email, variables: { userName: recipeRows[0].name || '', recipeTitle: recipeRows[0].title || '', recipeId: id } });
     }
 
     return NextResponse.json({ success: true, message: 'המתכון אושר' });

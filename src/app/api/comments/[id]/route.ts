@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/src/lib/db';
 import { getAuthUser } from '@/src/lib/auth';
+import { logEvent } from '@/src/lib/logEvent';
 
 // GET /api/comments/:entryId - Fetch approved comments for a dictionary entry
 export async function GET(
@@ -18,8 +19,8 @@ export async function GET(
         c.likes_count,
         c.created_at,
         c.user_id,
-        u.display_name as user_display_name,
-        u.avatar_url as user_avatar
+        u.name as user_display_name,
+        u.avatar as user_avatar
       FROM comments c
       LEFT JOIN users u ON c.user_id = u.id
       WHERE c.entry_id = ? AND c.status = 'approved'
@@ -58,6 +59,8 @@ export async function DELETE(
     }
 
     await pool.query('DELETE FROM comments WHERE id = ?', [id]);
+
+    await logEvent('COMMENT_DELETED', `תגובה ${id} נמחקה`, user, { commentId: id }, request);
 
     return NextResponse.json({ success: true, message: 'התגובה נמחקה' });
   } catch (error) {

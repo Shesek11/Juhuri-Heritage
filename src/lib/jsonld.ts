@@ -50,6 +50,7 @@ export function buildBreadcrumbJsonLd(items: { name: string; url: string }[]) {
 }
 
 export function buildDefinedTermJsonLd(entry: {
+  slug?: string | null;
   hebrewScript: string;
   hebrewShort?: string;
   russianShort?: string;
@@ -60,7 +61,7 @@ export function buildDefinedTermJsonLd(entry: {
   const meanings = [entry.hebrewShort, entry.russianShort, entry.englishShort].filter(Boolean).join(' | ');
   return {
     '@type': 'DefinedTerm',
-    '@id': `${SITE_URL}/word/${encodeURIComponent(entry.hebrewScript)}`,
+    '@id': `${SITE_URL}/word/${entry.slug || encodeURIComponent(entry.hebrewScript)}`,
     name: entry.hebrewScript,
     description: meanings || entry.hebrewScript,
     inDefinedTermSet: {
@@ -161,10 +162,12 @@ export function buildLocalBusinessJsonLd(vendor: {
 
 /**
  * Build the full JSON-LD @graph for a page.
+ * Note: WebSite + Organization are already injected by the locale layout,
+ * so page-level JSON-LD only includes page-specific items.
  */
 export function buildJsonLdGraph(...items: object[]) {
   return {
     '@context': 'https://schema.org',
-    '@graph': [buildWebsiteJsonLd(), buildOrganizationJsonLd(), ...items],
+    '@graph': items,
   };
 }

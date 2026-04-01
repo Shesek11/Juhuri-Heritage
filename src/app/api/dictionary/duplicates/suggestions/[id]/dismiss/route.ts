@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/src/lib/db';
 import { requireApprover } from '@/src/lib/auth';
+import { logEvent } from '@/src/lib/logEvent';
 
 export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -10,6 +11,9 @@ export async function PUT(request: NextRequest, { params }: { params: Promise<{ 
       `UPDATE merge_suggestions SET status = 'rejected', reviewed_by = ?, reviewed_at = NOW() WHERE id = ?`,
       [user.id, id]
     );
+
+    await logEvent('MERGE_DISMISSED', `הצעת מיזוג ${id} נדחתה`, user, { suggestionId: id }, request);
+
     return NextResponse.json({ success: true });
   } catch (err: any) {
     if (err instanceof Response) return err;

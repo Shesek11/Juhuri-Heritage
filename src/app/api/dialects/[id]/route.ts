@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/src/lib/db';
 import { requireAdmin } from '@/src/lib/auth';
+import { logEvent } from '@/src/lib/logEvent';
 
 // DELETE /api/dialects/:id (Admin only)
 export async function DELETE(
@@ -8,7 +9,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await requireAdmin(request);
+    const user = await requireAdmin(request);
     const { id } = await params;
 
     // Check minimum count
@@ -18,6 +19,9 @@ export async function DELETE(
     }
 
     await pool.query('DELETE FROM dialects WHERE id = ?', [id]);
+
+    await logEvent('DIALECT_DELETED', `ניב ${id} נמחק`, user, { dialectId: id }, request);
+
     return NextResponse.json({ success: true });
   } catch (error) {
     if (error instanceof Response) return error;

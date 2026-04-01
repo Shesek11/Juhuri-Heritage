@@ -336,7 +336,7 @@ const injectMetaTags = async (req, res, indexHtml) => {
             const term = decodeURIComponent(wordMatch[1]);
             const [entries] = await db.query(
                 `SELECT de.hebrew_script, de.hebrew_short, de.russian_short, de.english_short, de.part_of_speech,
-                        t.hebrew_script as t_hebrew_script, t.latin_script, t.cyrillic_script, t.pronunciation_guide
+                        de.hebrew_script as t_hebrew_script, t.latin_script, t.cyrillic_script, t.pronunciation_guide
                  FROM dictionary_entries de
                  LEFT JOIN dialect_scripts t ON de.id = t.entry_id
                  WHERE de.hebrew_script = ? AND de.status = 'active' LIMIT 1`,

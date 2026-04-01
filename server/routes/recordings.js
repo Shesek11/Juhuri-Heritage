@@ -5,6 +5,7 @@ const path = require('path');
 const fs = require('fs');
 const db = require('../config/db');
 const { authenticate, optionalAuth, requireApprover } = require('../middleware/auth');
+const { sendTemplateEmail } = require('../services/emailService');
 
 // Ensure uploads directory exists
 const uploadsDir = path.join(__dirname, '../../public/uploads/recordings');
@@ -67,6 +68,16 @@ router.post('/upload', optionalAuth, upload.single('audio'), async (req, res) =>
             status,
             req.body.duration || null
         ]);
+
+        // Notify admin for pending (guest) recordings
+        if (status === 'pending') {
+            const [entries] = await db.query('SELECT hebrew_script FROM dictionary_entries WHERE id = ?', [entryId]);
+            const adminEmail = process.env.ADMIN_EMAIL || 'jun.juhuri@gmail.com';
+            sendTemplateEmail('recording-submitted', {
+                to: adminEmail,
+                variables: { guestName: guestName || 'אורח', entryId: String(entryId), term: entries[0]?.hebrew_script || '' },
+            }).catch(err => console.error('Failed to send recording-submitted email:', err.message));
+        }
 
         res.status(201).json({
             success: true,
@@ -180,7 +191,20 @@ router.get('/admin/pending', authenticate, requireApprover, async (req, res) => 
 router.post('/:id/approve', authenticate, requireApprover, async (req, res) => {
     try {
         const { id } = req.params;
+        const [recs] = await db.query(
+            `SELECT ar.user_id, ar.entry_id, de.hebrew_script as term, u.email, u.name
+             FROM audio_recordings ar
+             LEFT JOIN dictionary_entries de ON ar.entry_id = de.id
+             LEFT JOIN users u ON ar.user_id = u.id
+             WHERE ar.id = ?`, [id]
+        );
         await db.query("UPDATE audio_recordings SET status = 'approved' WHERE id = ?", [id]);
+        if (recs[0]?.email) {
+            sendTemplateEmail('recording-approved', {
+                to: recs[0].email,
+                variables: { userName: recs[0].name || '', term: recs[0].term || '' },
+            }).catch(err => console.error('Failed to send recording-approved email:', err.message));
+        }
         res.json({ success: true, message: 'ההקלטה אושרה' });
     } catch (err) {
         console.error('Error approving recording:', err);
@@ -196,12 +220,24 @@ router.post('/:id/reject', authenticate, requireApprover, async (req, res) => {
     try {
         const { id } = req.params;
 
-        // Get file path to delete
-        const [recordings] = await db.query('SELECT file_url FROM audio_recordings WHERE id = ?', [id]);
+        // Get recording + user info before deleting
+        const [recordings] = await db.query(
+            `SELECT ar.file_url, ar.user_id, ar.entry_id, de.hebrew_script as term, u.email, u.name
+             FROM audio_recordings ar
+             LEFT JOIN dictionary_entries de ON ar.entry_id = de.id
+             LEFT JOIN users u ON ar.user_id = u.id
+             WHERE ar.id = ?`, [id]
+        );
         if (recordings.length > 0) {
             const filePath = path.join(__dirname, '../../public', recordings[0].file_url);
             if (fs.existsSync(filePath)) {
                 fs.unlinkSync(filePath);
+            }
+            if (recordings[0].email) {
+                sendTemplateEmail('recording-rejected', {
+                    to: recordings[0].email,
+                    variables: { userName: recordings[0].name || '', term: recordings[0].term || '' },
+                }).catch(err => console.error('Failed to send recording-rejected email:', err.message));
             }
         }
 

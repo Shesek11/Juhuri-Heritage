@@ -8,7 +8,10 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
   return {
     title: t('family_tree_module.title'),
     description: t('family_tree_module.description'),
-    alternates: { canonical: '/family' },
+    alternates: {
+      canonical: `/${locale}/family`,
+      languages: { he: '/he/family', en: '/en/family', ru: '/ru/family', 'x-default': '/he/family' },
+    },
   };
 }
 

@@ -10,9 +10,28 @@ export interface TranslationModalEntry {
   existingTranslation?: { id?: number; dialect: string; hebrewScript: string; latinScript: string; cyrillicScript: string };
 }
 
+export type ContributionCategory =
+  | 'hebrew-only' | 'juhuri-only' // legacy
+  | 'missing-dialects' | 'missing-audio' // universal
+  | 'missing-script-hebrew' | 'missing-script-latin' | 'missing-script-cyrillic' // per-script
+  | 'missing-meaning-he' | 'missing-meaning-en' | 'missing-meaning-ru'; // per-language
+
+/** Maps a ContributionCategory to its API path under /dictionary/ */
+export function categoryToApiPath(category: ContributionCategory): string {
+  if (category.startsWith('missing-script-')) {
+    const type = category.replace('missing-script-', '');
+    return `missing-script?type=${type}`;
+  }
+  if (category.startsWith('missing-meaning-')) {
+    const lang = category.replace('missing-meaning-', '');
+    return `missing-meaning?lang=${lang}`;
+  }
+  return category; // hebrew-only, juhuri-only, missing-dialects, missing-audio
+}
+
 export interface WordListModalState {
   isOpen: boolean;
-  category: 'hebrew-only' | 'juhuri-only' | 'missing-dialects' | 'missing-audio';
+  category: ContributionCategory;
   title: string;
   totalCount: number;
   featuredTerm?: string;

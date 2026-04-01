@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Clock, ArrowLeft } from 'lucide-react';
-import { useTranslations } from 'next-intl';
+import { Clock, ArrowLeft, ArrowRight } from 'lucide-react';
+import { useTranslations, useLocale } from 'next-intl';
 import { DictionaryEntry } from '../../types';
+import { getTermByLocale, getMeaningByLocale } from '../../utils/localeDisplay';
 import apiService from '../../services/apiService';
 
 interface RecentAdditionsProps {
@@ -10,6 +11,8 @@ interface RecentAdditionsProps {
 
 const RecentAdditions: React.FC<RecentAdditionsProps> = ({ onSelectWord }) => {
     const t = useTranslations('widgets');
+    const locale = useLocale();
+    const isRtl = locale === 'he';
     const [terms, setTerms] = useState<DictionaryEntry[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -26,6 +29,8 @@ const RecentAdditions: React.FC<RecentAdditionsProps> = ({ onSelectWord }) => {
         };
         fetchRecent();
     }, []);
+
+    const ArrowIcon = isRtl ? ArrowLeft : ArrowRight;
 
     return (
         <div className="relative bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-lg border border-white/[0.06] overflow-hidden font-rubik h-full flex flex-col group transition-all duration-300 hover:-translate-y-1 hover:border-amber-500/30">
@@ -48,31 +53,30 @@ const RecentAdditions: React.FC<RecentAdditionsProps> = ({ onSelectWord }) => {
                     </div>
                 ) : (
                     <div className="space-y-0.5">
-                        {terms.map((term, idx) => (
-                            <button
-                                type="button"
-                                key={idx}
-                                onClick={() => onSelectWord(term.hebrewScript || '', (term as any).id)}
-                                className="w-full text-start flex items-center justify-between px-3 py-2 rounded-lg hover:bg-white/[0.03] transition-all group/item cursor-pointer"
-                            >
-                                <div className="min-w-0">
-                                    <div className="font-semibold text-[0.8rem] text-slate-200 group-hover/item:text-amber-400 transition-colors truncate">
-                                        {term.hebrewScript || (term as any).hebrewShort || (term as any).latinScript || '—'}
+                        {terms.map((term, idx) => {
+                            const displayTerm = getTermByLocale(term as any, locale);
+                            const meaning = getMeaningByLocale(term as any, locale);
+                            return (
+                                <button
+                                    type="button"
+                                    key={idx}
+                                    onClick={() => onSelectWord(term.hebrewScript || displayTerm, (term as any).id)}
+                                    className="w-full text-start flex items-center justify-between px-3 py-2 rounded-lg hover:bg-white/[0.03] transition-all group/item cursor-pointer"
+                                >
+                                    <div className="min-w-0">
+                                        <div className="font-semibold text-[0.8rem] text-slate-200 group-hover/item:text-amber-400 transition-colors truncate" dir="auto">
+                                            {displayTerm}
+                                        </div>
+                                        {meaning && displayTerm !== meaning && (
+                                            <div className="text-xs text-slate-300 truncate" dir="auto">
+                                                {meaning}
+                                            </div>
+                                        )}
                                     </div>
-                                    {term.hebrewScript && (term as any).hebrewShort && (
-                                        <div className="text-xs text-slate-300 truncate">
-                                            {(term as any).hebrewShort}
-                                        </div>
-                                    )}
-                                    {!term.hebrewScript && (term as any).latinScript && (
-                                        <div className="text-xs text-slate-300 truncate font-mono" dir="ltr">
-                                            {(term as any).latinScript}
-                                        </div>
-                                    )}
-                                </div>
-                                <ArrowLeft size={14} className="text-slate-600 group-hover/item:text-amber-500 opacity-0 group-hover/item:opacity-100 transition-all shrink-0 ms-1" />
-                            </button>
-                        ))}
+                                    <ArrowIcon size={14} className="text-slate-600 group-hover/item:text-amber-500 opacity-0 group-hover/item:opacity-100 transition-all shrink-0 ms-1" />
+                                </button>
+                            );
+                        })}
                     </div>
                 )}
             </div>

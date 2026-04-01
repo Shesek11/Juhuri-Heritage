@@ -8,6 +8,7 @@ import { Clock, CheckCircle, XCircle, Award, BookOpen, MessageSquare, FileText }
 
 interface ContributionItem {
   id: number | string;
+  entrySlug?: string;
   entryTerm?: string;
   term?: string;
   fieldName?: string;
@@ -181,7 +182,7 @@ export default function ContributionsDashboard() {
                   <div className="flex items-center gap-2 flex-wrap">
                     {(item.entryTerm || item.term) && (
                       <Link
-                        href={`/word/${encodeURIComponent(item.entryTerm || item.term || '')}`}
+                        href={`/word/${item.entrySlug || encodeURIComponent(item.entryTerm || item.term || '')}`}
                         className="font-bold text-white hover:text-amber-400 transition-colors"
                       >
                         {item.entryTerm || item.term}

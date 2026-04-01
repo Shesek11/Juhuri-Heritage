@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/src/lib/db';
 import { requireAuth } from '@/src/lib/auth';
+import { logEvent } from '@/src/lib/logEvent';
 
 export async function PUT(
   request: NextRequest,
@@ -63,6 +64,9 @@ export async function PUT(
       SET status = ?, reviewed_by = ?, reviewed_at = NOW()
       WHERE id = ?
     `, [status, user.id, id]);
+
+    const eventType = status === 'approved' ? 'FAMILY_MERGE_APPROVED' : 'FAMILY_MERGE_REJECTED';
+    await logEvent(eventType, `מיזוג משפחתי ${id} ${status === 'approved' ? 'אושר' : 'נדחה'}`, user, { suggestionId: id, status, keepMemberId }, request);
 
     return NextResponse.json({ success: true, status });
   } catch (error) {

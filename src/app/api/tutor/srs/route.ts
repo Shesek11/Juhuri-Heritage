@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
       SELECT
         wm.entry_id as id,
         de.hebrew_script,
-        t.hebrew_script as t_hebrew_script,
+        de.hebrew_script as t_hebrew_script,
         t.latin_script,
         t.pronunciation_guide as pronunciation,
         wm.box,

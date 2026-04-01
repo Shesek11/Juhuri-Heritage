@@ -23,7 +23,7 @@ export async function GET() {
         SELECT COUNT(DISTINCT de.id) as count FROM dictionary_entries de
         JOIN dialect_scripts t ON de.id = t.entry_id
         WHERE de.status = 'active'
-        AND t.hebrew_script IS NOT NULL AND t.hebrew_script != ''
+        AND de.hebrew_script IS NOT NULL AND de.hebrew_script != ''
         AND (t.latin_script IS NULL OR t.latin_script = '')
       `),
       pool.query(`
@@ -31,7 +31,7 @@ export async function GET() {
         JOIN dialect_scripts t ON de.id = t.entry_id
         WHERE de.status = 'active'
         AND de.detected_language = 'Juhuri'
-        AND (t.hebrew_script IS NULL OR t.hebrew_script = '')
+        AND (de.hebrew_script IS NULL OR de.hebrew_script = '')
       `),
       pool.query('SELECT COUNT(*) as dialectCount FROM dialects'),
       pool.query(`SELECT COUNT(*) as count FROM dictionary_entries WHERE status = 'active'`),

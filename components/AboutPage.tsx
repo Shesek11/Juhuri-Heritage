@@ -3,18 +3,12 @@
 import React from 'react';
 import { Link } from '@/src/i18n/navigation';
 import { useTranslations } from 'next-intl';
-import { Home } from 'lucide-react';
-
-/*
- * HIDDEN TABS — preserved for future use:
- * - 'guide' (מדריך למשתמש): Dictionary usage guide, tutor guide ("סבא מרדכי")
- * - 'sources' (מקורות ידע): Academic sources, dictionaries list (Agronov, Yusupova, etc.), STMEGI link
- * - Feature grid (4 cards): המילון החכם, המורה הפרטי, חיפוש קולי, ממשק מתקדם
- * See git history for full content.
- */
+import { Home, BookOpen, Globe, Users } from 'lucide-react';
 
 const AboutPage: React.FC = () => {
-  const t = useTranslations('pages');
+  const t = useTranslations('about');
+  const tp = useTranslations('pages');
+
   return (
     <div className="w-full max-w-5xl mx-auto px-4 py-12">
       <div className="bg-[#0d1424]/60 backdrop-blur-xl rounded-2xl shadow-lg border border-white/10 overflow-hidden">
@@ -22,48 +16,68 @@ const AboutPage: React.FC = () => {
         {/* Header */}
         <div className="p-6 md:p-8 border-b border-white/10 text-center bg-white/5">
           <h1 className="text-3xl md:text-4xl font-bold text-slate-50 mb-2">
-            {t('aboutTitle')}
+            {t('title')}
           </h1>
-          <p className="text-slate-400 text-sm">
-            {t('aboutSubtitle')}
-          </p>
         </div>
 
         {/* Content */}
-        <div className="p-6 md:p-10 space-y-8 text-slate-300 leading-relaxed">
+        <div className="p-6 md:p-10 space-y-10 text-slate-300 leading-relaxed">
+
           {/* Welcome */}
-          <div className="bg-amber-900/20 p-5 rounded-2xl border border-amber-900/50">
-            <h4 className="font-bold text-amber-100 text-lg mb-2">ברוכים הבאים למורשת ג׳והורי</h4>
-            <p className="text-sm text-amber-200/80">
-              מיזם דיגיטלי חדשני לשימור, תיעוד והנגשת השפה הג׳והורית (יהודית-הררית). המערכת משלבת מחקר אקדמי קפדני עם טכנולוגיות בינה מלאכותית מתקדמות כדי להחיות את שפתם של יהודי ההרים.
-            </p>
+          <div className="bg-amber-900/20 p-6 rounded-2xl border border-amber-900/50">
+            <h2 className="font-bold text-amber-100 text-xl mb-3">{t('welcomeTitle')}</h2>
+            <p className="text-amber-200/80">{t('welcomeText')}</p>
           </div>
 
-          {/* Mission & Team */}
-          <div className="space-y-6">
-            <div>
-              <h3 className="text-xl font-bold text-white mb-3">המשימה שלנו</h3>
-              <p className="text-slate-300 leading-relaxed mb-3">
-                מורשת ג׳והורי הוקמה מתוך אהבה עמוקה לשפת הג׳והורי הייחודית ולתרבות העשירה של יהודי ההרים בקווקז. אנו מאמינים ששפה היא נשמתה של קהילה, ושימורה חיוני להבטחת העברת המורשת מדור לדור.
-              </p>
-              <p className="text-slate-300 leading-relaxed">
-                מטרתנו היא לספק פלטפורמה דיגיטלית מקיפה ונגישה, שתשמש כמרכז ללימוד, תיעוד וחגיגת כל היבטי התרבות הג׳והורית.
-              </p>
-            </div>
-            <div>
-              <h3 className="text-xl font-bold text-white mb-3">הצוות שלנו</h3>
-              <p className="text-slate-300 leading-relaxed">
-                מאחורי מורשת ג׳והורי עומד צוות מסור של בלשנים, מפתחים, מעצבים, ואנשי קהילה. אנו תמיד מחפשים מתנדבים חדשים — בקרו ב<Link href="/contact" className="text-amber-400 hover:underline">עמוד צור קשר</Link>.
-              </p>
-            </div>
+          {/* Stats */}
+          <div className="grid grid-cols-3 gap-4">
+            {[
+              { value: '46,000+', label: t('statsEntries'), icon: <BookOpen size={20} /> },
+              { value: '3', label: t('statsLanguages'), icon: <Globe size={20} /> },
+              { value: '3', label: t('statsDialects'), icon: <Users size={20} /> },
+            ].map((stat) => (
+              <div key={stat.label} className="bg-white/5 rounded-xl border border-white/10 p-4 text-center">
+                <div className="text-amber-400 mb-2 flex justify-center">{stat.icon}</div>
+                <div className="text-2xl font-bold text-white">{stat.value}</div>
+                <div className="text-xs text-slate-400 mt-1">{stat.label}</div>
+              </div>
+            ))}
           </div>
+
+          {/* What is Juhuri */}
+          <section>
+            <h2 className="text-xl font-bold text-white mb-3">{t('whatIsTitle')}</h2>
+            <p className="text-slate-300 leading-relaxed mb-3">{t('whatIsText1')}</p>
+            <p className="text-slate-300 leading-relaxed">{t('whatIsText2')}</p>
+          </section>
+
+          {/* Dictionary */}
+          <section>
+            <h2 className="text-xl font-bold text-white mb-3">{t('dictionaryTitle')}</h2>
+            <p className="text-slate-300 leading-relaxed">{t('dictionaryText')}</p>
+          </section>
+
+          {/* Mission */}
+          <section>
+            <h2 className="text-xl font-bold text-white mb-3">{t('missionTitle')}</h2>
+            <p className="text-slate-300 leading-relaxed">{t('missionText')}</p>
+          </section>
+
+          {/* Team */}
+          <section>
+            <h2 className="text-xl font-bold text-white mb-3">{t('teamTitle')}</h2>
+            <p className="text-slate-300 leading-relaxed">
+              {t('teamText')}{' '}
+              <Link href="/contact" className="text-amber-400 hover:underline">{t('contactLink')}</Link>.
+            </p>
+          </section>
         </div>
 
         {/* Footer */}
         <div className="p-6 border-t border-white/10 text-center">
           <Link href="/" className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-bold rounded-xl shadow-lg hover:scale-105 transition-all duration-300">
             <Home size={18} />
-            {t('backHome')}
+            {tp('backHome')}
           </Link>
         </div>
       </div>

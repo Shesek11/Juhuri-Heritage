@@ -23,8 +23,8 @@ export async function GET(request: NextRequest) {
     }
 
     if (search && search.trim()) {
-      conditions.push('(de.hebrew_script LIKE ? OR t_search.hebrew_script LIKE ?)');
-      params.push(`%${search.trim()}%`, `%${search.trim()}%`);
+      conditions.push('(de.hebrew_script LIKE ?)');
+      params.push(`%${search.trim()}%`);
     }
 
     const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
               de.part_of_speech, de.russian_short, de.source, de.source_name, de.status, de.created_at,
               de.hebrew_short, de.hebrew_long, de.russian_long, de.english_short, de.english_long,
               u.name as contributor_name,
-              t.id as trans_id, t.hebrew_script as t_hebrew_script, t.latin_script as t_latin_script, t.cyrillic_script as t_cyrillic_script,
+              t.id as trans_id, de.hebrew_script as t_hebrew_script, t.latin_script as t_latin_script, t.cyrillic_script as t_cyrillic_script,
               t.pronunciation_guide as t_pronunciation_guide,
               COALESCE(d.name, '') as dialect
        FROM dictionary_entries de
@@ -59,6 +59,7 @@ export async function GET(request: NextRequest) {
 
     const result = entries.map((e: any) => ({
       id: String(e.id),
+      slug: e.slug || null,
       hebrewScript: e.hebrew_script,
       detectedLanguage: e.detected_language,
       partOfSpeech: e.part_of_speech,

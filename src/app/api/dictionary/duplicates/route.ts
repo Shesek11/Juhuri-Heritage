@@ -27,11 +27,11 @@ const LAYER_QUERIES: { type: string; base: string; searchFilter: string }[] = [
   },
   {
     type: 'hebrew',
-    base: `SELECT ${NORM('t.hebrew_script')} as match_key, 'hebrew' as match_type,
+    base: `SELECT ${NORM('de.hebrew_script')} as match_key, 'hebrew' as match_type,
            GROUP_CONCAT(DISTINCT de.id ORDER BY de.id) as ids, COUNT(DISTINCT de.id) as cnt
            FROM dialect_scripts t JOIN dictionary_entries de ON t.entry_id = de.id
-           WHERE de.status = 'active' AND t.hebrew_script IS NOT NULL AND t.hebrew_script != '' AND CHAR_LENGTH(t.hebrew_script) > 1`,
-    searchFilter: `AND ${NORM('t.hebrew_script')} LIKE ?`,
+           WHERE de.status = 'active' AND de.hebrew_script IS NOT NULL AND de.hebrew_script != '' AND CHAR_LENGTH(de.hebrew_script) > 1`,
+    searchFilter: `AND ${NORM('de.hebrew_script')} LIKE ?`,
   },
   {
     type: 'latin',
@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
     // Run all layers in parallel — simple GROUP BY, no subqueries
     const groupByCol: Record<string, string> = {
       term: 'de.hebrew_script_normalized',
-      hebrew: NORM('t.hebrew_script'),
+      hebrew: NORM('de.hebrew_script'),
       latin: NORM('t.latin_script'),
       russian: NORM('de.russian_short'),
       cyrillic: NORM('t.cyrillic_script'),
@@ -97,9 +97,9 @@ export async function GET(request: NextRequest) {
                        LEFT JOIN dialect_scripts ds ON ds.entry_id = de2.id
                        WHERE de2.status = 'active'
                          AND (de2.hebrew_script_normalized LIKE ? OR de2.hebrew_script LIKE ?
-                              OR ds.hebrew_script LIKE ? OR ds.latin_script LIKE ?)
+                              OR ds.latin_script LIKE ?)
                      )`;
-          params.push(searchNorm, `%${search}%`, `%${search}%`, `%${search}%`);
+          params.push(searchNorm, `%${search}%`, `%${search}%`);
         } else {
           // Other layers: search in the match_key
           query += ` ${layer.searchFilter}`;
@@ -139,7 +139,7 @@ export async function GET(request: NextRequest) {
     const ph = everyId.map(() => '?').join(',');
     const [lightEntries] = await pool.query(
       `SELECT de.id, de.hebrew_script, de.russian_short,
-              (SELECT JSON_ARRAYAGG(JSON_OBJECT('h', t.hebrew_script, 'l', t.latin_script, 'c', t.cyrillic_script))
+              (SELECT JSON_ARRAYAGG(JSON_OBJECT('h', de.hebrew_script, 'l', t.latin_script, 'c', t.cyrillic_script))
                FROM dialect_scripts t WHERE t.entry_id = de.id LIMIT 1) as ds
        FROM dictionary_entries de WHERE de.id IN (${ph})`, everyId
     ) as any[];
@@ -250,7 +250,7 @@ export async function GET(request: NextRequest) {
     const ph2 = pageIds.map(() => '?').join(',');
     const [fullEntries] = await pool.query(
       `SELECT de.id, de.hebrew_script, de.hebrew_script_normalized, de.part_of_speech, de.russian_short, de.source_name, de.source, de.created_at,
-              (SELECT JSON_ARRAYAGG(JSON_OBJECT('hebrewScript', t.hebrew_script, 'latinScript', t.latin_script, 'cyrillicScript', t.cyrillic_script, 'dialect', COALESCE(d.name, '')))
+              (SELECT JSON_ARRAYAGG(JSON_OBJECT('hebrewScript', de.hebrew_script, 'latinScript', t.latin_script, 'cyrillicScript', t.cyrillic_script, 'dialect', COALESCE(d.name, '')))
                FROM dialect_scripts t LEFT JOIN dialects d ON t.dialect_id = d.id WHERE t.entry_id = de.id) as translations_json
        FROM dictionary_entries de WHERE de.id IN (${ph2})`, pageIds
     ) as any[];

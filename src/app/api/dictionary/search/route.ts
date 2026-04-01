@@ -20,14 +20,14 @@ export async function GET(request: NextRequest) {
        LEFT JOIN users a ON de.approved_by = a.id
        LEFT JOIN dialect_scripts t ON de.id = t.entry_id
        WHERE de.status = 'active'
-         AND (de.hebrew_script LIKE ? OR MATCH(t.hebrew_script) AGAINST(? IN BOOLEAN MODE) OR t.hebrew_script LIKE ? OR de.russian_short LIKE ?)
+         AND (de.hebrew_script LIKE ? OR MATCH(de.hebrew_script) AGAINST(? IN BOOLEAN MODE) OR de.hebrew_script LIKE ? OR de.russian_short LIKE ?)
        GROUP BY de.id
        ORDER BY
           CASE
             WHEN de.hebrew_script = ? THEN 0
-            WHEN t.hebrew_script = ? THEN 1
+            WHEN de.hebrew_script = ? THEN 1
             WHEN de.hebrew_script LIKE ? THEN 2
-            WHEN t.hebrew_script LIKE ? THEN 3
+            WHEN de.hebrew_script LIKE ? THEN 3
             ELSE 4
           END,
           de.created_at DESC
@@ -90,6 +90,7 @@ export async function GET(request: NextRequest) {
 
     const result = {
       id: String(entry.id),
+      slug: entry.slug || null,
       hebrewScript: entry.hebrew_script,
       detectedLanguage: entry.detected_language,
       dialectScripts: dialectScripts.map((t: any) => ({
@@ -141,6 +142,7 @@ export async function GET(request: NextRequest) {
         const trans = transMap[e.id] || [];
         allResults.push({
           id: String(e.id),
+          slug: e.slug || null,
           hebrewScript: e.hebrew_script,
           detectedLanguage: e.detected_language,
           dialectScripts: trans.map((t: any) => ({

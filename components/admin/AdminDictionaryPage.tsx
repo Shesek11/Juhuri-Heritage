@@ -220,7 +220,7 @@ export default function AdminDictionaryPage() {
         if (!entryId) { alert('לא ניתן לערוך ערך זה - חסר מזהה'); return; }
         setEditingEntryId(entryId);
         setEditForm({
-            hebrewScript: entry.hebrewScript || '', hebrewShort: entry.dialectScripts[0]?.hebrewScript || '',
+            hebrewScript: entry.hebrewScript || '', hebrewShort: entry.hebrewShort || '',
             latinScript: entry.dialectScripts[0]?.latinScript || '', cyrillicScript: entry.dialectScripts[0]?.cyrillicScript || '',
             dialect: entry.dialectScripts[0]?.dialect || ''
         });

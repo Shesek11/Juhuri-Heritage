@@ -28,7 +28,7 @@ export async function GET(request: NextRequest) {
         de.id,
         de.hebrew_script,
         t.pronunciation_guide as pronunciation,
-        t.hebrew_script as t_hebrew_script,
+        de.hebrew_script as t_hebrew_script,
         t.latin_script,
         e.origin as example,
         e.translated as exampleTranslation

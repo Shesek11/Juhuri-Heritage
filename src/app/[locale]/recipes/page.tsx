@@ -19,10 +19,11 @@ export async function generateMetadata({ params }: { params: Promise<{ locale: s
       title,
       description,
       type: 'website',
-      url: `${SITE_URL}/recipes`,
+      url: `${SITE_URL}/${locale}/recipes`,
     },
     alternates: {
-      canonical: `${SITE_URL}/recipes`,
+      canonical: `/${locale}/recipes`,
+      languages: { he: '/he/recipes', en: '/en/recipes', ru: '/ru/recipes', 'x-default': '/he/recipes' },
     },
   };
 }

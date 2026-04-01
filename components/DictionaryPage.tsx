@@ -244,7 +244,7 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({
   const seoDescription = result
     ? `${result.hebrewScript} - ${t('resultsFor')} ${result.hebrewShort || ''}`
     : undefined;
-  const seoCanonicalPath = result ? `/word/${encodeURIComponent(result.hebrewScript)}` : '/';
+  const seoCanonicalPath = result ? `/word/${result.slug || encodeURIComponent(result.hebrewScript)}` : '/';
   const seoJsonLd = result
     ? buildDefinedTermJsonLd(result.hebrewScript, result.hebrewShort || result.hebrewScript)
     : undefined;
@@ -396,7 +396,7 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({
                   isBestMatch
                   searchQuery={query}
                   onReport={() => setReportEntry(result)}
-                  onNavigate={() => router.push(`/word/${encodeURIComponent(result.hebrewScript || result.id || '')}`)}
+                  onNavigate={() => router.push(`/word/${result.slug || encodeURIComponent(result.hebrewScript || result.id || '')}`)}
                   onSuggestMerge={result.hasDuplicates ? (e) => setMergeSourceEntry(e) : undefined}
                 />
 
@@ -407,7 +407,7 @@ const DictionaryPage: React.FC<DictionaryPageProps> = ({
                     entry={entry}
                     searchQuery={query}
                     onReport={() => setReportEntry(entry)}
-                    onNavigate={() => router.push(`/word/${encodeURIComponent(entry.hebrewScript || entry.id || '')}`)}
+                    onNavigate={() => router.push(`/word/${entry.slug || encodeURIComponent(entry.hebrewScript || entry.id || '')}`)}
                     onSuggestMerge={entry.hasDuplicates ? (e) => setMergeSourceEntry(e) : undefined}
                   />
                 ))}

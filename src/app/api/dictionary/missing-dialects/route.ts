@@ -17,13 +17,14 @@ export async function GET(request: NextRequest) {
     // Most entries have dialect_id = NULL, so they count as 0 dialects.
     const [entries] = await pool.query(
       `SELECT de.id, de.hebrew_script, de.detected_language,
+              de.hebrew_script as t_hebrew_script, MAX(t.latin_script) as t_latin_script,
+              MAX(t.cyrillic_script) as t_cyrillic_script,
               GROUP_CONCAT(DISTINCT d.name) as existing_dialects,
               COUNT(DISTINCT CASE WHEN t.dialect_id IS NOT NULL THEN t.dialect_id END) as dc
        FROM dictionary_entries de
        JOIN dialect_scripts t ON de.id = t.entry_id
        LEFT JOIN dialects d ON t.dialect_id = d.id
        WHERE de.status = 'active'
-       AND de.hebrew_script REGEXP '^[א-ת]'
        ${searchCondition}
        GROUP BY de.id
        HAVING dc < ?
@@ -52,6 +53,10 @@ export async function GET(request: NextRequest) {
       const missing = allDialects.filter((d: any) => !existing.includes(d.name)).map((d: any) => d.name);
       return {
         id: e.id,
+        term: e.t_hebrew_script || e.t_latin_script || e.t_cyrillic_script || e.hebrew_script || '',
+        hebrew: e.t_hebrew_script || null,
+        latin: e.t_latin_script || null,
+        cyrillic: e.t_cyrillic_script || null,
         hebrewScript: e.hebrew_script,
         detectedLanguage: e.detected_language,
         existingDialects: existing,

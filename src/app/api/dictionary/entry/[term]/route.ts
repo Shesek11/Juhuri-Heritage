@@ -10,15 +10,33 @@ export async function GET(
     const term = decodeURIComponent(rawTerm).trim();
     if (!term) return NextResponse.json({ error: 'נדרש מונח' }, { status: 400 });
 
-    // Support lookup by numeric ID (for entries with empty hebrew_script)
+    // Support lookup by: slug (latin), numeric ID, or hebrew_script (legacy)
     const isNumericId = /^\d+$/.test(term);
+    const isLatin = /^[a-z0-9\u00c0-\u024f\-]+$/i.test(term);
+
+    let whereClause: string;
+    let queryParams: any[];
+
+    if (isNumericId) {
+      whereClause = '(de.id = ? OR de.hebrew_script = ? OR de.slug = ?)';
+      queryParams = [term, term, term];
+    } else if (isLatin) {
+      // Latin slug lookup (new) — also fallback to hebrew_script
+      whereClause = '(de.slug = ? OR de.hebrew_script = ?)';
+      queryParams = [term, term];
+    } else {
+      // Hebrew script lookup (legacy)
+      whereClause = 'de.hebrew_script = ?';
+      queryParams = [term];
+    }
+
     const [entries] = await pool.query(
       `SELECT de.*, u.name as contributor_name
        FROM dictionary_entries de
        LEFT JOIN users u ON de.contributor_id = u.id
-       WHERE de.status = 'active' AND ${isNumericId ? '(de.id = ? OR de.hebrew_script = ?)' : 'de.hebrew_script = ?'}
+       WHERE de.status = 'active' AND ${whereClause}
        LIMIT 1`,
-      isNumericId ? [term, term] : [term]
+      queryParams
     ) as any[];
 
     if (entries.length === 0) {
@@ -70,6 +88,7 @@ export async function GET(
       found: true,
       entry: {
         id: String(entry.id),
+        slug: entry.slug || null,
         hebrewScript: entry.hebrew_script,
         detectedLanguage: entry.detected_language,
         dialectScripts: dialectScripts.map((t: any) => ({

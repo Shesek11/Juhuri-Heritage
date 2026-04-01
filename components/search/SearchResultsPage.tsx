@@ -190,7 +190,7 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({
               isBestMatch={idx === 0}
               searchQuery={searchTerm}
               onReport={() => setReportEntry(entry)}
-              onNavigate={() => router.push(`/word/${encodeURIComponent(entry.hebrewScript)}`)}
+              onNavigate={() => router.push(`/word/${entry.slug || encodeURIComponent(entry.hebrewScript)}`)}
               onSuggestMerge={entry.hasDuplicates ? (e) => setMergeSourceEntry(e) : undefined}
             />
           ))}

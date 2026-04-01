@@ -17,7 +17,7 @@ export async function POST(
       return NextResponse.json({ error: 'נדרש שם שדה וערך מוצע' }, { status: 400 });
     }
 
-    const allowedFields = ['hebrew', 'latin', 'cyrillic', 'russian', 'definition', 'pronunciationGuide', 'partOfSpeech', 'dialect'];
+    const allowedFields = ['hebrew', 'hebrewShort', 'hebrewLong', 'latin', 'cyrillic', 'russian', 'russianShort', 'englishShort', 'definition', 'pronunciationGuide', 'partOfSpeech', 'dialect'];
     if (!allowedFields.includes(fieldName)) {
       return NextResponse.json({ error: 'שדה לא חוקי' }, { status: 400 });
     }

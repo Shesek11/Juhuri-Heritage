@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/src/lib/db';
 import { requireRole } from '@/src/lib/auth';
+import { logEvent } from '@/src/lib/logEvent';
 
 const EMAIL_EVENTS = [
   { slug: 'welcome', name: 'ברוכים הבאים', description: 'נשלח למשתמש חדש אחרי הרשמה', recipient: 'user', trigger: 'הרשמה (אימייל/Google/Facebook)', wired: true },
@@ -23,6 +24,11 @@ const EMAIL_EVENTS = [
   { slug: 'comment-rejected', name: 'תגובה נדחתה', description: 'נשלח למגיב כשתגובתו נדחתה', recipient: 'user', trigger: 'דחיית תגובה', wired: true },
   { slug: 'example-submitted', name: 'פתגם חדש הוגש', description: 'נשלח לאדמין כשמישהו מגיש פתגם/דוגמה', recipient: 'admin', trigger: 'הגשת פתגם', wired: true },
   { slug: 'example-approved', name: 'פתגם אושר', description: 'נשלח לתורם כשהפתגם שלו אושר', recipient: 'user', trigger: 'אישור פתגם', wired: true },
+  { slug: 'recording-approved', name: 'הקלטה אושרה', description: 'נשלח למשתמש כשהקלטה שלו אושרה', recipient: 'user', trigger: 'אישור הקלטה', wired: true },
+  { slug: 'recording-rejected', name: 'הקלטה נדחתה', description: 'נשלח למשתמש כשהקלטה שלו נדחתה', recipient: 'user', trigger: 'דחיית הקלטה', wired: true },
+  { slug: 'recording-submitted', name: 'הקלטה חדשה', description: 'נשלח לאדמין כשהקלטה ממתינה לאישור', recipient: 'admin', trigger: 'הגשת הקלטה (אורח)', wired: true },
+  { slug: 'role-changed', name: 'שינוי תפקיד', description: 'נשלח למשתמש כשתפקידו השתנה', recipient: 'user', trigger: 'שינוי תפקיד ע"י אדמין', wired: true },
+  { slug: 'recipe-rejected', name: 'מתכון נדחה', description: 'נשלח למשתמש כשמתכון שלו נדחה', recipient: 'user', trigger: 'דחיית מתכון', wired: true },
   { slug: 'newsletter', name: 'ניוזלטר', description: 'עדכון תקופתי למנויים', recipient: 'subscribers', trigger: 'שליחה ידנית', wired: false },
 ];
 
@@ -72,7 +78,7 @@ export async function GET(request: NextRequest) {
 // PUT /api/admin/email-templates/triggers — update mapping
 export async function PUT(request: NextRequest) {
   try {
-    await requireRole(request, ['admin']);
+    const user = await requireRole(request, ['admin']);
     const { eventSlug, templateId } = await request.json();
 
     if (!eventSlug) {
@@ -90,6 +96,8 @@ export async function PUT(request: NextRequest) {
         [eventSlug, templateId, templateId]
       );
     }
+
+    await logEvent('EMAIL_TRIGGER_UPDATED', `טריגר אימייל עודכן: ${eventSlug}`, user, { eventSlug, templateId }, request);
 
     return NextResponse.json({ success: true });
   } catch (error) {

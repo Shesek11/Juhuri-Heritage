@@ -128,7 +128,7 @@ export default function AdminPendingPage() {
                             {pendingEntries.map((entry, idx) => (
                                 <tr key={idx} className="hover:bg-white/5 text-slate-200">
                                     <td className="p-4 font-bold text-lg">{entry.hebrewScript}</td>
-                                    <td className="p-4">{entry.dialectScripts[0]?.hebrewScript}</td>
+                                    <td className="p-4">{entry.hebrewShort}</td>
                                     <td className="p-4"><span className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-300 px-2 py-1 rounded text-xs">{entry.dialectScripts[0]?.dialect || '-'}</span></td>
                                     <td className="p-4 text-xs text-slate-400">{entry.contributorId ? 'משתמש רשום' : 'אורח'}</td>
                                     <td className="p-4">

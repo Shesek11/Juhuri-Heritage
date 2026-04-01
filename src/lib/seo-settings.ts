@@ -136,6 +136,8 @@ export function applyTemplate(
 
 const SITE_URL = process.env.SITE_URL || 'https://jun-juhuri.com';
 
+const LOCALES = ['he', 'en', 'ru'] as const;
+
 export async function buildPageMeta(
   pageType: string,
   vars: Record<string, string>,
@@ -144,6 +146,9 @@ export async function buildPageMeta(
     ogImage?: string;
     ogType?: 'article' | 'website';
     canonicalPath?: string;
+    locale?: string;
+    /** Set true when opengraph-image.tsx handles the image */
+    dynamicOgImage?: boolean;
   },
 ) {
   const settings = await getSeoSettings();
@@ -156,10 +161,23 @@ export async function buildPageMeta(
   const description = overrides?.description
     || (template ? applyTemplate(template.description, vars) : '');
 
-  const ogImageUrl = overrides?.ogImage || settings.ogImage || '/images/og-default.png';
+  const useDynamicOg = overrides?.dynamicOgImage;
+  const ogImageUrl = useDynamicOg ? null : (overrides?.ogImage || settings.ogImage || '/images/og-default.png');
+
+  const locale = overrides?.locale || 'he';
   const canonicalUrl = overrides?.canonicalPath
-    ? `${SITE_URL}${overrides.canonicalPath}`
+    ? `${SITE_URL}/${locale}${overrides.canonicalPath}`
     : undefined;
+
+  // Build hreflang alternates for all locales
+  const alternates: Record<string, any> = {};
+  if (canonicalUrl && overrides?.canonicalPath) {
+    alternates.canonical = canonicalUrl;
+    alternates.languages = Object.fromEntries([
+      ...LOCALES.map(l => [l, `${SITE_URL}/${l}${overrides.canonicalPath}`]),
+      ['x-default', `${SITE_URL}/he${overrides.canonicalPath}`],
+    ]);
+  }
 
   return {
     title,
@@ -169,10 +187,8 @@ export async function buildPageMeta(
       description,
       type: overrides?.ogType || 'website' as const,
       ...(canonicalUrl && { url: canonicalUrl }),
-      images: [{ url: ogImageUrl }],
+      ...(ogImageUrl && { images: [{ url: ogImageUrl }] }),
     },
-    ...(canonicalUrl && {
-      alternates: { canonical: canonicalUrl },
-    }),
+    ...(Object.keys(alternates).length > 0 && { alternates }),
   };
 }

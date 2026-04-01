@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/src/lib/db';
 import { requireAdmin } from '@/src/lib/auth';
 import { encrypt } from '@/src/lib/encryption';
+import { logEvent } from '@/src/lib/logEvent';
 
 // Allowed setting keys (whitelist)
 const ALLOWED_KEYS = ['gemini_api_key'];
@@ -47,17 +48,7 @@ export async function PUT(
       [key, encrypted, iv, authTag, description || null, user.id]
     );
 
-    // Audit log
-    await pool.query(
-      `INSERT INTO system_logs (event_type, description, user_id, user_name, metadata)
-       VALUES ('SETTING_CHANGED', ?, ?, ?, ?)`,
-      [
-        `הגדרה "${key}" עודכנה`,
-        user.id,
-        user.name,
-        JSON.stringify({ setting_key: key }),
-      ]
-    );
+    await logEvent('SETTING_CHANGED', `הגדרה "${key}" עודכנה`, user, { setting_key: key }, request);
 
     return NextResponse.json({ success: true, setting_key: key, masked_value: maskValue(value.trim()) });
   } catch (error) {
@@ -85,16 +76,7 @@ export async function DELETE(
       return NextResponse.json({ error: 'הגדרה לא נמצאה' }, { status: 404 });
     }
 
-    await pool.query(
-      `INSERT INTO system_logs (event_type, description, user_id, user_name, metadata)
-       VALUES ('SETTING_CHANGED', ?, ?, ?, ?)`,
-      [
-        `הגדרה "${key}" נמחקה (חזרה ל-.env)`,
-        user.id,
-        user.name,
-        JSON.stringify({ setting_key: key, action: 'deleted' }),
-      ]
-    );
+    await logEvent('SETTING_DELETED', `הגדרה "${key}" נמחקה (חזרה ל-.env)`, user, { setting_key: key }, request);
 
     return NextResponse.json({ success: true, message: 'הגדרה נמחקה, המערכת תשתמש ב-.env' });
   } catch (error) {

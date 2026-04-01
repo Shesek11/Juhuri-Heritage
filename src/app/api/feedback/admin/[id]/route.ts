@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/src/lib/db';
 import { requireRole } from '@/src/lib/auth';
+import { logEvent } from '@/src/lib/logEvent';
 
 // PUT /api/feedback/admin/:id - Update feedback status (admin only)
 export async function PUT(
@@ -8,7 +9,7 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    await requireRole(request, ['admin']);
+    const user = await requireRole(request, ['admin']);
     const { id } = await params;
     const { status, adminNote } = await request.json();
 
@@ -16,6 +17,8 @@ export async function PUT(
       'UPDATE site_feedback SET status = ?, admin_note = ? WHERE id = ?',
       [status, adminNote || null, id]
     );
+
+    await logEvent('FEEDBACK_STATUS_CHANGED', `פידבק ${id} עודכן ל-${status}`, user, { feedbackId: id, status }, request);
 
     return NextResponse.json({ success: true });
   } catch (error) {

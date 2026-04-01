@@ -22,6 +22,7 @@ export interface FieldSources {
 }
 
 export interface DictionaryEntry {
+  slug?: string;
   hebrewScript: string;
   detectedLanguage: 'Hebrew' | 'Juhuri' | 'English' | 'Russian';
   dialectScripts: DialectScript[];
@@ -121,6 +122,7 @@ export interface PendingSuggestion {
 
 export interface DuplicatePreview {
   id: string;
+  slug?: string;
   hebrewScript: string;
   hebrewShort?: string;
   latinScript?: string;
