@@ -102,9 +102,16 @@ export async function GET(request: NextRequest) {
       const normScript = normalizeHebrew(e.hebrew_script || '');
       const isExactText = e.hebrew_script === term || normScript === normalizeHebrew(term);
       const isExactMeaning = (e.hebrew_short || '') === term || (e.english_short || '') === term;
-      return { ...e, _dist: isExactText ? -2 : isExactMeaning ? -1 : dist };
+      // Also compute distance on normalized (niqqud-stripped) original text
+      const normDist = levenshtein(normalizeHebrew(term), normScript);
+      const score = isExactText ? -200 : isExactMeaning ? -100 : dist * 10 + normDist;
+      return { ...e, _score: score };
     });
-    rankedEntries.sort((a: any, b: any) => a._dist - b._dist);
+    rankedEntries.sort((a: any, b: any) => a._score - b._score);
+    // Debug log for first few
+    if (process.env.NODE_ENV !== 'production') {
+      rankedEntries.slice(0, 5).forEach((e: any) => console.log(`  rank: #${e.id} ${e.hebrew_script} score=${e._score} pk=${e.phonetic_key}`));
+    }
     rankedEntries.splice(30); // Keep top 30 after re-ranking
 
     // Get the best match
