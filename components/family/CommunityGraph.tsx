@@ -659,6 +659,23 @@ export const CommunityGraph: React.FC = () => {
                 const units: Unit[] = [];
                 const inUnit = new Set<number>();
 
+                // Helper: count descendants for a set of node IDs
+                const countDescendants = (ids: number[]): number => {
+                    let count = 0;
+                    ids.forEach(id => {
+                        const childKey1 = [id].join(',');
+                        const children1 = realChildrenOfCouple.get(childKey1) || [];
+                        // Also check as part of a couple
+                        const sId = spouseMap.get(id);
+                        const coupleKey = sId ? [id, sId].sort((a, b) => a - b).join(',') : '';
+                        const children2 = coupleKey ? (realChildrenOfCouple.get(coupleKey) || []) : [];
+                        const allChildren = [...new Set([...children1, ...children2])];
+                        count += allChildren.length;
+                        if (allChildren.length > 0) count += countDescendants(allChildren);
+                    });
+                    return count;
+                };
+
                 // Couples first
                 genNodes.forEach(n => {
                     if (inUnit.has(n.id)) return;
@@ -670,7 +687,10 @@ export const CommunityGraph: React.FC = () => {
                         const pair = nHasParents && !spouseHasParents ? [n, spouse] :
                                      spouseHasParents && !nHasParents ? [spouse, n] :
                                      [n, spouse].sort((a, b) => (a.birthYear ?? 0) - (b.birthYear ?? 0));
-                        units.push({ nodes: pair, width: COUPLE_GAP });
+                        // Width based on descendant count
+                        const descendants = countDescendants([n.id, spouse.id]);
+                        const extraWidth = descendants > 0 ? descendants * 25 : 0;
+                        units.push({ nodes: pair, width: COUPLE_GAP + extraWidth });
                         inUnit.add(n.id);
                         inUnit.add(spouse.id);
                     }
@@ -679,7 +699,11 @@ export const CommunityGraph: React.FC = () => {
                 // Singles
                 genNodes.filter(n => !inUnit.has(n.id))
                     .sort((a, b) => (a.birthYear ?? 0) - (b.birthYear ?? 0))
-                    .forEach(n => units.push({ nodes: [n], width: 0 }));
+                    .forEach(n => {
+                        const descendants = countDescendants([n.id]);
+                        const extraWidth = descendants > 0 ? descendants * 25 : 0;
+                        units.push({ nodes: [n], width: extraWidth });
+                    });
 
                 // Sort units: children under their parents
                 units.sort((a, b) => {
@@ -796,7 +820,7 @@ export const CommunityGraph: React.FC = () => {
 
         // Light simulation: only collision avoidance + snap-back to computed positions
         const simulation = forceSimulation<GraphNode>(nodes)
-            .force('collision', forceCollide().radius(40))
+            .force('collision', forceCollide().radius(45))
             .force('snapBack', () => {
                 nodes.forEach(n => {
                     const target = targetPositions.get(n.id);
