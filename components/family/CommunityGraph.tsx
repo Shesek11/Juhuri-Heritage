@@ -467,7 +467,7 @@ export const CommunityGraph: React.FC = () => {
         }
 
         // ===== HIERARCHICAL LAYOUT WITH TIMELINE Y-AXIS =====
-        const NODE_SPACING = 100; // Horizontal gap between nodes
+        const NODE_SPACING = 110; // Horizontal gap between nodes
         const COUPLE_GAP = 60; // Gap between spouses
         const padding = 80;
         const leftPadding = 60;
@@ -659,22 +659,6 @@ export const CommunityGraph: React.FC = () => {
                 const units: Unit[] = [];
                 const inUnit = new Set<number>();
 
-                // Helper: count direct children for a couple/person
-                const countDirectChildren = (ids: number[]): number => {
-                    const coupleKey = ids.length === 2 ? [...ids].sort((a, b) => a - b).join(',') : '';
-                    if (coupleKey && realChildrenOfCouple.has(coupleKey)) {
-                        return realChildrenOfCouple.get(coupleKey)!.length;
-                    }
-                    // Single parent: check all keys containing this ID
-                    let count = 0;
-                    realChildrenOfCouple.forEach((children, key) => {
-                        if (ids.some(id => key.split(',').includes(String(id)))) {
-                            count = Math.max(count, children.length);
-                        }
-                    });
-                    return count;
-                };
-
                 // Couples first
                 genNodes.forEach(n => {
                     if (inUnit.has(n.id)) return;
@@ -686,9 +670,7 @@ export const CommunityGraph: React.FC = () => {
                         const pair = nHasParents && !spouseHasParents ? [n, spouse] :
                                      spouseHasParents && !nHasParents ? [spouse, n] :
                                      [n, spouse].sort((a, b) => (a.birthYear ?? 0) - (b.birthYear ?? 0));
-                        const childCount = countDirectChildren([n.id, spouse.id]);
-                        const extraWidth = childCount > 1 ? (childCount - 1) * 30 : 0;
-                        units.push({ nodes: pair, width: COUPLE_GAP + extraWidth });
+                        units.push({ nodes: pair, width: COUPLE_GAP });
                         inUnit.add(n.id);
                         inUnit.add(spouse.id);
                     }
@@ -697,11 +679,7 @@ export const CommunityGraph: React.FC = () => {
                 // Singles
                 genNodes.filter(n => !inUnit.has(n.id))
                     .sort((a, b) => (a.birthYear ?? 0) - (b.birthYear ?? 0))
-                    .forEach(n => {
-                        const childCount = countDirectChildren([n.id]);
-                        const extraWidth = childCount > 1 ? (childCount - 1) * 30 : 0;
-                        units.push({ nodes: [n], width: extraWidth });
-                    });
+                    .forEach(n => units.push({ nodes: [n], width: 0 }));
 
                 // Sort units: children under their parents
                 units.sort((a, b) => {
@@ -760,6 +738,35 @@ export const CommunityGraph: React.FC = () => {
                         }
                     });
                 });
+            });
+
+            // Post-process: push overlapping nodes apart per generation
+            sortedGens.forEach(gen => {
+                const genNodes = genGroups.get(gen)!;
+                const sorted = [...genNodes].sort((a, b) => (a.x || 0) - (b.x || 0));
+                const MIN_GAP = 90; // Minimum center-to-center horizontal distance
+                for (let i = 1; i < sorted.length; i++) {
+                    const prev = sorted[i - 1];
+                    const curr = sorted[i];
+                    const gap = (curr.x || 0) - (prev.x || 0);
+                    if (gap < MIN_GAP) {
+                        const push = (MIN_GAP - gap) / 2;
+                        // Push prev left, curr right
+                        prev.x = (prev.x || 0) - push;
+                        curr.x = (curr.x || 0) + push;
+                        // Also move their spouses
+                        const prevSpouseId = spouseMap.get(prev.id);
+                        if (prevSpouseId) {
+                            const s = compNodes.find(n => n.id === prevSpouseId);
+                            if (s && s.generation === gen) s.x = (s.x || 0) - push;
+                        }
+                        const currSpouseId = spouseMap.get(curr.id);
+                        if (currSpouseId) {
+                            const s = compNodes.find(n => n.id === currSpouseId);
+                            if (s && s.generation === gen) s.x = (s.x || 0) + push;
+                        }
+                    }
+                }
             });
 
             // Advance cursor past this component
