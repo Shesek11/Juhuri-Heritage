@@ -46,14 +46,14 @@ export async function GET(request: NextRequest) {
            OR t.cyrillic_script LIKE ?
            OR de.russian_short LIKE ?
            OR de.phonetic_key LIKE ?
-           OR ? LIKE CONCAT('%', de.phonetic_key, '%')
+           OR (? LIKE CONCAT('%', de.phonetic_key, '%') AND CHAR_LENGTH(de.phonetic_key) >= GREATEST(CHAR_LENGTH(?) - 1, 2))
          )
        GROUP BY de.id
        ORDER BY
           CASE
             WHEN de.hebrew_script = ? THEN 0
             WHEN de.phonetic_key = ? THEN 0
-            WHEN ? LIKE CONCAT('%', de.phonetic_key, '%') AND CHAR_LENGTH(de.phonetic_key) >= 3 THEN 1
+            WHEN ? LIKE CONCAT('%', de.phonetic_key, '%') AND CHAR_LENGTH(de.phonetic_key) >= GREATEST(CHAR_LENGTH(?) - 1, 2) THEN 1
             WHEN de.hebrew_short = ? THEN 1
             WHEN de.english_short = ? THEN 1
             WHEN t.latin_script = ? THEN 1
@@ -69,8 +69,8 @@ export async function GET(request: NextRequest) {
       [
         `%${term}%`, `${term}*`, `%${term}%`, `%${term}%`, `%${term}%`, `%${term}%`, `%${term}%`,
         `%${phoneticTerm}%`,
-        phoneticTerm,
-        term, phoneticTerm, phoneticTerm, term, term, term, `${term}%`, `${term}%`, `${phoneticTerm}%`, `${term}%`,
+        phoneticTerm, phoneticTerm,
+        term, phoneticTerm, phoneticTerm, phoneticTerm, term, term, term, `${term}%`, `${term}%`, `${phoneticTerm}%`, `${term}%`,
         phoneticTerm
       ]
     ) as any[];
