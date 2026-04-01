@@ -68,6 +68,7 @@ router.get('/search', [
                AND (de.hebrew_script LIKE ?
                     OR MATCH(de.hebrew_script) AGAINST(? IN BOOLEAN MODE)
                     OR de.hebrew_script LIKE ?
+                    OR de.hebrew_short LIKE ?
                     OR t.latin_script LIKE ?
                     OR t.cyrillic_script LIKE ?
                     OR de.russian_short LIKE ?)
@@ -75,26 +76,28 @@ router.get('/search', [
              ORDER BY
                 CASE
                   WHEN de.hebrew_script = ? THEN 0
+                  WHEN de.hebrew_short = ? THEN 1
                   WHEN de.hebrew_script = ? THEN 1
                   WHEN t.latin_script = ? THEN 1
                   WHEN t.cyrillic_script = ? THEN 1
-                  WHEN de.hebrew_script LIKE ? THEN 2
+                  WHEN de.hebrew_short LIKE ? THEN 2
+                  WHEN de.hebrew_script LIKE ? THEN 3
                   WHEN de.hebrew_script LIKE ? THEN 3
                   ELSE 4
                 END,
                 community_score DESC,
                 de.created_at DESC
              LIMIT 10`,
-            [`%${term}%`, `${term}*`, `%${term}%`, `%${term}%`, `%${term}%`, `%${term}%`,
-             term, term, term, term, `${term}%`, `${term}%`]
+            [`%${term}%`, `${term}*`, `%${term}%`, `%${term}%`, `%${term}%`, `%${term}%`, `%${term}%`,
+             term, term, term, term, term, `${term}%`, `${term}%`, `${term}%`]
         );
 
         if (entries.length === 0) {
             // Try stem-based search: strip Hebrew prefixes/suffixes and search again
             const stems = extractHebrewStems(term);
             if (stems.length > 0) {
-                const stemConditions = stems.map(() => 'de.hebrew_script LIKE ?').join(' OR ');
-                const stemParams = stems.map(s => `%${s}%`);
+                const stemConditions = stems.map(() => '(de.hebrew_script LIKE ? OR de.hebrew_short LIKE ?)').join(' OR ');
+                const stemParams = stems.flatMap(s => [`%${s}%`, `%${s}%`]);
                 const [stemEntries] = await db.query(
                     `SELECT de.*, u.name as contributor_name, a.name as approver_name,
                             SUM(COALESCE(t.upvotes, 0)) - SUM(COALESCE(t.downvotes, 0)) as community_score
