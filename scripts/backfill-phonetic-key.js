@@ -38,6 +38,8 @@ function toPhoneticKey(hebrew) {
   s = s.replace(/ק/g, 'כ');  // both /k/
   s = s.replace(/ח/g, 'כ');  // both /kh/
   s = s.replace(/ע/g, 'א');  // both silent/guttural
+  s = s.replace(/ז/g, 'ג');  // ז׳↔ג׳ (zh/j confusion, common in Juhuri)
+  s = s.replace(/צ/g, 'ג');  // צ׳↔ג׳ (ch/j, same sound in Juhuri)
 
   // 6. ה → א at start or end of each word (guttural confusion)
   s = s.replace(/(^|\s)ה/g, '$1א');
