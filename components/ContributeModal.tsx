@@ -2,7 +2,6 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import FocusTrap from 'focus-trap-react';
 import { X, Send, Loader2, CheckCircle, AlertCircle, Feather, Mic, Square, Play, Pause, RotateCcw, Search, Edit3, GitBranch } from 'lucide-react';
-import { verifySuggestion } from '../services/geminiService';
 import { addCustomEntry, getDialects } from '../services/storageService';
 import { dictionaryApi } from '../services/apiService';
 import { DictionaryEntry, DialectItem, User } from '../types';
@@ -173,51 +172,45 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
     setStatus('idle');
 
     try {
-      const result = await verifySuggestion({ term, translation: hebrew, dialect });
-      if (result.isValid) {
-        // Construct Entry Object
-        const entry: DictionaryEntry = {
+      // Construct Entry Object
+      const entry: DictionaryEntry = {
+        hebrewScript: term,
+        detectedLanguage: 'Hebrew',
+        dialectScripts: [{
+          dialect: dialect || 'General',
           hebrewScript: term,
-          detectedLanguage: 'Hebrew',
-          dialectScripts: [{
-            dialect: dialect || 'General',
-            hebrewScript: term,
-            latinScript: latin,
-            cyrillicScript: cyrillic
-          }],
-          hebrewShort: hebrew,
-          hebrewLong: null,
-          examples: [],
-          source: 'קהילה',
-          status: 'pending',
-          contributorId: user?.id
-        };
+          latinScript: latin,
+          cyrillicScript: cyrillic
+        }],
+        hebrewShort: hebrew,
+        hebrewLong: null,
+        examples: [],
+        source: 'קהילה',
+        status: 'pending',
+        contributorId: user?.id
+      };
 
-        // Save to DB (with audio if present)
-        if (audioBlob) {
-          const formData = new FormData();
-          formData.append('entry', JSON.stringify(entry));
-          formData.append('audio', audioBlob, 'pronunciation.webm');
-          await apiService.postFormData('/dictionary/entries/contribute', formData);
-        } else {
-          addCustomEntry(entry);
-        }
-
-        // Update user stats
-        if (user) {
-          incrementContribution(user.id);
-        }
-
-        setStatus('success');
-        setFeedback(t('successMessage'));
-        setTimeout(() => {
-          onClose();
-          resetForm();
-        }, 2500);
+      // Save to DB (with audio if present)
+      if (audioBlob) {
+        const formData = new FormData();
+        formData.append('entry', JSON.stringify(entry));
+        formData.append('audio', audioBlob, 'pronunciation.webm');
+        await apiService.postFormData('/dictionary/entries/contribute', formData);
       } else {
-        setStatus('error');
-        setFeedback(result.feedback || t('validationError'));
+        addCustomEntry(entry);
       }
+
+      // Update user stats
+      if (user) {
+        incrementContribution(user.id);
+      }
+
+      setStatus('success');
+      setFeedback(t('successMessage'));
+      setTimeout(() => {
+        onClose();
+        resetForm();
+      }, 2500);
     } catch (error) {
       setStatus('error');
       setFeedback(t('saveError'));
