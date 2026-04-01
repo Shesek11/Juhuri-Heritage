@@ -681,15 +681,42 @@ export const CommunityGraph: React.FC = () => {
                     .sort((a, b) => (a.birthYear ?? 0) - (b.birthYear ?? 0))
                     .forEach(n => units.push({ nodes: [n], width: 0 }));
 
-                // Sort units: children under their parents
-                units.sort((a, b) => {
-                    const aParentX = getParentCenterX(a.nodes[0]);
-                    const bParentX = getParentCenterX(b.nodes[0]);
-                    if (aParentX !== null && bParentX !== null) return aParentX - bParentX;
-                    if (aParentX !== null) return -1;
-                    if (bParentX !== null) return 1;
-                    return (a.nodes[0].birthYear ?? 0) - (b.nodes[0].birthYear ?? 0);
+                // Sort units: group siblings by parent pair, then sort groups by parent X
+                // 1. Assign each unit a parent-pair key
+                const getParentPairKey = (n: GraphNode): string => {
+                    const parents = realParentsOf.get(n.id);
+                    if (!parents || parents.length === 0) return `orphan-${n.id}`;
+                    return [...parents].sort((a, b) => a - b).join(',');
+                };
+
+                // 2. Group units by parent pair
+                const siblingGroups = new Map<string, Unit[]>();
+                units.forEach(u => {
+                    const key = getParentPairKey(u.nodes[0]);
+                    if (!siblingGroups.has(key)) siblingGroups.set(key, []);
+                    siblingGroups.get(key)!.push(u);
                 });
+
+                // 3. Sort groups by parent center X, then flatten
+                const sortedGroups = [...siblingGroups.entries()].sort(([, aUnits], [, bUnits]) => {
+                    const aX = getParentCenterX(aUnits[0].nodes[0]);
+                    const bX = getParentCenterX(bUnits[0].nodes[0]);
+                    if (aX !== null && bX !== null) return aX - bX;
+                    if (aX !== null) return -1;
+                    if (bX !== null) return 1;
+                    return (aUnits[0].nodes[0].birthYear ?? 0) - (bUnits[0].nodes[0].birthYear ?? 0);
+                });
+
+                // 4. Within each group, sort by birth year
+                const sortedUnits: Unit[] = [];
+                sortedGroups.forEach(([, group]) => {
+                    group.sort((a, b) => (a.nodes[0].birthYear ?? 0) - (b.nodes[0].birthYear ?? 0));
+                    sortedUnits.push(...group);
+                });
+
+                // Replace units with sorted version
+                units.length = 0;
+                units.push(...sortedUnits);
 
                 // Layout X relative to component cursor, Y by birth year
                 const totalWidth = units.reduce((sum, u) => sum + u.width + NODE_SPACING, -NODE_SPACING);
