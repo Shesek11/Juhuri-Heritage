@@ -660,6 +660,8 @@ export const CommunityGraph: React.FC = () => {
         realParentsOf.forEach((_, childId) => hasRealParent.add(childId));
 
         const rootCandidates = realNodes.filter(n => !hasRealParent.has(n.id));
+        // Sort: oldest generation first (people with most descendants should be roots)
+        rootCandidates.sort((a, b) => (a.generation ?? 0) - (b.generation ?? 0) || (a.birthYear ?? 9999) - (b.birthYear ?? 9999));
         // Group root candidates into couples
         const rootUnits: FamilyUnit[] = [];
         const rootPlaced = new Set<number>();
