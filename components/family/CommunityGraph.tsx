@@ -2039,19 +2039,18 @@ export const CommunityGraph: React.FC = () => {
                     >
                         <Maximize2 size={20} />
                     </button>
+                    {/* Layout debug toggle */}
+                    {isAdmin && (
+                        <button
+                            type="button"
+                            onClick={() => setShowControls(v => !v)}
+                            className="p-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-white transition-colors"
+                            title="Layout params"
+                        >
+                            <Sliders size={20} />
+                        </button>
+                    )}
                 </div>
-
-                {/* Layout debug toggle */}
-                {isAdmin && (
-                    <button
-                        type="button"
-                        onClick={() => setShowControls(v => !v)}
-                        className="p-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-white transition-colors"
-                        title="Layout params"
-                    >
-                        <Sliders size={20} />
-                    </button>
-                )}
             </div>
 
             {/* Tooltip */}
