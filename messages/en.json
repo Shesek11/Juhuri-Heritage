@@ -320,7 +320,9 @@
     "saveError": "An error occurred while saving the contribution.",
     "suggestionSuccess": "Suggestion submitted successfully! Thank you for contributing.",
     "suggestionError": "Error submitting the suggestion.",
-    "micError": "Cannot record. Please allow microphone access."
+    "micError": "Cannot record. Please allow microphone access.",
+    "aiSuggest": "✨ Suggest transliterations with AI",
+    "aiSuggesting": "Generating transliterations..."
   },
   "recipes": {
     "loadError": "Error loading recipes",

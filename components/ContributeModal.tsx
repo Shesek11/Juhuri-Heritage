@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslations } from 'next-intl';
 import FocusTrap from 'focus-trap-react';
-import { X, Send, Loader2, CheckCircle, AlertCircle, Feather, Mic, Square, Play, Pause, RotateCcw, Search, Edit3, GitBranch } from 'lucide-react';
+import { X, Send, Loader2, CheckCircle, AlertCircle, Feather, Mic, Square, Play, Pause, RotateCcw, Search, Edit3, GitBranch, Sparkles } from 'lucide-react';
 import { addCustomEntry, getDialects } from '../services/storageService';
 import { dictionaryApi } from '../services/apiService';
 import { DictionaryEntry, DialectItem, User } from '../types';
@@ -158,6 +158,38 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
     if (audioUrl) URL.revokeObjectURL(audioUrl);
     setAudioUrl(null);
     setRecordingTime(0);
+  };
+
+  const [aiLoading, setAiLoading] = useState(false);
+
+  const suggestTransliterations = async () => {
+    if (!term || term.trim().length < 2) return;
+    setAiLoading(true);
+    try {
+      const missingFields: string[] = [];
+      if (!latin) missingFields.push('latin');
+      if (!cyrillic) missingFields.push('cyrillic');
+      if (!hebrew) missingFields.push('russian');
+      if (missingFields.length === 0) return;
+
+      const res = await apiService.post('/gemini/enrich', {
+        missingFields,
+        knownFields: {
+          hebrew: term,
+          ...(latin && { latin }),
+          ...(cyrillic && { cyrillic }),
+          ...(hebrew && { russian: hebrew })
+        }
+      });
+
+      if (res.latin && !latin) setLatin(res.latin);
+      if (res.cyrillic && !cyrillic) setCyrillic(res.cyrillic);
+      if (res.russian && !hebrew) setHebrew(res.russian);
+    } catch (err) {
+      console.error('AI transliteration failed:', err);
+    } finally {
+      setAiLoading(false);
+    }
   };
 
   const formatTime = (seconds: number) => {
@@ -417,6 +449,19 @@ const ContributeModal: React.FC<ContributeModalProps> = ({ isOpen, onClose, user
               placeholder={t('hebrewPlaceholder')}
             />
           </div>
+
+          {/* AI Suggest Button */}
+          {term.trim().length >= 2 && (!latin || !cyrillic) && (
+            <button
+              type="button"
+              onClick={suggestTransliterations}
+              disabled={aiLoading}
+              className="w-full flex items-center justify-center gap-2 py-2 px-3 bg-purple-600/20 hover:bg-purple-600/30 text-purple-300 text-sm font-medium rounded-lg border border-purple-500/30 transition-colors disabled:opacity-50"
+            >
+              {aiLoading ? <Loader2 size={16} className="animate-spin" /> : <Sparkles size={16} />}
+              {aiLoading ? t('aiSuggesting') : t('aiSuggest')}
+            </button>
+          )}
 
           {/* Latin & Cyrillic Row */}
           <div className="grid grid-cols-2 gap-3">

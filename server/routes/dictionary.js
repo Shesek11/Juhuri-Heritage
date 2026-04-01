@@ -685,17 +685,18 @@ router.post('/entries', optionalAuth, [
     validate
 ], async (req, res) => {
     try {
-        const { term, translation, dialect, notes, detectedLanguage, hebrewShort, latinScript, cyrillicScript } = req.body;
+        const { term, translation, dialect, notes, detectedLanguage, hebrewShort, latinScript, cyrillicScript, source } = req.body;
 
-        // Status based on user role
-        const status = req.user?.role === 'admin' || req.user?.role === 'approver' ? 'active' : 'pending';
+        // Community contributions always go to pending for review
+        const isCommunity = source === 'קהילה';
+        const status = !isCommunity && (req.user?.role === 'admin' || req.user?.role === 'approver') ? 'active' : 'pending';
 
         // Insert entry
         const [result] = await db.query(
             `INSERT INTO dictionary_entries
              (hebrew_script, hebrew_script_normalized, detected_language, hebrew_short, hebrew_long, source, status, contributor_id)
-             VALUES (?, ?, ?, ?, ?, 'User', ?, ?)`,
-            [term, normalizeHebrewScript(term), detectedLanguage || 'Hebrew', hebrewShort || translation || null, notes || null, status, req.user?.id || null]
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+            [term, normalizeHebrewScript(term), detectedLanguage || 'Hebrew', hebrewShort || translation || null, notes || null, source || 'User', status, req.user?.id || null]
         );
 
         const entryId = result.insertId;
