@@ -769,12 +769,12 @@ export const CommunityGraph: React.FC = () => {
 
         // Light simulation: only collision avoidance + snap-back to computed positions
         const simulation = forceSimulation<GraphNode>(nodes)
-            .force('collision', forceCollide().radius(48))
+            .force('collision', forceCollide().radius(40))
             .force('snapBack', () => {
                 nodes.forEach(n => {
                     const target = targetPositions.get(n.id);
                     if (!target) return;
-                    const strength = 0.1;
+                    const strength = 0.4;
                     n.vx = (n.vx || 0) + (target.x - (n.x || 0)) * strength;
                     n.vy = (n.vy || 0) + (target.y - (n.y || 0)) * strength;
                 });
