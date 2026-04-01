@@ -95,7 +95,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const user = await getAuthUser(request);
-    const { term, translation, dialect, notes, detectedLanguage, hebrewShort, latinScript, cyrillicScript, source } = await request.json();
+    const { term, translation, dialect, notes, detectedLanguage, hebrewShort, latinScript, cyrillicScript, communityContribution } = await request.json();
 
     if (!term || !term.trim()) {
       return NextResponse.json({ error: 'נדרש מונח' }, { status: 400 });
@@ -111,14 +111,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Community contributions always go to pending for review
-    const isCommunity = source === 'קהילה';
+    const isCommunity = communityContribution === true;
     const status = !isCommunity && (user?.role === 'admin' || user?.role === 'approver') ? 'active' : 'pending';
 
     const [result] = await pool.query(
       `INSERT INTO dictionary_entries
        (hebrew_script, detected_language, hebrew_short, hebrew_long, source, status, contributor_id)
        VALUES (?, ?, ?, ?, ?, ?, ?)`,
-      [term.trim(), detectedLanguage || 'Hebrew', hebrewShort || translation || null, notes || null, source || 'קהילה', status, user?.id || null]
+      [term.trim(), detectedLanguage || 'Hebrew', hebrewShort || translation || null, notes || null, isCommunity ? 3 : 2, status, user?.id || null]
     ) as any[];
 
     const entryId = result.insertId;

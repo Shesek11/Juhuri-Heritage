@@ -57,7 +57,7 @@ export const addCustomEntry = async (entry: DictionaryEntry, actor?: User | null
     cyrillicScript: ds?.cyrillicScript || '',
     dialect: ds?.dialect || 'General',
     notes: entry.hebrewLong || '',
-    source: entry.source || 'User'
+    communityContribution: entry.source === 'קהילה'
   });
 };
 

@@ -77,7 +77,7 @@ export const dictionaryApi = {
         return request(`/dictionary/entries${query ? `?${query}` : ''}`);
     },
 
-    addEntry: (data: { term: string; translation: string; hebrewShort?: string; latinScript?: string; cyrillicScript?: string; dialect?: string; notes?: string; source?: string }) =>
+    addEntry: (data: { term: string; translation: string; hebrewShort?: string; latinScript?: string; cyrillicScript?: string; dialect?: string; notes?: string; communityContribution?: boolean }) =>
         request('/dictionary/entries', {
             method: 'POST',
             body: JSON.stringify(data)
