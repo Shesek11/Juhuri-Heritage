@@ -1712,6 +1712,7 @@ export const CommunityGraph: React.FC = () => {
                         className="flex items-center gap-1.5 md:gap-2 px-2.5 md:px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 rounded-lg text-white text-xs md:text-sm font-medium transition-colors"
                     >
                         <UserPlus size={14} />
+                        <span className="sm:hidden">{t('addShort')}</span>
                         <span className="hidden sm:inline">{t('addPerson')}</span>
                     </button>
 
@@ -1722,6 +1723,7 @@ export const CommunityGraph: React.FC = () => {
                             className="flex items-center gap-1.5 md:gap-2 px-2.5 md:px-3 py-1.5 bg-amber-600 hover:bg-amber-700 rounded-lg text-white text-xs md:text-sm font-medium transition-colors"
                         >
                             <Link2 size={14} />
+                            <span className="sm:hidden">{t('connectShort')}</span>
                             <span className="hidden sm:inline">{t('connectPeople')}</span>
                         </button>
                     ) : (
@@ -1741,6 +1743,7 @@ export const CommunityGraph: React.FC = () => {
                             className="flex items-center gap-1.5 md:gap-2 px-2.5 md:px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-slate-300 text-xs md:text-sm transition-colors"
                         >
                             <Info size={14} />
+                            <span className="sm:hidden">{t('legendShort')}</span>
                             <span className="hidden sm:inline">{t('legend')}</span>
                         </button>
 
