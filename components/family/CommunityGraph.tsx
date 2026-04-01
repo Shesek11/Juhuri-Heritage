@@ -467,8 +467,8 @@ export const CommunityGraph: React.FC = () => {
         }
 
         // ===== HIERARCHICAL LAYOUT WITH TIMELINE Y-AXIS =====
-        const NODE_SPACING = 140; // Horizontal gap between nodes
-        const COUPLE_GAP = 90; // Gap between spouses
+        const NODE_SPACING = 100; // Horizontal gap between nodes
+        const COUPLE_GAP = 60; // Gap between spouses
         const padding = 80;
         const leftPadding = 60;
 
@@ -769,7 +769,7 @@ export const CommunityGraph: React.FC = () => {
 
         // Light simulation: only collision avoidance + snap-back to computed positions
         const simulation = forceSimulation<GraphNode>(nodes)
-            .force('collision', forceCollide().radius(50))
+            .force('collision', forceCollide().radius(48))
             .force('snapBack', () => {
                 nodes.forEach(n => {
                     const target = targetPositions.get(n.id);
