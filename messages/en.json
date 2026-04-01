@@ -44,7 +44,7 @@
     "accessibility": "Accessibility",
     "contact": "Contact",
     "copyright": "© {year} Juhuri Heritage. All rights reserved.",
-    "madeWithLove": "Made with love <icon></icon> for the community"
+    "madeWithLove": "Made with love <icon></icon> for the community by Magi Amoyael & Shimon Yonatan Shavit"
   },
   "notFound": {
     "title": "404",
@@ -128,11 +128,11 @@
   },
   "metadata": {
     "siteName": "Juhuri Heritage",
-    "defaultTitle": "Juhuri Heritage | Preserving the Language",
+    "defaultTitle": "Juhuri Heritage | Mountain Jews Language Dictionary (Judeo-Tat)",
     "titleTemplate": "%s | Juhuri Heritage",
-    "description": "Interactive Juhuri-Hebrew dictionary for preserving the Mountain Jews language (Juhuri). Search words, learn the language, and contribute to preserving the heritage.",
-    "ogTitle": "Juhuri Heritage — Preserving the Language",
-    "ogDescription": "Interactive Juhuri dictionary with AI-powered language tutor"
+    "description": "The largest Juhuri (Judeo-Tat) dictionary online — 46,000+ words with translations, pronunciation, and transliteration. Explore the Mountain Jews language, learn Juhuri, and help preserve an endangered Caucasus Jewish heritage.",
+    "ogTitle": "Juhuri Heritage — Mountain Jews Language Dictionary",
+    "ogDescription": "46,000+ Juhuri words with translations and pronunciation. The largest Judeo-Tat dictionary online."
   },
   "translation": {
     "contentInHebrew": "This content is in Hebrew.",
@@ -156,7 +156,7 @@
     "ctaAuthReason": "Join the community and help preserve the language and heritage"
   },
   "search": {
-    "pageTitle": "Search Juhuri-Hebrew Dictionary",
+    "pageTitle": "Juhuri Dictionary | Mountain Jews Language (Judeo-Tat)",
     "placeholder": "Search a word in Hebrew, Juhuri, Russian...",
     "searching": "Searching \"{term}\"...",
     "resultsFor": "Results for \"{term}\"",
@@ -183,7 +183,7 @@
     "reportInaccurate": "Inaccurate",
     "looksDuplicate": "Looks duplicate?",
     "details": "Details",
-    "defaultDescription": "Search words in Hebrew, Juhuri, Russian, or Latin transliteration. Our dictionary contains thousands of entries with translations, pronunciation, and examples.",
+    "defaultDescription": "The largest Juhuri (Judeo-Tat) dictionary with 46,000+ words. Search in Hebrew, English, Russian, or Latin transliteration. Explore the Mountain Jews language with translations, pronunciation, and examples.",
     "mergeAuth": "Sign in to suggest merging entries",
     "mergeSent": "Suggestion sent",
     "mergeSentDetail": "An admin will review the suggestion. Thank you!",
@@ -369,8 +369,8 @@
     "backHome": "Back to home"
   },
   "pages": {
-    "aboutTitle": "About",
-    "aboutSubtitle": "Everything you need to know about Juhuri Heritage",
+    "aboutTitle": "About | Juhuri Dictionary — Mountain Jews Language",
+    "aboutSubtitle": "A digital project to preserve Juhuri (Judeo-Tat), the endangered language of the Mountain Jews of the Caucasus. Over 46,000 words in an interactive dictionary.",
     "privacyTitle": "Privacy Policy",
     "accessibilityTitle": "Accessibility Statement",
     "lastUpdated": "Last updated: {date}",
@@ -735,5 +735,23 @@
     "upload": "Upload",
     "recording": "Recording...",
     "guestModeration": "Guest recordings require admin approval"
+  },
+  "about": {
+    "title": "About Juhuri Heritage",
+    "welcomeTitle": "Welcome to Juhuri Heritage",
+    "welcomeText": "An innovative digital project to preserve, document, and share the Juhuri language (Judeo-Tat) — the language of the Mountain Jews of the Caucasus. Combining academic research with modern AI technology.",
+    "whatIsTitle": "What is the Juhuri Language?",
+    "whatIsText1": "Juhuri (also known as Judeo-Tat) is an ancient Jewish language from the Iranian language family, spoken for centuries by the Mountain Jews (Caucasus Jews) in what is now Azerbaijan and Dagestan. It is closely related to Persian but evolved with Hebrew and Aramaic influences.",
+    "whatIsText2": "Today Juhuri is considered an endangered language, with a declining number of speakers worldwide. Large Mountain Jewish communities live in Israel, New York, Moscow, and Baku.",
+    "dictionaryTitle": "Our Dictionary",
+    "dictionaryText": "The Juhuri Heritage Dictionary is the largest digital Juhuri dictionary, containing over 46,000 entries with translations into Hebrew, English, and Russian, Latin transliteration, pronunciation guides, and vowel markings. Built from academic research and community contributions.",
+    "missionTitle": "Our Mission",
+    "missionText": "We believe that a language is the soul of a community. Preserving Juhuri is essential for passing on the heritage of the Mountain Jews from generation to generation. Our goal is to provide a comprehensive and accessible digital platform for learning, documenting, and celebrating Juhuri culture.",
+    "teamTitle": "Our Team",
+    "teamText": "Behind Juhuri Heritage is a dedicated team of linguists, developers, and community members. We are always looking for new volunteers.",
+    "contactLink": "Contact us",
+    "statsEntries": "Dictionary entries",
+    "statsLanguages": "Translation languages",
+    "statsDialects": "Dialects"
   }
 }
