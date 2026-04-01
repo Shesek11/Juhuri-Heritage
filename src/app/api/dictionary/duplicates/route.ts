@@ -249,7 +249,7 @@ export async function GET(request: NextRequest) {
 
     const ph2 = pageIds.map(() => '?').join(',');
     const [fullEntries] = await pool.query(
-      `SELECT de.id, de.hebrew_script, de.hebrew_script_normalized, de.part_of_speech, de.russian_short, de.source_name, de.source, de.created_at,
+      `SELECT de.id, de.hebrew_script, de.hebrew_short, de.hebrew_script_normalized, de.part_of_speech, de.russian_short, de.source_name, de.source, de.created_at,
               (SELECT JSON_ARRAYAGG(JSON_OBJECT('hebrewScript', de.hebrew_script, 'latinScript', t.latin_script, 'cyrillicScript', t.cyrillic_script, 'dialect', COALESCE(d.name, '')))
                FROM dialect_scripts t LEFT JOIN dialects d ON t.dialect_id = d.id WHERE t.entry_id = de.id) as translations_json
        FROM dictionary_entries de WHERE de.id IN (${ph2})`, pageIds
@@ -260,6 +260,7 @@ export async function GET(request: NextRequest) {
       entryMap[e.id] = {
         id: String(e.id),
         hebrewScript: e.hebrew_script,
+        hebrewShort: e.hebrew_short,
         hebrewScriptNormalized: e.hebrew_script_normalized,
         partOfSpeech: e.part_of_speech,
         russianShort: e.russian_short,

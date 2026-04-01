@@ -342,7 +342,7 @@ const AdminDuplicatesPanel: React.FC = () => {
                               {isSelected && <Check className="w-3 h-3" />}
                             </div>
                             <span className="text-white font-medium">{entry.hebrewScript || <span className="text-slate-600 italic">ללא מונח</span>}</span>
-                            {t?.hebrewScript && <span className="text-slate-400">{t.hebrewScript}</span>}
+                            {(entry as any).hebrewShort && (entry as any).hebrewShort !== entry.hebrewScript && <span className="text-slate-400 text-xs">{(entry as any).hebrewShort}</span>}
                             {t?.latinScript && <span className="text-slate-500 text-xs">{t.latinScript}</span>}
                             {(entry as any).russianShort && <span className="text-slate-500 text-xs">({(entry as any).russianShort})</span>}
                           </div>
@@ -436,7 +436,7 @@ const AdminDuplicatesPanel: React.FC = () => {
                       {isKeep && <Check className="w-3 h-3 text-white" />}
                     </div>
                     <span className="text-white font-medium">{e.hebrewScript}</span>
-                    {t?.hebrewScript && <span className="text-slate-400">{t.hebrewScript}</span>}
+                    {(e as any).hebrewShort && (e as any).hebrewShort !== e.hebrewScript && <span className="text-slate-400 text-xs">{(e as any).hebrewShort}</span>}
                     {t?.latinScript && <span className="text-slate-500 text-xs">{t.latinScript}</span>}
                   </div>
                   <div className="flex items-center gap-3 text-xs text-slate-500">
@@ -504,7 +504,7 @@ const AdminDuplicatesPanel: React.FC = () => {
                     <span className="text-xs text-slate-500">#{e.id}</span>
                     <span className={`text-xs ${e.id === keepEntryId ? 'text-emerald-400' : 'text-blue-400'}`}>{t.dialect || 'כללי'}</span>
                   </div>
-                  <div className="text-white">{[t.hebrewScript, t.latinScript, t.cyrillicScript].filter(Boolean).join(' / ') || '-'}</div>
+                  <div className="text-white">{[t.latinScript, t.cyrillicScript].filter(Boolean).join(' / ') || '-'}</div>
                 </div>
               ))
             )}
