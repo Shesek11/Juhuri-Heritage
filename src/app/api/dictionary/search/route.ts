@@ -5,15 +5,29 @@ import { toPhoneticKey } from '@/src/lib/phoneticKey';
 // Strip niqqud and normalize geresh for fuzzy Hebrew matching
 function normalizeHebrew(s: string): string {
   return s
-    .replace(/[\u0591-\u05C7]/g, '')  // remove niqqud & cantillation
-    .replace(/[\u05F3'ʼ']/g, '׳')     // normalize all geresh variants to Hebrew geresh
-    .replace(/ה$/g, '')                // strip trailing ה (common mater lectionis)
+    .replace(/[\u0591-\u05C7]/g, '')
+    .replace(/[\u05F3'ʼ']/g, '׳')
+    .replace(/ה$/g, '')
     .trim();
 }
 
-// SQL expression that normalizes hebrew text the same way
-const NORM_SQL = (col: string) =>
-  `REPLACE(REPLACE(REGEXP_REPLACE(${col}, '[\\x{0591}-\\x{05C7}]', ''), '''', '׳'), 'ה', '')`;
+// Levenshtein distance for ranking results by similarity
+function levenshtein(a: string, b: string): number {
+  const m = a.length, n = b.length;
+  if (m === 0) return n;
+  if (n === 0) return m;
+  const d: number[][] = Array.from({ length: m + 1 }, (_, i) =>
+    Array.from({ length: n + 1 }, (_, j) => (i === 0 ? j : j === 0 ? i : 0))
+  );
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      d[i][j] = a[i - 1] === b[j - 1]
+        ? d[i - 1][j - 1]
+        : 1 + Math.min(d[i - 1][j], d[i][j - 1], d[i - 1][j - 1]);
+    }
+  }
+  return d[m][n];
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -79,8 +93,21 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ found: false, entry: null });
     }
 
-    // Get the best match (exact or first)
-    const entry = entries[0];
+    // Re-rank results by Levenshtein distance on phonetic keys
+    // This ensures the closest-sounding match comes first
+    const rankedEntries = entries.map((e: any) => {
+      const epk = e.phonetic_key || '';
+      const dist = levenshtein(phoneticTerm, epk);
+      // Exact text matches get distance 0
+      const normScript = normalizeHebrew(e.hebrew_script || '');
+      const isExactText = e.hebrew_script === term || normScript === normalizeHebrew(term);
+      const isExactMeaning = (e.hebrew_short || '') === term || (e.english_short || '') === term;
+      return { ...e, _dist: isExactText ? -2 : isExactMeaning ? -1 : dist };
+    });
+    rankedEntries.sort((a: any, b: any) => a._dist - b._dist);
+
+    // Get the best match
+    const entry = rankedEntries[0];
 
     // Fetch all related data in parallel
     const [
@@ -162,7 +189,7 @@ export async function GET(request: NextRequest) {
 
     // Also return additional matches for multi-result display
     const allResults: any[] = [result];
-    const additionalEntries = entries.slice(1);
+    const additionalEntries = rankedEntries.slice(1);
     if (additionalEntries.length > 0) {
       const additionalIds = additionalEntries.map((e: any) => e.id);
       const placeholders = additionalIds.map(() => '?').join(',');
