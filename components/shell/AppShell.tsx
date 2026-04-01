@@ -384,7 +384,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
 
             {/* Logo */}
             <Link href="/" className={`flex items-center gap-2.5 shrink-0 me-auto transition-all ${!isScrolled ? 'bg-[#0d1424]/60 backdrop-blur-md rounded-full ps-1 pe-3 py-1 border border-white/5' : ''}`}>
-              <img src={siteLogo || '/images/logo-transparent.png'} alt={t('logo')} className="w-9 h-9 object-contain" />
+              <img src={siteLogo || '/images/logo-transparent.png'} alt={t('logo')} className="w-9 h-9 object-contain rounded-full" />
               <span className="text-sm md:text-lg font-bold text-white">{t('logo')}</span>
             </Link>
 

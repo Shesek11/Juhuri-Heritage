@@ -38,11 +38,12 @@ const Footer: React.FC = () => {
           <p className="text-slate-300 text-sm leading-relaxed max-w-xs mb-4">
             {t('brandDescription')}
           </p>
-          <div className="flex gap-3">
+          {/* Social links hidden until they point somewhere real */}
+          {/* <div className="flex gap-3">
             <span aria-hidden="true" className="text-slate-400"><Facebook size={20} /></span>
             <span aria-hidden="true" className="text-slate-400"><Instagram size={20} /></span>
             <span aria-hidden="true" className="text-slate-400"><Youtube size={20} /></span>
-          </div>
+          </div> */}
         </div>
 
         {/* Quick Links — dynamic from features */}
