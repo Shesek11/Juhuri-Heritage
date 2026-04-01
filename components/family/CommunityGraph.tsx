@@ -77,7 +77,7 @@ export const CommunityGraph: React.FC = () => {
     // Layout parameters (tunable via debug panel)
     const [layoutParams, setLayoutParams] = useState({
         nodeSpacing: 80,
-        coupleGap: 55,
+        coupleGap: 70,
         familyGap: 120,
         yearPx: 10,
         minGap: 90,
@@ -1859,7 +1859,7 @@ export const CommunityGraph: React.FC = () => {
                             </div>
                         ))}
                         <button
-                            onClick={() => setLayoutParams({ nodeSpacing: 80, coupleGap: 55, familyGap: 120, yearPx: 10, minGap: 90, collisionRadius: 40, snapBack: 0.3, overlapRounds: 3 })}
+                            onClick={() => setLayoutParams({ nodeSpacing: 80, coupleGap: 70, familyGap: 120, yearPx: 10, minGap: 90, collisionRadius: 40, snapBack: 0.3, overlapRounds: 3 })}
                             className="w-full mt-1 px-2 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded text-xs"
                         >Reset defaults</button>
                     </div>
