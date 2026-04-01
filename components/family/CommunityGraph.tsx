@@ -467,7 +467,7 @@ export const CommunityGraph: React.FC = () => {
         }
 
         // ===== HIERARCHICAL LAYOUT WITH TIMELINE Y-AXIS =====
-        const NODE_SPACING = 115; // Horizontal gap between nodes
+        const NODE_SPACING = 130; // Horizontal gap between nodes
         const COUPLE_GAP = 65; // Gap between spouses
         const padding = 80;
         const leftPadding = 60;
@@ -477,7 +477,8 @@ export const CommunityGraph: React.FC = () => {
         const minYear = years.length > 0 ? Math.min(...years) : 1940;
         const maxYear = years.length > 0 ? Math.max(...years) : 2025;
         const yearSpan = Math.max(maxYear - minYear, 30);
-        const yearToY = (year: number) => padding + ((year - minYear) / yearSpan) * (height - 2 * padding);
+        const YEAR_HEIGHT = Math.max(height, yearSpan * 18); // ~18px per year minimum
+        const yearToY = (year: number) => padding + ((year - minYear) / yearSpan) * (YEAR_HEIGHT - 2 * padding);
 
         // Draw year markers: lines in graph group, labels fixed on right
         const startYear = Math.floor(minYear / 25) * 25;
