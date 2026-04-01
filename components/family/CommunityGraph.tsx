@@ -599,9 +599,36 @@ export const CommunityGraph: React.FC = () => {
         // Largest family first
         components.sort((a, b) => b.length - a.length);
 
+        // ── Resolve real parents (bypass junctions) ──
+        const realParentsOf = new Map<number, number[]>();
+        realNodes.forEach(child => {
+            const directParents = parentsOf.get(child.id) || [];
+            const realParents: number[] = [];
+            directParents.forEach(pid => {
+                const pNode = nodes.find(n => n.id === pid);
+                if (pNode?.isJunction) {
+                    // Junction: find its real parents
+                    (parentsOf.get(pid) || []).forEach(gp => {
+                        if (!nodes.find(n => n.id === gp)?.isJunction) realParents.push(gp);
+                    });
+                } else {
+                    realParents.push(pid);
+                }
+            });
+            if (realParents.length > 0) realParentsOf.set(child.id, realParents);
+        });
+
+        // Rebuild childrenOfCouple using real parents
+        const realChildrenOfCouple = new Map<string, number[]>();
+        realParentsOf.forEach((parents, childId) => {
+            const key = [...parents].sort((a, b) => a - b).join(',');
+            if (!realChildrenOfCouple.has(key)) realChildrenOfCouple.set(key, []);
+            realChildrenOfCouple.get(key)!.push(childId);
+        });
+
         // ── Helper ──
         function getParentCenterX(n: GraphNode): number | null {
-            const parents = parentsOf.get(n.id);
+            const parents = realParentsOf.get(n.id);
             if (!parents || parents.length === 0) return null;
             const parentNodes = parents.map(pid => nodes.find(nd => nd.id === pid)).filter(Boolean) as GraphNode[];
             if (parentNodes.length === 0 || parentNodes.some(p => p.x == null)) return null;
@@ -686,7 +713,7 @@ export const CommunityGraph: React.FC = () => {
             // Re-center children under their parents (within this component)
             sortedGens.forEach(gen => {
                 if (gen === sortedGens[0]) return;
-                childrenOfCouple.forEach((childIds, parentKey) => {
+                realChildrenOfCouple.forEach((childIds, parentKey) => {
                     const parentIds = parentKey.split(',').map(Number);
                     if (!parentIds.some(pid => compIds.has(pid))) return;
 
