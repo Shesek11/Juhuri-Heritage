@@ -740,34 +740,34 @@ export const CommunityGraph: React.FC = () => {
                 });
             });
 
-            // Post-process: push overlapping nodes apart per generation
-            sortedGens.forEach(gen => {
-                const genNodes = genGroups.get(gen)!;
-                const sorted = [...genNodes].sort((a, b) => (a.x || 0) - (b.x || 0));
-                const MIN_GAP = 90; // Minimum center-to-center horizontal distance
-                for (let i = 1; i < sorted.length; i++) {
-                    const prev = sorted[i - 1];
-                    const curr = sorted[i];
-                    const gap = (curr.x || 0) - (prev.x || 0);
-                    if (gap < MIN_GAP) {
-                        const push = (MIN_GAP - gap) / 2;
-                        // Push prev left, curr right
-                        prev.x = (prev.x || 0) - push;
-                        curr.x = (curr.x || 0) + push;
-                        // Also move their spouses
-                        const prevSpouseId = spouseMap.get(prev.id);
-                        if (prevSpouseId) {
-                            const s = compNodes.find(n => n.id === prevSpouseId);
-                            if (s && s.generation === gen) s.x = (s.x || 0) - push;
-                        }
-                        const currSpouseId = spouseMap.get(curr.id);
-                        if (currSpouseId) {
-                            const s = compNodes.find(n => n.id === currSpouseId);
-                            if (s && s.generation === gen) s.x = (s.x || 0) + push;
+            // Post-process: iteratively push overlapping nodes apart per generation
+            for (let pass = 0; pass < 3; pass++) {
+                sortedGens.forEach(gen => {
+                    const genNodes = genGroups.get(gen)!;
+                    const sorted = [...genNodes].sort((a, b) => (a.x || 0) - (b.x || 0));
+                    const MIN_GAP = 95;
+                    for (let i = 1; i < sorted.length; i++) {
+                        const prev = sorted[i - 1];
+                        const curr = sorted[i];
+                        const gap = (curr.x || 0) - (prev.x || 0);
+                        if (gap < MIN_GAP) {
+                            const push = (MIN_GAP - gap) / 2;
+                            prev.x = (prev.x || 0) - push;
+                            curr.x = (curr.x || 0) + push;
+                            const prevSpouseId = spouseMap.get(prev.id);
+                            if (prevSpouseId) {
+                                const s = compNodes.find(n => n.id === prevSpouseId);
+                                if (s && s.generation === gen) s.x = (s.x || 0) - push;
+                            }
+                            const currSpouseId = spouseMap.get(curr.id);
+                            if (currSpouseId) {
+                                const s = compNodes.find(n => n.id === currSpouseId);
+                                if (s && s.generation === gen) s.x = (s.x || 0) + push;
+                            }
                         }
                     }
-                }
-            });
+                });
+            }
 
             // Advance cursor past this component
             let compMinX = Infinity, compMaxX = -Infinity;
@@ -830,7 +830,7 @@ export const CommunityGraph: React.FC = () => {
                 nodes.forEach(n => {
                     const target = targetPositions.get(n.id);
                     if (!target) return;
-                    const strength = 0.4;
+                    const strength = 0.25;
                     n.vx = (n.vx || 0) + (target.x - (n.x || 0)) * strength;
                     n.vy = (n.vy || 0) + (target.y - (n.y || 0)) * strength;
                 });
