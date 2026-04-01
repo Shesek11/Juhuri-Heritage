@@ -69,6 +69,7 @@ router.get('/search', [
                     OR MATCH(de.hebrew_script) AGAINST(? IN BOOLEAN MODE)
                     OR de.hebrew_script LIKE ?
                     OR de.hebrew_short LIKE ?
+                    OR de.english_short LIKE ?
                     OR t.latin_script LIKE ?
                     OR t.cyrillic_script LIKE ?
                     OR de.russian_short LIKE ?)
@@ -77,10 +78,12 @@ router.get('/search', [
                 CASE
                   WHEN de.hebrew_script = ? THEN 0
                   WHEN de.hebrew_short = ? THEN 1
+                  WHEN de.english_short = ? THEN 1
                   WHEN de.hebrew_script = ? THEN 1
                   WHEN t.latin_script = ? THEN 1
                   WHEN t.cyrillic_script = ? THEN 1
                   WHEN de.hebrew_short LIKE ? THEN 2
+                  WHEN de.english_short LIKE ? THEN 2
                   WHEN de.hebrew_script LIKE ? THEN 3
                   WHEN de.hebrew_script LIKE ? THEN 3
                   ELSE 4
@@ -88,8 +91,8 @@ router.get('/search', [
                 community_score DESC,
                 de.created_at DESC
              LIMIT 10`,
-            [`%${term}%`, `${term}*`, `%${term}%`, `%${term}%`, `%${term}%`, `%${term}%`, `%${term}%`,
-             term, term, term, term, term, `${term}%`, `${term}%`, `${term}%`]
+            [`%${term}%`, `${term}*`, `%${term}%`, `%${term}%`, `%${term}%`, `%${term}%`, `%${term}%`, `%${term}%`,
+             term, term, term, term, term, term, `${term}%`, `${term}%`, `${term}%`, `${term}%`]
         );
 
         if (entries.length === 0) {
