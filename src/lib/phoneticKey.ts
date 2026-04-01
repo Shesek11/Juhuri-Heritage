@@ -42,3 +42,24 @@ export function toPhoneticKey(hebrew: string): string {
 
   return s;
 }
+
+/**
+ * "Soft" phonetic normalization for ranking.
+ * Strips niqqud/geresh, normalizes finals and doubles,
+ * collapses clear homophones (ט↔ת, ס↔ש, כ↔ק↔ח, א↔ע),
+ * but does NOT collapse ז/ג/צ — preserving the signal needed
+ * for weighted distance comparison.
+ */
+export function toSoftPhoneticKey(hebrew: string): string {
+  let s = hebrew;
+  s = s.replace(/[\u0591-\u05C7]/g, '');
+  s = s.replace(/['\u05F3\u02BC\u2019]/g, '');
+  s = s.replace(/ך/g, 'כ').replace(/ם/g, 'מ').replace(/ן/g, 'נ').replace(/ף/g, 'פ').replace(/ץ/g, 'צ');
+  s = s.replace(/וו/g, 'ו').replace(/יי/g, 'י');
+  s = s.replace(/ת/g, 'ט');
+  s = s.replace(/ש/g, 'ס');
+  s = s.replace(/ק/g, 'כ').replace(/ח/g, 'כ');
+  s = s.replace(/ע/g, 'א');
+  s = s.replace(/(^|\s)ה/g, '$1א').replace(/ה($|\s)/g, 'א$1');
+  return s.trim();
+}

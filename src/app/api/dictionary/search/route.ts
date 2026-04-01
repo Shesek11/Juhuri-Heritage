@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/src/lib/db';
-import { toPhoneticKey } from '@/src/lib/phoneticKey';
+import { toPhoneticKey, toSoftPhoneticKey } from '@/src/lib/phoneticKey';
+import { jaroWinkler, weightedLevenshtein } from '@/src/lib/similarity';
 
 // Strip niqqud and normalize geresh for fuzzy Hebrew matching
 function normalizeHebrew(s: string): string {
@@ -11,23 +12,6 @@ function normalizeHebrew(s: string): string {
     .trim();
 }
 
-// Levenshtein distance for ranking results by similarity
-function levenshtein(a: string, b: string): number {
-  const m = a.length, n = b.length;
-  if (m === 0) return n;
-  if (n === 0) return m;
-  const d: number[][] = Array.from({ length: m + 1 }, (_, i) =>
-    Array.from({ length: n + 1 }, (_, j) => (i === 0 ? j : j === 0 ? i : 0))
-  );
-  for (let i = 1; i <= m; i++) {
-    for (let j = 1; j <= n; j++) {
-      d[i][j] = a[i - 1] === b[j - 1]
-        ? d[i - 1][j - 1]
-        : 1 + Math.min(d[i - 1][j], d[i][j - 1], d[i - 1][j - 1]);
-    }
-  }
-  return d[m][n];
-}
 
 export async function GET(request: NextRequest) {
   try {
@@ -93,29 +77,35 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ found: false, entry: null });
     }
 
-    // Re-rank results by Levenshtein distance on phonetic keys
-    // This ensures the closest-sounding match comes first
+    // Re-rank using hybrid scoring: Jaro-Winkler + weighted edit distance
+    const softQuery = toSoftPhoneticKey(term);
+    const normQuery = normalizeHebrew(term);
+
     const rankedEntries = entries.map((e: any) => {
-      const epk = e.phonetic_key || '';
-      const dist = levenshtein(phoneticTerm, epk);
-      // Exact text matches get distance 0
       const normScript = normalizeHebrew(e.hebrew_script || '');
-      const isExactText = e.hebrew_script === term || normScript === normalizeHebrew(term);
+      const isExactText = e.hebrew_script === term || normScript === normQuery;
       const isExactMeaning = (e.hebrew_short || '') === term || (e.english_short || '') === term;
-      // Distance on normalized (niqqud-stripped) original text
-      const normDist = levenshtein(normalizeHebrew(term), normScript);
-      // Bonus: does the latin_script of the entry start similarly to the search term's transliteration?
-      // This helps differentiate zh/ch/g words that all collapse to the same phonetic key
-      const latinScript = (e.latin_script || '').toLowerCase();
-      const termLatin = term.replace(/[\u0591-\u05C7\u05F3'ʼ\u2019]/g, '').replace(/[^\u0590-\u05FF]/g, '');
-      const score = isExactText ? -200 : isExactMeaning ? -100 : dist * 100 + normDist * 10;
+      if (isExactText) return { ...e, _score: -200 };
+      if (isExactMeaning) return { ...e, _score: -100 };
+
+      // Signal 1: Jaro-Winkler on soft phonetic keys (preserves ז/ג/צ distinction)
+      const softEntry = toSoftPhoneticKey(e.hebrew_script || '');
+      const jwScore = jaroWinkler(softQuery, softEntry); // 0-1, higher = better
+
+      // Signal 2: Weighted edit distance (ז→ג costs 0.15, צ→ג costs 0.5)
+      const wDist = weightedLevenshtein(normQuery, normScript);
+      const maxLen = Math.max(normQuery.length, normScript.length, 1);
+      const wDistNorm = wDist / maxLen; // 0-1, lower = better
+
+      // Signal 3: Length similarity
+      const lenPenalty = Math.abs(normScript.length - normQuery.length) / maxLen;
+
+      // Combined score (lower = better match)
+      const score = (1 - jwScore) * 0.50 + wDistNorm * 0.35 + lenPenalty * 0.15;
+
       return { ...e, _score: score };
     });
     rankedEntries.sort((a: any, b: any) => a._score - b._score);
-    // Debug log for first few
-    if (process.env.NODE_ENV !== 'production') {
-      rankedEntries.slice(0, 5).forEach((e: any) => console.log(`  rank: #${e.id} ${e.hebrew_script} score=${e._score} pk=${e.phonetic_key}`));
-    }
     rankedEntries.splice(30); // Keep top 30 after re-ranking
 
     // Get the best match
