@@ -19,7 +19,7 @@ import 'd3-transition';
 import { familyService, FamilyMember } from '../../services/familyService';
 import { EditMemberModal } from './EditMemberModal';
 import { useAuth } from '../../contexts/AuthContext';
-import { Loader2, ZoomIn, ZoomOut, Maximize2, UserPlus, Link2, X, Search, Network, Info, Eye, Sliders, User } from 'lucide-react';
+import { Loader2, ZoomIn, ZoomOut, Maximize2, UserPlus, Link2, X, Search, Network, Info, Eye, Sliders, User, Pencil } from 'lucide-react';
 
 interface GraphNode extends SimulationNodeDatum {
     id: number;
@@ -178,8 +178,10 @@ export const CommunityGraph: React.FC = () => {
                 };
 
                 // Walk down: descendants
+                const walkedDown = new Set<number>();
                 const walkDown = (id: number) => {
-                    if (includedIds.has(id)) return;
+                    if (walkedDown.has(id)) return;
+                    walkedDown.add(id);
                     includedIds.add(id);
                     // Add spouse(s)
                     (spouseOf.get(id) || []).forEach(sid => includedIds.add(sid));
@@ -383,6 +385,18 @@ export const CommunityGraph: React.FC = () => {
             graphNodes.forEach(n => {
                 n.generation = generationMap.get(n.id) ?? 0;
             });
+
+            // Auto-set focal person to root ancestor on first load
+            if (!focalPersonId && graphNodes.length > 10) {
+                const gen0 = graphNodes.filter(n => n.generation === 0 && !n.isJunction);
+                const hasParent = new Set(childToParents.keys());
+                const roots = gen0.filter(n => !hasParent.has(n.id));
+                if (roots.length > 0) {
+                    roots.sort((a, b) => (a.birthYear ?? 9999) - (b.birthYear ?? 9999));
+                    // Set focal and re-trigger (will re-run loadData with focal set)
+                    setTimeout(() => setFocalPersonId(roots[0].id), 0);
+                }
+            }
 
         } catch (error) {
             console.error('[CommunityGraph] Error loading data:', error);
@@ -1785,9 +1799,10 @@ export const CommunityGraph: React.FC = () => {
                             type="button"
                             onClick={() => setFocalPersonId(null)}
                             className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 rounded-lg text-white text-xs font-medium transition-colors"
+                            title="לחץ להציג את כל המשפחות"
                         >
                             <Eye size={14} />
-                            <span>{allMembers.find(m => m.id === focalPersonId)?.first_name || '?'}</span>
+                            <span>ענף {allMembers.find(m => m.id === focalPersonId)?.first_name || '?'}</span>
                             <X size={12} />
                         </button>
                     )}
@@ -2113,9 +2128,33 @@ export const CommunityGraph: React.FC = () => {
                             })()}
                         </div>
 
-                        {/* Hint */}
-                        <div className="mt-2 pt-2 border-t border-slate-700 text-[10px] text-slate-500 text-center">
-                            {t('clickToEdit')}
+                        {/* Action buttons */}
+                        <div className="mt-2 pt-2 border-t border-slate-700 flex gap-2 justify-center">
+                            <button
+                                type="button"
+                                className="flex items-center gap-1 px-2 py-1 bg-indigo-600/80 hover:bg-indigo-600 text-white text-[10px] rounded transition-colors"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setFocalPersonId(tooltip.member!.id);
+                                    setTooltip(prev => ({ ...prev, visible: false }));
+                                }}
+                            >
+                                <Eye size={10} />
+                                <span>מיקוד</span>
+                            </button>
+                            <button
+                                type="button"
+                                className="flex items-center gap-1 px-2 py-1 bg-slate-600/80 hover:bg-slate-600 text-white text-[10px] rounded transition-colors"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    const member = allMembers.find(m => m.id === tooltip.member!.id);
+                                    if (member) { setSelectedMember(member); setIsEditModalOpen(true); }
+                                    setTooltip(prev => ({ ...prev, visible: false }));
+                                }}
+                            >
+                                <Pencil size={10} />
+                                <span>עריכה</span>
+                            </button>
                         </div>
                     </div>
 
