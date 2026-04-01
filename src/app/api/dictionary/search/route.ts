@@ -40,39 +40,33 @@ export async function GET(request: NextRequest) {
          AND (
            de.hebrew_script LIKE ?
            OR MATCH(de.hebrew_script) AGAINST(? IN BOOLEAN MODE)
-           OR de.hebrew_script LIKE ?
            OR de.hebrew_short LIKE ?
            OR de.english_short LIKE ?
            OR t.latin_script LIKE ?
            OR t.cyrillic_script LIKE ?
            OR de.russian_short LIKE ?
-           OR REGEXP_REPLACE(de.hebrew_script, '[\\x{0591}-\\x{05C7}]', '') LIKE ?
            OR de.phonetic_key LIKE ?
          )
        GROUP BY de.id
        ORDER BY
           CASE
             WHEN de.hebrew_script = ? THEN 0
-            WHEN REGEXP_REPLACE(de.hebrew_script, '[\\x{0591}-\\x{05C7}]', '') = ? THEN 0
             WHEN de.phonetic_key = ? THEN 1
             WHEN de.hebrew_short = ? THEN 1
             WHEN de.english_short = ? THEN 1
-            WHEN de.hebrew_script = ? THEN 1
             WHEN t.latin_script = ? THEN 1
             WHEN de.hebrew_short LIKE ? THEN 2
             WHEN de.english_short LIKE ? THEN 2
             WHEN de.phonetic_key LIKE ? THEN 3
-            WHEN de.hebrew_script LIKE ? THEN 3
             WHEN de.hebrew_script LIKE ? THEN 3
             ELSE 4
           END,
           de.created_at DESC
        LIMIT 30`,
       [
-        `%${term}%`, `${term}*`, `%${term}%`, `%${term}%`, `%${term}%`, `%${term}%`, `%${term}%`, `%${term}%`,
-        `%${normTerm}%`,
+        `%${term}%`, `${term}*`, `%${term}%`, `%${term}%`, `%${term}%`, `%${term}%`, `%${term}%`,
         `%${phoneticTerm}%`,
-        term, normTerm, phoneticTerm, term, term, term, term, `${term}%`, `${term}%`, `${phoneticTerm}%`, `${term}%`, `${term}%`
+        term, phoneticTerm, term, term, term, `${term}%`, `${term}%`, `${phoneticTerm}%`, `${term}%`
       ]
     ) as any[];
 
