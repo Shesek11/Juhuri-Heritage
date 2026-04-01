@@ -1,0 +1,33 @@
+id	first_name	last_name	gender	birth_date	death_date	is_alive	user_id	maiden_name	birth_city	birth_country	residence_city	residence_country	first_name_ru	last_name_ru
+3	שמעון יהונתן	שביט	male	1984-07-28	NULL	1	1	יושבייב	פרדס חנה	ישראל	חדרה	ישראל	NULL	NULL
+4	טל	שביט	female	1986-07-12	NULL	1	1	דטנר	גבעת חיים מאוחד	ישראל	חדרה	ישראל	NULL	NULL
+5	רמבם	שביט	male	1956-08-13	NULL	1	1	יושבייב	דרבנט	רוסיה	פרדס חנה	ישראל	NULL	NULL
+6	גאולה	שביט	female	1964-05-18	NULL	1	1	איסטחרוב	קובה	רוסיה	פרדס חנה	ישראל	NULL	NULL
+7	שחר	שביט	male	1987-01-11	2020-10-25	0	1	יושבייב	פרדס חנה	ישראל	תל אביב	ישראל	NULL	NULL
+8	מעיין 	שביט	female	1995-06-11	NULL	1	1	יושבייב	פרדס חנה	ישראל	פרדס חנה	ישראל	NULL	NULL
+9	נעמה 	שביט	female	2018-02-18	NULL	1	1		פרדס חנה	ישראל	חדרה	ישראל	NULL	NULL
+10	אדווה	שביט	female	2020-08-15	NULL	1	1	NULL	פרדס חנה	ישראל	חדרה	ישראל	NULL	NULL
+11	יפתח רמבם	שביט	male	2023-10-09	NULL	1	1		חדרה	ישראל	חדרה	ישראל	NULL	NULL
+102	נדב	יושבייב	male	1990-01-12	NULL	1	15		פרדס חנה 	ישראל	NULL	NULL	NULL	NULL
+103	שמואל 	יושבייב	male	1962-02-19	2001-12-19	0	15	NULL	דרבנט	דגסטן	NULL	NULL	NULL	NULL
+104	גליה	יושבייב	female	1966-07-26	NULL	1	15	NULL	דרבנט	דגסטן	NULL	NULL	NULL	NULL
+105	הילי 	יושבייב	female	2020-07-22	NULL	1	15		פרדס חנה	ישראל	NULL	NULL	NULL	NULL
+106	רונה	יושבייב	female	1993-09-18	NULL	1	15	NULL	באר שבע	ישראל	NULL	NULL	NULL	NULL
+107	טליה	יושבייב	female	2023-07-07	NULL	1	15		אור עקיבא	ישראל	NULL	NULL	NULL	NULL
+108	איילה	יושבייב	female	2024-10-15	NULL	1	15	NULL	אור עקיבא	ישראל	NULL	NULL	NULL	NULL
+109	רוזי	יושבייב	female	1992-02-07	NULL	1	15		פרדס חנה	ישראל	NULL	NULL	NULL	NULL
+110	אייל	יושבייב	male	1998-09-29	NULL	1	15		פרדס חנה	ישראל	NULL	NULL	NULL	NULL
+111	ארתור	דוידוב	male	1989-04-17	NULL	1	16		רובא	אזרבייג'ן	אור עקיבא	ישראל	NULL	NULL
+112	מיאל שמחה	דוידוב	male	2019-01-06	NULL	1	16		פרדס חנה	ישראל	אור עקיבא	ישראל	NULL	NULL
+113	אליה	דוידוב	male	2021-07-14	NULL	1	16		פרדס חנה	ישראל	אור עקיבא	ישראל	NULL	NULL
+114	לואן מאיה	דוידוב	male	2024-11-12	NULL	1	16		פרדס חנה	ישראל	אור עקיבא	ישראל	NULL	NULL
+115	סימן טוב	יושבייב	male	1929-05-01	NULL	1	17	סימון	דרבנט	דגסטן	דרבנט	דגסטן	NULL	NULL
+116	ציפורה	יושבייב	female	1932-04-10	NULL	1	17	רוזה	טביליסי	גאורגיה	פרדס חנה	ישראל	NULL	NULL
+117	בניהו	יושבייב שביט	male	1960-05-16	NULL	1	17	בני	דרבנט	דגסטן	פרדס חנה	ישראל	NULL	NULL
+118	שירה ציונה	בן גיגי	female	1985-04-10	NULL	1	17	שביט יושבייב	חדרה	ישראל	אור עקיבא	ישראל	NULL	NULL
+119	נועם הלל	איזיאייב	male	2011-11-15	NULL	1	17	נועמיקו	חדרה	ישראל	אור עקיבא	ישראל	NULL	NULL
+120	לירום	שביט	female	1989-10-19	NULL	1	17	לימורי	חדרה	ישראל	קיסריה	ישראל	NULL	NULL
+121	יאיר	שביט	male	1990-04-04	NULL	1	17	יאירוש	חדרה	ישראל	נתניה	ישראל	NULL	NULL
+122	גילה	שביט	female	1967-11-18	NULL	1	17	ג'יירון	רובה	אזרבייג'ן	עכו	ישראל	NULL	NULL
+123	אביחי בניה	שביט	male	2025-04-10	NULL	1	17	NULL	נתניה	ישראל	נתניה	ישראל	NULL	NULL
+124	חלי רחל	שביט	female	1995-09-25	NULL	1	17	חלי	נתניה	ישראל	נתניה	ישראל	NULL	NULL
