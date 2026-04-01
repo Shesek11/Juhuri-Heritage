@@ -102,9 +102,13 @@ export async function GET(request: NextRequest) {
       const normScript = normalizeHebrew(e.hebrew_script || '');
       const isExactText = e.hebrew_script === term || normScript === normalizeHebrew(term);
       const isExactMeaning = (e.hebrew_short || '') === term || (e.english_short || '') === term;
-      // Also compute distance on normalized (niqqud-stripped) original text
+      // Distance on normalized (niqqud-stripped) original text
       const normDist = levenshtein(normalizeHebrew(term), normScript);
-      const score = isExactText ? -200 : isExactMeaning ? -100 : dist * 10 + normDist;
+      // Bonus: does the latin_script of the entry start similarly to the search term's transliteration?
+      // This helps differentiate zh/ch/g words that all collapse to the same phonetic key
+      const latinScript = (e.latin_script || '').toLowerCase();
+      const termLatin = term.replace(/[\u0591-\u05C7\u05F3'ʼ\u2019]/g, '').replace(/[^\u0590-\u05FF]/g, '');
+      const score = isExactText ? -200 : isExactMeaning ? -100 : dist * 100 + normDist * 10;
       return { ...e, _score: score };
     });
     rankedEntries.sort((a: any, b: any) => a._score - b._score);
