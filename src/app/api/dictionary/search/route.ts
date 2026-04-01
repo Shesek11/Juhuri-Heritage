@@ -1,6 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/src/lib/db';
 
+// Strip niqqud and normalize geresh for fuzzy Hebrew matching
+function normalizeHebrew(s: string): string {
+  return s
+    .replace(/[\u0591-\u05C7]/g, '')  // remove niqqud & cantillation
+    .replace(/[\u05F3'ʼ']/g, '׳')     // normalize all geresh variants to Hebrew geresh
+    .replace(/ה$/g, '')                // strip trailing ה (common mater lectionis)
+    .trim();
+}
+
+// SQL expression that normalizes hebrew text the same way
+const NORM_SQL = (col: string) =>
+  `REPLACE(REPLACE(REGEXP_REPLACE(${col}, '[\\x{0591}-\\x{05C7}]', ''), '''', '׳'), 'ה', '')`;
+
 export async function GET(request: NextRequest) {
   try {
     const term = request.nextUrl.searchParams.get('q')?.trim();
@@ -12,7 +25,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'מונח החיפוש ארוך מדי' }, { status: 400 });
     }
 
-    // Search in active entries: by hebrew_script (Juhuri) OR by hebrew translation (FULLTEXT) OR russian
+    const normTerm = normalizeHebrew(term);
+
+    // Search in active entries across all fields, including normalized (niqqud-free) matching
     const [entries] = await pool.query(
       `SELECT de.*, u.name as contributor_name, a.name as approver_name
        FROM dictionary_entries de
@@ -20,11 +35,22 @@ export async function GET(request: NextRequest) {
        LEFT JOIN users a ON de.approved_by = a.id
        LEFT JOIN dialect_scripts t ON de.id = t.entry_id
        WHERE de.status = 'active'
-         AND (de.hebrew_script LIKE ? OR MATCH(de.hebrew_script) AGAINST(? IN BOOLEAN MODE) OR de.hebrew_script LIKE ? OR de.hebrew_short LIKE ? OR de.english_short LIKE ? OR t.latin_script LIKE ? OR t.cyrillic_script LIKE ? OR de.russian_short LIKE ?)
+         AND (
+           de.hebrew_script LIKE ?
+           OR MATCH(de.hebrew_script) AGAINST(? IN BOOLEAN MODE)
+           OR de.hebrew_script LIKE ?
+           OR de.hebrew_short LIKE ?
+           OR de.english_short LIKE ?
+           OR t.latin_script LIKE ?
+           OR t.cyrillic_script LIKE ?
+           OR de.russian_short LIKE ?
+           OR REGEXP_REPLACE(de.hebrew_script, '[\\x{0591}-\\x{05C7}]', '') LIKE ?
+         )
        GROUP BY de.id
        ORDER BY
           CASE
             WHEN de.hebrew_script = ? THEN 0
+            WHEN REGEXP_REPLACE(de.hebrew_script, '[\\x{0591}-\\x{05C7}]', '') = ? THEN 0
             WHEN de.hebrew_short = ? THEN 1
             WHEN de.english_short = ? THEN 1
             WHEN de.hebrew_script = ? THEN 1
@@ -37,7 +63,11 @@ export async function GET(request: NextRequest) {
           END,
           de.created_at DESC
        LIMIT 30`,
-      [`%${term}%`, `${term}*`, `%${term}%`, `%${term}%`, `%${term}%`, `%${term}%`, `%${term}%`, `%${term}%`, term, term, term, term, term, `${term}%`, `${term}%`, `${term}%`, `${term}%`]
+      [
+        `%${term}%`, `${term}*`, `%${term}%`, `%${term}%`, `%${term}%`, `%${term}%`, `%${term}%`, `%${term}%`,
+        `%${normTerm}%`,
+        term, normTerm, term, term, term, term, `${term}%`, `${term}%`, `${term}%`, `${term}%`
+      ]
     ) as any[];
 
     if (entries.length === 0) {
