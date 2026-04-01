@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import pool from '@/src/lib/db';
+import { toPhoneticKey } from '@/src/lib/phoneticKey';
 
 // Strip niqqud and normalize geresh for fuzzy Hebrew matching
 function normalizeHebrew(s: string): string {
@@ -26,8 +27,9 @@ export async function GET(request: NextRequest) {
     }
 
     const normTerm = normalizeHebrew(term);
+    const phoneticTerm = toPhoneticKey(term);
 
-    // Search in active entries across all fields, including normalized (niqqud-free) matching
+    // Search in active entries across all fields, including normalized (niqqud-free) and phonetic matching
     const [entries] = await pool.query(
       `SELECT de.*, u.name as contributor_name, a.name as approver_name
        FROM dictionary_entries de
@@ -45,18 +47,21 @@ export async function GET(request: NextRequest) {
            OR t.cyrillic_script LIKE ?
            OR de.russian_short LIKE ?
            OR REGEXP_REPLACE(de.hebrew_script, '[\\x{0591}-\\x{05C7}]', '') LIKE ?
+           OR de.phonetic_key LIKE ?
          )
        GROUP BY de.id
        ORDER BY
           CASE
             WHEN de.hebrew_script = ? THEN 0
             WHEN REGEXP_REPLACE(de.hebrew_script, '[\\x{0591}-\\x{05C7}]', '') = ? THEN 0
+            WHEN de.phonetic_key = ? THEN 1
             WHEN de.hebrew_short = ? THEN 1
             WHEN de.english_short = ? THEN 1
             WHEN de.hebrew_script = ? THEN 1
             WHEN t.latin_script = ? THEN 1
             WHEN de.hebrew_short LIKE ? THEN 2
             WHEN de.english_short LIKE ? THEN 2
+            WHEN de.phonetic_key LIKE ? THEN 3
             WHEN de.hebrew_script LIKE ? THEN 3
             WHEN de.hebrew_script LIKE ? THEN 3
             ELSE 4
@@ -66,7 +71,8 @@ export async function GET(request: NextRequest) {
       [
         `%${term}%`, `${term}*`, `%${term}%`, `%${term}%`, `%${term}%`, `%${term}%`, `%${term}%`, `%${term}%`,
         `%${normTerm}%`,
-        term, normTerm, term, term, term, term, `${term}%`, `${term}%`, `${term}%`, `${term}%`
+        `%${phoneticTerm}%`,
+        term, normTerm, phoneticTerm, term, term, term, term, `${term}%`, `${term}%`, `${phoneticTerm}%`, `${term}%`, `${term}%`
       ]
     ) as any[];
 

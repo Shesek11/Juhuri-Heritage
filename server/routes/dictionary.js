@@ -5,6 +5,7 @@ const { authenticate, requireApprover, optionalAuth } = require('../middleware/a
 const { body, query: queryParam, param, validationResult } = require('express-validator');
 const { normalizeHebrewScript } = require('../utils/normalization');
 const { logEvent, getClientIp } = require('../utils/logEvent');
+const { toPhoneticKey } = require('../utils/phoneticKey');
 
 // Extract Hebrew stem by stripping common prefixes/suffixes
 // e.g. "הצלחה" → "צלח", "להצליח" → "צליח", "מצליח" → "צליח"
@@ -55,8 +56,9 @@ router.get('/search', [
 ], async (req, res) => {
     try {
         const term = req.query.q.trim();
+        const phoneticTerm = toPhoneticKey(term);
 
-        // Search in active entries: term, hebrew (FULLTEXT), latin, cyrillic, russian
+        // Search in active entries: term, hebrew (FULLTEXT), latin, cyrillic, russian, phonetic
         const [entries] = await db.query(
             `SELECT de.*, u.name as contributor_name, a.name as approver_name,
                     SUM(COALESCE(t.upvotes, 0)) - SUM(COALESCE(t.downvotes, 0)) as community_score
@@ -72,11 +74,13 @@ router.get('/search', [
                     OR de.english_short LIKE ?
                     OR t.latin_script LIKE ?
                     OR t.cyrillic_script LIKE ?
-                    OR de.russian_short LIKE ?)
+                    OR de.russian_short LIKE ?
+                    OR de.phonetic_key LIKE ?)
              GROUP BY de.id
              ORDER BY
                 CASE
                   WHEN de.hebrew_script = ? THEN 0
+                  WHEN de.phonetic_key = ? THEN 1
                   WHEN de.hebrew_short = ? THEN 1
                   WHEN de.english_short = ? THEN 1
                   WHEN de.hebrew_script = ? THEN 1
@@ -84,6 +88,7 @@ router.get('/search', [
                   WHEN t.cyrillic_script = ? THEN 1
                   WHEN de.hebrew_short LIKE ? THEN 2
                   WHEN de.english_short LIKE ? THEN 2
+                  WHEN de.phonetic_key LIKE ? THEN 3
                   WHEN de.hebrew_script LIKE ? THEN 3
                   WHEN de.hebrew_script LIKE ? THEN 3
                   ELSE 4
@@ -92,7 +97,8 @@ router.get('/search', [
                 de.created_at DESC
              LIMIT 10`,
             [`%${term}%`, `${term}*`, `%${term}%`, `%${term}%`, `%${term}%`, `%${term}%`, `%${term}%`, `%${term}%`,
-             term, term, term, term, term, term, `${term}%`, `${term}%`, `${term}%`, `${term}%`]
+             `%${phoneticTerm}%`,
+             term, phoneticTerm, term, term, term, term, term, `${term}%`, `${term}%`, `${phoneticTerm}%`, `${term}%`, `${term}%`]
         );
 
         if (entries.length === 0) {
