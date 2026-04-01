@@ -537,19 +537,69 @@ export const CommunityGraph: React.FC = () => {
             childrenOfCouple.get(key)!.push(childId);
         });
 
-        // Group real nodes by generation for X layout
-        const genGroups = new Map<number, GraphNode[]>();
-        realNodes.forEach(n => {
-            const gen = n.generation ?? 0;
-            if (!genGroups.has(gen)) genGroups.set(gen, []);
-            genGroups.get(gen)!.push(n);
+        // ── Connected component detection ──
+        // Build adjacency among real nodes (resolve junctions as pass-through)
+        const adj = new Map<number, Set<number>>();
+        realNodes.forEach(n => adj.set(n.id, new Set()));
+
+        // Direct real-to-real edges
+        edges.forEach(e => {
+            const sId = typeof e.source === 'number' ? e.source : e.source.id;
+            const tId = typeof e.target === 'number' ? e.target : e.target.id;
+            if (adj.has(sId) && adj.has(tId)) {
+                adj.get(sId)!.add(tId);
+                adj.get(tId)!.add(sId);
+            }
         });
-        const sortedGens = [...genGroups.keys()].sort((a, b) => a - b);
 
-        // X POSITIONING: deterministic, generation by generation
-        // Y POSITIONING: birth year on shared timeline
+        // Junction pass-through: connect all real nodes sharing a junction
+        const junctionPeers = new Map<number, number[]>();
+        edges.forEach(e => {
+            const sId = typeof e.source === 'number' ? e.source : e.source.id;
+            const tId = typeof e.target === 'number' ? e.target : e.target.id;
+            const sIsJunction = nodes.find(n => n.id === sId)?.isJunction;
+            const tIsJunction = nodes.find(n => n.id === tId)?.isJunction;
+            if (sIsJunction && !tIsJunction) {
+                if (!junctionPeers.has(sId)) junctionPeers.set(sId, []);
+                junctionPeers.get(sId)!.push(tId);
+            }
+            if (tIsJunction && !sIsJunction) {
+                if (!junctionPeers.has(tId)) junctionPeers.set(tId, []);
+                junctionPeers.get(tId)!.push(sId);
+            }
+        });
+        junctionPeers.forEach(peers => {
+            for (let i = 0; i < peers.length; i++) {
+                for (let j = i + 1; j < peers.length; j++) {
+                    adj.get(peers[i])?.add(peers[j]);
+                    adj.get(peers[j])?.add(peers[i]);
+                }
+            }
+        });
 
-        // Helper: get average X of a node's parents
+        // BFS to find connected components
+        const visited = new Set<number>();
+        const components: GraphNode[][] = [];
+        realNodes.forEach(n => {
+            if (visited.has(n.id)) return;
+            const component: GraphNode[] = [];
+            const queue = [n.id];
+            visited.add(n.id);
+            while (queue.length > 0) {
+                const curr = queue.shift()!;
+                const node = realNodes.find(rn => rn.id === curr);
+                if (node) component.push(node);
+                adj.get(curr)?.forEach(nb => {
+                    if (!visited.has(nb)) { visited.add(nb); queue.push(nb); }
+                });
+            }
+            components.push(component);
+        });
+
+        // Largest family first
+        components.sort((a, b) => b.length - a.length);
+
+        // ── Helper ──
         function getParentCenterX(n: GraphNode): number | null {
             const parents = parentsOf.get(n.id);
             if (!parents || parents.length === 0) return null;
@@ -558,96 +608,131 @@ export const CommunityGraph: React.FC = () => {
             return parentNodes.reduce((sum, p) => sum + (p.x || 0), 0) / parentNodes.length;
         }
 
-        // Process top-down: assign X per generation, Y by birth year
-        sortedGens.forEach(gen => {
-            const genNodes = genGroups.get(gen)!;
+        // ── Layout each component independently ──
+        const FAMILY_GAP = 200;
+        let componentXCursor = 0;
 
-            // Build units: [couple] or [single]
+        components.forEach((compNodes, compIdx) => {
+            const compIds = new Set(compNodes.map(n => n.id));
+
+            // Group by generation within this component
+            const genGroups = new Map<number, GraphNode[]>();
+            compNodes.forEach(n => {
+                const gen = n.generation ?? 0;
+                if (!genGroups.has(gen)) genGroups.set(gen, []);
+                genGroups.get(gen)!.push(n);
+            });
+            const sortedGens = [...genGroups.keys()].sort((a, b) => a - b);
+
+            // X POSITIONING per generation
             type Unit = { nodes: GraphNode[]; width: number };
-            const units: Unit[] = [];
-            const inUnit = new Set<number>();
 
-            // Couples first
-            genNodes.forEach(n => {
-                if (inUnit.has(n.id)) return;
-                const spouseId = spouseMap.get(n.id);
-                const spouse = spouseId ? genNodes.find(s => s.id === spouseId) : null;
-                if (spouse && !inUnit.has(spouse.id)) {
-                    // Put the person with parents (blood member) first, spouse second (outside)
-                    const nHasParents = parentsOf.has(n.id);
-                    const spouseHasParents = parentsOf.has(spouse.id);
-                    const pair = nHasParents && !spouseHasParents ? [n, spouse] :
-                                 spouseHasParents && !nHasParents ? [spouse, n] :
-                                 [n, spouse].sort((a, b) => (a.birthYear ?? 0) - (b.birthYear ?? 0));
-                    units.push({ nodes: pair, width: COUPLE_GAP });
-                    inUnit.add(n.id);
-                    inUnit.add(spouse.id);
-                }
-            });
+            sortedGens.forEach(gen => {
+                const genNodes = genGroups.get(gen)!;
+                const units: Unit[] = [];
+                const inUnit = new Set<number>();
 
-            // Then singles
-            genNodes.filter(n => !inUnit.has(n.id))
-                .sort((a, b) => (a.birthYear ?? 0) - (b.birthYear ?? 0))
-                .forEach(n => units.push({ nodes: [n], width: 0 }));
+                // Couples first
+                genNodes.forEach(n => {
+                    if (inUnit.has(n.id)) return;
+                    const spouseId = spouseMap.get(n.id);
+                    const spouse = spouseId ? genNodes.find(s => s.id === spouseId) : null;
+                    if (spouse && !inUnit.has(spouse.id)) {
+                        const nHasParents = parentsOf.has(n.id);
+                        const spouseHasParents = parentsOf.has(spouse.id);
+                        const pair = nHasParents && !spouseHasParents ? [n, spouse] :
+                                     spouseHasParents && !nHasParents ? [spouse, n] :
+                                     [n, spouse].sort((a, b) => (a.birthYear ?? 0) - (b.birthYear ?? 0));
+                        units.push({ nodes: pair, width: COUPLE_GAP });
+                        inUnit.add(n.id);
+                        inUnit.add(spouse.id);
+                    }
+                });
 
-            // Sort units: children under their parents
-            units.sort((a, b) => {
-                const aParentX = getParentCenterX(a.nodes[0]);
-                const bParentX = getParentCenterX(b.nodes[0]);
-                if (aParentX !== null && bParentX !== null) return aParentX - bParentX;
-                if (aParentX !== null) return -1;
-                if (bParentX !== null) return 1;
-                return (a.nodes[0].birthYear ?? 0) - (b.nodes[0].birthYear ?? 0);
-            });
+                // Singles
+                genNodes.filter(n => !inUnit.has(n.id))
+                    .sort((a, b) => (a.birthYear ?? 0) - (b.birthYear ?? 0))
+                    .forEach(n => units.push({ nodes: [n], width: 0 }));
 
-            // Layout X centered, Y by birth year
-            const totalWidth = units.reduce((sum, u) => sum + u.width + NODE_SPACING, -NODE_SPACING);
-            let x = width / 2 - totalWidth / 2;
+                // Sort units: children under their parents
+                units.sort((a, b) => {
+                    const aParentX = getParentCenterX(a.nodes[0]);
+                    const bParentX = getParentCenterX(b.nodes[0]);
+                    if (aParentX !== null && bParentX !== null) return aParentX - bParentX;
+                    if (aParentX !== null) return -1;
+                    if (bParentX !== null) return 1;
+                    return (a.nodes[0].birthYear ?? 0) - (b.nodes[0].birthYear ?? 0);
+                });
 
-            units.forEach(unit => {
-                if (unit.nodes.length === 2) {
-                    // Couple: each at their own birth year Y, side by side X
-                    unit.nodes[0].x = x;
-                    unit.nodes[0].y = yearToY(unit.nodes[0].birthYear ?? ((minYear + maxYear) / 2));
-                    unit.nodes[1].x = x + COUPLE_GAP;
-                    unit.nodes[1].y = yearToY(unit.nodes[1].birthYear ?? ((minYear + maxYear) / 2));
-                    x += COUPLE_GAP + NODE_SPACING;
-                } else {
-                    unit.nodes[0].x = x;
-                    unit.nodes[0].y = yearToY(unit.nodes[0].birthYear ?? ((minYear + maxYear) / 2));
-                    x += NODE_SPACING;
-                }
-            });
-        });
+                // Layout X relative to component cursor, Y by birth year
+                const totalWidth = units.reduce((sum, u) => sum + u.width + NODE_SPACING, -NODE_SPACING);
+                let x = componentXCursor - totalWidth / 2;
 
-        // Second pass: re-center children under their parents
-        sortedGens.forEach(gen => {
-            if (gen === sortedGens[0]) return;
-            childrenOfCouple.forEach((childIds, parentKey) => {
-                const parentIds = parentKey.split(',').map(Number);
-                const pNodes = parentIds.map(pid => nodes.find(n => n.id === pid)).filter(Boolean) as GraphNode[];
-                if (pNodes.length === 0 || pNodes.some(p => p.x == null)) return;
-                const parentCenterX = pNodes.reduce((sum, p) => sum + (p.x || 0), 0) / pNodes.length;
-
-                const cNodes = childIds
-                    .map(cid => nodes.find(n => n.id === cid))
-                    .filter(n => n && n.generation === gen) as GraphNode[];
-                if (cNodes.length === 0) return;
-
-                const childCenterX = cNodes.reduce((sum, c) => sum + (c.x || 0), 0) / cNodes.length;
-                const shift = parentCenterX - childCenterX;
-
-                // Shift children + their spouses
-                cNodes.forEach(c => {
-                    c.x = (c.x || 0) + shift;
-                    const sId = spouseMap.get(c.id);
-                    if (sId) {
-                        const spouse = nodes.find(n => n.id === sId);
-                        if (spouse && spouse.generation === gen) spouse.x = (spouse.x || 0) + shift;
+                units.forEach(unit => {
+                    if (unit.nodes.length === 2) {
+                        unit.nodes[0].x = x;
+                        unit.nodes[0].y = yearToY(unit.nodes[0].birthYear ?? ((minYear + maxYear) / 2));
+                        unit.nodes[1].x = x + COUPLE_GAP;
+                        unit.nodes[1].y = yearToY(unit.nodes[1].birthYear ?? ((minYear + maxYear) / 2));
+                        x += COUPLE_GAP + NODE_SPACING;
+                    } else {
+                        unit.nodes[0].x = x;
+                        unit.nodes[0].y = yearToY(unit.nodes[0].birthYear ?? ((minYear + maxYear) / 2));
+                        x += NODE_SPACING;
                     }
                 });
             });
+
+            // Re-center children under their parents (within this component)
+            sortedGens.forEach(gen => {
+                if (gen === sortedGens[0]) return;
+                childrenOfCouple.forEach((childIds, parentKey) => {
+                    const parentIds = parentKey.split(',').map(Number);
+                    if (!parentIds.some(pid => compIds.has(pid))) return;
+
+                    const pNodes = parentIds.map(pid => nodes.find(n => n.id === pid)).filter(Boolean) as GraphNode[];
+                    if (pNodes.length === 0 || pNodes.some(p => p.x == null)) return;
+                    const parentCenterX = pNodes.reduce((sum, p) => sum + (p.x || 0), 0) / pNodes.length;
+
+                    const cNodes = childIds
+                        .map(cid => nodes.find(n => n.id === cid))
+                        .filter(n => n && n.generation === gen) as GraphNode[];
+                    if (cNodes.length === 0) return;
+
+                    const childCenterX = cNodes.reduce((sum, c) => sum + (c.x || 0), 0) / cNodes.length;
+                    const shift = parentCenterX - childCenterX;
+
+                    cNodes.forEach(c => {
+                        c.x = (c.x || 0) + shift;
+                        const sId = spouseMap.get(c.id);
+                        if (sId) {
+                            const spouse = nodes.find(n => n.id === sId);
+                            if (spouse && spouse.generation === gen) spouse.x = (spouse.x || 0) + shift;
+                        }
+                    });
+                });
+            });
+
+            // Advance cursor past this component
+            let compMinX = Infinity, compMaxX = -Infinity;
+            compNodes.forEach(n => {
+                if (n.x != null) {
+                    compMinX = Math.min(compMinX, n.x);
+                    compMaxX = Math.max(compMaxX, n.x);
+                }
+            });
+            if (compMinX !== Infinity) {
+                componentXCursor = compMaxX + FAMILY_GAP;
+            }
         });
+
+        // Center all nodes in viewport
+        const allXPositions = realNodes.filter(n => n.x != null).map(n => n.x!);
+        if (allXPositions.length > 0) {
+            const currentCenter = (Math.min(...allXPositions) + Math.max(...allXPositions)) / 2;
+            const shift = width / 2 - currentCenter;
+            realNodes.forEach(n => { if (n.x != null) n.x! += shift; });
+        }
 
         // Position junction nodes
         nodes.forEach(n => {
