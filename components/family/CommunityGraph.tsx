@@ -19,7 +19,7 @@ import 'd3-transition';
 import { familyService, FamilyMember } from '../../services/familyService';
 import { EditMemberModal } from './EditMemberModal';
 import { useAuth } from '../../contexts/AuthContext';
-import { Loader2, ZoomIn, ZoomOut, Maximize2, UserPlus, Link2, X, Search, Network, Info, Eye, Sliders, User } from 'lucide-react';
+import { Loader2, ZoomIn, ZoomOut, Maximize2, UserPlus, Link2, X, Search, Network, Info, Eye, Sliders, User, Pencil, Expand, Shrink } from 'lucide-react';
 
 interface GraphNode extends SimulationNodeDatum {
     id: number;
@@ -62,6 +62,21 @@ export const CommunityGraph: React.FC = () => {
     const [allMembers, setAllMembers] = useState<FamilyMember[]>([]);
     const [showLegend, setShowLegend] = useState(false);
     const [showControls, setShowControls] = useState(false);
+    const [focalPersonId, setFocalPersonId] = useState<number | null>(null);
+    const [viewMode, setViewMode] = useState<'overview' | 'tree'>('overview');
+    const [expandedSpouses, setExpandedSpouses] = useState<Set<number>>(new Set());
+
+    // Family overview data
+    interface FamilyGroup {
+        surname: string;
+        memberCount: number;
+        generations: number;
+        yearRange: string;
+        memberIds: number[];
+        rootPersonId: number; // best person to start focal from
+        marriages: string[]; // connected family surnames
+    }
+    const [familyGroups, setFamilyGroups] = useState<FamilyGroup[]>([]);
 
     // Force simulation parameters (with sliders)
     const [forceParams, setForceParams] = useState({
@@ -76,12 +91,12 @@ export const CommunityGraph: React.FC = () => {
 
     // Layout parameters (tunable via debug panel)
     const [layoutParams, setLayoutParams] = useState({
-        nodeSpacing: 160,
-        coupleGap: 65,
-        familyGap: 300,
-        yearPx: 12,
-        minGap: 105,
-        collisionRadius: 52,
+        nodeSpacing: 80,
+        coupleGap: 70,
+        familyGap: 120,
+        yearPx: 10,
+        minGap: 90,
+        collisionRadius: 40,
         snapBack: 0.3,
         overlapRounds: 3,
     });
@@ -125,6 +140,9 @@ export const CommunityGraph: React.FC = () => {
     // Node hover pulsing intervals (for first-degree relatives)
     const nodeHoverIntervalsRef = useRef<NodeJS.Timeout[]>([]);
 
+    // Tooltip hide timer (allows hovering to tooltip buttons)
+    const tooltipHideRef = useRef<NodeJS.Timeout | null>(null);
+
     // Simulation ref for real-time parameter updates
     const simulationRef = useRef<Simulation<GraphNode, undefined> | null>(null);
 
@@ -140,8 +158,145 @@ export const CommunityGraph: React.FC = () => {
 
             setAllMembers(members);
 
+            // ── Build Family Overview Groups ──
+            const surnameMap = new Map<string, any[]>();
+            members.forEach((m: any) => {
+                const surname = m.last_name || m.maiden_name || 'לא ידוע';
+                if (!surnameMap.has(surname)) surnameMap.set(surname, []);
+                surnameMap.get(surname)!.push(m);
+            });
+
+            // Find marriage connections between families
+            const groups: FamilyGroup[] = [];
+            surnameMap.forEach((familyMembers, surname) => {
+                const ids = familyMembers.map((m: any) => m.id);
+                const idSet = new Set(ids);
+
+                // Find marriages to other families
+                const marriedTo = new Set<string>();
+                partnerships.forEach((p: any) => {
+                    const p1InFamily = idSet.has(p.person1_id);
+                    const p2InFamily = idSet.has(p.person2_id);
+                    if (p1InFamily && !p2InFamily) {
+                        const spouse = members.find((m: any) => m.id === p.person2_id);
+                        if (spouse) marriedTo.add(spouse.last_name || spouse.maiden_name || '?');
+                    }
+                    if (p2InFamily && !p1InFamily) {
+                        const spouse = members.find((m: any) => m.id === p.person1_id);
+                        if (spouse) marriedTo.add(spouse.last_name || spouse.maiden_name || '?');
+                    }
+                });
+
+                // Find year range
+                const years = familyMembers.filter((m: any) => m.birth_date).map((m: any) => new Date(m.birth_date).getFullYear());
+                const minY = years.length > 0 ? Math.min(...years) : 0;
+                const maxY = years.length > 0 ? Math.max(...years) : 0;
+
+                // Count generations (rough: group by ~25 year spans)
+                const genSet = new Set(years.map((y: number) => Math.floor(y / 25)));
+
+                // Find best root person (oldest, has children)
+                const pcChildIds = new Set(parentChild.map((pc: any) => pc.child_id));
+                const rootCandidates = familyMembers
+                    .filter((m: any) => !pcChildIds.has(m.id)) // no parents in tree
+                    .sort((a: any, b: any) => {
+                        const aYear = a.birth_date ? new Date(a.birth_date).getFullYear() : 9999;
+                        const bYear = b.birth_date ? new Date(b.birth_date).getFullYear() : 9999;
+                        return aYear - bYear;
+                    });
+
+                groups.push({
+                    surname,
+                    memberCount: familyMembers.length,
+                    generations: Math.max(genSet.size, 1),
+                    yearRange: years.length > 0 ? `${minY}–${maxY}` : '',
+                    memberIds: ids,
+                    rootPersonId: rootCandidates[0]?.id || familyMembers[0]?.id,
+                    marriages: [...marriedTo],
+                });
+            });
+
+            // Sort by member count descending
+            groups.sort((a, b) => b.memberCount - a.memberCount);
+            setFamilyGroups(groups);
+
+            // ── Focal Person Filter ──
+            // When a focal person is selected, only show their bloodline:
+            // ancestors (up), descendants (down), siblings, and spouses as leaves
+            let filteredMembers = members;
+            let filteredPC = parentChild;
+            let filteredPartners = partnerships;
+
+            if (focalPersonId) {
+                const includedIds = new Set<number>();
+                const pcMap = new Map<number, number[]>(); // child → parent IDs
+                const cpMap = new Map<number, number[]>(); // parent → child IDs
+                const spouseOf = new Map<number, number[]>();
+
+                parentChild.forEach((pc: any) => {
+                    if (!pcMap.has(pc.child_id)) pcMap.set(pc.child_id, []);
+                    pcMap.get(pc.child_id)!.push(pc.parent_id);
+                    if (!cpMap.has(pc.parent_id)) cpMap.set(pc.parent_id, []);
+                    cpMap.get(pc.parent_id)!.push(pc.child_id);
+                });
+                partnerships.forEach((p: any) => {
+                    if (!spouseOf.has(p.person1_id)) spouseOf.set(p.person1_id, []);
+                    spouseOf.get(p.person1_id)!.push(p.person2_id);
+                    if (!spouseOf.has(p.person2_id)) spouseOf.set(p.person2_id, []);
+                    spouseOf.get(p.person2_id)!.push(p.person1_id);
+                });
+
+                // Walk up: ancestors (separate visited set — person may already be included as spouse)
+                const walkedUp = new Set<number>();
+                const walkUp = (id: number) => {
+                    if (walkedUp.has(id)) return;
+                    walkedUp.add(id);
+                    includedIds.add(id);
+                    // Add spouse(s)
+                    (spouseOf.get(id) || []).forEach(sid => includedIds.add(sid));
+                    // Add parents
+                    (pcMap.get(id) || []).forEach(pid => walkUp(pid));
+                };
+
+                // Walk down: descendants
+                const walkedDown = new Set<number>();
+                const walkDown = (id: number) => {
+                    if (walkedDown.has(id)) return;
+                    walkedDown.add(id);
+                    includedIds.add(id);
+                    // Add spouse(s)
+                    (spouseOf.get(id) || []).forEach(sid => includedIds.add(sid));
+                    // Add children
+                    (cpMap.get(id) || []).forEach(cid => walkDown(cid));
+                };
+
+                // Start from focal person
+                walkUp(focalPersonId);
+                walkDown(focalPersonId);
+
+                // Add siblings (same parents' other children)
+                (pcMap.get(focalPersonId) || []).forEach(pid => {
+                    (cpMap.get(pid) || []).forEach(sibId => {
+                        walkDown(sibId); // sibling + their descendants
+                    });
+                });
+
+                // Expand spouse families that user explicitly opened
+                expandedSpouses.forEach(spouseId => {
+                    walkUp(spouseId);   // show spouse's parents/ancestors
+                    // Show spouse's siblings and their families
+                    (pcMap.get(spouseId) || []).forEach(pid => {
+                        (cpMap.get(pid) || []).forEach(sibId => walkDown(sibId));
+                    });
+                });
+
+                filteredMembers = members.filter((m: any) => includedIds.has(m.id));
+                filteredPC = parentChild.filter((pc: any) => includedIds.has(pc.parent_id) && includedIds.has(pc.child_id));
+                filteredPartners = partnerships.filter((p: any) => includedIds.has(p.person1_id) && includedIds.has(p.person2_id));
+            }
+
             // Convert to graph nodes
-            const graphNodes: GraphNode[] = members.map(m => ({
+            const graphNodes: GraphNode[] = filteredMembers.map((m: any) => ({
                 id: m.id,
                 name: `${m.first_name} ${m.last_name || ''}`.trim(),
                 nameRu: (m.first_name_ru || m.last_name_ru) ? `${m.first_name_ru || ''} ${m.last_name_ru || ''}`.trim() : undefined,
@@ -162,7 +317,7 @@ export const CommunityGraph: React.FC = () => {
 
             // Build map of children to their parents
             const childToParentsMap = new Map<number, number[]>();
-            parentChild.forEach((pc: any) => {
+            filteredPC.forEach((pc: any) => {
                 if (!childToParentsMap.has(pc.child_id)) {
                     childToParentsMap.set(pc.child_id, []);
                 }
@@ -249,7 +404,7 @@ export const CommunityGraph: React.FC = () => {
             });
 
             // Partnerships (spouse relationships)
-            partnerships.forEach((p: any) => {
+            filteredPartners.forEach((p: any) => {
                 graphEdges.push({
                     source: p.person1_id,
                     target: p.person2_id,
@@ -321,12 +476,14 @@ export const CommunityGraph: React.FC = () => {
                 n.generation = generationMap.get(n.id) ?? 0;
             });
 
+            // No auto-focal — we start in overview mode
+
         } catch (error) {
             console.error('[CommunityGraph] Error loading data:', error);
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [focalPersonId, expandedSpouses]);
 
     useEffect(() => {
         loadData();
@@ -478,14 +635,14 @@ export const CommunityGraph: React.FC = () => {
             console.error('[CommunityGraph] Error initializing zoom:', error);
         }
 
-        // ===== HIERARCHICAL LAYOUT WITH TIMELINE Y-AXIS =====
-        const NODE_SPACING = layoutParams.nodeSpacing;
-        const COUPLE_GAP = layoutParams.coupleGap;
+        // ===== TREE LAYOUT (Reingold-Tilford variant for genealogy) =====
+        const NODE_SPACING = layoutParams.nodeSpacing; // gap between sibling subtrees
+        const COUPLE_GAP = layoutParams.coupleGap; // gap between spouses in a couple
         const padding = 80;
         const leftPadding = 60;
 
         // Y-axis: birth year → screen Y (shared timeline for all families)
-        const years = nodes.filter(n => !n.isJunction && n.birthYear).map(n => n.birthYear!) ;
+        const years = nodes.filter(n => !n.isJunction && n.birthYear).map(n => n.birthYear!);
         const minYear = years.length > 0 ? Math.min(...years) : 1940;
         const maxYear = years.length > 0 ? Math.max(...years) : 2025;
         const yearSpan = Math.max(maxYear - minYear, 30);
@@ -550,68 +707,6 @@ export const CommunityGraph: React.FC = () => {
             childrenOfCouple.get(key)!.push(childId);
         });
 
-        // ── Connected component detection ──
-        // Build adjacency among real nodes (resolve junctions as pass-through)
-        const adj = new Map<number, Set<number>>();
-        realNodes.forEach(n => adj.set(n.id, new Set()));
-
-        // Direct real-to-real edges
-        edges.forEach(e => {
-            const sId = typeof e.source === 'number' ? e.source : e.source.id;
-            const tId = typeof e.target === 'number' ? e.target : e.target.id;
-            if (adj.has(sId) && adj.has(tId)) {
-                adj.get(sId)!.add(tId);
-                adj.get(tId)!.add(sId);
-            }
-        });
-
-        // Junction pass-through: connect all real nodes sharing a junction
-        const junctionPeers = new Map<number, number[]>();
-        edges.forEach(e => {
-            const sId = typeof e.source === 'number' ? e.source : e.source.id;
-            const tId = typeof e.target === 'number' ? e.target : e.target.id;
-            const sIsJunction = nodes.find(n => n.id === sId)?.isJunction;
-            const tIsJunction = nodes.find(n => n.id === tId)?.isJunction;
-            if (sIsJunction && !tIsJunction) {
-                if (!junctionPeers.has(sId)) junctionPeers.set(sId, []);
-                junctionPeers.get(sId)!.push(tId);
-            }
-            if (tIsJunction && !sIsJunction) {
-                if (!junctionPeers.has(tId)) junctionPeers.set(tId, []);
-                junctionPeers.get(tId)!.push(sId);
-            }
-        });
-        junctionPeers.forEach(peers => {
-            for (let i = 0; i < peers.length; i++) {
-                for (let j = i + 1; j < peers.length; j++) {
-                    adj.get(peers[i])?.add(peers[j]);
-                    adj.get(peers[j])?.add(peers[i]);
-                }
-            }
-        });
-
-        // BFS to find connected components
-        const visited = new Set<number>();
-        const components: GraphNode[][] = [];
-        realNodes.forEach(n => {
-            if (visited.has(n.id)) return;
-            const component: GraphNode[] = [];
-            const queue = [n.id];
-            visited.add(n.id);
-            while (queue.length > 0) {
-                const curr = queue.shift()!;
-                const node = realNodes.find(rn => rn.id === curr);
-                if (node) component.push(node);
-                adj.get(curr)?.forEach(nb => {
-                    if (!visited.has(nb)) { visited.add(nb); queue.push(nb); }
-                });
-            }
-            components.push(component);
-        });
-
-        // Largest family first
-        components.sort((a, b) => b.length - a.length);
-
         // ── Resolve real parents (bypass junctions) ──
         const realParentsOf = new Map<number, number[]>();
         realNodes.forEach(child => {
@@ -620,7 +715,6 @@ export const CommunityGraph: React.FC = () => {
             directParents.forEach(pid => {
                 const pNode = nodes.find(n => n.id === pid);
                 if (pNode?.isJunction) {
-                    // Junction: find its real parents
                     (parentsOf.get(pid) || []).forEach(gp => {
                         if (!nodes.find(n => n.id === gp)?.isJunction) realParents.push(gp);
                     });
@@ -631,209 +725,190 @@ export const CommunityGraph: React.FC = () => {
             if (realParents.length > 0) realParentsOf.set(child.id, realParents);
         });
 
-        // Rebuild childrenOfCouple using real parents
-        const realChildrenOfCouple = new Map<string, number[]>();
-        realParentsOf.forEach((parents, childId) => {
-            const key = [...parents].sort((a, b) => a - b).join(',');
-            if (!realChildrenOfCouple.has(key)) realChildrenOfCouple.set(key, []);
-            realChildrenOfCouple.get(key)!.push(childId);
-        });
-
-        // ── Helper ──
-        function getParentCenterX(n: GraphNode): number | null {
-            const parents = realParentsOf.get(n.id);
-            if (!parents || parents.length === 0) return null;
-            const parentNodes = parents.map(pid => nodes.find(nd => nd.id === pid)).filter(Boolean) as GraphNode[];
-            if (parentNodes.length === 0 || parentNodes.some(p => p.x == null)) return null;
-            return parentNodes.reduce((sum, p) => sum + (p.x || 0), 0) / parentNodes.length;
+        // ── Build FamilyUnit tree for Reingold-Tilford layout ──
+        // A FamilyUnit = a couple (or single person) + their children as sub-units
+        interface FamilyUnit {
+            id: string;           // unique key
+            members: GraphNode[]; // 1 or 2 people (couple)
+            children: FamilyUnit[];
+            subtreeWidth: number; // computed bottom-up
+            x: number;            // center X of this unit
         }
 
-        // ── Layout each component independently ──
-        const FAMILY_GAP = layoutParams.familyGap;
-        let componentXCursor = 0;
-
-        components.forEach((compNodes, compIdx) => {
-            const compIds = new Set(compNodes.map(n => n.id));
-
-            // Group by generation within this component
-            const genGroups = new Map<number, GraphNode[]>();
-            compNodes.forEach(n => {
-                const gen = n.generation ?? 0;
-                if (!genGroups.has(gen)) genGroups.set(gen, []);
-                genGroups.get(gen)!.push(n);
-            });
-            const sortedGens = [...genGroups.keys()].sort((a, b) => a - b);
-
-            // X POSITIONING per generation
-            type Unit = { nodes: GraphNode[]; width: number };
-
-            sortedGens.forEach(gen => {
-                const genNodes = genGroups.get(gen)!;
-                const units: Unit[] = [];
-                const inUnit = new Set<number>();
-
-                // Couples first
-                genNodes.forEach(n => {
-                    if (inUnit.has(n.id)) return;
-                    const spouseId = spouseMap.get(n.id);
-                    const spouse = spouseId ? genNodes.find(s => s.id === spouseId) : null;
-                    if (spouse && !inUnit.has(spouse.id)) {
-                        const nHasParents = parentsOf.has(n.id);
-                        const spouseHasParents = parentsOf.has(spouse.id);
-                        const pair = nHasParents && !spouseHasParents ? [n, spouse] :
-                                     spouseHasParents && !nHasParents ? [spouse, n] :
-                                     [n, spouse].sort((a, b) => (a.birthYear ?? 0) - (b.birthYear ?? 0));
-                        units.push({ nodes: pair, width: COUPLE_GAP });
-                        inUnit.add(n.id);
-                        inUnit.add(spouse.id);
-                    }
-                });
-
-                // Singles
-                genNodes.filter(n => !inUnit.has(n.id))
-                    .sort((a, b) => (a.birthYear ?? 0) - (b.birthYear ?? 0))
-                    .forEach(n => units.push({ nodes: [n], width: 0 }));
-
-                // Sort units: group siblings by parent pair, then sort groups by parent X
-                // 1. Assign each unit a parent-pair key
-                const getParentPairKey = (n: GraphNode): string => {
-                    const parents = realParentsOf.get(n.id);
-                    if (!parents || parents.length === 0) return `orphan-${n.id}`;
-                    return [...parents].sort((a, b) => a - b).join(',');
-                };
-
-                // 2. Group units by parent pair
-                const siblingGroups = new Map<string, Unit[]>();
-                units.forEach(u => {
-                    const key = getParentPairKey(u.nodes[0]);
-                    if (!siblingGroups.has(key)) siblingGroups.set(key, []);
-                    siblingGroups.get(key)!.push(u);
-                });
-
-                // 3. Sort groups by parent center X, then flatten
-                const sortedGroups = [...siblingGroups.entries()].sort(([, aUnits], [, bUnits]) => {
-                    const aX = getParentCenterX(aUnits[0].nodes[0]);
-                    const bX = getParentCenterX(bUnits[0].nodes[0]);
-                    if (aX !== null && bX !== null) return aX - bX;
-                    if (aX !== null) return -1;
-                    if (bX !== null) return 1;
-                    return (aUnits[0].nodes[0].birthYear ?? 0) - (bUnits[0].nodes[0].birthYear ?? 0);
-                });
-
-                // 4. Within each group, sort by birth year
-                const sortedUnits: Unit[] = [];
-                sortedGroups.forEach(([, group]) => {
-                    group.sort((a, b) => (a.nodes[0].birthYear ?? 0) - (b.nodes[0].birthYear ?? 0));
-                    sortedUnits.push(...group);
-                });
-
-                // Replace units with sorted version
-                units.length = 0;
-                units.push(...sortedUnits);
-
-                // Layout X relative to component cursor, Y by birth year
-                const totalWidth = units.reduce((sum, u) => sum + u.width + NODE_SPACING, -NODE_SPACING);
-                let x = componentXCursor - totalWidth / 2;
-
-                units.forEach(unit => {
-                    if (unit.nodes.length === 2) {
-                        unit.nodes[0].x = x;
-                        unit.nodes[0].y = yearToY(unit.nodes[0].birthYear ?? ((minYear + maxYear) / 2));
-                        unit.nodes[1].x = x + COUPLE_GAP;
-                        unit.nodes[1].y = yearToY(unit.nodes[1].birthYear ?? ((minYear + maxYear) / 2));
-                        x += COUPLE_GAP + NODE_SPACING;
-                    } else {
-                        unit.nodes[0].x = x;
-                        unit.nodes[0].y = yearToY(unit.nodes[0].birthYear ?? ((minYear + maxYear) / 2));
-                        x += NODE_SPACING;
-                    }
-                });
-            });
-
-            // Alternating rounds of re-centering children under parents + overlap resolution
-            const MIN_GAP = layoutParams.minGap;
-            for (let round = 0; round < layoutParams.overlapRounds; round++) {
-                // Re-center children under their parents (within this component)
-                sortedGens.forEach(gen => {
-                    if (gen === sortedGens[0]) return;
-                    realChildrenOfCouple.forEach((childIds, parentKey) => {
-                        const parentIds = parentKey.split(',').map(Number);
-                        if (!parentIds.some(pid => compIds.has(pid))) return;
-
-                        const pNodes = parentIds.map(pid => nodes.find(n => n.id === pid)).filter(Boolean) as GraphNode[];
-                        if (pNodes.length === 0 || pNodes.some(p => p.x == null)) return;
-                        const parentCenterX = pNodes.reduce((sum, p) => sum + (p.x || 0), 0) / pNodes.length;
-
-                        const cNodes = childIds
-                            .map(cid => nodes.find(n => n.id === cid))
-                            .filter(n => n && n.generation === gen) as GraphNode[];
-                        if (cNodes.length === 0) return;
-
-                        const childCenterX = cNodes.reduce((sum, c) => sum + (c.x || 0), 0) / cNodes.length;
-                        const shift = parentCenterX - childCenterX;
-
-                        cNodes.forEach(c => {
-                            c.x = (c.x || 0) + shift;
-                            const sId = spouseMap.get(c.id);
-                            if (sId) {
-                                const spouse = nodes.find(n => n.id === sId);
-                                if (spouse && spouse.generation === gen) spouse.x = (spouse.x || 0) + shift;
-                            }
-                        });
-                    });
-                });
-
-                // Push overlapping nodes apart per generation
-                for (let pass = 0; pass < 3; pass++) {
-                    sortedGens.forEach(gen => {
-                        const genNodes = genGroups.get(gen)!;
-                        const sorted = [...genNodes].sort((a, b) => (a.x || 0) - (b.x || 0));
-                        for (let i = 1; i < sorted.length; i++) {
-                            const prev = sorted[i - 1];
-                            const curr = sorted[i];
-                            const gap = (curr.x || 0) - (prev.x || 0);
-                            if (gap < MIN_GAP) {
-                                const push = (MIN_GAP - gap) / 2;
-                                prev.x = (prev.x || 0) - push;
-                                curr.x = (curr.x || 0) + push;
-                                const prevSpouseId = spouseMap.get(prev.id);
-                                if (prevSpouseId) {
-                                    const s = compNodes.find(n => n.id === prevSpouseId);
-                                    if (s && s.generation === gen) s.x = (s.x || 0) - push;
-                                }
-                                const currSpouseId = spouseMap.get(curr.id);
-                                if (currSpouseId) {
-                                    const s = compNodes.find(n => n.id === currSpouseId);
-                                    if (s && s.generation === gen) s.x = (s.x || 0) + push;
-                                }
-                            }
-                        }
-                    });
-                }
-            }
-
-            // Advance cursor past this component
-            let compMinX = Infinity, compMaxX = -Infinity;
-            compNodes.forEach(n => {
-                if (n.x != null) {
-                    compMinX = Math.min(compMinX, n.x);
-                    compMaxX = Math.max(compMaxX, n.x);
-                }
-            });
-            if (compMinX !== Infinity) {
-                componentXCursor = compMaxX + FAMILY_GAP;
-            }
+        // Map: coupleKey → children IDs (using real parents)
+        const coupleChildren = new Map<string, number[]>();
+        realParentsOf.forEach((parents, childId) => {
+            const key = [...parents].sort((a, b) => a - b).join(',');
+            if (!coupleChildren.has(key)) coupleChildren.set(key, []);
+            coupleChildren.get(key)!.push(childId);
         });
 
-        // Center all nodes in viewport
-        const allXPositions = realNodes.filter(n => n.x != null).map(n => n.x!);
-        if (allXPositions.length > 0) {
-            const currentCenter = (Math.min(...allXPositions) + Math.max(...allXPositions)) / 2;
-            const shift = width / 2 - currentCenter;
+        // Track which nodes are placed in units
+        const placed = new Set<number>();
+
+        // Build unit for a couple/person and their descendants
+        function buildUnit(memberIds: number[]): FamilyUnit | null {
+            const members = memberIds.map(id => realNodes.find(n => n.id === id)).filter(Boolean) as GraphNode[];
+            if (members.length === 0) return null;
+            members.forEach(m => placed.add(m.id));
+            // Also place their spouse if not already
+            members.forEach(m => {
+                const sId = spouseMap.get(m.id);
+                if (sId && !memberIds.includes(sId)) {
+                    const spouse = realNodes.find(n => n.id === sId);
+                    if (spouse && !placed.has(sId)) {
+                        members.push(spouse);
+                        placed.add(sId);
+                    }
+                }
+            });
+
+            const coupleKey = members.length === 2
+                ? [members[0].id, members[1].id].sort((a, b) => a - b).join(',')
+                : String(members[0].id);
+
+            // Find children of this couple
+            const childIds = coupleChildren.get(coupleKey) || [];
+            // Also check single-parent keys
+            members.forEach(m => {
+                const singleKey = String(m.id);
+                (coupleChildren.get(singleKey) || []).forEach(cid => {
+                    if (!childIds.includes(cid)) childIds.push(cid);
+                });
+            });
+
+            // Group children into their own family units (with their spouses)
+            const childUnits: FamilyUnit[] = [];
+            childIds.sort((a, b) => {
+                const aNode = realNodes.find(n => n.id === a);
+                const bNode = realNodes.find(n => n.id === b);
+                return (aNode?.birthYear ?? 0) - (bNode?.birthYear ?? 0);
+            });
+            childIds.forEach(cid => {
+                if (placed.has(cid)) return;
+                const childUnit = buildUnit([cid]);
+                if (childUnit) childUnits.push(childUnit);
+            });
+
+            // Sort members: blood member first (has parents in tree), spouse second
+            if (members.length === 2) {
+                const aHasParents = realParentsOf.has(members[0].id);
+                const bHasParents = realParentsOf.has(members[1].id);
+                if (!aHasParents && bHasParents) members.reverse();
+            }
+
+            const unitWidth = members.length === 2 ? COUPLE_GAP : 0;
+
+            return {
+                id: coupleKey,
+                members,
+                children: childUnits,
+                subtreeWidth: 0, // computed later
+                x: 0,
+            };
+        }
+
+        // Find root nodes (no parents) and build unit trees
+        const roots = realNodes.filter(n => !realParentsOf.has(n.id) && !spouseMap.has(n.id) ||
+            (!realParentsOf.has(n.id) && !placed.has(n.id)));
+
+        // Better: find the actual tree roots (people with no parents)
+        const hasRealParent = new Set<number>();
+        realParentsOf.forEach((_, childId) => hasRealParent.add(childId));
+
+        const rootCandidates = realNodes.filter(n => !hasRealParent.has(n.id));
+        // Sort: oldest generation first (people with most descendants should be roots)
+        rootCandidates.sort((a, b) => (a.generation ?? 0) - (b.generation ?? 0) || (a.birthYear ?? 9999) - (b.birthYear ?? 9999));
+        // Group root candidates into couples
+        const rootUnits: FamilyUnit[] = [];
+        const rootPlaced = new Set<number>();
+        rootCandidates.forEach(n => {
+            if (rootPlaced.has(n.id) || placed.has(n.id)) return;
+            rootPlaced.add(n.id);
+            const sId = spouseMap.get(n.id);
+            if (sId) rootPlaced.add(sId);
+            const unit = buildUnit(sId ? [n.id, sId] : [n.id]);
+            if (unit) rootUnits.push(unit);
+        });
+
+        // Pick up any unplaced nodes as standalone units
+        realNodes.forEach(n => {
+            if (placed.has(n.id)) return;
+            placed.add(n.id);
+            rootUnits.push({
+                id: `solo-${n.id}`,
+                members: [n],
+                children: [],
+                subtreeWidth: 0,
+                x: 0,
+            });
+        });
+
+        // ── Bottom-up: compute subtree widths ──
+        function computeWidth(unit: FamilyUnit): number {
+            const ownWidth = unit.members.length === 2 ? COUPLE_GAP : 0;
+            if (unit.children.length === 0) {
+                unit.subtreeWidth = Math.max(ownWidth, NODE_SPACING * 0.8);
+                return unit.subtreeWidth;
+            }
+            // Children width = sum of child subtree widths + spacing between them
+            const childrenTotalWidth = unit.children.reduce((sum, c) => sum + computeWidth(c), 0)
+                + (unit.children.length - 1) * NODE_SPACING;
+            unit.subtreeWidth = Math.max(ownWidth, childrenTotalWidth);
+            return unit.subtreeWidth;
+        }
+        rootUnits.forEach(u => computeWidth(u));
+
+        // ── Top-down: assign X positions ──
+        function assignX(unit: FamilyUnit, centerX: number) {
+            unit.x = centerX;
+            // Place members centered at unit.x
+            if (unit.members.length === 2) {
+                unit.members[0].x = centerX - COUPLE_GAP / 2;
+                unit.members[1].x = centerX + COUPLE_GAP / 2;
+            } else if (unit.members.length === 1) {
+                unit.members[0].x = centerX;
+            }
+            // Assign Y by birth year
+            unit.members.forEach(m => {
+                m.y = yearToY(m.birthYear ?? ((minYear + maxYear) / 2));
+            });
+
+            if (unit.children.length === 0) return;
+
+            // Distribute children across the subtree width, centered under parent
+            const childrenTotalWidth = unit.children.reduce((sum, c) => sum + c.subtreeWidth, 0)
+                + (unit.children.length - 1) * NODE_SPACING;
+            let childX = centerX - childrenTotalWidth / 2;
+
+            unit.children.forEach(child => {
+                const childCenter = childX + child.subtreeWidth / 2;
+                assignX(child, childCenter);
+                childX += child.subtreeWidth + NODE_SPACING;
+            });
+        }
+
+        // Place root units side by side with FAMILY_GAP
+        const FAMILY_GAP = layoutParams.familyGap;
+        const totalRootWidth = rootUnits.reduce((sum, u) => sum + u.subtreeWidth, 0)
+            + (rootUnits.length - 1) * FAMILY_GAP;
+        let rootX = width / 2 - totalRootWidth / 2;
+
+        rootUnits.forEach(unit => {
+            const center = rootX + unit.subtreeWidth / 2;
+            assignX(unit, center);
+            rootX += unit.subtreeWidth + FAMILY_GAP;
+        });
+
+        // ── Center entire tree in viewport ──
+        const allX = realNodes.filter(n => n.x != null).map(n => n.x!);
+        if (allX.length > 0) {
+            const treeCenter = (Math.min(...allX) + Math.max(...allX)) / 2;
+            const shift = width / 2 - treeCenter;
             realNodes.forEach(n => { if (n.x != null) n.x! += shift; });
         }
 
-        // Position junction nodes
+        // ── Position junction nodes ──
         nodes.forEach(n => {
             if (!n.isJunction) return;
             const connectedReal = edges
@@ -860,27 +935,12 @@ export const CommunityGraph: React.FC = () => {
             }
         });
 
-        // Store target positions for snap-back
-        const targetPositions = new Map<number, { x: number; y: number }>();
-        nodes.forEach(n => {
-            targetPositions.set(n.id, { x: n.x || 0, y: n.y || 0 });
-        });
-
-        // Light simulation: only collision avoidance + snap-back to computed positions
+        // ── No force simulation — layout is fully deterministic ──
         const simulation = forceSimulation<GraphNode>(nodes)
             .force('collision', forceCollide().radius(layoutParams.collisionRadius))
-            .force('snapBack', () => {
-                nodes.forEach(n => {
-                    const target = targetPositions.get(n.id);
-                    if (!target) return;
-                    const strength = layoutParams.snapBack;
-                    n.vx = (n.vx || 0) + (target.x - (n.x || 0)) * strength;
-                    n.vy = (n.vy || 0) + (target.y - (n.y || 0)) * strength;
-                });
-            })
-            .alpha(0.3)
-            .alphaDecay(0.02)
-            .velocityDecay(0.6);
+            .alpha(0.1)
+            .alphaDecay(0.05)
+            .velocityDecay(0.8);
 
         simulationRef.current = simulation;
 
@@ -1272,42 +1332,43 @@ export const CommunityGraph: React.FC = () => {
                 return;
             }
 
-            // Normal click - open edit modal
+            // Click: show tooltip with action buttons (works on mobile too)
+            if (d.isJunction) return;
             const member = allMembers.find(m => m.id === d.id);
-            if (member) {
-                setSelectedMember(member);
-                setIsEditModalOpen(true);
+            if (!member) return;
+
+            // Calculate tooltip position
+            const svgEl = svgRef.current!;
+            const svgRect = svgEl.getBoundingClientRect();
+            const t = zoomRef.current ? zoomTransform(svgEl) : { applyX: (v: number) => v, applyY: (v: number) => v };
+            const screenX = svgRect.left + t.applyX(d.x ?? 0);
+            const circleTop = svgRect.top + t.applyY(d.y ?? 0) - 35;
+            const circleBottom = svgRect.top + t.applyY(d.y ?? 0) + 30;
+            const flipped = circleTop < 220;
+
+            // Toggle: if clicking same node, hide tooltip
+            if (tooltip.visible && tooltip.member?.id === member.id) {
+                setTooltip(prev => ({ ...prev, visible: false }));
+                return;
             }
+
+            if (tooltipHideRef.current) clearTimeout(tooltipHideRef.current);
+            setTooltip({
+                visible: true,
+                x: screenX,
+                y: flipped ? circleBottom : circleTop,
+                flipped,
+                member
+            });
         });
 
-        // Hover effects with tooltip
+        // Hover effects (visual only — tooltip is click-based)
         node.on('mouseenter', function (event, d: GraphNode) {
             // Enlarge circle
             select(this).select('circle')
                 .transition()
                 .duration(200)
                 .attr('r', 30);
-
-            // Show tooltip using screen coordinates (fixed positioning)
-            const member = allMembers.find(m => m.id === d.id);
-            if (member && svgRef.current) {
-                const svgEl = svgRef.current;
-                const t = zoomTransform(svgEl);
-                const svgRect = svgEl.getBoundingClientRect();
-                // Node coords in SVG space → screen space
-                const screenX = svgRect.left + t.applyX(d.x ?? 0);
-                const circleTop = svgRect.top + t.applyY(d.y ?? 0) - 30;
-                const circleBottom = svgRect.top + t.applyY(d.y ?? 0) + 30;
-                // If not enough room above (~220px for tooltip), flip below
-                const flipped = circleTop < 220;
-                setTooltip({
-                    visible: true,
-                    x: screenX,
-                    y: flipped ? circleBottom : circleTop,
-                    flipped,
-                    member: member
-                });
-            }
 
             // Find and pulse first-degree relatives
             const firstDegreeRelatives: number[] = [];
@@ -1420,8 +1481,7 @@ export const CommunityGraph: React.FC = () => {
                 .duration(200)
                 .attr('r', 25);
 
-            // Hide tooltip
-            setTooltip(prev => ({ ...prev, visible: false }));
+            // Tooltip is click-based now, not hidden on mouseleave
         });
 
         // Build node lookup for edge drawing (since we don't use forceLink)
@@ -1805,6 +1865,58 @@ export const CommunityGraph: React.FC = () => {
                         )}
                     </div>
 
+                    {/* Navigation breadcrumb */}
+                    {viewMode === 'tree' && (
+                        <nav className="flex items-center gap-1.5 text-xs" dir="rtl">
+                            <button
+                                type="button"
+                                onClick={() => { setViewMode('overview'); setFocalPersonId(null); }}
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-white font-medium transition-colors"
+                            >
+                                <Network size={14} />
+                                <span>משפחות</span>
+                            </button>
+
+                            {focalPersonId && (() => {
+                                const focalMember = allMembers.find(m => m.id === focalPersonId);
+                                const surname = focalMember?.last_name || focalMember?.maiden_name || '';
+                                const group = familyGroups.find(g => g.surname === surname);
+                                const isAtRoot = group && group.rootPersonId === focalPersonId;
+                                return (
+                                    <>
+                                        <span className="text-slate-600">‹</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                if (group && !isAtRoot) {
+                                                    setFocalPersonId(group.rootPersonId);
+                                                }
+                                            }}
+                                            className={`px-2 py-1 rounded transition-colors ${isAtRoot ? 'bg-indigo-600/30 text-indigo-300 cursor-default' : 'text-slate-400 hover:text-white hover:bg-white/10'}`}
+                                        >
+                                            {surname}
+                                        </button>
+                                        {!isAtRoot && (
+                                            <>
+                                                <span className="text-slate-600">‹</span>
+                                                <span className="px-2 py-1 bg-indigo-600/30 text-indigo-300 rounded">
+                                                    {focalMember?.first_name || '?'}
+                                                </span>
+                                            </>
+                                        )}
+                                    </>
+                                );
+                            })()}
+
+                            {!focalPersonId && (
+                                <>
+                                    <span className="text-slate-600">‹</span>
+                                    <span className="px-2 py-1 bg-indigo-600/30 text-indigo-300 rounded">כל העץ</span>
+                                </>
+                            )}
+                        </nav>
+                    )}
+
                     <div className="hidden md:block w-px h-6 bg-slate-600" />
 
                     {/* Add Person Button */}
@@ -1916,12 +2028,78 @@ export const CommunityGraph: React.FC = () => {
                 </div>
             )}
 
-            {/* Graph Container */}
-            <div ref={containerRef} className="flex-1 relative overflow-hidden z-0" style={{ minHeight: '500px' }}>
+            {/* ── LAYER 1: Family Overview ── */}
+            {viewMode === 'overview' && (
+                <div className="flex-1 overflow-y-auto p-4 md:p-8" dir="rtl">
+                    {/* Stats banner */}
+                    <div className="text-center mb-8">
+                        <p className="text-slate-400 text-sm mb-2">ברוכים הבאים לאילן היוחסין של הקהילה</p>
+                        <div className="flex justify-center gap-6 text-lg">
+                            <span className="text-white font-bold">{allMembers.length} <span className="text-slate-400 font-normal text-sm">אנשים</span></span>
+                            <span className="text-white font-bold">{familyGroups.length} <span className="text-slate-400 font-normal text-sm">משפחות</span></span>
+                        </div>
+                        <p className="text-slate-500 text-xs mt-2">לחצו על משפחה כדי לראות את העץ שלה</p>
+                    </div>
+
+                    {/* Family cards grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-4xl mx-auto">
+                        {familyGroups.map(group => (
+                            <button
+                                key={group.surname}
+                                type="button"
+                                onClick={() => {
+                                    setFocalPersonId(group.rootPersonId);
+                                    setViewMode('tree');
+                                }}
+                                className="bg-white/5 hover:bg-white/10 border border-white/10 hover:border-indigo-500/50 rounded-xl p-5 text-start transition-all group"
+                            >
+                                <div className="flex items-center justify-between mb-3">
+                                    <h3 className="text-xl font-bold text-white group-hover:text-indigo-400 transition-colors">
+                                        {group.surname}
+                                    </h3>
+                                    <span className="bg-indigo-600/30 text-indigo-300 px-2.5 py-0.5 rounded-full text-xs font-medium">
+                                        {group.memberCount} אנשים
+                                    </span>
+                                </div>
+
+                                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-400 mb-3">
+                                    {group.generations > 1 && <span>{group.generations} דורות</span>}
+                                    {group.yearRange && <span>{group.yearRange}</span>}
+                                </div>
+
+                                {group.marriages.length > 0 && (
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {group.marriages.map(m => (
+                                            <span key={m} className="bg-pink-500/15 text-pink-300 px-2 py-0.5 rounded text-[10px]">
+                                                ← {m}
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* "Show full tree" link */}
+                    <div className="text-center mt-8">
+                        <button
+                            type="button"
+                            onClick={() => { setFocalPersonId(null); setViewMode('tree'); }}
+                            className="text-slate-500 hover:text-slate-300 text-xs underline transition-colors"
+                        >
+                            הצג את כל העץ (ללא סינון)
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* ── LAYER 2: Tree View (Focal or Full) ── */}
+            <div ref={containerRef} className={`flex-1 relative overflow-hidden z-0 ${viewMode !== 'tree' ? 'hidden' : ''}`} style={{ minHeight: '500px' }}>
                 <svg
                     ref={svgRef}
                     width="100%"
                     height="100%"
+                    onClick={() => setTooltip(prev => ({ ...prev, visible: false }))}
                     style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', display: 'block', touchAction: 'none' }}
                 />
 
@@ -1956,7 +2134,7 @@ export const CommunityGraph: React.FC = () => {
                             </div>
                         ))}
                         <button
-                            onClick={() => setLayoutParams({ nodeSpacing: 160, coupleGap: 65, familyGap: 300, yearPx: 12, minGap: 105, collisionRadius: 52, snapBack: 0.3, overlapRounds: 3 })}
+                            onClick={() => setLayoutParams({ nodeSpacing: 80, coupleGap: 70, familyGap: 120, yearPx: 10, minGap: 90, collisionRadius: 40, snapBack: 0.3, overlapRounds: 3 })}
                             className="w-full mt-1 px-2 py-1 bg-slate-700 hover:bg-slate-600 text-slate-300 rounded text-xs"
                         >Reset defaults</button>
                     </div>
@@ -2056,7 +2234,9 @@ export const CommunityGraph: React.FC = () => {
             {/* Tooltip */}
             {tooltip.visible && tooltip.member && (
                 <div
-                    className="fixed z-[200] pointer-events-none"
+                    onMouseEnter={() => { if (tooltipHideRef.current) clearTimeout(tooltipHideRef.current); }}
+                    onMouseLeave={() => { setTooltip(prev => ({ ...prev, visible: false })); }}
+                    className="fixed z-[200]"
                     style={{
                         left: `${tooltip.x}px`,
                         top: `${tooltip.y}px`,
@@ -2126,9 +2306,57 @@ export const CommunityGraph: React.FC = () => {
                             })()}
                         </div>
 
-                        {/* Hint */}
-                        <div className="mt-2 pt-2 border-t border-slate-700 text-[10px] text-slate-500 text-center">
-                            {t('clickToEdit')}
+                        {/* Action buttons */}
+                        <div className="mt-2 pt-2 border-t border-slate-700 flex flex-wrap gap-1.5 justify-center">
+                            <button
+                                type="button"
+                                className="flex items-center gap-1 px-2 py-1 bg-indigo-600/80 hover:bg-indigo-600 text-white text-[10px] rounded transition-colors"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    setExpandedSpouses(new Set());
+                                    setFocalPersonId(tooltip.member!.id);
+                                    setTooltip(prev => ({ ...prev, visible: false }));
+                                }}
+                            >
+                                <Eye size={10} />
+                                <span>מיקוד</span>
+                            </button>
+                            {focalPersonId && tooltip.member!.id !== focalPersonId && (() => {
+                                const mid = tooltip.member!.id;
+                                const isExpanded = expandedSpouses.has(mid);
+                                return (
+                                    <button
+                                        type="button"
+                                        className={`flex items-center gap-1 px-2 py-1 text-white text-[10px] rounded transition-colors ${isExpanded ? 'bg-amber-600/80 hover:bg-amber-600' : 'bg-teal-600/80 hover:bg-teal-600'}`}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setExpandedSpouses(prev => {
+                                                const next = new Set(prev);
+                                                if (isExpanded) next.delete(mid);
+                                                else next.add(mid);
+                                                return next;
+                                            });
+                                            setTooltip(prev => ({ ...prev, visible: false }));
+                                        }}
+                                    >
+                                        {isExpanded ? <Shrink size={10} /> : <Expand size={10} />}
+                                        <span>{isExpanded ? 'כווץ' : 'הרחב'}</span>
+                                    </button>
+                                );
+                            })()}
+                            <button
+                                type="button"
+                                className="flex items-center gap-1 px-2 py-1 bg-slate-600/80 hover:bg-slate-600 text-white text-[10px] rounded transition-colors"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    const member = allMembers.find(m => m.id === tooltip.member!.id);
+                                    if (member) { setSelectedMember(member); setIsEditModalOpen(true); }
+                                    setTooltip(prev => ({ ...prev, visible: false }));
+                                }}
+                            >
+                                <Pencil size={10} />
+                                <span>עריכה</span>
+                            </button>
                         </div>
                     </div>
 
