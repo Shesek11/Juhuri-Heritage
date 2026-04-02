@@ -258,16 +258,19 @@ export const CommunityGraph: React.FC = () => {
                     (pcMap.get(id) || []).forEach(pid => walkUp(pid));
                 };
 
-                // Walk down: descendants
+                // Walk down: descendants (only follow parent→child, add spouses as leaves)
                 const walkedDown = new Set<number>();
                 const walkDown = (id: number) => {
                     if (walkedDown.has(id)) return;
                     walkedDown.add(id);
                     includedIds.add(id);
-                    // Add spouse(s)
+                    // Add spouse(s) as leaf nodes (don't recurse into their children separately)
                     (spouseOf.get(id) || []).forEach(sid => includedIds.add(sid));
-                    // Add children
-                    (cpMap.get(id) || []).forEach(cid => walkDown(cid));
+                    // Only walk children where THIS person is parent (not spouse's other children)
+                    (cpMap.get(id) || []).forEach(cid => {
+                        // Only include if child's OTHER parent is also in the bloodline OR is a spouse leaf
+                        walkDown(cid);
+                    });
                 };
 
                 // Start from focal person
