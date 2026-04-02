@@ -1911,26 +1911,27 @@ export const CommunityGraph: React.FC = () => {
 
                             {focalPersonId && (() => {
                                 const focalMember = allMembers.find(m => m.id === focalPersonId);
-                                const surname = focalMember?.last_name || focalMember?.maiden_name || '';
-                                const group = familyGroups.find(g => g.surname === surname);
+                                // Find group containing this person (by memberIds, not surname)
+                                const group = familyGroups.find(g => g.memberIds.includes(focalPersonId));
                                 const isAtRoot = group && group.rootPersonId === focalPersonId;
+                                const groupName = group?.surname || focalMember?.last_name || '';
                                 return (
                                     <>
-                                        <span className="text-slate-600">‹</span>
+                                        <span className="text-slate-600">›</span>
                                         <button
                                             type="button"
                                             onClick={() => {
-                                                if (group && !isAtRoot) {
+                                                if (group) {
                                                     setFocalPersonId(group.rootPersonId);
                                                 }
                                             }}
                                             className={`px-2 py-1 rounded transition-colors ${isAtRoot ? 'bg-indigo-600/30 text-indigo-300 cursor-default' : 'text-slate-400 hover:text-white hover:bg-white/10'}`}
                                         >
-                                            {surname}
+                                            {groupName}
                                         </button>
                                         {!isAtRoot && (
                                             <>
-                                                <span className="text-slate-600">‹</span>
+                                                <span className="text-slate-600">›</span>
                                                 <span className="px-2 py-1 bg-indigo-600/30 text-indigo-300 rounded">
                                                     {focalMember?.first_name || '?'}
                                                 </span>
@@ -1942,7 +1943,7 @@ export const CommunityGraph: React.FC = () => {
 
                             {!focalPersonId && (
                                 <>
-                                    <span className="text-slate-600">‹</span>
+                                    <span className="text-slate-600">›</span>
                                     <span className="px-2 py-1 bg-indigo-600/30 text-indigo-300 rounded">כל העץ</span>
                                 </>
                             )}
@@ -2004,7 +2005,7 @@ export const CommunityGraph: React.FC = () => {
                                 />
 
                                 {/* Legend popup */}
-                                <div className="absolute left-0 sm:left-0 right-0 sm:right-auto top-full mt-2 bg-slate-800 border border-slate-600 rounded-lg shadow-2xl p-4 z-[9999] w-auto sm:w-64 md:w-80 mx-2 sm:mx-0">
+                                <div className="fixed sm:absolute inset-4 sm:inset-auto sm:left-0 sm:top-full sm:mt-2 bg-slate-800 border border-slate-600 rounded-lg shadow-2xl p-4 z-[9999] sm:w-64 md:w-80 overflow-y-auto">
                                     <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
                                         <Info size={14} />
                                         {t('legendTitle')}
