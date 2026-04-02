@@ -1853,28 +1853,48 @@ export const CommunityGraph: React.FC = () => {
                         )}
                     </div>
 
-                    {/* View mode controls */}
-                    {viewMode === 'tree' && (
+                    {/* Breadcrumb navigation */}
+                    <nav className="flex items-center gap-1 text-xs" dir="rtl">
                         <button
                             type="button"
                             onClick={() => { setViewMode('overview'); setFocalPersonId(null); }}
-                            className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-white text-xs font-medium transition-colors"
+                            className={`px-2 py-1 rounded transition-colors ${viewMode === 'overview' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white hover:bg-white/10'}`}
                         >
-                            <Network size={14} />
-                            <span>משפחות</span>
+                            משפחות
                         </button>
-                    )}
-                    {focalPersonId && viewMode === 'tree' && (
-                        <button
-                            type="button"
-                            onClick={() => setFocalPersonId(null)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 rounded-lg text-white text-xs font-medium transition-colors"
-                        >
-                            <Eye size={14} />
-                            <span>ענף {allMembers.find(m => m.id === focalPersonId)?.first_name || '?'}</span>
-                            <X size={12} />
-                        </button>
-                    )}
+
+                        {viewMode === 'tree' && focalPersonId && (() => {
+                            const focalMember = allMembers.find(m => m.id === focalPersonId);
+                            const surname = focalMember?.last_name || focalMember?.maiden_name || '';
+                            return (
+                                <>
+                                    <span className="text-slate-600">‹</span>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            // Go to family level: find root of this surname
+                                            const group = familyGroups.find(g => g.surname === surname);
+                                            if (group) setFocalPersonId(group.rootPersonId);
+                                        }}
+                                        className={`px-2 py-1 rounded transition-colors ${!focalMember ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white hover:bg-white/10'}`}
+                                    >
+                                        {surname}
+                                    </button>
+                                    <span className="text-slate-600">‹</span>
+                                    <span className="px-2 py-1 bg-indigo-600 text-white rounded">
+                                        {focalMember?.first_name || '?'}
+                                    </span>
+                                </>
+                            );
+                        })()}
+
+                        {viewMode === 'tree' && !focalPersonId && (
+                            <>
+                                <span className="text-slate-600">‹</span>
+                                <span className="px-2 py-1 bg-indigo-600 text-white rounded">כל העץ</span>
+                            </>
+                        )}
+                    </nav>
 
                     <div className="hidden md:block w-px h-6 bg-slate-600" />
 
