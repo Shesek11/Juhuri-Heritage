@@ -19,7 +19,7 @@ import 'd3-transition';
 import { familyService, FamilyMember } from '../../services/familyService';
 import { EditMemberModal } from './EditMemberModal';
 import { useAuth } from '../../contexts/AuthContext';
-import { Loader2, ZoomIn, ZoomOut, Maximize2, UserPlus, Link2, X, Search, Network, Info, Eye, Sliders, User, Pencil } from 'lucide-react';
+import { Loader2, ZoomIn, ZoomOut, Maximize2, UserPlus, Link2, X, Search, Network, Info, Eye, Sliders, User, Pencil, Expand, Shrink } from 'lucide-react';
 
 interface GraphNode extends SimulationNodeDatum {
     id: number;
@@ -64,6 +64,7 @@ export const CommunityGraph: React.FC = () => {
     const [showControls, setShowControls] = useState(false);
     const [focalPersonId, setFocalPersonId] = useState<number | null>(null);
     const [viewMode, setViewMode] = useState<'overview' | 'tree'>('overview');
+    const [expandedSpouses, setExpandedSpouses] = useState<Set<number>>(new Set());
 
     // Family overview data
     interface FamilyGroup {
@@ -278,6 +279,15 @@ export const CommunityGraph: React.FC = () => {
                     });
                 });
 
+                // Expand spouse families that user explicitly opened
+                expandedSpouses.forEach(spouseId => {
+                    walkUp(spouseId);   // show spouse's parents/ancestors
+                    // Show spouse's siblings and their families
+                    (pcMap.get(spouseId) || []).forEach(pid => {
+                        (cpMap.get(pid) || []).forEach(sibId => walkDown(sibId));
+                    });
+                });
+
                 filteredMembers = members.filter((m: any) => includedIds.has(m.id));
                 filteredPC = parentChild.filter((pc: any) => includedIds.has(pc.parent_id) && includedIds.has(pc.child_id));
                 filteredPartners = partnerships.filter((p: any) => includedIds.has(p.person1_id) && includedIds.has(p.person2_id));
@@ -471,7 +481,7 @@ export const CommunityGraph: React.FC = () => {
         } finally {
             setLoading(false);
         }
-    }, [focalPersonId]);
+    }, [focalPersonId, expandedSpouses]);
 
     useEffect(() => {
         loadData();
@@ -1853,48 +1863,57 @@ export const CommunityGraph: React.FC = () => {
                         )}
                     </div>
 
-                    {/* Breadcrumb navigation */}
-                    <nav className="flex items-center gap-1 text-xs" dir="rtl">
-                        <button
-                            type="button"
-                            onClick={() => { setViewMode('overview'); setFocalPersonId(null); }}
-                            className={`px-2 py-1 rounded transition-colors ${viewMode === 'overview' ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white hover:bg-white/10'}`}
-                        >
-                            משפחות
-                        </button>
+                    {/* Navigation breadcrumb */}
+                    {viewMode === 'tree' && (
+                        <nav className="flex items-center gap-1.5 text-xs" dir="rtl">
+                            <button
+                                type="button"
+                                onClick={() => { setViewMode('overview'); setFocalPersonId(null); }}
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-white font-medium transition-colors"
+                            >
+                                <Network size={14} />
+                                <span>משפחות</span>
+                            </button>
 
-                        {viewMode === 'tree' && focalPersonId && (() => {
-                            const focalMember = allMembers.find(m => m.id === focalPersonId);
-                            const surname = focalMember?.last_name || focalMember?.maiden_name || '';
-                            return (
+                            {focalPersonId && (() => {
+                                const focalMember = allMembers.find(m => m.id === focalPersonId);
+                                const surname = focalMember?.last_name || focalMember?.maiden_name || '';
+                                const group = familyGroups.find(g => g.surname === surname);
+                                const isAtRoot = group && group.rootPersonId === focalPersonId;
+                                return (
+                                    <>
+                                        <span className="text-slate-600">‹</span>
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                if (group && !isAtRoot) {
+                                                    setFocalPersonId(group.rootPersonId);
+                                                }
+                                            }}
+                                            className={`px-2 py-1 rounded transition-colors ${isAtRoot ? 'bg-indigo-600/30 text-indigo-300 cursor-default' : 'text-slate-400 hover:text-white hover:bg-white/10'}`}
+                                        >
+                                            {surname}
+                                        </button>
+                                        {!isAtRoot && (
+                                            <>
+                                                <span className="text-slate-600">‹</span>
+                                                <span className="px-2 py-1 bg-indigo-600/30 text-indigo-300 rounded">
+                                                    {focalMember?.first_name || '?'}
+                                                </span>
+                                            </>
+                                        )}
+                                    </>
+                                );
+                            })()}
+
+                            {!focalPersonId && (
                                 <>
                                     <span className="text-slate-600">‹</span>
-                                    <button
-                                        type="button"
-                                        onClick={() => {
-                                            // Go to family level: find root of this surname
-                                            const group = familyGroups.find(g => g.surname === surname);
-                                            if (group) setFocalPersonId(group.rootPersonId);
-                                        }}
-                                        className={`px-2 py-1 rounded transition-colors ${!focalMember ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-white hover:bg-white/10'}`}
-                                    >
-                                        {surname}
-                                    </button>
-                                    <span className="text-slate-600">‹</span>
-                                    <span className="px-2 py-1 bg-indigo-600 text-white rounded">
-                                        {focalMember?.first_name || '?'}
-                                    </span>
+                                    <span className="px-2 py-1 bg-indigo-600/30 text-indigo-300 rounded">כל העץ</span>
                                 </>
-                            );
-                        })()}
-
-                        {viewMode === 'tree' && !focalPersonId && (
-                            <>
-                                <span className="text-slate-600">‹</span>
-                                <span className="px-2 py-1 bg-indigo-600 text-white rounded">כל העץ</span>
-                            </>
-                        )}
-                    </nav>
+                            )}
+                        </nav>
+                    )}
 
                     <div className="hidden md:block w-px h-6 bg-slate-600" />
 
@@ -2286,12 +2305,13 @@ export const CommunityGraph: React.FC = () => {
                         </div>
 
                         {/* Action buttons */}
-                        <div className="mt-2 pt-2 border-t border-slate-700 flex gap-2 justify-center">
+                        <div className="mt-2 pt-2 border-t border-slate-700 flex flex-wrap gap-1.5 justify-center">
                             <button
                                 type="button"
                                 className="flex items-center gap-1 px-2 py-1 bg-indigo-600/80 hover:bg-indigo-600 text-white text-[10px] rounded transition-colors"
                                 onClick={(e) => {
                                     e.stopPropagation();
+                                    setExpandedSpouses(new Set());
                                     setFocalPersonId(tooltip.member!.id);
                                     setTooltip(prev => ({ ...prev, visible: false }));
                                 }}
@@ -2299,6 +2319,29 @@ export const CommunityGraph: React.FC = () => {
                                 <Eye size={10} />
                                 <span>מיקוד</span>
                             </button>
+                            {focalPersonId && tooltip.member!.id !== focalPersonId && (() => {
+                                const mid = tooltip.member!.id;
+                                const isExpanded = expandedSpouses.has(mid);
+                                return (
+                                    <button
+                                        type="button"
+                                        className={`flex items-center gap-1 px-2 py-1 text-white text-[10px] rounded transition-colors ${isExpanded ? 'bg-amber-600/80 hover:bg-amber-600' : 'bg-teal-600/80 hover:bg-teal-600'}`}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            setExpandedSpouses(prev => {
+                                                const next = new Set(prev);
+                                                if (isExpanded) next.delete(mid);
+                                                else next.add(mid);
+                                                return next;
+                                            });
+                                            setTooltip(prev => ({ ...prev, visible: false }));
+                                        }}
+                                    >
+                                        {isExpanded ? <Shrink size={10} /> : <Expand size={10} />}
+                                        <span>{isExpanded ? 'כווץ' : 'הרחב'}</span>
+                                    </button>
+                                );
+                            })()}
                             <button
                                 type="button"
                                 className="flex items-center gap-1 px-2 py-1 bg-slate-600/80 hover:bg-slate-600 text-white text-[10px] rounded transition-colors"
