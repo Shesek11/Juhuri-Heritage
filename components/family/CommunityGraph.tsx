@@ -246,9 +246,11 @@ export const CommunityGraph: React.FC = () => {
                     spouseOf.get(p.person2_id)!.push(p.person1_id);
                 });
 
-                // Walk up: ancestors
+                // Walk up: ancestors (separate visited set — person may already be included as spouse)
+                const walkedUp = new Set<number>();
                 const walkUp = (id: number) => {
-                    if (includedIds.has(id)) return;
+                    if (walkedUp.has(id)) return;
+                    walkedUp.add(id);
                     includedIds.add(id);
                     // Add spouse(s)
                     (spouseOf.get(id) || []).forEach(sid => includedIds.add(sid));
