@@ -2005,7 +2005,7 @@ export const CommunityGraph: React.FC = () => {
                                 />
 
                                 {/* Legend popup */}
-                                <div className="fixed sm:absolute inset-4 sm:inset-auto sm:left-0 sm:top-full sm:mt-2 bg-slate-800 border border-slate-600 rounded-lg shadow-2xl p-4 z-[9999] sm:w-64 md:w-80 overflow-y-auto">
+                                <div className="fixed sm:absolute top-24 bottom-4 left-4 right-4 sm:inset-auto sm:left-0 sm:top-full sm:bottom-auto sm:right-auto sm:mt-2 bg-slate-800 border border-slate-600 rounded-xl shadow-2xl p-5 z-[9999] sm:w-64 md:w-80 overflow-y-auto">
                                     <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
                                         <Info size={14} />
                                         {t('legendTitle')}
