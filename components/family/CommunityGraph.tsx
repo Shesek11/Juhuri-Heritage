@@ -590,7 +590,7 @@ export const CommunityGraph: React.FC = () => {
 
     // Build the D3 visualization
     useEffect(() => {
-        if (loading || nodes.length === 0 || !svgRef.current || !containerRef.current) return;
+        if (loading || nodes.length === 0 || !svgRef.current || !containerRef.current || viewMode !== 'tree') return;
 
         const svg = select(svgRef.current);
         const container = containerRef.current;
@@ -1570,7 +1570,7 @@ export const CommunityGraph: React.FC = () => {
         return () => {
             simulation.stop();
         };
-    }, [loading, nodes, edges, allMembers, connectionMode, firstSelectedNode, layoutParams]);
+    }, [loading, nodes, edges, allMembers, connectionMode, firstSelectedNode, layoutParams, viewMode]);
 
     // Connection mode handlers
     const startConnectionMode = () => {
