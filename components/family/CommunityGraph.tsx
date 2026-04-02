@@ -63,6 +63,19 @@ export const CommunityGraph: React.FC = () => {
     const [showLegend, setShowLegend] = useState(false);
     const [showControls, setShowControls] = useState(false);
     const [focalPersonId, setFocalPersonId] = useState<number | null>(null);
+    const [viewMode, setViewMode] = useState<'overview' | 'tree'>('overview');
+
+    // Family overview data
+    interface FamilyGroup {
+        surname: string;
+        memberCount: number;
+        generations: number;
+        yearRange: string;
+        memberIds: number[];
+        rootPersonId: number; // best person to start focal from
+        marriages: string[]; // connected family surnames
+    }
+    const [familyGroups, setFamilyGroups] = useState<FamilyGroup[]>([]);
 
     // Force simulation parameters (with sliders)
     const [forceParams, setForceParams] = useState({
@@ -143,6 +156,68 @@ export const CommunityGraph: React.FC = () => {
             const partnerships = data.partnerships || [];
 
             setAllMembers(members);
+
+            // ── Build Family Overview Groups ──
+            const surnameMap = new Map<string, any[]>();
+            members.forEach((m: any) => {
+                const surname = m.last_name || m.maiden_name || 'לא ידוע';
+                if (!surnameMap.has(surname)) surnameMap.set(surname, []);
+                surnameMap.get(surname)!.push(m);
+            });
+
+            // Find marriage connections between families
+            const groups: FamilyGroup[] = [];
+            surnameMap.forEach((familyMembers, surname) => {
+                const ids = familyMembers.map((m: any) => m.id);
+                const idSet = new Set(ids);
+
+                // Find marriages to other families
+                const marriedTo = new Set<string>();
+                partnerships.forEach((p: any) => {
+                    const p1InFamily = idSet.has(p.person1_id);
+                    const p2InFamily = idSet.has(p.person2_id);
+                    if (p1InFamily && !p2InFamily) {
+                        const spouse = members.find((m: any) => m.id === p.person2_id);
+                        if (spouse) marriedTo.add(spouse.last_name || spouse.maiden_name || '?');
+                    }
+                    if (p2InFamily && !p1InFamily) {
+                        const spouse = members.find((m: any) => m.id === p.person1_id);
+                        if (spouse) marriedTo.add(spouse.last_name || spouse.maiden_name || '?');
+                    }
+                });
+
+                // Find year range
+                const years = familyMembers.filter((m: any) => m.birth_date).map((m: any) => new Date(m.birth_date).getFullYear());
+                const minY = years.length > 0 ? Math.min(...years) : 0;
+                const maxY = years.length > 0 ? Math.max(...years) : 0;
+
+                // Count generations (rough: group by ~25 year spans)
+                const genSet = new Set(years.map((y: number) => Math.floor(y / 25)));
+
+                // Find best root person (oldest, has children)
+                const pcChildIds = new Set(parentChild.map((pc: any) => pc.child_id));
+                const rootCandidates = familyMembers
+                    .filter((m: any) => !pcChildIds.has(m.id)) // no parents in tree
+                    .sort((a: any, b: any) => {
+                        const aYear = a.birth_date ? new Date(a.birth_date).getFullYear() : 9999;
+                        const bYear = b.birth_date ? new Date(b.birth_date).getFullYear() : 9999;
+                        return aYear - bYear;
+                    });
+
+                groups.push({
+                    surname,
+                    memberCount: familyMembers.length,
+                    generations: Math.max(genSet.size, 1),
+                    yearRange: years.length > 0 ? `${minY}–${maxY}` : '',
+                    memberIds: ids,
+                    rootPersonId: rootCandidates[0]?.id || familyMembers[0]?.id,
+                    marriages: [...marriedTo],
+                });
+            });
+
+            // Sort by member count descending
+            groups.sort((a, b) => b.memberCount - a.memberCount);
+            setFamilyGroups(groups);
 
             // ── Focal Person Filter ──
             // When a focal person is selected, only show their bloodline:
@@ -389,17 +464,7 @@ export const CommunityGraph: React.FC = () => {
                 n.generation = generationMap.get(n.id) ?? 0;
             });
 
-            // Auto-set focal person to root ancestor on first load
-            if (!focalPersonId && graphNodes.length > 10) {
-                const gen0 = graphNodes.filter(n => n.generation === 0 && !n.isJunction);
-                const hasParent = new Set(childToParents.keys());
-                const roots = gen0.filter(n => !hasParent.has(n.id));
-                if (roots.length > 0) {
-                    roots.sort((a, b) => (a.birthYear ?? 9999) - (b.birthYear ?? 9999));
-                    // Set focal and re-trigger (will re-run loadData with focal set)
-                    setTimeout(() => setFocalPersonId(roots[0].id), 0);
-                }
-            }
+            // No auto-focal — we start in overview mode
 
         } catch (error) {
             console.error('[CommunityGraph] Error loading data:', error);
@@ -1788,13 +1853,22 @@ export const CommunityGraph: React.FC = () => {
                         )}
                     </div>
 
-                    {/* Focal person indicator */}
-                    {focalPersonId && (
+                    {/* View mode controls */}
+                    {viewMode === 'tree' && (
+                        <button
+                            type="button"
+                            onClick={() => { setViewMode('overview'); setFocalPersonId(null); }}
+                            className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-white text-xs font-medium transition-colors"
+                        >
+                            <Network size={14} />
+                            <span>משפחות</span>
+                        </button>
+                    )}
+                    {focalPersonId && viewMode === 'tree' && (
                         <button
                             type="button"
                             onClick={() => setFocalPersonId(null)}
                             className="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 rounded-lg text-white text-xs font-medium transition-colors"
-                            title="לחץ להציג את כל המשפחות"
                         >
                             <Eye size={14} />
                             <span>ענף {allMembers.find(m => m.id === focalPersonId)?.first_name || '?'}</span>
@@ -1913,8 +1987,73 @@ export const CommunityGraph: React.FC = () => {
                 </div>
             )}
 
-            {/* Graph Container */}
-            <div ref={containerRef} className="flex-1 relative overflow-hidden z-0" style={{ minHeight: '500px' }}>
+            {/* ── LAYER 1: Family Overview ── */}
+            {viewMode === 'overview' && (
+                <div className="flex-1 overflow-y-auto p-4 md:p-8" dir="rtl">
+                    {/* Stats banner */}
+                    <div className="text-center mb-8">
+                        <p className="text-slate-400 text-sm mb-2">ברוכים הבאים לאילן היוחסין של הקהילה</p>
+                        <div className="flex justify-center gap-6 text-lg">
+                            <span className="text-white font-bold">{allMembers.length} <span className="text-slate-400 font-normal text-sm">אנשים</span></span>
+                            <span className="text-white font-bold">{familyGroups.length} <span className="text-slate-400 font-normal text-sm">משפחות</span></span>
+                        </div>
+                        <p className="text-slate-500 text-xs mt-2">לחצו על משפחה כדי לראות את העץ שלה</p>
+                    </div>
+
+                    {/* Family cards grid */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-4xl mx-auto">
+                        {familyGroups.map(group => (
+                            <button
+                                key={group.surname}
+                                type="button"
+                                onClick={() => {
+                                    setFocalPersonId(group.rootPersonId);
+                                    setViewMode('tree');
+                                }}
+                                className="bg-white/5 hover:bg-white/10 border border-white/10 hover:border-indigo-500/50 rounded-xl p-5 text-start transition-all group"
+                            >
+                                <div className="flex items-center justify-between mb-3">
+                                    <h3 className="text-xl font-bold text-white group-hover:text-indigo-400 transition-colors">
+                                        {group.surname}
+                                    </h3>
+                                    <span className="bg-indigo-600/30 text-indigo-300 px-2.5 py-0.5 rounded-full text-xs font-medium">
+                                        {group.memberCount} אנשים
+                                    </span>
+                                </div>
+
+                                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-400 mb-3">
+                                    {group.generations > 1 && <span>{group.generations} דורות</span>}
+                                    {group.yearRange && <span>{group.yearRange}</span>}
+                                </div>
+
+                                {group.marriages.length > 0 && (
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {group.marriages.map(m => (
+                                            <span key={m} className="bg-pink-500/15 text-pink-300 px-2 py-0.5 rounded text-[10px]">
+                                                ← {m}
+                                            </span>
+                                        ))}
+                                    </div>
+                                )}
+                            </button>
+                        ))}
+                    </div>
+
+                    {/* "Show full tree" link */}
+                    <div className="text-center mt-8">
+                        <button
+                            type="button"
+                            onClick={() => { setFocalPersonId(null); setViewMode('tree'); }}
+                            className="text-slate-500 hover:text-slate-300 text-xs underline transition-colors"
+                        >
+                            הצג את כל העץ (ללא סינון)
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* ── LAYER 2: Tree View (Focal or Full) ── */}
+            <div ref={containerRef} className={`flex-1 relative overflow-hidden z-0 ${viewMode !== 'tree' ? 'hidden' : ''}`} style={{ minHeight: '500px' }}>
                 <svg
                     ref={svgRef}
                     width="100%"
