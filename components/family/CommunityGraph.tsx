@@ -74,7 +74,8 @@ export const CommunityGraph: React.FC = () => {
         yearRange: string;
         memberIds: number[];
         rootPersonId: number; // best person to start focal from
-        marriages: string[]; // connected family surnames
+        marriages: string[]; // other surnames in this connected component
+        representatives?: string[]; // first names of key members
     }
     const [familyGroups, setFamilyGroups] = useState<FamilyGroup[]>([]);
 
@@ -158,67 +159,95 @@ export const CommunityGraph: React.FC = () => {
 
             setAllMembers(members);
 
-            // ── Build Family Overview Groups ──
-            const surnameMap = new Map<string, any[]>();
-            members.forEach((m: any) => {
-                const surname = m.last_name || m.maiden_name || 'לא ידוע';
-                if (!surnameMap.has(surname)) surnameMap.set(surname, []);
-                surnameMap.get(surname)!.push(m);
+            // ── Build Family Overview Groups (connected components) ──
+            // Build adjacency via parent-child + partnerships
+            const adjOverview = new Map<number, Set<number>>();
+            members.forEach((m: any) => adjOverview.set(m.id, new Set()));
+            parentChild.forEach((pc: any) => {
+                adjOverview.get(pc.parent_id)?.add(pc.child_id);
+                adjOverview.get(pc.child_id)?.add(pc.parent_id);
+            });
+            partnerships.forEach((p: any) => {
+                adjOverview.get(p.person1_id)?.add(p.person2_id);
+                adjOverview.get(p.person2_id)?.add(p.person1_id);
             });
 
-            // Find marriage connections between families
-            const groups: FamilyGroup[] = [];
-            surnameMap.forEach((familyMembers, surname) => {
-                const ids = familyMembers.map((m: any) => m.id);
-                const idSet = new Set(ids);
+            // BFS connected components
+            const visitedOverview = new Set<number>();
+            const components: any[][] = [];
+            members.forEach((m: any) => {
+                if (visitedOverview.has(m.id)) return;
+                const component: any[] = [];
+                const queue = [m.id];
+                visitedOverview.add(m.id);
+                while (queue.length > 0) {
+                    const curr = queue.shift()!;
+                    component.push(members.find((mm: any) => mm.id === curr));
+                    adjOverview.get(curr)?.forEach(nb => {
+                        if (!visitedOverview.has(nb)) { visitedOverview.add(nb); queue.push(nb); }
+                    });
+                }
+                components.push(component);
+            });
 
-                // Find marriages to other families
-                const marriedTo = new Set<string>();
-                partnerships.forEach((p: any) => {
-                    const p1InFamily = idSet.has(p.person1_id);
-                    const p2InFamily = idSet.has(p.person2_id);
-                    if (p1InFamily && !p2InFamily) {
-                        const spouse = members.find((m: any) => m.id === p.person2_id);
-                        if (spouse) marriedTo.add(spouse.last_name || spouse.maiden_name || '?');
-                    }
-                    if (p2InFamily && !p1InFamily) {
-                        const spouse = members.find((m: any) => m.id === p.person1_id);
-                        if (spouse) marriedTo.add(spouse.last_name || spouse.maiden_name || '?');
-                    }
+            const pcChildIds = new Set(parentChild.map((pc: any) => pc.child_id));
+            const groups: FamilyGroup[] = components.map(comp => {
+                const ids = comp.map((m: any) => m.id);
+
+                // Dominant surname: most common last_name in this component
+                const surnameCounts = new Map<string, number>();
+                comp.forEach((m: any) => {
+                    const s = m.last_name || m.maiden_name || '?';
+                    surnameCounts.set(s, (surnameCounts.get(s) || 0) + 1);
                 });
+                const surname = [...surnameCounts.entries()].sort((a, b) => b[1] - a[1])[0][0];
 
-                // Find year range
-                const years = familyMembers.filter((m: any) => m.birth_date).map((m: any) => new Date(m.birth_date).getFullYear());
+                // Representative first names (top 3 root/oldest members)
+                const reps = comp
+                    .filter((m: any) => !pcChildIds.has(m.id))
+                    .sort((a: any, b: any) => {
+                        const aY = a.birth_date ? new Date(a.birth_date).getFullYear() : 9999;
+                        const bY = b.birth_date ? new Date(b.birth_date).getFullYear() : 9999;
+                        return aY - bY;
+                    })
+                    .slice(0, 3)
+                    .map((m: any) => m.first_name);
+
+                // Year range
+                const years = comp.filter((m: any) => m.birth_date).map((m: any) => new Date(m.birth_date).getFullYear());
                 const minY = years.length > 0 ? Math.min(...years) : 0;
                 const maxY = years.length > 0 ? Math.max(...years) : 0;
 
-                // Count generations (rough: group by ~25 year spans)
+                // Generations
                 const genSet = new Set(years.map((y: number) => Math.floor(y / 25)));
 
-                // Find best root person (oldest, has children)
-                const pcChildIds = new Set(parentChild.map((pc: any) => pc.child_id));
-                const rootCandidates = familyMembers
-                    .filter((m: any) => !pcChildIds.has(m.id)) // no parents in tree
+                // Root person (oldest without parents)
+                const rootCandidates = comp
+                    .filter((m: any) => !pcChildIds.has(m.id))
                     .sort((a: any, b: any) => {
-                        const aYear = a.birth_date ? new Date(a.birth_date).getFullYear() : 9999;
-                        const bYear = b.birth_date ? new Date(b.birth_date).getFullYear() : 9999;
-                        return aYear - bYear;
+                        const aY = a.birth_date ? new Date(a.birth_date).getFullYear() : 9999;
+                        const bY = b.birth_date ? new Date(b.birth_date).getFullYear() : 9999;
+                        return aY - bY;
                     });
 
-                groups.push({
+                // All unique surnames in this component (for display)
+                const allSurnames = [...new Set(comp.map((m: any) => m.last_name).filter(Boolean))];
+
+                return {
                     surname,
-                    memberCount: familyMembers.length,
+                    memberCount: comp.length,
                     generations: Math.max(genSet.size, 1),
                     yearRange: years.length > 0 ? `${minY}–${maxY}` : '',
                     memberIds: ids,
-                    rootPersonId: rootCandidates[0]?.id || familyMembers[0]?.id,
-                    marriages: [...marriedTo],
-                });
+                    rootPersonId: rootCandidates[0]?.id || comp[0]?.id,
+                    marriages: allSurnames.filter(s => s !== surname).slice(0, 4),
+                    representatives: reps,
+                };
             });
 
-            // Sort by member count descending
+            // Sort by member count descending, hide single-person groups that are connected elsewhere
             groups.sort((a, b) => b.memberCount - a.memberCount);
-            setFamilyGroups(groups);
+            setFamilyGroups(groups.filter(g => g.memberCount > 1));
 
             // ── Focal Person Filter ──
             // When a focal person is selected, only show their bloodline:
@@ -1975,7 +2004,7 @@ export const CommunityGraph: React.FC = () => {
                                 />
 
                                 {/* Legend popup */}
-                                <div className="absolute left-0 top-full mt-2 bg-slate-800 border border-slate-600 rounded-lg shadow-2xl p-4 z-[9999] w-64 md:w-80">
+                                <div className="absolute left-0 sm:left-0 right-0 sm:right-auto top-full mt-2 bg-slate-800 border border-slate-600 rounded-lg shadow-2xl p-4 z-[9999] w-auto sm:w-64 md:w-80 mx-2 sm:mx-0">
                                     <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
                                         <Info size={14} />
                                         {t('legendTitle')}
@@ -2048,7 +2077,7 @@ export const CommunityGraph: React.FC = () => {
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 max-w-4xl mx-auto">
                         {familyGroups.map(group => (
                             <button
-                                key={group.surname}
+                                key={group.rootPersonId}
                                 type="button"
                                 onClick={() => {
                                     setFocalPersonId(group.rootPersonId);
@@ -2056,25 +2085,33 @@ export const CommunityGraph: React.FC = () => {
                                 }}
                                 className="bg-white/5 hover:bg-white/10 border border-white/10 hover:border-indigo-500/50 rounded-xl p-5 text-start transition-all group"
                             >
-                                <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center justify-between mb-2">
                                     <h3 className="text-xl font-bold text-white group-hover:text-indigo-400 transition-colors">
                                         {group.surname}
                                     </h3>
                                     <span className="bg-indigo-600/30 text-indigo-300 px-2.5 py-0.5 rounded-full text-xs font-medium">
-                                        {group.memberCount} אנשים
+                                        {group.memberCount}
                                     </span>
                                 </div>
 
-                                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-400 mb-3">
+                                {/* Representative names */}
+                                {group.representatives && group.representatives.length > 0 && (
+                                    <p className="text-slate-500 text-xs mb-2">
+                                        {group.representatives.join(', ')}
+                                    </p>
+                                )}
+
+                                <div className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-slate-400 mb-2">
                                     {group.generations > 1 && <span>{group.generations} דורות</span>}
                                     {group.yearRange && <span>{group.yearRange}</span>}
                                 </div>
 
+                                {/* Other surnames in this family cluster */}
                                 {group.marriages.length > 0 && (
                                     <div className="flex flex-wrap gap-1.5">
                                         {group.marriages.map(m => (
-                                            <span key={m} className="bg-pink-500/15 text-pink-300 px-2 py-0.5 rounded text-[10px]">
-                                                ← {m}
+                                            <span key={m} className="bg-white/10 text-slate-400 px-2 py-0.5 rounded text-[10px]">
+                                                {m}
                                             </span>
                                         ))}
                                     </div>
