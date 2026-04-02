@@ -1996,58 +1996,7 @@ export const CommunityGraph: React.FC = () => {
                             <span className="hidden sm:inline">{t('legend')}</span>
                         </button>
 
-                        {showLegend && (
-                            <>
-                                {/* Backdrop to close */}
-                                <div
-                                    className="fixed inset-0 z-[9998]"
-                                    onClick={() => setShowLegend(false)}
-                                />
-
-                                {/* Legend popup */}
-                                <div className="fixed sm:absolute top-24 bottom-4 left-4 right-4 sm:inset-auto sm:left-0 sm:top-full sm:bottom-auto sm:right-auto sm:mt-2 bg-slate-800 border border-slate-600 rounded-xl shadow-2xl p-5 z-[9999] sm:w-64 md:w-80 overflow-y-auto">
-                                    <h3 className="text-sm font-bold text-white mb-3 flex items-center gap-2">
-                                        <Info size={14} />
-                                        {t('legendTitle')}
-                                    </h3>
-                                    <div className="space-y-2 text-sm">
-                                        <div className="flex items-center gap-2 pb-2 border-b border-slate-700">
-                                            <div className="w-4 h-4 rounded-full bg-indigo-500 border-2 border-indigo-600" />
-                                            <span className="text-slate-300">{t('male')}</span>
-                                            <div className="w-4 h-4 rounded-full bg-amber-500 border-2 border-amber-600 ms-auto" />
-                                            <span className="text-slate-300">{t('female')}</span>
-                                        </div>
-
-                                        <div className="space-y-1.5">
-                                            <div className="flex items-center gap-2">
-                                                <svg width="32" height="12" className="flex-shrink-0">
-                                                    <line x1="0" y1="6" x2="32" y2="6" stroke="#38bdf8" strokeWidth="2.5" />
-                                                </svg>
-                                                <span className="text-slate-300">{t('parentChild')}</span>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <svg width="32" height="12" className="flex-shrink-0">
-                                                    <line x1="0" y1="6" x2="32" y2="6" stroke="#f472b6" strokeWidth="3" />
-                                                </svg>
-                                                <span className="text-slate-300">{t('married')}</span>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <svg width="32" height="12" className="flex-shrink-0">
-                                                    <line x1="0" y1="6" x2="32" y2="6" stroke="#f87171" strokeWidth="3" strokeDasharray="5,5" />
-                                                </svg>
-                                                <span className="text-slate-300">{t('divorced')}</span>
-                                            </div>
-                                            <div className="flex items-center gap-2">
-                                                <svg width="32" height="12" className="flex-shrink-0">
-                                                    <line x1="0" y1="6" x2="32" y2="6" stroke="#94a3b8" strokeWidth="2.5" strokeDasharray="2,4" />
-                                                </svg>
-                                                <span className="text-slate-300">{t('widowed')}</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </>
-                        )}
+                        {/* Legend content rendered at root level via portal-like approach below */}
                     </div>
                 </div>
             </div>
@@ -2411,6 +2360,48 @@ export const CommunityGraph: React.FC = () => {
                         style={{ transform: 'translateX(-50%)' }}
                     />
                 </div>
+            )}
+
+            {/* Legend overlay (rendered at root for proper z-index on mobile) */}
+            {showLegend && (
+                <>
+                    <div className="fixed inset-0 z-[9998] bg-black/30" onClick={() => setShowLegend(false)} />
+                    <div className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-slate-800 border border-slate-600 rounded-xl shadow-2xl p-5 z-[9999] w-[calc(100%-2rem)] max-w-xs overflow-y-auto" dir="rtl">
+                        <div className="flex justify-between items-center mb-3">
+                            <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                                <Info size={14} />
+                                {t('legendTitle')}
+                            </h3>
+                            <button type="button" onClick={() => setShowLegend(false)} className="text-slate-400 hover:text-white"><X size={16} /></button>
+                        </div>
+                        <div className="space-y-2 text-sm">
+                            <div className="flex items-center gap-2 pb-2 border-b border-slate-700">
+                                <div className="w-4 h-4 rounded-full bg-indigo-500 border-2 border-indigo-600" />
+                                <span className="text-slate-300">{t('male')}</span>
+                                <div className="w-4 h-4 rounded-full bg-amber-500 border-2 border-amber-600 ms-auto" />
+                                <span className="text-slate-300">{t('female')}</span>
+                            </div>
+                            <div className="space-y-1.5">
+                                <div className="flex items-center gap-2">
+                                    <svg width="32" height="12" className="flex-shrink-0"><line x1="0" y1="6" x2="32" y2="6" stroke="#38bdf8" strokeWidth="2.5" /></svg>
+                                    <span className="text-slate-300">{t('parentChild')}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <svg width="32" height="12" className="flex-shrink-0"><line x1="0" y1="6" x2="32" y2="6" stroke="#f472b6" strokeWidth="3" /></svg>
+                                    <span className="text-slate-300">{t('married')}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <svg width="32" height="12" className="flex-shrink-0"><line x1="0" y1="6" x2="32" y2="6" stroke="#f87171" strokeWidth="3" strokeDasharray="5,5" /></svg>
+                                    <span className="text-slate-300">{t('divorced')}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <svg width="32" height="12" className="flex-shrink-0"><line x1="0" y1="6" x2="32" y2="6" stroke="#94a3b8" strokeWidth="2.5" strokeDasharray="2,4" /></svg>
+                                    <span className="text-slate-300">{t('widowed')}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </>
             )}
 
             {/* Edit Modal */}
