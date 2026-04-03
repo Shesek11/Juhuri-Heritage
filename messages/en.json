@@ -81,6 +81,16 @@
       "description": "Soon you'll be able to listen to the traditional sounds of the Mountain Jews — ancient songs, mugams, wedding melodies, and music that accompanied the community through generations.",
       "badge": "Coming Soon — we're working on it",
       "backHome": "← Back to home"
+    },
+    "bulletin_board_module": {
+      "title": "Community Bulletin Board",
+      "description": "Share announcements, events, and news with community members."
+    },
+    "bulletin_board_teaser": {
+      "heading": "Community Bulletin Board",
+      "description": "Soon you'll be able to share announcements, events, news, and updates with community members — a central hub for Caucasian Jewish community communication worldwide.",
+      "badge": "Coming Soon — we're working on it",
+      "backHome": "← Back to home"
     }
   },
   "dictionary": {
@@ -759,8 +769,8 @@
     "welcomeTitle": "Welcome to Juhuri Heritage",
     "welcomeText": "An innovative digital project to preserve, document, and share the Juhuri language (Judeo-Tat) — the language of the Mountain Jews of the Caucasus. Combining academic research with modern AI technology.",
     "whatIsTitle": "What is the Juhuri Language?",
-    "whatIsText1": "Juhuri (also known as Judeo-Tat) is an ancient Jewish language from the Iranian language family, spoken for centuries by the Mountain Jews (Caucasus Jews) in what is now Azerbaijan and Dagestan. It is closely related to Persian but evolved with Hebrew and Aramaic influences.",
-    "whatIsText2": "Today Juhuri is considered an endangered language, with a declining number of speakers worldwide. Large Mountain Jewish communities live in Israel, New York, Moscow, and Baku.",
+    "whatIsText1": "Juhuri (also known as Judeo-Tat) is a Jewish language from the Iranian language family, rooted in Middle Persian dialects of the Sasanian era (5th–7th centuries). Spoken by the Mountain Jews (Caucasus Jews) of present-day Azerbaijan and Dagestan, it developed a distinct character over the centuries, incorporating Hebrew and Aramaic vocabulary alongside Turkic and Caucasian influences.",
+    "whatIsText2": "UNESCO classifies Juhuri as \"Definitely Endangered,\" with a declining number of fluent speakers, particularly among younger generations. The largest Mountain Jewish communities today are in Israel, New York, Russia (Moscow and Derbent), and Azerbaijan.",
     "dictionaryTitle": "Our Dictionary",
     "dictionaryText": "The Juhuri Heritage Dictionary is the largest digital Juhuri dictionary, containing over 46,000 entries with translations into Hebrew, English, and Russian, Latin transliteration, pronunciation guides, and vowel markings. Built from academic research and community contributions.",
     "missionTitle": "Our Mission",
@@ -772,15 +782,15 @@
     "statsLanguages": "Translation languages",
     "statsDialects": "Dialects",
     "timelineTitle": "Mountain Jews — Timeline",
-    "timeline1Year": "5th Century",
+    "timeline1Year": "5th–7th C.",
     "timeline1Title": "Settlement in the Caucasus",
-    "timeline1Text": "Jews settle in the Caucasus region, mainly in Derbent and Azerbaijan. The Juhuri language develops as a distinct language from Persian.",
-    "timeline2Year": "18th Century",
-    "timeline2Title": "Period of Flourishing",
-    "timeline2Text": "Mountain Jewish communities thrive across the Caucasus. The Juhuri language develops rich literature, poetry, and oral tradition.",
-    "timeline3Year": "1920–1990",
+    "timeline1Text": "During the Sasanian Empire, Jewish communities establish themselves in the Eastern Caucasus — in Derbent, Azerbaijan, and Dagestan. From the Persian dialects of the era, the language that will become Juhuri begins to take shape.",
+    "timeline2Year": "Over the centuries",
+    "timeline2Title": "A Rich Oral Tradition",
+    "timeline2Text": "Mountain Jews develop a rich tradition of poetry, stories, and folklore in Juhuri, including the shirvoni genre. Written Juhuri literature emerged primarily in the 20th century.",
+    "timeline3Year": "1920s–1930s",
     "timeline3Title": "The Soviet Era",
-    "timeline3Text": "Under Soviet rule, Juhuri transitions to Latinization and then Cyrillicization. The community preserves its identity despite pressures.",
+    "timeline3Text": "Under Soviet rule, Juhuri transitions from Hebrew script to a Latin alphabet (1920s), then to Cyrillic (1938). The community preserves its identity despite pressures.",
     "timeline4Year": "1990–2000",
     "timeline4Title": "The Great Migration",
     "timeline4Text": "Large waves of emigration to Israel, New York, and Moscow. The Juhuri language begins to be displaced by Hebrew, Russian, and English.",
@@ -798,12 +808,18 @@
     "howStep4Text": "Use the AI tutor to learn Juhuri at your own pace.",
     "mapTitle": "Where Is Juhuri Spoken?",
     "mapIsrael": "Israel",
-    "mapIsraelText": "The largest community — Haifa, Or Akiva, Be'er Sheva",
+    "mapIsraelText": "The largest community — Or Akiva, Haifa, Acre, and more",
     "mapUSA": "USA",
     "mapUSAText": "New York (Brooklyn, Queens) — the largest community outside Israel",
     "mapRussia": "Russia",
     "mapRussiaText": "Moscow, Derbent (Dagestan) — historic place of origin",
     "mapAzerbaijan": "Azerbaijan",
-    "mapAzerbaijanText": "Baku, Quba (\"Red Town\") — historic center of Mountain Jews"
+    "mapAzerbaijanText": "Qirmizi Qasaba (\"Red Town\") near Quba — a unique historic Jewish settlement. A small community remains in Baku",
+    "sourcesTitle": "Sources",
+    "source1": "UNESCO Atlas of the World's Languages in Danger — Juhuri classified as \"Definitely Endangered\"",
+    "source2": "Encyclopedia Judaica, 2nd ed. — entries \"Mountain Jews\" and \"Judeo-Tat\"",
+    "source3": "Habib Borjian, \"Judeo-Iranian Languages\" — The Oxford Handbook of Jewish Languages (2016)",
+    "source4": "Encyclopedia Iranica — entry \"Judeo-Tat\"",
+    "source5": "Ethnologue — Judeo-Tat [jdt]"
   }
 }

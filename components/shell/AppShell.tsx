@@ -17,7 +17,7 @@ import Footer from '../Footer';
 import { AppContext, TranslationModalEntry, WordListModalState } from './AppContext';
 import {
   Sun, Moon, Plus, HeartHandshake, BookOpen, GraduationCap, Info, Home,
-  User as UserIcon, LogOut, Settings, LayoutDashboard, LogIn, ChefHat, Store, TreeDeciduous, Clock, Music
+  User as UserIcon, LogOut, Settings, LayoutDashboard, LogIn, ChefHat, Store, TreeDeciduous, Clock, Music, Megaphone
 } from 'lucide-react';
 
 // Lazy-loaded modals
@@ -241,6 +241,7 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
     Users: <TreeDeciduous size={24} />,
     TreeDeciduous: <TreeDeciduous size={24} />,
     Music: <Music size={24} />,
+    Megaphone: <Megaphone size={24} />,
   };
 
   // Derived

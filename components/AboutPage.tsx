@@ -154,6 +154,18 @@ const AboutPage: React.FC = () => {
         </Link>
       </div>
 
+      {/* Sources */}
+      <div className="bg-[#0d1424]/40 rounded-xl border border-white/5 p-5">
+        <h3 className="text-xs font-medium text-slate-500 uppercase tracking-wider mb-3">{t('sourcesTitle')}</h3>
+        <ol className="list-decimal list-inside space-y-1 text-xs text-slate-500 leading-relaxed">
+          <li>{t('source1')}</li>
+          <li>{t('source2')}</li>
+          <li>{t('source3')}</li>
+          <li>{t('source4')}</li>
+          <li>{t('source5')}</li>
+        </ol>
+      </div>
+
       {/* Back home */}
       <div className="text-center">
         <Link href="/" className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-600 text-white font-bold rounded-xl shadow-lg hover:scale-105 transition-all duration-300">

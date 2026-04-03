@@ -3,7 +3,7 @@
 import React from 'react';
 import { Link } from '@/src/i18n/navigation';
 import {
-  BookOpen, GraduationCap, ChefHat, Store, TreeDeciduous, Music
+  BookOpen, GraduationCap, ChefHat, Store, TreeDeciduous, Music, Megaphone
 } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { FeatureFlag } from '../../services/featureFlagService';
@@ -39,6 +39,10 @@ const cardContent: Record<string, { icon: React.ElementType; gradient: string }>
   music_module: {
     icon: Music,
     gradient: 'from-amber-400 to-orange-500',
+  },
+  bulletin_board_module: {
+    icon: Megaphone,
+    gradient: 'from-sky-400 to-indigo-600',
   },
 };
 
